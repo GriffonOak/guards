@@ -142,9 +142,15 @@ card_input_proc :: proc(input: Input_Event, element: ^UI_Element) -> (output: bo
     assert(ok)
 
     switch var in input {
+    case Mouse_Pressed_Event, Mouse_Up_Event, Mouse_Down_Event, Mouse_Motion_Event:
+        if !rl.CheckCollisionPointRec(ui_state.mouse_pos, element.bounding_rect) {
+            card_element.hovered = false
+            return false
+        }
+    }
+
+    switch var in input {
     case Mouse_Pressed_Event:
-        fmt.println(rl.CheckCollisionPointRec(ui_state.mouse_pos, element.bounding_rect))
-        fmt.println(element.bounding_rect)
         if card_element.state == .IN_HAND && rl.CheckCollisionPointRec(ui_state.mouse_pos, element.bounding_rect) {
             element.bounding_rect = CARD_PLAYED_POSITION_RECT
             card_element.state = .PLAYED
@@ -156,6 +162,8 @@ card_input_proc :: proc(input: Input_Event, element: ^UI_Element) -> (output: bo
             return false
         }
     }
+
+
     card_element.hovered = true
     return true
 }
