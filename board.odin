@@ -3,7 +3,7 @@ package guards
 import rl "vendor:raylib"
 import "core:fmt"
 
-VERTICAL_SPACING :: 50 / 2
+VERTICAL_SPACING :: 50
 // sqrt 3
 HORIZONTAL_SPACING :: 1.732 * VERTICAL_SPACING * 0.5
 
@@ -47,7 +47,7 @@ board: [GRID_WIDTH][GRID_HEIGHT]Space
 board_render_texture: rl.RenderTexture2D
 
 
-BOARD_TEXTURE_SIZE :: Vec2{500, 500}
+BOARD_TEXTURE_SIZE :: Vec2{1000, 1000}
 
 BOARD_POSITION_RECT :: rl.Rectangle{0, 0, BOARD_TEXTURE_SIZE.x, BOARD_TEXTURE_SIZE.y}
 
@@ -121,7 +121,7 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
 draw_board: UI_Render_Proc : proc(element: UI_Element) {
     board_element, ok := element.variant.(UI_Board_Element)
     assert(ok)
-    render_board_to_texture(board_element)
+    // render_board_to_texture(board_element)
     rl.DrawTexturePro(board_render_texture.texture, {0, 0, BOARD_TEXTURE_SIZE.x, -BOARD_TEXTURE_SIZE.y}, element.bounding_rect, {0, 0}, 0, rl.WHITE)
 
     rl.DrawRectangleLinesEx(BOARD_POSITION_RECT, 4, rl.WHITE)

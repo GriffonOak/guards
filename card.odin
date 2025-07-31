@@ -4,7 +4,7 @@ import rl "vendor:raylib"
 import "core:strings"
 import "core:fmt"
 
-CARD_TEXTURE_SIZE :: Vec2{250, 350}
+CARD_TEXTURE_SIZE :: Vec2{500, 700}
 
 Card_Color :: enum {
     NONE,
@@ -73,7 +73,7 @@ Card :: struct {
 CARD_SCALING_FACTOR :: 1
 
 CARD_HOVER_POSITION_RECT :: rl.Rectangle{WIDTH - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x, HEIGHT - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y, CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x, CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y}
-PLAYED_CARD_SIZE :: Vec2{75, 105}
+PLAYED_CARD_SIZE :: Vec2{150, 210}
 
 CARD_PLAYED_POSITION_RECT :: rl.Rectangle{BOARD_POSITION_RECT.width * 0.8 - PLAYED_CARD_SIZE.x / 2, BOARD_POSITION_RECT.height - PLAYED_CARD_SIZE.y / 2, PLAYED_CARD_SIZE.x, PLAYED_CARD_SIZE.y}
 
@@ -83,10 +83,10 @@ card_hand_position_rects: [Card_Color]rl.Rectangle
 create_texture_for_card :: proc(card: ^Card) {
     render_texture := rl.LoadRenderTexture(i32(CARD_TEXTURE_SIZE.x), i32(CARD_TEXTURE_SIZE.y))
 
-    TEXT_PADDING :: 3
-    COLORED_BAND_WIDTH :: 30
+    TEXT_PADDING :: 6
+    COLORED_BAND_WIDTH :: 60
     TITLE_FONT_SIZE :: COLORED_BAND_WIDTH - 2 * TEXT_PADDING
-    TEXT_FONT_SIZE :: 11
+    TEXT_FONT_SIZE :: 22
 
     rl.BeginTextureMode(render_texture)
 

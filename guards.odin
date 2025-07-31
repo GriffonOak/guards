@@ -11,15 +11,15 @@ Vec2 :: [2]f32
 IVec2 :: [2]int
 
 
-WIDTH :: 1000
-HEIGHT :: 750
+WIDTH :: 2000
+HEIGHT :: 1500
 
 Window_Size :: enum {
     SMALL,
     BIG,
 }
 
-window_size: Window_Size = .SMALL
+window_size: Window_Size = .BIG
 
 Region_ID :: enum {
     NONE,
@@ -134,7 +134,7 @@ main :: proc() {
 
     for color, index in Card_Color {
         CARD_HAND_WIDTH := BOARD_POSITION_RECT.width / 5
-        card_hand_position_rects[color] = {f32(index - 1) * CARD_HAND_WIDTH, HEIGHT - 50, CARD_HAND_WIDTH, 50}
+        card_hand_position_rects[color] = {f32(index - 1) * CARD_HAND_WIDTH, HEIGHT - 100, CARD_HAND_WIDTH, 100}
     }
 
     append(&ui_stack, UI_Element {
@@ -177,10 +177,10 @@ main :: proc() {
             case Key_Pressed_Event:
                 if var.key == .EQUAL && window_size == .SMALL {
                     window_size = .BIG
-                    rl.SetWindowSize(2 * WIDTH, 2 * HEIGHT)
+                    rl.SetWindowSize(WIDTH, HEIGHT)
                 } else if var.key == .MINUS && window_size == .BIG {
                     window_size = .SMALL
-                    rl.SetWindowSize(WIDTH, HEIGHT)
+                    rl.SetWindowSize(WIDTH / 2, HEIGHT / 2)
                 }
             }
 
@@ -208,28 +208,27 @@ main :: proc() {
 
         rl.BeginDrawing()
 
+        render_board_to_texture(ui_stack[0].variant.(UI_Board_Element))
+
         rl.BeginTextureMode(window_texture)
 
-        rl.ClearBackground(rl.GREEN)
+        rl.ClearBackground(rl.BLACK)
 
         for element in ui_stack {
             element.render(element)
         }
 
-        rl.DrawCircleV({200, 200}, 200, rl.RED)
-
-        rl.DrawLineV({0, 0}, {WIDTH, HEIGHT}, rl.BLACK)
-
         rl.EndTextureMode()
 
-
-        rl.ClearBackground(rl.BLUE)
+        rl.ClearBackground(rl.BLACK)
 
         // rl.DrawCircleV({200, 200}, 200, rl.RED)
+
+        scale_factor: f32 = 1.0 if window_size == .BIG else 0.5
         rl.DrawTexturePro(
             window_texture.texture,
-            {0, 0, WIDTH, HEIGHT},
-            {0, 0, WIDTH, HEIGHT},
+            {0, 0, WIDTH, -HEIGHT},
+            {0, 0, scale_factor * WIDTH, scale_factor * HEIGHT},
             {0, 0}, 0, rl.WHITE
         )
 

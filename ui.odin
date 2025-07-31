@@ -33,7 +33,7 @@ UI_Variant :: union {
     UI_Button_Element,
 }
 
-CONFIRM_BUTTON_SIZE :: Vec2{150, 50}
+CONFIRM_BUTTON_SIZE :: Vec2{300, 100}
 
 confirm_button := UI_Element {
     {WIDTH - CONFIRM_BUTTON_SIZE.x - 10, HEIGHT - CARD_HOVER_POSITION_RECT.height - CONFIRM_BUTTON_SIZE.y - 10, CONFIRM_BUTTON_SIZE.x, CONFIRM_BUTTON_SIZE.y},
@@ -60,7 +60,7 @@ draw_button: UI_Render_Proc : proc(element: UI_Element) {
     button_element, ok := element.variant.(UI_Button_Element)
     assert(ok)
 
-    TEXT_PADDING :: 10
+    TEXT_PADDING :: 20
 
     rl.DrawRectangleRec(element.bounding_rect, rl.GREEN)
     rl.DrawText(
