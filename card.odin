@@ -75,7 +75,7 @@ CARD_SCALING_FACTOR :: 1
 CARD_HOVER_POSITION_RECT :: rl.Rectangle{WIDTH - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x, HEIGHT - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y, CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x, CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y}
 PLAYED_CARD_SIZE :: Vec2{75, 105}
 
-CARD_PLAYED_POSITION_RECT :: rl.Rectangle{BOARD_POSITION_RECT.width * 0.75 - PLAYED_CARD_SIZE.x / 2, BOARD_POSITION_RECT.height - PLAYED_CARD_SIZE.y / 2, PLAYED_CARD_SIZE.x, PLAYED_CARD_SIZE.y}
+CARD_PLAYED_POSITION_RECT :: rl.Rectangle{BOARD_POSITION_RECT.width * 0.8 - PLAYED_CARD_SIZE.x / 2, BOARD_POSITION_RECT.height - PLAYED_CARD_SIZE.y / 2, PLAYED_CARD_SIZE.x, PLAYED_CARD_SIZE.y}
 
 card_hand_position_rects: [Card_Color]rl.Rectangle
 
@@ -138,29 +138,43 @@ create_texture_for_card :: proc(card: ^Card) {
     card.texture = render_texture.texture
 }
 
-card_input_proc :: proc(input: Input_Event, element: ^UI_Element) -> (output: bool = false) {
+card_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element) -> (output: bool = false) {
 
-    card_element, ok := &element.variant.(UI_Card_Element)
-    assert(ok)
+    card_element := assert_variant(&element.variant, UI_Card_Element)
 
-    switch var in input {
-    case Mouse_Pressed_Event, Mouse_Up_Event, Mouse_Down_Event, Mouse_Motion_Event:
-        if !rl.CheckCollisionPointRec(ui_state.mouse_pos, element.bounding_rect) {
-            card_element.hovered = false
-            return false
-        }
-    case Input_Already_Consumed:
+    if !check_outside_or_deselected(input, element^) {
         card_element.hovered = false
         return false
     }
 
-    #partial switch var in input {
+    try_to_play: #partial switch var in input {
     case Mouse_Pressed_Event:
-        if card_element.state == .IN_HAND {
+        #partial switch card_element.state {
+        case .IN_HAND:
+
+            // See if there is an already played card first
+            // This is a bit hacky, consider having a separate struct to keep track of what cards are where
+            need_to_add_button := true
+            for &other_element in ui_stack {
+                if other_card, ok := &other_element.variant.(UI_Card_Element); ok && other_card.state == .PLAYED {
+                    other_element.bounding_rect = card_hand_position_rects[other_card.card.color]
+                    other_card.state = .IN_HAND
+                    need_to_add_button = false
+                    break
+                }
+            }
+
+            if need_to_add_button {
+                append(&ui_stack, confirm_button)
+            }
+
             element.bounding_rect = CARD_PLAYED_POSITION_RECT
             card_element.state = .PLAYED
+        case .PLAYED:
+            element.bounding_rect = card_hand_position_rects[card_element.card.color]
+            card_element.state = .IN_HAND
+            pop(&ui_stack)
         }
-        return true
     }
 
 
@@ -168,7 +182,7 @@ card_input_proc :: proc(input: Input_Event, element: ^UI_Element) -> (output: bo
     return true
 }
 
-draw_card :: proc(element: UI_Element) {
+draw_card: UI_Render_Proc: proc(element: UI_Element) {
     card_element, ok := element.variant.(UI_Card_Element)
     assert(ok)
     rl.DrawRectangleRec(element.bounding_rect, card_color_values[card_element.card.color])

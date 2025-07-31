@@ -19,20 +19,46 @@ UI_Card_Element :: struct {
     hovered: bool,
 }
 
+Button_Kind :: enum {
+    CONFIRM
+}
+
+UI_Button_Element :: struct {
+    kind: Button_Kind,
+}
+
 UI_Variant :: union {
     UI_Board_Element,
     UI_Card_Element,
+    UI_Button_Element,
+}
+
+CONFIRM_BUTTON_SIZE :: 50
+
+confirm_button := UI_Element {
+    {WIDTH - CONFIRM_BUTTON_SIZE - 10, HEIGHT - CARD_HOVER_POSITION_RECT.height - CONFIRM_BUTTON_SIZE - 10, CONFIRM_BUTTON_SIZE, CONFIRM_BUTTON_SIZE},
+    UI_Button_Element{},
+    null_input_proc,
+    draw_button,
 }
 
 UI_Input_Proc :: #type proc(Input_Event, ^UI_Element) -> bool
+UI_Render_Proc :: #type proc(UI_Element)
 
 null_input_proc: UI_Input_Proc : proc(_: Input_Event, _: ^UI_Element) -> bool { return false }
+null_render_proc: UI_Render_Proc : proc(_: UI_Element) {}
 
-UI_Render_Proc :: #type proc(UI_Element)
 
 UI_Element :: struct {
     bounding_rect: rl.Rectangle,
     variant: UI_Variant,
     consume_input: UI_Input_Proc,
     render: UI_Render_Proc,
+}
+
+draw_button: UI_Render_Proc : proc(element: UI_Element) {
+    button_element, ok := element.variant.(UI_Button_Element)
+    assert(ok)
+
+    rl.DrawRectangleRec(element.bounding_rect, rl.GREEN)
 }

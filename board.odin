@@ -74,21 +74,15 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
     rl.EndTextureMode()
 }
 
-board_input_proc :: proc(input: Input_Event, element: ^UI_Element) -> (output: bool = false) {
+board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element) -> (output: bool = false) {
 
-    board_element, ok := &element.variant.(UI_Board_Element)
-    assert(ok)
+    board_element := assert_variant(&element.variant, UI_Board_Element)
 
-    switch var in input {
-    case Mouse_Up_Event, Mouse_Down_Event, Mouse_Pressed_Event, Mouse_Motion_Event:
-        if !rl.CheckCollisionPointRec(ui_state.mouse_pos, element.bounding_rect) {
-            board_element.hovered_cell = {-1, -1}
-            return false
-        }
-    case Input_Already_Consumed:
+    if !check_outside_or_deselected(input, element^) {
         board_element.hovered_cell = {-1, -1}
         return false
     }
+
     output = true
 
     #partial switch var in input {
@@ -124,7 +118,7 @@ board_input_proc :: proc(input: Input_Event, element: ^UI_Element) -> (output: b
     return
 }
 
-draw_board :: proc(element: UI_Element) {
+draw_board: UI_Render_Proc : proc(element: UI_Element) {
     board_element, ok := element.variant.(UI_Board_Element)
     assert(ok)
     render_board_to_texture(board_element)

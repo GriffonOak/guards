@@ -161,6 +161,7 @@ main :: proc() {
 
     for !rl.WindowShouldClose() {
 
+        // Handle input
         check_for_input_events(&input_queue)
 
         for event in input_queue {
@@ -178,6 +179,12 @@ main :: proc() {
             active_element_index = next_active_element_index
         }
         clear(&input_queue)
+
+        // Handle events
+        // for event in event_queue {
+        //     resolve_event(event)
+        // }
+
 
         rl.BeginDrawing()
 
