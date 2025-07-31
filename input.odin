@@ -14,6 +14,7 @@ Input_Event :: union {
     // Mouse_Scroll_Event,
     // Key_Down_Event,
     // Key_Up_Event
+    Key_Pressed_Event,
     Input_Already_Consumed,
 }
 
@@ -52,6 +53,10 @@ Key_Up_Event :: struct {
     key: rl.KeyboardKey,
 }
 
+Key_Pressed_Event :: struct {
+    key: rl.KeyboardKey
+}
+
 UI_State :: struct {
     mouse_pos: Vec2,
     mouse_state: bit_set[rl.MouseButton],
@@ -65,10 +70,10 @@ check_for_input_events :: proc(q: ^[dynamic]Input_Event) {
     x := p.x;
     y := p.y;
 
-    // for key := rl.GetKeyPressed(); key != .KEY_NULL; key = rl.GetKeyPressed() {
-    //     ba.set(&ui_state.pressed_keys, cast(int) key)
-    //     append(q, Key_Down_Event { key })
-    // }
+    for key := rl.GetKeyPressed(); key != .KEY_NULL; key = rl.GetKeyPressed() {
+        // ba.set(&ui_state.pressed_keys, cast(int) key)
+        append(q, Key_Pressed_Event { key })
+    }
 
     // iterator := ba.make_iterator(&ui_state.pressed_keys)
     // key_idx, ok := ba.iterate_by_set(&iterator)

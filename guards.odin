@@ -14,6 +14,13 @@ IVec2 :: [2]int
 WIDTH :: 1000
 HEIGHT :: 750
 
+Window_Size :: enum {
+    SMALL,
+    BIG,
+}
+
+window_size: Window_Size = .SMALL
+
 Region_ID :: enum {
     NONE,
     RED_BASE,
@@ -142,14 +149,15 @@ main :: proc() {
 
     board_render_texture = rl.LoadRenderTexture(i32(BOARD_TEXTURE_SIZE.x), i32(BOARD_TEXTURE_SIZE.y))
 
+    window_texture := rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT))
+
     setup_space_positions()
 
     setup_terrain()
 
     setup_regions()
 
-    for &card, index in xargatha_cards {
-        
+    for &card, index in xargatha_cards {   
         create_texture_for_card(&card)
         append(&ui_stack, UI_Element{
             card_hand_position_rects[card.color],
@@ -165,6 +173,17 @@ main :: proc() {
         check_for_input_events(&input_queue)
 
         for event in input_queue {
+            #partial switch var in event {
+            case Key_Pressed_Event:
+                if var.key == .EQUAL && window_size == .SMALL {
+                    window_size = .BIG
+                    rl.SetWindowSize(2 * WIDTH, 2 * HEIGHT)
+                } else if var.key == .MINUS && window_size == .BIG {
+                    window_size = .SMALL
+                    rl.SetWindowSize(WIDTH, HEIGHT)
+                }
+            }
+
             next_active_element_index := -1
             #reverse for &element, index in ui_stack {
                 if element.consume_input(event, &element) {
@@ -189,11 +208,32 @@ main :: proc() {
 
         rl.BeginDrawing()
 
-        rl.ClearBackground(rl.BLACK)
+        rl.BeginTextureMode(window_texture)
+
+        rl.ClearBackground(rl.GREEN)
 
         for element in ui_stack {
             element.render(element)
         }
+
+        rl.DrawCircleV({200, 200}, 200, rl.RED)
+
+        rl.DrawLineV({0, 0}, {WIDTH, HEIGHT}, rl.BLACK)
+
+        rl.EndTextureMode()
+
+
+        rl.ClearBackground(rl.BLUE)
+
+        // rl.DrawCircleV({200, 200}, 200, rl.RED)
+        rl.DrawTexturePro(
+            window_texture.texture,
+            {0, 0, WIDTH, HEIGHT},
+            {0, 0, WIDTH, HEIGHT},
+            {0, 0}, 0, rl.WHITE
+        )
+
+        // rl.DrawCircleV({200, 200}, 200, rl.RED)
 
         rl.EndDrawing()
     }
