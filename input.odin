@@ -14,7 +14,10 @@ Input_Event :: union {
     // Mouse_Scroll_Event,
     // Key_Down_Event,
     // Key_Up_Event
+    Input_Already_Consumed,
 }
+
+Input_Already_Consumed :: struct{}
 
 Mouse_Pressed_Event :: struct {
     pos: Vec2,

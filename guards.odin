@@ -125,6 +125,11 @@ main :: proc() {
 
     active_element_index: int = -1
 
+    for color, index in Card_Color {
+        CARD_HAND_WIDTH := BOARD_POSITION_RECT.width / 5
+        card_hand_position_rects[color] = {f32(index - 1) * CARD_HAND_WIDTH, HEIGHT - 50, CARD_HAND_WIDTH, 50}
+    }
+
     append(&ui_stack, UI_Element {
         BOARD_POSITION_RECT,
         UI_Board_Element{},
@@ -143,53 +148,34 @@ main :: proc() {
 
     setup_regions()
 
-    // test_card := Card {
-    //     color = .RED,
-    //     initiative = 13,
-    //     name = "Fight as One"
-    // }
-
-    // create_texture_for_card(&test_card)
-
     for &card, index in xargatha_cards {
-        CARD_HAND_WIDTH := BOARD_POSITION_RECT.width / 5
+        
         create_texture_for_card(&card)
         append(&ui_stack, UI_Element{
-            {f32(index) * CARD_HAND_WIDTH, HEIGHT - 50, CARD_HAND_WIDTH, 50},
+            card_hand_position_rects[card.color],
             UI_Card_Element{.IN_HAND, &card, false},
             card_input_proc,
             draw_card,
         })
     }
 
-    // append(&ui_stack, UI_Element{
-    //     {0, HEIGHT - 100, 200, 100},
-    //     UI_Card_Element{
-    //         &test_card,
-    //         false,
-    //     },
-    //     card_input_proc,
-    //     draw_card,
-    // })
-
-    
-    
-
     for !rl.WindowShouldClose() {
 
         check_for_input_events(&input_queue)
 
         for event in input_queue {
-
-            // Check the already active element first to see if it is deselected or something
-            if active_element_index > 0 && active_element_index < len(ui_stack) {
-                active_element := &ui_stack[active_element_index]
-                if active_element.consume_input(event, active_element) do continue
-            }
-            // Then walk the UI stack
+            next_active_element_index := -1
             #reverse for &element, index in ui_stack {
-                if element.consume_input(event, &element) do break
+                if element.consume_input(event, &element) {
+                    next_active_element_index = index
+                    break
+                }
             }
+            if next_active_element_index != active_element_index && active_element_index >= 0 && active_element_index < len(ui_stack){
+                active_element := &ui_stack[active_element_index]
+                active_element.consume_input(Input_Already_Consumed{}, active_element)
+            }
+            active_element_index = next_active_element_index
         }
         clear(&input_queue)
 

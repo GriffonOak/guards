@@ -8,8 +8,8 @@ CARD_TEXTURE_SIZE :: Vec2{250, 350}
 
 Card_Color :: enum {
     NONE,
-    SILVER,
     GOLD,
+    SILVER,
     RED,
     GREEN,
     BLUE,
@@ -73,9 +73,11 @@ Card :: struct {
 CARD_SCALING_FACTOR :: 1
 
 CARD_HOVER_POSITION_RECT :: rl.Rectangle{WIDTH - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x, HEIGHT - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y, CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x, CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y}
-PLAYED_CARD_SIZE :: Vec2{100, 140}
+PLAYED_CARD_SIZE :: Vec2{75, 105}
 
-CARD_PLAYED_POSITION_RECT :: rl.Rectangle{BOARD_POSITION_RECT.width / 2 - PLAYED_CARD_SIZE.x / 2, BOARD_POSITION_RECT.height / 2 - PLAYED_CARD_SIZE.y / 2, PLAYED_CARD_SIZE.x, PLAYED_CARD_SIZE.y}
+CARD_PLAYED_POSITION_RECT :: rl.Rectangle{BOARD_POSITION_RECT.width * 0.75 - PLAYED_CARD_SIZE.x / 2, BOARD_POSITION_RECT.height - PLAYED_CARD_SIZE.y / 2, PLAYED_CARD_SIZE.x, PLAYED_CARD_SIZE.y}
+
+card_hand_position_rects: [Card_Color]rl.Rectangle
 
 
 create_texture_for_card :: proc(card: ^Card) {
@@ -147,20 +149,18 @@ card_input_proc :: proc(input: Input_Event, element: ^UI_Element) -> (output: bo
             card_element.hovered = false
             return false
         }
+    case Input_Already_Consumed:
+        card_element.hovered = false
+        return false
     }
 
-    switch var in input {
+    #partial switch var in input {
     case Mouse_Pressed_Event:
-        if card_element.state == .IN_HAND && rl.CheckCollisionPointRec(ui_state.mouse_pos, element.bounding_rect) {
+        if card_element.state == .IN_HAND {
             element.bounding_rect = CARD_PLAYED_POSITION_RECT
             card_element.state = .PLAYED
         }
         return true
-    case Mouse_Up_Event, Mouse_Down_Event, Mouse_Motion_Event:
-        if !rl.CheckCollisionPointRec(ui_state.mouse_pos, element.bounding_rect) {
-            card_element.hovered = false
-            return false
-        }
     }
 
 

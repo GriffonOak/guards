@@ -85,6 +85,9 @@ board_input_proc :: proc(input: Input_Event, element: ^UI_Element) -> (output: b
             board_element.hovered_cell = {-1, -1}
             return false
         }
+    case Input_Already_Consumed:
+        board_element.hovered_cell = {-1, -1}
+        return false
     }
     output = true
 
