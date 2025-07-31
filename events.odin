@@ -2,15 +2,33 @@ package guards
 
 import "core:fmt"
 
-Player_State :: enum {
+Game_Stage :: enum {
+    SELECTION,
+    RESOLUTION,
+    UPGRADES,
+
+}
+
+Game_State :: struct {
+    num_players: int
+    confirmed_players: int
+    stage: Game_Stage
+}
+
+Player_Stage :: enum {
     SELECTING,
     CONFIRMED,
     RESOLVING,
     RESOLVED,
-
+    UPGRADING,
 }
 
-current_player_state: Player_State
+current_player_stage: Player_Stage = .SELECTING
+
+game_state: Game_State = {
+    1, 0,
+    .SELECTION,
+}
 
 Space_Clicked :: struct {
     space: IVec2

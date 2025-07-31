@@ -56,6 +56,16 @@ UI_Element :: struct {
     render: UI_Render_Proc,
 }
 
+button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)-> bool {
+    button_element := assert_variant(^element.variant, UI_Button_Element)
+    if !check_outside_or_deselected(input, element) do return false
+
+    #partial switch var in input {
+    case Mouse_Pressed_Event:
+        
+    }
+}
+
 draw_button: UI_Render_Proc : proc(element: UI_Element) {
     button_element, ok := element.variant.(UI_Button_Element)
     assert(ok)
