@@ -38,7 +38,7 @@ CONFIRM_BUTTON_SIZE :: Vec2{300, 100}
 confirm_button := UI_Element {
     {WIDTH - CONFIRM_BUTTON_SIZE.x - 10, HEIGHT - CARD_HOVER_POSITION_RECT.height - CONFIRM_BUTTON_SIZE.y - 10, CONFIRM_BUTTON_SIZE.x, CONFIRM_BUTTON_SIZE.y},
     UI_Button_Element{},
-    null_input_proc,
+    button_input_proc,
     draw_button,
 }
 
@@ -57,13 +57,17 @@ UI_Element :: struct {
 }
 
 button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)-> bool {
-    button_element := assert_variant(^element.variant, UI_Button_Element)
-    if !check_outside_or_deselected(input, element) do return false
+    button_element := assert_variant(&element.variant, UI_Button_Element)
+    if !check_outside_or_deselected(input, element^) do return false
 
     #partial switch var in input {
     case Mouse_Pressed_Event:
-        
+        switch button_element.kind {
+        case .CONFIRM:
+            append(&event_queue, Confirm_Event{})
+        }
     }
+    return false
 }
 
 draw_button: UI_Render_Proc : proc(element: UI_Element) {

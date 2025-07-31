@@ -149,7 +149,7 @@ card_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element) 
 
     try_to_play: #partial switch var in input {
     case Mouse_Pressed_Event:
-        append(&event_queue, Card_Clicked{element})
+        append(&event_queue, Card_Clicked_Event{element})
     }
 
 

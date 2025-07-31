@@ -6,13 +6,12 @@ Game_Stage :: enum {
     SELECTION,
     RESOLUTION,
     UPGRADES,
-
 }
 
 Game_State :: struct {
-    num_players: int
-    confirmed_players: int
-    stage: Game_Stage
+    num_players: int,
+    confirmed_players: int,
+    stage: Game_Stage,
 }
 
 Player_Stage :: enum {
@@ -30,28 +29,38 @@ game_state: Game_State = {
     .SELECTION,
 }
 
-Space_Clicked :: struct {
+Space_Clicked_Event :: struct {
     space: IVec2
 }
 
-Card_Clicked :: struct {
+Card_Clicked_Event :: struct {
     element: ^UI_Element
 }
 
+Confirm_Event :: struct {}
+
+Begin_Resolution_Event :: struct {}
+
 Event :: union {
-    Space_Clicked,
-    Card_Clicked,
+    Space_Clicked_Event,
+    Card_Clicked_Event,
+    Confirm_Event,
+    Begin_Resolution_Event,
 }
 
 event_queue: [dynamic]Event
 
 resolve_event :: proc(event: Event) {
     switch var in event {
-    case Space_Clicked:
+
+    case Space_Clicked_Event:
         fmt.println(var.space)
-    case Card_Clicked:
+
+    case Card_Clicked_Event:
         element := var.element
         card_element := assert_variant(&element.variant, UI_Card_Element)
+
+        if current_player_stage != .SELECTING do return
         #partial switch card_element.state {
         case .IN_HAND:
             // See if there is an already played card first
@@ -77,5 +86,22 @@ resolve_event :: proc(event: Event) {
             card_element.state = .IN_HAND
             pop(&ui_stack)
         }
+
+    case Confirm_Event:
+        if current_player_stage == .SELECTING {
+            current_player_stage = .CONFIRMED
+            pop(&ui_stack)
+        }
+
+        game_state.confirmed_players += 1
+        if game_state.confirmed_players == game_state.num_players {
+            game_state.stage = .RESOLUTION
+
+            // @Todo figure out resolution order
+            append(&event_queue, Begin_Resolution_Event{})
+        }
+
+    case Begin_Resolution_Event:
+        
     }
 }

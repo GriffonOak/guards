@@ -19,7 +19,7 @@ Window_Size :: enum {
     BIG,
 }
 
-window_size: Window_Size = .BIG
+window_size: Window_Size = .SMALL
 
 Region_ID :: enum {
     NONE,
@@ -144,7 +144,8 @@ main :: proc() {
         draw_board,
     })
 
-    rl.InitWindow(WIDTH, HEIGHT, "guards")
+    window_scale: i32 = 2 if window_size == .SMALL else 1
+    rl.InitWindow(WIDTH / window_scale, HEIGHT / window_scale, "guards")
     defer rl.CloseWindow()
 
     board_render_texture = rl.LoadRenderTexture(i32(BOARD_TEXTURE_SIZE.x), i32(BOARD_TEXTURE_SIZE.y))
