@@ -87,7 +87,7 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
 
     #partial switch var in input {
     case Mouse_Pressed_Event:
-        fmt.println(board_element.hovered_cell)
+        append(&event_queue, Space_Clicked{board_element.hovered_cell})
     case Mouse_Motion_Event:
         mouse_within_board := ui_state.mouse_pos - {element.bounding_rect.x, element.bounding_rect.y}
 

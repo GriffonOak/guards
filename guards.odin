@@ -181,9 +181,10 @@ main :: proc() {
         clear(&input_queue)
 
         // Handle events
-        // for event in event_queue {
-        //     resolve_event(event)
-        // }
+        for event in event_queue {
+            resolve_event(event)
+        }
+        clear(&event_queue)
 
 
         rl.BeginDrawing()
