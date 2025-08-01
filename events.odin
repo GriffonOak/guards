@@ -2,33 +2,6 @@ package guards
 
 import "core:fmt"
 
-Game_Stage :: enum {
-    SELECTION,
-    RESOLUTION,
-    UPGRADES,
-}
-
-Game_State :: struct {
-    num_players: int,
-    confirmed_players: int,
-    stage: Game_Stage,
-}
-
-Player_Stage :: enum {
-    SELECTING,
-    CONFIRMED,
-    RESOLVING,
-    RESOLVED,
-    UPGRADING,
-}
-
-current_player_stage: Player_Stage = .SELECTING
-
-game_state: Game_State = {
-    1, 0,
-    .SELECTION,
-}
-
 Space_Clicked_Event :: struct {
     space: IVec2
 }
@@ -37,7 +10,9 @@ Card_Clicked_Event :: struct {
     element: ^UI_Element
 }
 
-Confirm_Event :: struct {}
+Confirm_Event :: struct {
+    played_card: ^UI_Element
+}
 
 Begin_Resolution_Event :: struct {}
 
@@ -60,22 +35,17 @@ resolve_event :: proc(event: Event) {
         element := var.element
         card_element := assert_variant(&element.variant, UI_Card_Element)
 
-        if current_player_stage != .SELECTING do return
+        if player.stage != .SELECTING do return
         #partial switch card_element.state {
         case .IN_HAND:
             // See if there is an already played card first
             // This is a bit hacky, consider having a separate struct to keep track of what cards are where
-            need_to_add_button := true
-            for &other_element in ui_stack {
-                if other_card, ok := &other_element.variant.(UI_Card_Element); ok && other_card.state == .PLAYED {
-                    other_element.bounding_rect = card_hand_position_rects[other_card.card.color]
-                    other_card.state = .IN_HAND
-                    need_to_add_button = false
-                    break
-                }
-            }
 
-            if need_to_add_button {
+            other_element, other_card := find_played_card()
+            if other_element != nil {
+                other_element.bounding_rect = card_hand_position_rects[other_card.card.color]
+                other_card.state = .IN_HAND
+            } else {
                 append(&ui_stack, confirm_button)
             }
 
@@ -88,8 +58,8 @@ resolve_event :: proc(event: Event) {
         }
 
     case Confirm_Event:
-        if current_player_stage == .SELECTING {
-            current_player_stage = .CONFIRMED
+        if player.stage == .SELECTING {
+            player.stage = .CONFIRMED
             pop(&ui_stack)
         }
 
@@ -102,6 +72,43 @@ resolve_event :: proc(event: Event) {
         }
 
     case Begin_Resolution_Event:
-        
+        player.stage = .RESOLVING
+        // Find the played card
+        element, card_element := find_played_card()
+        assert(element != nil && card_element != nil)
+
+        // Make some buttons, yeah?
+        SELECTION_BUTTON_SIZE :: Vec2{400, 100}
+
+        card := card_element.card
+
+        buttons_made: f32 = 0.0
+
+        if card.primary != .DEFENSE {
+            primary_button := UI_Element {
+                {WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, BUTTON_PADDING, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y},
+                UI_Button_Element{
+                    .PRIMARY,
+                    "Primary",
+                },
+                button_input_proc,
+                draw_button,
+            }
+    
+            append(&ui_stack, primary_button)
+            buttons_made += 1
+        }
+
+        // for value, kind in card.secondaries {
+        //     if value == 0 do continue
+        //     append(&ui_stack, UI_Element{
+        //         {WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, BUTTON_PADDING + buttons_made * (BUTTON_PADDING + SELECTION_BUTTON_SIZE.y), SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y},
+        //         UI_Button_Element{
+        //             .PRIMARY,
+
+        //         }
+        //     })
+        // }
+
     }
 }

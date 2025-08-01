@@ -2,7 +2,6 @@ package guards
 
 /// XARGATHA
 
-
 xargatha_cards := [?]Card {
     {
         name        = "Cleave",

@@ -20,3 +20,13 @@ check_outside_or_deselected :: proc(input: Input_Event, element: UI_Element) -> 
     }
     return true
 }
+
+find_played_card :: proc() -> (element: ^UI_Element, card_element: ^UI_Card_Element) {
+    for &ui_element in ui_stack[1:][:5] {
+        card_element = assert_variant(&ui_element.variant, UI_Card_Element)
+        if card_element.state == .PLAYED {
+            return &ui_element, card_element
+        }
+    }
+    return nil, nil
+}

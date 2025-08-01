@@ -15,6 +15,14 @@ Card_Color :: enum {
     BLUE,
 }
 
+Card_State :: enum {
+    NONEXISTENT,
+    IN_HAND,
+    PLAYED,
+    RESOLVED,
+    DISCARDED,
+}
+
 card_color_values := [Card_Color]rl.Color {
     .NONE = rl.MAGENTA,
     .SILVER = rl.GRAY,
