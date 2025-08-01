@@ -15,10 +15,10 @@ team_colors := [Team]rl.Color{
     .BLUE = {22, 147, 255, 255},
 }
 
-spawnpoint_initials := #partial [Space_Flag]cstring {
-    .MELEE_MINION_SPAWNPOINT  = "M",
-    .RANGED_MINION_SPAWNPOINT = "R",
-    .HEAVY_MINION_SPAWNPOINT  = "H",
+minion_initials := #partial [Space_Flag]cstring {
+    .MELEE_MINION  = "M",
+    .RANGED_MINION = "R",
+    .HEAVY_MINION  = "H",
 }
 
 CLIFF_COLOR :: rl.Color{80, 76, 75, 255}
@@ -35,4 +35,13 @@ region_colors := [Region_ID]rl.Color {
     .BLUE_JUNGLE = JUNGLE_COLOR,
     .BLUE_BEACH = SAND_COLOR,
     .BLUE_BASE = STONE_COLOR,
+}
+
+minion_spawnpoint_array := [?]Space_Flag{.MELEE_MINION_SPAWNPOINT, .RANGED_MINION_SPAWNPOINT, .HEAVY_MINION_SPAWNPOINT}
+minion_flag_array := [?]Space_Flag{.MELEE_MINION, .RANGED_MINION, .HEAVY_MINION}
+
+spawnpoint_to_minion := #partial [Space_Flag]Space_Flag {
+    .MELEE_MINION_SPAWNPOINT = .MELEE_MINION,
+    .RANGED_MINION_SPAWNPOINT = .RANGED_MINION,
+    .HEAVY_MINION_SPAWNPOINT = .HEAVY_MINION,
 }

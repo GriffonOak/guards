@@ -77,13 +77,14 @@ Space_Flag :: enum {
 
 Space_Flags :: bit_set[Space_Flag]
 
-SPAWNPOINT :: Space_Flags{.MELEE_MINION_SPAWNPOINT, .RANGED_MINION_SPAWNPOINT, .HEAVY_MINION_SPAWNPOINT, .HERO_SPAWNPOINT}
+SPAWNPOINT_FLAGS :: Space_Flags{.MELEE_MINION_SPAWNPOINT, .RANGED_MINION_SPAWNPOINT, .HEAVY_MINION_SPAWNPOINT, .HERO_SPAWNPOINT}
+MINION_FLAGS :: Space_Flags{.MELEE_MINION, .RANGED_MINION, .HEAVY_MINION}
 
 Space :: struct {
     position: Vec2,
     flags: Space_Flags,
     region_id: Region_ID,
-    spawn_point_team: Team,
+    spawnpoint_team: Team,
     unit_team: Team,
 }
 
@@ -107,24 +108,33 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             color := rl.WHITE
             if .TERRAIN in space.flags do color = CLIFF_COLOR
             else do color = region_colors[space.region_id]
-            rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.45, color)
+            rl.DrawPoly(space.position, 6, VERTICAL_SPACING / math.sqrt_f32(3), 0, color)
 
-            spawnpoint_flags := space.flags & SPAWNPOINT
+            // Make the highlight
+            brightness_increase :: 50
+            if .TERRAIN not_in space.flags {
+                new_color := rl.WHITE
+                for &val, idx in new_color do val = 255 if color[idx] + brightness_increase < color[idx] else color[idx] + brightness_increase
+                rl.DrawPoly(space.position, 6, 0.9 * VERTICAL_SPACING / math.sqrt_f32(3), 0, new_color)
+                rl.DrawCircleV(space.position, 0.92 * VERTICAL_SPACING / 2, color)
+            }
+            // if space != 
+
+            spawnpoint_flags := space.flags & SPAWNPOINT_FLAGS
             if spawnpoint_flags != {} {
-                color = team_colors[space.spawn_point_team]
+                color = team_colors[space.spawnpoint_team]
                 if .HERO_SPAWNPOINT in space.flags {
                     rl.DrawRing(space.position, VERTICAL_SPACING * 0.35, VERTICAL_SPACING * 0.26, 0, 360, 20, color)
                 } else {
                     // spawnpoint_type := Space_Flag(log2(transmute(int) spawnpoint_flags))
                     spawnpoint_type: Space_Flag
-                    slice := []Space_Flag{.MELEE_MINION_SPAWNPOINT, .RANGED_MINION_SPAWNPOINT, .HEAVY_MINION_SPAWNPOINT}
-                    for flag in slice {
+                    for flag in minion_spawnpoint_array {
                         if flag in spawnpoint_flags {
                             spawnpoint_type = flag
                             break
                         }
                     }
-                    initial := spawnpoint_initials[spawnpoint_type]
+                    initial := minion_initials[spawnpoint_to_minion[spawnpoint_type]]
 
                     FONT_SIZE :: 0.8 * VERTICAL_SPACING
 
@@ -133,12 +143,33 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
                 }
             }
 
+            minion_flags := space.flags & MINION_FLAGS 
+            if minion_flags != {} {
+                color = team_colors[space.unit_team]
+                minion_type: Space_Flag
+                for flag in minion_flag_array {
+                    if flag in minion_flags {
+                        minion_type = flag
+                        break
+                    }
+                }
+                initial := minion_initials[minion_type]
+
+                FONT_SIZE :: 0.8 * VERTICAL_SPACING
+
+                text_size := rl.MeasureTextEx(rl.GetFontDefault(), initial, FONT_SIZE, 0)
+                rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.45, color)
+                rl.DrawText(initial, i32(space.position.x - text_size.x / 2), i32(space.position.y - text_size.y / 2.2), i32(math.round_f32(FONT_SIZE)), rl.BLACK)
+
+            }
         }
     }
 
     if board_element.hovered_cell != {-1, -1} {
         pos := board[board_element.hovered_cell.x][board_element.hovered_cell.y].position
-        rl.DrawRing(pos, VERTICAL_SPACING * 0.45, VERTICAL_SPACING * 0.5, 0, 360, 100, rl.WHITE)
+        // rl.DrawRing(pos, VERTICAL_SPACING * 0.45, VERTICAL_SPACING * 0.5, 0, 360, 100, rl.WHITE)
+        rl.DrawPolyLinesEx(pos, 6, VERTICAL_SPACING * (1 / math.sqrt_f32(3) + 0.05), 0, VERTICAL_SPACING * 0.05, rl.WHITE)
+
     }
 
     rl.EndTextureMode()
@@ -225,15 +256,15 @@ setup_regions :: proc() {
 
 setup_spawnpoints :: proc() {
     for marker in spawnpoints {
-        assert(marker.spawnpoint_flag in SPAWNPOINT)
+        assert(marker.spawnpoint_flag in SPAWNPOINT_FLAGS)
         assert(marker.team != .NONE)
         space := &board[marker.loc.x][marker.loc.y]
         symmetric_space := &board[GRID_WIDTH - marker.loc.x - 1][GRID_HEIGHT - marker.loc.y - 1]
         space.flags += {marker.spawnpoint_flag}
         symmetric_space.flags += {marker.spawnpoint_flag}
 
-        space.spawn_point_team = marker.team
-        symmetric_space.spawn_point_team = .BLUE if marker.team == .RED else .RED
+        space.spawnpoint_team = marker.team
+        symmetric_space.spawnpoint_team = .BLUE if marker.team == .RED else .RED
     }
 }
 
@@ -280,13 +311,17 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
             for space, y in arr {
                 diff := (mouse_within_board - space.position)
                 dist := diff.x * diff.x + diff.y * diff.y
-                if dist < closest_dist && dist < VERTICAL_SPACING * VERTICAL_SPACING * 0.25 {
+                if dist < closest_dist && dist < VERTICAL_SPACING * VERTICAL_SPACING * 0.5 {
                     closest_idx = {x, y}
                     closest_dist = dist
                 }
             }
         }
-        board_element.hovered_cell = closest_idx
+        if closest_idx.x >= 0 &&  .TERRAIN not_in board[closest_idx.x][closest_idx.y].flags {
+            board_element.hovered_cell = closest_idx
+        } else {
+            board_element.hovered_cell = {-1, -1}
+        }
     }
 
     return
