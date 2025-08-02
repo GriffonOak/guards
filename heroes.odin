@@ -10,7 +10,7 @@ xargatha_cards := [?]Card {
         tier        = 0,
         secondaries = #partial{.DEFENSE = 2, .MOVEMENT = 1},
         primary     = .ATTACK,
-        value       = 5,
+        value       = 4,
         text        = "Target a unit adjacent to you.\nAfter the attack: May repeat once\non a different enemy hero."
     },
     {

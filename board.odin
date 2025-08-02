@@ -3,8 +3,10 @@ package guards
 import rl "vendor:raylib"
 import "core:fmt"
 import "core:math"
+import "core:reflect"
+import "core:strings"
 
-VERTICAL_SPACING :: 66
+VERTICAL_SPACING :: 67
 // sqrt 3
 HORIZONTAL_SPACING :: 1.732 * VERTICAL_SPACING * 0.5
 
@@ -75,6 +77,11 @@ Space_Flag :: enum {
     HEAVY_MINION,
 }
 
+get_symmetric_space :: proc(pos: IVec2) -> ^Space {
+    sym_idx := IVec2{GRID_WIDTH, GRID_HEIGHT} - pos - 1
+    return &board[sym_idx.x][sym_idx.y]
+}
+
 Space_Flags :: bit_set[Space_Flag]
 
 SPAWNPOINT_FLAGS :: Space_Flags{.MELEE_MINION_SPAWNPOINT, .RANGED_MINION_SPAWNPOINT, .HEAVY_MINION_SPAWNPOINT, .HERO_SPAWNPOINT}
@@ -86,6 +93,7 @@ Space :: struct {
     region_id: Region_ID,
     spawnpoint_team: Team,
     unit_team: Team,
+    hero_id: Hero_ID,
 }
 
 board: [GRID_WIDTH][GRID_HEIGHT]Space
@@ -101,7 +109,7 @@ BOARD_POSITION_RECT :: rl.Rectangle{0, 0, BOARD_TEXTURE_SIZE.x, BOARD_TEXTURE_SI
 render_board_to_texture :: proc(board_element: UI_Board_Element) {
     rl.BeginTextureMode(board_render_texture)
 
-    rl.ClearBackground(rl.BLACK)
+    rl.ClearBackground({54, 186, 228, 255})
 
     for arr in board {
         for space in arr {
@@ -162,6 +170,18 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
                 rl.DrawText(initial, i32(space.position.x - text_size.x / 2), i32(space.position.y - text_size.y / 2.2), i32(math.round_f32(FONT_SIZE)), rl.BLACK)
 
             }
+
+            if .HERO in space.flags {
+                color = team_colors[space.unit_team]
+                name, ok := reflect.enum_name_from_value(space.hero_id); assert(ok)
+                initial := strings.clone_to_cstring(name[:1])
+
+                FONT_SIZE :: 0.8 * VERTICAL_SPACING
+
+                text_size := rl.MeasureTextEx(rl.GetFontDefault(), initial, FONT_SIZE, 0)
+                rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.45, color)
+                rl.DrawText(initial, i32(space.position.x - text_size.x / 2), i32(space.position.y - text_size.y / 2.2), i32(math.round_f32(FONT_SIZE)), rl.BLACK)
+            }
         }
     }
 
@@ -189,7 +209,7 @@ setup_space_positions :: proc() {
 
 set_terrain_symmetric :: proc(x, y: int) {
     board[x][y].flags += {.TERRAIN}
-    board[GRID_WIDTH - x - 1][GRID_HEIGHT - y - 1].flags += {.TERRAIN}
+    get_symmetric_space({x, y}).flags += {.TERRAIN}
 }
 
 setup_terrain :: proc() {
@@ -259,7 +279,7 @@ setup_spawnpoints :: proc() {
         assert(marker.spawnpoint_flag in SPAWNPOINT_FLAGS)
         assert(marker.team != .NONE)
         space := &board[marker.loc.x][marker.loc.y]
-        symmetric_space := &board[GRID_WIDTH - marker.loc.x - 1][GRID_HEIGHT - marker.loc.y - 1]
+        symmetric_space := get_symmetric_space(marker.loc)
         space.flags += {marker.spawnpoint_flag}
         symmetric_space.flags += {marker.spawnpoint_flag}
 

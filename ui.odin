@@ -15,11 +15,22 @@ UI_Card_Element :: struct {
 Button_Kind :: enum {
     CONFIRM,
     PRIMARY,
+    SECONDARY_MOVEMENT,
+    SECONDARY_FAST_TRAVEL,
+    SECONDARY_ATTACK,
+    SECONDARY_CLEAR,
+    SECONDARY_HOLD,
+}
+
+buttons_for_secondaries: [Action_Kind]Button_Kind = #partial {
+    .MOVEMENT = .SECONDARY_MOVEMENT,
+    .ATTACK   = .SECONDARY_ATTACK,
 }
 
 UI_Button_Element :: struct {
     kind: Button_Kind,
     text: cstring,
+    // hovered: bool,
 }
 
 UI_Variant :: union {
@@ -37,6 +48,7 @@ confirm_button := UI_Element {
     UI_Button_Element{
         .CONFIRM,
         "Confirm",
+        // false,
     },
     button_input_proc,
     draw_button,
@@ -60,17 +72,21 @@ ui_stack: [dynamic]UI_Element
 
 button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)-> bool {
     button_element := assert_variant(&element.variant, UI_Button_Element)
-    if !check_outside_or_deselected(input, element^) do return false
+    if !check_outside_or_deselected(input, element^) {
+        // button_element.hovered = false
+        return false
+    }
 
     #partial switch var in input {
     case Mouse_Pressed_Event:
-        switch button_element.kind {
+        #partial switch button_element.kind {
         case .CONFIRM:
             append(&event_queue, Confirm_Event{})
-        case .PRIMARY:
+        case:
         }
     }
-    return false
+    // button_element.hovered = true
+    return true
 }
 
 draw_button: UI_Render_Proc : proc(element: UI_Element) {
@@ -87,4 +103,7 @@ draw_button: UI_Render_Proc : proc(element: UI_Element) {
         i32(element.bounding_rect.height) - 2 * TEXT_PADDING,
         rl.BLACK
     )
+    // if button_element.hovered {
+    //     rl.DrawRectangleLinesEx(element.bounding_rect, TEXT_PADDING / 2, rl.WHITE)
+    // }
 }

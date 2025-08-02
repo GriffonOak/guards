@@ -1,6 +1,8 @@
 package guards
 
 import "core:fmt"
+import "core:reflect"
+import "core:strings"
 
 Space_Clicked_Event :: struct {
     space: IVec2
@@ -90,6 +92,7 @@ resolve_event :: proc(event: Event) {
                 UI_Button_Element{
                     .PRIMARY,
                     "Primary",
+                    // false,
                 },
                 button_input_proc,
                 draw_button,
@@ -99,16 +102,35 @@ resolve_event :: proc(event: Event) {
             buttons_made += 1
         }
 
-        // for value, kind in card.secondaries {
-        //     if value == 0 do continue
-        //     append(&ui_stack, UI_Element{
-        //         {WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, BUTTON_PADDING + buttons_made * (BUTTON_PADDING + SELECTION_BUTTON_SIZE.y), SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y},
-        //         UI_Button_Element{
-        //             .PRIMARY,
+        for value, kind in card.secondaries {
+            if value == 0 || kind == .DEFENSE do continue
+            name, ok := reflect.enum_name_from_value(kind); assert(ok)
+            append(&ui_stack, UI_Element {
+                {WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, BUTTON_PADDING + buttons_made * (BUTTON_PADDING + SELECTION_BUTTON_SIZE.y), SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y},
+                UI_Button_Element {
+                    buttons_for_secondaries[kind],
+                    strings.clone_to_cstring(name),
+                    // false,
+                },
+                button_input_proc,
+                draw_button,
+            })
+            buttons_made += 1
+        }
 
-        //         }
-        //     })
-        // }
+        if card.primary == .MOVEMENT || card.secondaries[.MOVEMENT] > 0 {
+            append(&ui_stack, UI_Element {
+                {WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, BUTTON_PADDING + buttons_made * (BUTTON_PADDING + SELECTION_BUTTON_SIZE.y), SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y},
+                UI_Button_Element {
+                    .SECONDARY_FAST_TRAVEL,
+                    "Fast travel",
+                    // false,
+                },
+                button_input_proc,
+                draw_button,
+            })
+            buttons_made += 1
+        }
 
     }
 }

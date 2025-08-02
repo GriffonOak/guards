@@ -10,9 +10,23 @@ Player_Stage :: enum {
 
 Player :: struct {
     stage: Player_Stage,
-    cards: [Card_Color]^Card,
+    // cards: [Card_Color]^Card,
+    hero: Hero_ID,
+    team: Team,
 }
 
-player: Player = {
-    stage = .SELECTING
+Hero_ID :: enum {
+    NONE,
+    XARGATHA,
+}
+
+// Hero :: struct {
+//     hero_id: Hero_ID,
+// }
+
+
+player := Player {
+    stage = .SELECTING,
+    hero = .XARGATHA,
+    team = .RED
 }

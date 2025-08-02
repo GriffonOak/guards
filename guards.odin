@@ -12,8 +12,6 @@ Window_Size :: enum {
 
 window_size: Window_Size = .SMALL
 
-
-
 main :: proc() {
 
     input_queue: [dynamic]Input_Event
@@ -52,6 +50,7 @@ main :: proc() {
         })
     }
 
+    append(&game_state.players, player)
     begin_game()
 
     for !rl.WindowShouldClose() {

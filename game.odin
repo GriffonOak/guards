@@ -1,5 +1,7 @@
 package guards
 
+import "core:fmt"
+
 Region_ID :: enum {
     NONE,
     RED_JUNGLE,
@@ -25,15 +27,17 @@ Game_Stage :: enum {
 
 Game_State :: struct {
     num_players: int,
+    players: [dynamic]Player,
     confirmed_players: int,
     stage: Game_Stage,
     current_battle_zone: Region_ID
 }
 
 game_state: Game_State = {
-    1, 0,
-    .SELECTION,
-    .CENTRE,
+    num_players = 1, 
+    confirmed_players = 0,
+    stage = .SELECTION,
+    current_battle_zone = .CENTRE,
 }
 
 spawn_minions :: proc(zone: Region_ID) {
@@ -57,8 +61,30 @@ spawn_minions :: proc(zone: Region_ID) {
     }
 }
 
+spawn_heroes_at_start :: proc() {
+    num_spawns: [Team]int
+    fmt.println(game_state.players)
+    for player in game_state.players {
+        team := player.team
+        spawnpoint_marker := spawnpoints[num_spawns[team]]
+        assert(spawnpoint_marker.spawnpoint_flag == .HERO_SPAWNPOINT)
+        spawnpoint: ^Space
+        if team == .BLUE {
+            spawnpoint = get_symmetric_space(spawnpoint_marker.loc)
+        } else {
+            spawnpoint = &board[spawnpoint_marker.loc.x][spawnpoint_marker.loc.y]
+        }
+
+        spawnpoint.flags += {.HERO}
+        spawnpoint.unit_team = team
+        spawnpoint.hero_id = player.hero
+    }
+}
+
 begin_game :: proc() {
     game_state.current_battle_zone = .CENTRE
 
     spawn_minions(game_state.current_battle_zone)
+
+    spawn_heroes_at_start()
 }
