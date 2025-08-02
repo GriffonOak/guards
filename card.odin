@@ -167,11 +167,17 @@ card_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element) 
 
 draw_card: UI_Render_Proc: proc(element: UI_Element) {
     card_element, ok := element.variant.(UI_Card_Element)
-    assert(ok)
+    assert(ok) 
+
+    amount_to_show := element.bounding_rect.height / element.bounding_rect.width * CARD_TEXTURE_SIZE.y
     rl.DrawRectangleRec(element.bounding_rect, card_color_values[card_element.card.color])
 
+    // Looks a little bunk but I should revisit this
+    // rl.DrawTexturePro(card_element.card.texture, {0, CARD_TEXTURE_SIZE.y - amount_to_show, CARD_TEXTURE_SIZE.x, -amount_to_show}, element.bounding_rect, {}, 0, rl.WHITE)
+
     if card_element.hovered {
-        rl.DrawTexturePro(card_element.card.texture, {0, 0, CARD_TEXTURE_SIZE.x, -CARD_TEXTURE_SIZE.y}, CARD_HOVER_POSITION_RECT, {0, 0}, 0, rl.WHITE)
+        rl.DrawTexturePro(card_element.card.texture, {0, 0, CARD_TEXTURE_SIZE.x, -CARD_TEXTURE_SIZE.y}, CARD_HOVER_POSITION_RECT, {}, 0, rl.WHITE)
+        rl.DrawRectangleLinesEx(element.bounding_rect, 10, rl.WHITE)
         // rl.DrawRectangleLinesEx(CARD_HOVER_POSITION_RECT, 2, rl.RAYWHITE)
     }
 }

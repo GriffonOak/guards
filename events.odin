@@ -1,5 +1,7 @@
 package guards
 
+import rl "vendor:raylib"
+
 import "core:fmt"
 import "core:reflect"
 import "core:strings"
@@ -16,12 +18,15 @@ Confirm_Event :: struct {
     played_card: ^UI_Element
 }
 
+Begin_Choosing_Action_Event :: struct {}
+
 Begin_Resolution_Event :: struct {}
 
 Event :: union {
     Space_Clicked_Event,
     Card_Clicked_Event,
     Confirm_Event,
+    Begin_Choosing_Action_Event,
     Begin_Resolution_Event,
 }
 
@@ -70,11 +75,11 @@ resolve_event :: proc(event: Event) {
             game_state.stage = .RESOLUTION
 
             // @Todo figure out resolution order
-            append(&event_queue, Begin_Resolution_Event{})
+            append(&event_queue, Begin_Choosing_Action_Event{})
         }
 
-    case Begin_Resolution_Event:
-        player.stage = .RESOLVING
+    case Begin_Choosing_Action_Event:
+        player.stage = .CHOOSING_ACTION
         // Find the played card
         element, card_element := find_played_card()
         assert(element != nil && card_element != nil)
@@ -84,53 +89,40 @@ resolve_event :: proc(event: Event) {
 
         card := card_element.card
 
-        buttons_made: f32 = 0.0
+        buttons_made := 0
+        button_location := rl.Rectangle{WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, BUTTON_PADDING, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}
 
         if card.primary != .DEFENSE {
-            primary_button := UI_Element {
-                {WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, BUTTON_PADDING, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y},
-                UI_Button_Element{
-                    .PRIMARY,
-                    "Primary",
-                    // false,
-                },
-                button_input_proc,
-                draw_button,
-            }
-    
-            append(&ui_stack, primary_button)
+            add_button(button_location, "Primary", .PRIMARY)
             buttons_made += 1
+            button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
         }
 
         for value, kind in card.secondaries {
             if value == 0 || kind == .DEFENSE do continue
             name, ok := reflect.enum_name_from_value(kind); assert(ok)
-            append(&ui_stack, UI_Element {
-                {WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, BUTTON_PADDING + buttons_made * (BUTTON_PADDING + SELECTION_BUTTON_SIZE.y), SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y},
-                UI_Button_Element {
-                    buttons_for_secondaries[kind],
-                    strings.clone_to_cstring(name),
-                    // false,
-                },
-                button_input_proc,
-                draw_button,
-            })
+            text := strings.clone_to_cstring(strings.to_pascal_case(name))
+            add_button(button_location, text, buttons_for_secondaries[kind])
             buttons_made += 1
+            button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
         }
 
         if card.primary == .MOVEMENT || card.secondaries[.MOVEMENT] > 0 {
-            append(&ui_stack, UI_Element {
-                {WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, BUTTON_PADDING + buttons_made * (BUTTON_PADDING + SELECTION_BUTTON_SIZE.y), SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y},
-                UI_Button_Element {
-                    .SECONDARY_FAST_TRAVEL,
-                    "Fast travel",
-                    // false,
-                },
-                button_input_proc,
-                draw_button,
-            })
+            add_button(button_location, "Fast travel", .SECONDARY_FAST_TRAVEL)
             buttons_made += 1
+            button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
         }
 
+        if card.primary == .ATTACK || card.secondaries[.ATTACK] > 0 {
+            add_button(button_location, "Clear", .SECONDARY_CLEAR)
+            buttons_made += 1
+            button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+        }
+
+        add_button(button_location, "Hold", .SECONDARY_HOLD)
+        buttons_made += 1\
+    
+    case Begin_Resolution_Event:
+        
     }
 }

@@ -30,7 +30,7 @@ buttons_for_secondaries: [Action_Kind]Button_Kind = #partial {
 UI_Button_Element :: struct {
     kind: Button_Kind,
     text: cstring,
-    // hovered: bool,
+    hovered: bool,
 }
 
 UI_Variant :: union {
@@ -48,7 +48,7 @@ confirm_button := UI_Element {
     UI_Button_Element{
         .CONFIRM,
         "Confirm",
-        // false,
+        false,
     },
     button_input_proc,
     draw_button,
@@ -73,7 +73,7 @@ ui_stack: [dynamic]UI_Element
 button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)-> bool {
     button_element := assert_variant(&element.variant, UI_Button_Element)
     if !check_outside_or_deselected(input, element^) {
-        // button_element.hovered = false
+        button_element.hovered = false
         return false
     }
 
@@ -85,7 +85,7 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
         case:
         }
     }
-    // button_element.hovered = true
+    button_element.hovered = true
     return true
 }
 
@@ -103,7 +103,20 @@ draw_button: UI_Render_Proc : proc(element: UI_Element) {
         i32(element.bounding_rect.height) - 2 * TEXT_PADDING,
         rl.BLACK
     )
-    // if button_element.hovered {
-    //     rl.DrawRectangleLinesEx(element.bounding_rect, TEXT_PADDING / 2, rl.WHITE)
-    // }
+    if button_element.hovered {
+        rl.DrawRectangleLinesEx(element.bounding_rect, TEXT_PADDING / 2, rl.WHITE)
+    }
+}
+
+add_button :: proc(loc: rl.Rectangle, text: cstring, kind: Button_Kind) {
+    append(&ui_stack, UI_Element {
+        loc,
+        UI_Button_Element {
+            kind,
+            text,
+            false,
+        },
+        button_input_proc,
+        draw_button,
+    })
 }
