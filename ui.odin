@@ -7,7 +7,6 @@ UI_Board_Element :: struct {
 }
 
 UI_Card_Element :: struct {
-    state: Card_State,
     card: ^Card,
     hovered: bool,
 }
@@ -79,10 +78,13 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
 
     #partial switch var in input {
     case Mouse_Pressed_Event:
-        #partial switch button_element.kind {
+        switch button_element.kind {
         case .CONFIRM:
             append(&event_queue, Confirm_Event{})
-        case:
+        case .PRIMARY, .SECONDARY_ATTACK, .SECONDARY_CLEAR, .SECONDARY_MOVEMENT, .SECONDARY_FAST_TRAVEL, .SECONDARY_HOLD:
+            player.resolution_list = hold_list
+            player.resolution_list.current_action = 0
+            append(&event_queue, Begin_Resolution_Event{})
         }
     }
     button_element.hovered = true

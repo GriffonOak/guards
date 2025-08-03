@@ -29,6 +29,8 @@ Game_State :: struct {
     num_players: int,
     players: [dynamic]Player,
     confirmed_players: int,
+    resolved_players,
+    turn_counter: int,
     stage: Game_Stage,
     current_battle_zone: Region_ID
 }

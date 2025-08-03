@@ -42,9 +42,10 @@ main :: proc() {
 
     for &card, index in xargatha_cards {   
         create_texture_for_card(&card)
+        card.state = .IN_HAND
         append(&ui_stack, UI_Element{
             card_hand_position_rects[card.color],
-            UI_Card_Element{.IN_HAND, &card, false},
+            UI_Card_Element{&card, false},
             card_input_proc,
             draw_card,
         })

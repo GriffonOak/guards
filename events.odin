@@ -18,21 +18,56 @@ Confirm_Event :: struct {
     played_card: ^UI_Element
 }
 
+
+
+Begin_Card_Selection_Event :: struct {}
+
 Begin_Choosing_Action_Event :: struct {}
 
 Begin_Resolution_Event :: struct {}
+
+End_Resolution_Event :: struct {}
+
+Resolutions_Completed_Event :: struct {}
+
+Begin_Minion_Battle_Event :: struct {}
+
+End_Minion_Battle_Event :: struct {}
+
+Begin_Wave_Push_Event :: struct {}
+
+End_Wave_Push_Event :: struct {}
+
+Retrieve_Cards_Event :: struct {}
+
+Begin_Upgrading_Event :: struct {}
+
+End_Upgrading_Event :: struct {}
 
 Event :: union {
     Space_Clicked_Event,
     Card_Clicked_Event,
     Confirm_Event,
+
+    Begin_Card_Selection_Event,
     Begin_Choosing_Action_Event,
     Begin_Resolution_Event,
+    End_Resolution_Event,
+    Resolutions_Completed_Event,
+    Begin_Minion_Battle_Event,
+    End_Minion_Battle_Event,
+    Begin_Wave_Push_Event,
+    End_Wave_Push_Event,
+    Retrieve_Cards_Event,
+    Begin_Upgrading_Event,
+    End_Upgrading_Event,
 }
 
 event_queue: [dynamic]Event
 
 resolve_event :: proc(event: Event) {
+
+    fmt.println(event)
     switch var in event {
 
     case Space_Clicked_Event:
@@ -43,7 +78,7 @@ resolve_event :: proc(event: Event) {
         card_element := assert_variant(&element.variant, UI_Card_Element)
 
         if player.stage != .SELECTING do return
-        #partial switch card_element.state {
+        #partial switch card_element.card.state {
         case .IN_HAND:
             // See if there is an already played card first
             // This is a bit hacky, consider having a separate struct to keep track of what cards are where
@@ -51,32 +86,38 @@ resolve_event :: proc(event: Event) {
             other_element, other_card := find_played_card()
             if other_element != nil {
                 other_element.bounding_rect = card_hand_position_rects[other_card.card.color]
-                other_card.state = .IN_HAND
+                other_card.card.state = .IN_HAND
             } else {
                 append(&ui_stack, confirm_button)
             }
 
             element.bounding_rect = CARD_PLAYED_POSITION_RECT
-            card_element.state = .PLAYED
+            card_element.card.state = .PLAYED
         case .PLAYED:
             element.bounding_rect = card_hand_position_rects[card_element.card.color]
-            card_element.state = .IN_HAND
+            card_element.card.state = .IN_HAND
             pop(&ui_stack)
         }
 
     case Confirm_Event:
         if player.stage == .SELECTING {
             player.stage = .CONFIRMED
-            pop(&ui_stack)
+            pop(&ui_stack) // Confirm button
         }
 
         game_state.confirmed_players += 1
         if game_state.confirmed_players == game_state.num_players {
             game_state.stage = .RESOLUTION
+            game_state.resolved_players = 0
 
             // @Todo figure out resolution order
             append(&event_queue, Begin_Choosing_Action_Event{})
         }
+
+    case Begin_Card_Selection_Event:
+        player.stage = .SELECTING
+        game_state.stage = .SELECTION
+        game_state.confirmed_players = 0
 
     case Begin_Choosing_Action_Event:
         player.stage = .CHOOSING_ACTION
@@ -89,12 +130,12 @@ resolve_event :: proc(event: Event) {
 
         card := card_element.card
 
-        buttons_made := 0
+        player.action_button_count = 0
         button_location := rl.Rectangle{WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, BUTTON_PADDING, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}
 
         if card.primary != .DEFENSE {
             add_button(button_location, "Primary", .PRIMARY)
-            buttons_made += 1
+            player.action_button_count += 1
             button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
         }
 
@@ -103,26 +144,91 @@ resolve_event :: proc(event: Event) {
             name, ok := reflect.enum_name_from_value(kind); assert(ok)
             text := strings.clone_to_cstring(strings.to_pascal_case(name))
             add_button(button_location, text, buttons_for_secondaries[kind])
-            buttons_made += 1
+            player.action_button_count += 1
             button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
         }
 
         if card.primary == .MOVEMENT || card.secondaries[.MOVEMENT] > 0 {
             add_button(button_location, "Fast travel", .SECONDARY_FAST_TRAVEL)
-            buttons_made += 1
+            player.action_button_count += 1
             button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
         }
 
         if card.primary == .ATTACK || card.secondaries[.ATTACK] > 0 {
             add_button(button_location, "Clear", .SECONDARY_CLEAR)
-            buttons_made += 1
+            player.action_button_count += 1
             button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
         }
 
         add_button(button_location, "Hold", .SECONDARY_HOLD)
-        buttons_made += 1\
+        player.action_button_count += 1
     
     case Begin_Resolution_Event:
+        player.stage = .RESOLVING
+        for i in 0..<player.action_button_count {
+            pop(&ui_stack)  // Purge action buttons
+        }
+        start_next_action(player.resolution_list)
+
+    case End_Resolution_Event:
+        assert(player.stage == .RESOLVING)
+        player.stage = .RESOLVED
+        game_state.resolved_players += 1
+
+        element, card_element := find_played_card()
+        assert(element != nil && card_element != nil)
+        card_element.card.state = .RESOLVED
+        element.bounding_rect = FIRST_CARD_RESOLVED_POSITION_RECT
+        element.bounding_rect.x += f32(game_state.turn_counter) * (FIRST_CARD_RESOLVED_POSITION_RECT.x + FIRST_CARD_RESOLVED_POSITION_RECT.width)
+
+        if game_state.resolved_players == game_state.num_players {
+            append(&event_queue, Resolutions_Completed_Event{})
+        }
         
+    case Resolutions_Completed_Event:
+        // Check for end of turn effects and stuff here
+
+
+        game_state.turn_counter += 1
+        if game_state.turn_counter >= 4 {
+            append(&event_queue, Begin_Minion_Battle_Event{})
+        } else {
+            append(&event_queue, Begin_Card_Selection_Event{})
+        }
+
+        // anyway
+
+    case Begin_Minion_Battle_Event:
+        // Let the team captain choose which minions to delete
+        append(&event_queue, End_Minion_Battle_Event{})
+
+
+    case End_Minion_Battle_Event:
+
+
+        if false { // count up the minions here, see if one side has 0
+            append(&event_queue, Begin_Wave_Push_Event{})
+        } else {
+            append(&event_queue, Retrieve_Cards_Event{})
+        }
+
+    case Begin_Wave_Push_Event:
+        // pass
+    case End_Wave_Push_Event:
+        // pass
+
+    case Retrieve_Cards_Event:
+        // need to retrieve cards here :D
+        retrieve_cards()
+        append(&event_queue, Begin_Upgrading_Event{})
+
+    case Begin_Upgrading_Event:
+        append(&event_queue, End_Upgrading_Event{})
+
+    case End_Upgrading_Event:
+        game_state.turn_counter = 0
+        append(&event_queue, Begin_Card_Selection_Event{})
+
+    
     }
 }

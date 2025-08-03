@@ -75,13 +75,16 @@ Card :: struct {
     reach: Action_Reach,
     text: string,
     primary_effect: proc(),
-    texture: rl.Texture2D
+    texture: rl.Texture2D,
+    state: Card_State,
 }
 
 CARD_SCALING_FACTOR :: 1
 
 CARD_HOVER_POSITION_RECT :: rl.Rectangle{WIDTH - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x, HEIGHT - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y, CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x, CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y}
 PLAYED_CARD_SIZE :: Vec2{150, 210}
+
+FIRST_CARD_RESOLVED_POSITION_RECT :: rl.Rectangle{25, BOARD_POSITION_RECT.height + 25, 100, 150}
 
 CARD_PLAYED_POSITION_RECT :: rl.Rectangle{BOARD_POSITION_RECT.width * 0.8 - PLAYED_CARD_SIZE.x / 2, BOARD_POSITION_RECT.height - PLAYED_CARD_SIZE.y / 2, PLAYED_CARD_SIZE.x, PLAYED_CARD_SIZE.y}
 
