@@ -144,6 +144,7 @@ resolve_event :: proc(event: Event) {
             name, ok := reflect.enum_name_from_value(kind); assert(ok)
             text := strings.clone_to_cstring(strings.to_pascal_case(name))
             add_button(button_location, text, buttons_for_secondaries[kind])
+            make_targets(value, kind)
             player.action_button_count += 1
             button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
         }
@@ -228,7 +229,5 @@ resolve_event :: proc(event: Event) {
     case End_Upgrading_Event:
         game_state.turn_counter = 0
         append(&event_queue, Begin_Card_Selection_Event{})
-
-    
     }
 }

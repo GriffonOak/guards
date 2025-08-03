@@ -34,6 +34,8 @@ Player :: struct {
     action_button_count: int,
 
     resolution_list: Action_List,
+
+    target_list : []IVec2
 }
 
 Hero_ID :: enum {

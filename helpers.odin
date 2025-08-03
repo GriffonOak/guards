@@ -38,3 +38,14 @@ retrieve_cards :: proc() {
         card_element.card.state = .IN_HAND
     }
 }
+
+// lerp :: proc(a, b: $T, t: $T2) -> T {
+//     return b * t + a * (1-t)
+// }
+
+color_lerp :: proc(a, b: rl.Color, t: $T) -> (out: rl.Color) {
+    for val, index in a {
+        out[index] = u8(t * T(b[index]) + (1-t) * T(val))
+    }
+    return out
+}

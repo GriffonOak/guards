@@ -97,7 +97,7 @@ create_texture_for_card :: proc(card: ^Card) {
     TEXT_PADDING :: 6
     COLORED_BAND_WIDTH :: 60
     TITLE_FONT_SIZE :: COLORED_BAND_WIDTH - 2 * TEXT_PADDING
-    TEXT_FONT_SIZE :: 22
+    TEXT_FONT_SIZE :: 31
 
     rl.BeginTextureMode(render_texture)
 
@@ -106,11 +106,11 @@ create_texture_for_card :: proc(card: ^Card) {
     rl.DrawRectangleRec({0, 0, COLORED_BAND_WIDTH, CARD_TEXTURE_SIZE.y / 2}, card_color_values[card.color])
     // rl.DrawRectangleRec({0, 0, CARD_TEXTURE_SIZE.x, COLORED_BAND_WIDTH}, card_color_values[card.color])
 
-    rl.DrawText(fmt.ctprintf("%dI", card.initiative), TEXT_PADDING, TEXT_PADDING, TITLE_FONT_SIZE, rl.BLACK)
+    rl.DrawTextEx(default_font, fmt.ctprintf("%dI", card.initiative), {TEXT_PADDING, TEXT_PADDING}, TITLE_FONT_SIZE, font_spacing, rl.BLACK)
     secondaries_index := 1
     for val, ability in card.secondaries {
         if val == 0 do continue
-        rl.DrawText(fmt.ctprintf("%d%s", val, ability_initials[ability]), TEXT_PADDING, TEXT_PADDING + i32(secondaries_index) * TITLE_FONT_SIZE, TITLE_FONT_SIZE, rl.BLACK)
+        rl.DrawTextEx(default_font, fmt.ctprintf("%d%s", val, ability_initials[ability]), {TEXT_PADDING, TEXT_PADDING + f32(secondaries_index) * TITLE_FONT_SIZE}, TITLE_FONT_SIZE, font_spacing, rl.BLACK)
         secondaries_index += 1
     }
 
@@ -119,27 +119,27 @@ create_texture_for_card :: proc(card: ^Card) {
     text_cstring := strings.clone_to_cstring(card.text)
     defer delete(text_cstring)
 
-    name_length_px := rl.MeasureText(name_cstring, TITLE_FONT_SIZE)
-    name_offset := COLORED_BAND_WIDTH + (i32(CARD_TEXTURE_SIZE.x) - COLORED_BAND_WIDTH - name_length_px) / 2
-    rl.DrawText(name_cstring, name_offset, TEXT_PADDING, TITLE_FONT_SIZE, rl.BLACK)
+    name_length_px := rl.MeasureTextEx(default_font, name_cstring, TITLE_FONT_SIZE, font_spacing).x
+    name_offset := COLORED_BAND_WIDTH + (CARD_TEXTURE_SIZE.x - COLORED_BAND_WIDTH - name_length_px) / 2
+    rl.DrawTextEx(default_font, name_cstring, {name_offset, TEXT_PADDING}, TITLE_FONT_SIZE, font_spacing, rl.BLACK)
 
-    text_dimensions := rl.MeasureTextEx(rl.GetFontDefault(), text_cstring, TEXT_FONT_SIZE, 1)
+    text_dimensions := rl.MeasureTextEx(default_font, text_cstring, TEXT_FONT_SIZE, font_spacing)
 
-    rl.DrawText(text_cstring, TEXT_PADDING, i32(CARD_TEXTURE_SIZE.y - text_dimensions.y) - TEXT_PADDING, TEXT_FONT_SIZE, rl.BLACK)
+    rl.DrawTextEx(default_font, text_cstring, {TEXT_PADDING, CARD_TEXTURE_SIZE.y - text_dimensions.y - TEXT_PADDING}, TEXT_FONT_SIZE, font_spacing, rl.BLACK)
 
     switch card.primary {
     case .ATTACK, .DEFENSE, .MOVEMENT, .DEFENSE_SKILL:
-        rl.DrawText(fmt.ctprintf("%d%s", card.value, ability_initials[card.primary]), TEXT_PADDING, i32(CARD_TEXTURE_SIZE.y - text_dimensions.y - TITLE_FONT_SIZE), TITLE_FONT_SIZE, rl.BLACK)
+        rl.DrawTextEx(default_font, fmt.ctprintf("%d%s", card.value, ability_initials[card.primary]), {TEXT_PADDING, CARD_TEXTURE_SIZE.y - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, font_spacing, rl.BLACK)
     case .SKILL:
-        rl.DrawText(fmt.ctprintf("%s", ability_initials[card.primary]), TEXT_PADDING, i32(CARD_TEXTURE_SIZE.y - text_dimensions.y - TITLE_FONT_SIZE), TITLE_FONT_SIZE, rl.BLACK)
+        rl.DrawTextEx(default_font, fmt.ctprintf("%s", ability_initials[card.primary]), {TEXT_PADDING, CARD_TEXTURE_SIZE.y - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, font_spacing, rl.BLACK)
     case .NONE:
     }
 
     if card.reach != nil {
         _, is_radius := card.reach.(Radius)
         reach_string := fmt.ctprintf("%d%s", card.reach, "Rd" if is_radius else "Rn")
-        reach_dimensions := rl.MeasureText(reach_string, TITLE_FONT_SIZE)
-        rl.DrawText(reach_string, i32(CARD_TEXTURE_SIZE.x) - reach_dimensions - TEXT_PADDING, i32(CARD_TEXTURE_SIZE.y - text_dimensions.y - TITLE_FONT_SIZE), TITLE_FONT_SIZE, rl.BLACK)
+        reach_dimensions := rl.MeasureTextEx(default_font, reach_string, TITLE_FONT_SIZE, font_spacing).x
+        rl.DrawTextEx(default_font, reach_string, {CARD_TEXTURE_SIZE.x - reach_dimensions - TEXT_PADDING, CARD_TEXTURE_SIZE.y - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, font_spacing, rl.BLACK)
     }
 
 

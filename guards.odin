@@ -12,6 +12,9 @@ Window_Size :: enum {
 
 window_size: Window_Size = .SMALL
 
+default_font: rl.Font
+font_spacing :: 0
+
 main :: proc() {
 
     input_queue: [dynamic]Input_Event
@@ -34,6 +37,9 @@ main :: proc() {
     rl.InitWindow(WIDTH / window_scale, HEIGHT / window_scale, "guards")
     defer rl.CloseWindow()
 
+    default_font = rl.LoadFont("times.ttf")
+    // default_font = rl.LoadFont("Inconsolata-Regular.ttf")
+
     board_render_texture = rl.LoadRenderTexture(i32(BOARD_TEXTURE_SIZE.x), i32(BOARD_TEXTURE_SIZE.y))
 
     window_texture := rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT))
@@ -51,7 +57,7 @@ main :: proc() {
         })
     }
 
-    append(&game_state.players, player)
+    append(&game_state.players, &player)
     begin_game()
 
     for !rl.WindowShouldClose() {

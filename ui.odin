@@ -72,6 +72,10 @@ ui_stack: [dynamic]UI_Element
 button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)-> bool {
     button_element := assert_variant(&element.variant, UI_Button_Element)
     if !check_outside_or_deselected(input, element^) {
+        #partial switch button_element.kind {
+        case .SECONDARY_MOVEMENT:
+            player.target_list = nil
+        }
         button_element.hovered = false
         return false
     }
@@ -97,16 +101,22 @@ draw_button: UI_Render_Proc : proc(element: UI_Element) {
 
     TEXT_PADDING :: 20
 
-    rl.DrawRectangleRec(element.bounding_rect, rl.GREEN)
-    rl.DrawText(
+    rl.DrawRectangleRec(element.bounding_rect, rl.GRAY)
+    rl.DrawTextEx(
+        default_font,
         button_element.text,
-        i32(element.bounding_rect.x) + TEXT_PADDING,
-        i32(element.bounding_rect.y) + TEXT_PADDING, 
-        i32(element.bounding_rect.height) - 2 * TEXT_PADDING,
+        {element.bounding_rect.x + TEXT_PADDING, element.bounding_rect.y + TEXT_PADDING}, 
+        element.bounding_rect.height - 2 * TEXT_PADDING,
+        font_spacing,
         rl.BLACK
     )
     if button_element.hovered {
         rl.DrawRectangleLinesEx(element.bounding_rect, TEXT_PADDING / 2, rl.WHITE)
+
+        #partial switch button_element.kind {
+        case .SECONDARY_MOVEMENT:
+            player.target_list = movement_targets[:]
+        }
     }
 }
 

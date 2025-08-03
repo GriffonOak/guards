@@ -2,6 +2,24 @@ package guards
 
 import "core:fmt"
 
+Direction :: enum {
+    NORTH,
+    NORTH_EAST,
+    SOUTH_EAST,
+    SOUTH,
+    SOUTH_WEST,
+    NORTH_WEST,
+}
+
+direction_vectors := [Direction]IVec2 {
+    .NORTH = {0, 1},
+    .NORTH_EAST = {1, 0},
+    .SOUTH_EAST = {1, -1},
+    .SOUTH = {0, -1},
+    .SOUTH_WEST = {-1, 0},
+    .NORTH_WEST = {-1, 1}
+}
+
 Region_ID :: enum {
     NONE,
     RED_JUNGLE,
@@ -27,7 +45,7 @@ Game_Stage :: enum {
 
 Game_State :: struct {
     num_players: int,
-    players: [dynamic]Player,
+    players: [dynamic]^Player,
     confirmed_players: int,
     resolved_players,
     turn_counter: int,
@@ -41,6 +59,8 @@ game_state: Game_State = {
     stage = .SELECTION,
     current_battle_zone = .CENTRE,
 }
+
+movement_targets: [dynamic]IVec2
 
 spawn_minions :: proc(zone: Region_ID) {
     for index in zone_indices[zone] {
@@ -66,7 +86,7 @@ spawn_minions :: proc(zone: Region_ID) {
 spawn_heroes_at_start :: proc() {
     num_spawns: [Team]int
     fmt.println(game_state.players)
-    for player in game_state.players {
+    for &player in game_state.players {
         team := player.team
         spawnpoint_marker := spawnpoints[num_spawns[team]]
         assert(spawnpoint_marker.spawnpoint_flag == .HERO_SPAWNPOINT)
@@ -80,6 +100,9 @@ spawn_heroes_at_start :: proc() {
         spawnpoint.flags += {.HERO}
         spawnpoint.unit_team = team
         spawnpoint.hero_id = player.hero
+
+        player.hero_location = spawnpoint_marker.loc
+        fmt.println(player.hero_location)
     }
 }
 
@@ -89,4 +112,35 @@ begin_game :: proc() {
     spawn_minions(game_state.current_battle_zone)
 
     spawn_heroes_at_start()
+}
+
+make_targets :: proc(value: int, kind: Action_Kind) {
+    #partial switch kind {
+    case .MOVEMENT:
+        make_movement_targets(value)
+    }
+}
+
+make_movement_targets :: proc(value: int) {
+    hero_loc := player.hero_location
+    visited_set: map[IVec2]int
+    unvisited_set: map[IVec2]int
+    unvisited_set[hero_loc] = 0
+
+    // for {
+
+    // }
+
+    // dijkstra's algorithm!
+
+    clear(&movement_targets)
+    for x in clamp(hero_loc.x - value, 0, GRID_WIDTH - 1)..=clamp(hero_loc.x+value, 0, GRID_WIDTH - 1) {
+        for y in clamp(hero_loc.y - value, 0, GRID_HEIGHT - 1)..=clamp(hero_loc.y+value, 0, GRID_HEIGHT - 1) {
+            if OBSTACLE_FLAGS & board[x][y].flags != {} do continue
+            delta := hero_loc - {x, y}
+            if abs(delta.x + delta.y) > value do continue
+            append(&movement_targets, IVec2{x, y})
+
+        }
+    }
 }

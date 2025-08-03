@@ -75,6 +75,7 @@ Space_Flag :: enum {
     MELEE_MINION,
     RANGED_MINION,
     HEAVY_MINION,
+    TOKEN,
 }
 
 get_symmetric_space :: proc(pos: IVec2) -> ^Space {
@@ -86,6 +87,8 @@ Space_Flags :: bit_set[Space_Flag]
 
 SPAWNPOINT_FLAGS :: Space_Flags{.MELEE_MINION_SPAWNPOINT, .RANGED_MINION_SPAWNPOINT, .HEAVY_MINION_SPAWNPOINT, .HERO_SPAWNPOINT}
 MINION_FLAGS :: Space_Flags{.MELEE_MINION, .RANGED_MINION, .HEAVY_MINION}
+OBSTACLE_FLAGS :: Space_Flags{.TERRAIN, .HERO, .MELEE_MINION, .RANGED_MINION, .HEAVY_MINION, .TOKEN}
+UNIT_FLAGS :: Space_Flags{.HERO, .MELEE_MINION, .RANGED_MINION, .HEAVY_MINION}
 
 Space :: struct {
     position: Vec2,
@@ -146,8 +149,8 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
 
                     FONT_SIZE :: 0.8 * VERTICAL_SPACING
 
-                    text_size := rl.MeasureTextEx(rl.GetFontDefault(), initial, FONT_SIZE, 0)
-                    rl.DrawText(initial, i32(space.position.x - text_size.x / 2), i32(space.position.y - text_size.y / 2.2), i32(math.round_f32(FONT_SIZE)), color)
+                    text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, font_spacing)
+                    rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, font_spacing, color)
                 }
             }
 
@@ -165,9 +168,9 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
 
                 FONT_SIZE :: 0.8 * VERTICAL_SPACING
 
-                text_size := rl.MeasureTextEx(rl.GetFontDefault(), initial, FONT_SIZE, 0)
+                text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, font_spacing)
                 rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.45, color)
-                rl.DrawText(initial, i32(space.position.x - text_size.x / 2), i32(space.position.y - text_size.y / 2.2), i32(math.round_f32(FONT_SIZE)), rl.BLACK)
+                rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, font_spacing, rl.BLACK)
 
             }
 
@@ -178,11 +181,21 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
 
                 FONT_SIZE :: 0.8 * VERTICAL_SPACING
 
-                text_size := rl.MeasureTextEx(rl.GetFontDefault(), initial, FONT_SIZE, 0)
+                text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, font_spacing)
                 rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.45, color)
-                rl.DrawText(initial, i32(space.position.x - text_size.x / 2), i32(space.position.y - text_size.y / 2.2), i32(math.round_f32(FONT_SIZE)), rl.BLACK)
+                rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, font_spacing, rl.BLACK)
             }
         }
+    }
+
+    for loc in player.target_list {
+        space := board[loc.x][loc.y]
+
+        time := rl.GetTime()
+
+        color_blend := (math.sin(2 * time) + 1) / 2
+        color: = color_lerp(rl.WHITE, rl.VIOLET, color_blend)
+        rl.DrawPolyLinesEx(space.position, 6, VERTICAL_SPACING / 2, 0, VERTICAL_SPACING * 0.08, color)
     }
 
     if board_element.hovered_cell != {-1, -1} {
