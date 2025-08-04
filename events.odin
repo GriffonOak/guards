@@ -14,9 +14,9 @@ Card_Clicked_Event :: struct {
     element: ^UI_Element
 }
 
-Confirm_Event :: struct {
-    played_card: ^UI_Element
-}
+Confirm_Event :: struct {}
+
+Cancel_Event :: struct {}
 
 
 
@@ -48,10 +48,13 @@ End_Upgrading_Event :: struct {}
 
 Resolve_Fast_Travel_Event :: struct {}
 
+Resolve_Movement_Event :: struct {}
+
 Event :: union {
     Space_Clicked_Event,
     Card_Clicked_Event,
     Confirm_Event,
+    Cancel_Event,
 
     Begin_Card_Selection_Event,
     Begin_Choosing_Action_Event,
@@ -70,6 +73,7 @@ Event :: union {
 
 
     Resolve_Fast_Travel_Event,
+    Resolve_Movement_Event,
 }
 
 event_queue: [dynamic]Event
@@ -94,6 +98,17 @@ resolve_event :: proc(event: Event) {
                 }
 
                 append(&event_queue, Resolve_Fast_Travel_Event{})
+            case .MOVEMENT:
+                _, card_elem := find_played_card()
+                card := card_elem.card
+                fmt.println(len(player.chosen_targets))
+                if len(player.chosen_targets) == player.num_locked_targets do break
+                last_target := player.chosen_targets[len(player.chosen_targets)-1].loc
+                // if var.space == player.chosen_targets[num_locked_targets - 1] do break
+                // fmt.println("this happened")
+                player.num_locked_targets = len(player.chosen_targets)
+                make_movement_targets(card.secondaries[.MOVEMENT] - player.num_locked_targets, last_target)
+                player.target_list = movement_targets[:]
             }
         }
 
@@ -136,9 +151,29 @@ resolve_event :: proc(event: Event) {
                 // @Todo figure out resolution order
                 append(&event_queue, Begin_Choosing_Action_Event{})
             }
+        case .RESOLVING:
+            #partial switch player.current_action {
+            case .MOVEMENT:
+                // The button could just have this event, no need to do this roundabout thing
+                append(&event_queue, Resolve_Movement_Event{})
+            }
         }
 
+    case Cancel_Event:
+        #partial switch player.stage {
+        case .RESOLVING:
+            #partial switch player.current_action {
+            case .MOVEMENT:
+                player.num_locked_targets = 0
+                clear(&player.chosen_targets)
 
+                _, card_elem := find_played_card()
+                movement_val := card_elem.card.secondaries[.MOVEMENT]
+                make_movement_targets(movement_val, player.hero_location)
+                player.target_list = movement_targets[:]
+            }
+        }
+        
     case Begin_Card_Selection_Event:
         player.stage = .SELECTING
         game_state.stage = .SELECTION
@@ -221,11 +256,15 @@ resolve_event :: proc(event: Event) {
             pop(&ui_stack)  // Purge action buttons
         }
         switch var.action_temp {
-        case .HOLD, .MOVEMENT:
+        case .HOLD:
             append(&event_queue, End_Resolution_Event{})
         case .FAST_TRAVEL:
             player.current_action = .FAST_TRAVEL
             // append(&ui_stack, confirm_button)
+        case .MOVEMENT:
+            player.current_action = .MOVEMENT
+            append(&ui_stack, confirm_button)
+            append(&ui_stack, cancel_button)
         }
 
     case End_Resolution_Event:
@@ -299,5 +338,19 @@ resolve_event :: proc(event: Event) {
     case Resolve_Fast_Travel_Event:
         translocate_unit(player.hero_location, player.chosen_targets[0].loc)
         append(&event_queue, End_Resolution_Event{})
+
+    case Resolve_Movement_Event:
+        pop(&ui_stack)
+        pop(&ui_stack)
+        append(&event_queue, End_Resolution_Event{})
+        if len(player.chosen_targets) == 0 do break
+        for space in player.chosen_targets[:len(player.chosen_targets) - 1] {
+            // Stuff that happens on move through goes here
+            fmt.println(space)
+        }
+        translocate_unit(player.hero_location, player.chosen_targets[len(player.chosen_targets) - 1].loc)
+        clear(&player.chosen_targets)
+        player.num_locked_targets = 0
+
     }
 }

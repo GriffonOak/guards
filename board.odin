@@ -108,11 +108,11 @@ get_symmetric_space :: proc(pos: IVec2) -> ^Space {
 Space_Flags :: bit_set[Space_Flag]
 
 
-PERMANENT_FLAGS :: Space_Flags{.TERRAIN, .MELEE_MINION_SPAWNPOINT, .RANGED_MINION_SPAWNPOINT, .HEAVY_MINION_SPAWNPOINT, .HERO_SPAWNPOINT}
 SPAWNPOINT_FLAGS :: Space_Flags{.MELEE_MINION_SPAWNPOINT, .RANGED_MINION_SPAWNPOINT, .HEAVY_MINION_SPAWNPOINT, .HERO_SPAWNPOINT}
+PERMANENT_FLAGS :: SPAWNPOINT_FLAGS + {.TERRAIN}
 MINION_FLAGS :: Space_Flags{.MELEE_MINION, .RANGED_MINION, .HEAVY_MINION}
-OBSTACLE_FLAGS :: Space_Flags{.TERRAIN, .HERO, .MELEE_MINION, .RANGED_MINION, .HEAVY_MINION, .TOKEN}
-UNIT_FLAGS :: Space_Flags{.HERO, .MELEE_MINION, .RANGED_MINION, .HEAVY_MINION}
+UNIT_FLAGS :: MINION_FLAGS + {.HERO}
+OBSTACLE_FLAGS :: UNIT_FLAGS + {.TERRAIN, .TOKEN}
 
 Space :: struct {
     position: Vec2,
@@ -223,25 +223,32 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
         rl.DrawPolyLinesEx(space.position, 6, VERTICAL_SPACING / 2, 0, VERTICAL_SPACING * 0.08, color)
     }
 
+    space_pos: Vec2
     if board_element.hovered_space != {-1, -1} {
-        pos := board[board_element.hovered_space.x][board_element.hovered_space.y].position
+        space_pos = board[board_element.hovered_space.x][board_element.hovered_space.y].position
         // rl.DrawRing(pos, VERTICAL_SPACING * 0.45, VERTICAL_SPACING * 0.5, 0, 360, 100, rl.WHITE)
-        rl.DrawPolyLinesEx(pos, 6, VERTICAL_SPACING * (1 / math.sqrt_f32(3) + 0.05), 0, VERTICAL_SPACING * 0.05, rl.WHITE)
+        rl.DrawPolyLinesEx(space_pos, 6, VERTICAL_SPACING * (1 / math.sqrt_f32(3) + 0.05), 0, VERTICAL_SPACING * 0.05, rl.WHITE)
+    }
 
-        draw_hover_effect: #partial switch player.stage {
-        case .RESOLVING:
-            #partial switch player.current_action {
-            case .FAST_TRAVEL:
-
-                if !board_element.space_in_target_list do break draw_hover_effect
-
-                player_loc := player.hero_location
-                player_pos := board[player_loc.x][player_loc.y].position
-                rl.DrawLineEx(pos, player_pos, 4, rl.VIOLET)
+    draw_hover_effect: #partial switch player.stage {
+    case .RESOLVING:
+        #partial switch player.current_action {
+        case .FAST_TRAVEL:
+            if !board_element.space_in_target_list do break draw_hover_effect
+            player_loc := player.hero_location
+            player_pos := board[player_loc.x][player_loc.y].position
+            rl.DrawLineEx(space_pos, player_pos, 4, rl.VIOLET)
+        case .MOVEMENT:
+            // target_slice := player.chosen_targets[:] if board_element.space_in_target_list else player.chosen_targets[:player.num_locked_targets]
+            current_loc := player.hero_location
+            for target in player.chosen_targets {
+                rl.DrawLineEx(board[current_loc.x][current_loc.y].position, board[target.loc.x][target.loc.y].position, 4, rl.VIOLET)
+                current_loc = target.loc
             }
         }
-
     }
+
+
 
     rl.EndTextureMode()
 }
@@ -357,6 +364,9 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
     if !check_outside_or_deselected(input, element^) {
         board_element.hovered_space = {-1, -1}
         board_element.space_in_target_list = false
+        if player.stage == .RESOLVING && player.current_action == .MOVEMENT {
+            resize(&player.chosen_targets, player.num_locked_targets)
+        }
         return false
     }
 
@@ -395,6 +405,28 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
         } else {
             board_element.hovered_space = {-1, -1}
             board_element.space_in_target_list = false
+        }
+
+
+        #partial switch player.stage {
+        case .RESOLVING:
+            resize(&player.chosen_targets, player.num_locked_targets)
+            if !board_element.space_in_target_list do break
+            #partial switch player.current_action {
+            case .MOVEMENT:
+                // Not an efficient loop here
+                current_loc := board_element.hovered_space
+                outer: for {
+                    for space in player.target_list {
+                        if space.loc == current_loc {
+                            if space.prev_loc == {-1, -1} do break outer
+                            inject_at(&player.chosen_targets, player.num_locked_targets, space)
+                            // rl.DrawLineEx(board[current_loc.x][current_loc.y].position, board[space.prev_loc.x][space.prev_loc.y].position, 4, rl.VIOLET)
+                            current_loc = space.prev_loc
+                        }
+                    }
+                }
+            }
         }
     }
 

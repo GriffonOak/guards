@@ -14,6 +14,7 @@ UI_Card_Element :: struct {
 
 Button_Kind :: enum {
     CONFIRM,
+    CANCEL,
     PRIMARY,
     SECONDARY_MOVEMENT,
     SECONDARY_FAST_TRAVEL,
@@ -42,6 +43,17 @@ UI_Variant :: union {
 CONFIRM_BUTTON_SIZE :: Vec2{300, 100}
 
 BUTTON_PADDING :: 10
+
+cancel_button := UI_Element {
+    {WIDTH - CONFIRM_BUTTON_SIZE.x - BUTTON_PADDING, HEIGHT - CARD_HOVER_POSITION_RECT.height - 2 * (CONFIRM_BUTTON_SIZE.y + BUTTON_PADDING), CONFIRM_BUTTON_SIZE.x, CONFIRM_BUTTON_SIZE.y},
+    UI_Button_Element {
+        .CANCEL,
+        "Cancel",
+        false
+    },
+    button_input_proc,
+    draw_button,
+}
 
 confirm_button := UI_Element {
     {WIDTH - CONFIRM_BUTTON_SIZE.x - BUTTON_PADDING, HEIGHT - CARD_HOVER_POSITION_RECT.height - CONFIRM_BUTTON_SIZE.y - BUTTON_PADDING, CONFIRM_BUTTON_SIZE.x, CONFIRM_BUTTON_SIZE.y},
@@ -88,6 +100,8 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
         switch button_element.kind {
         case .CONFIRM:
             append(&event_queue, Confirm_Event{})
+        case .CANCEL:
+            append(&event_queue, Cancel_Event{})
         case .PRIMARY, .SECONDARY_ATTACK, .SECONDARY_CLEAR, .SECONDARY_HOLD:
             // player.resolution_list = hold_list
             // player.resolution_list.current_action = 0
@@ -99,6 +113,7 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
         }
     }
 
+    // It would be nice to have this be more general
     #partial switch button_element.kind {
     case .SECONDARY_MOVEMENT:
         player.target_list = movement_targets[:]

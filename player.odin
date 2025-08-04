@@ -96,6 +96,8 @@ Player :: struct {
     current_action: Action_Temp,
 
     target_list: []Target,
+
+    num_locked_targets: int,
     chosen_targets: [dynamic]Target,
 }
 

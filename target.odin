@@ -16,7 +16,7 @@ clear_targets: [dynamic]Target
 make_targets :: proc(value: int, kind: Button_Kind) -> bool {
     #partial switch kind {
     case .SECONDARY_MOVEMENT:
-        make_movement_targets(value)
+        make_movement_targets(value, player.hero_location)
         return len(movement_targets) > 0
     case .SECONDARY_FAST_TRAVEL:
         make_fast_travel_targets()
@@ -30,13 +30,18 @@ make_targets :: proc(value: int, kind: Button_Kind) -> bool {
     return false
 }
 
-make_movement_targets :: proc(value: int) {
-    hero_loc := player.hero_location
-    visited_set: map[IVec2]int
-    unvisited_set: map[IVec2]int
+make_movement_targets :: proc(distance: int, origin: IVec2) {
+
+    Dijkstra_Info :: struct {
+        dist: int,
+        prev_node: IVec2,
+    }
+
+    visited_set: map[IVec2]Dijkstra_Info
+    unvisited_set: map[IVec2]Dijkstra_Info
     defer delete(visited_set)
     defer delete(unvisited_set)
-    unvisited_set[hero_loc] = 0
+    unvisited_set[origin] = {0, {-1, -1}}
 
     // dijkstra's algorithm!
 
@@ -44,33 +49,33 @@ make_movement_targets :: proc(value: int) {
 
     for len(unvisited_set) > 0 {
         // find minimum
-        min_value := 1e6
+        min_info := Dijkstra_Info{1e6, {-1, -1}}
         min_loc := IVec2{-1, -1}
-        for loc, val in unvisited_set {
-            if val < min_value {
+        for loc, info in unvisited_set {
+            if info.dist < min_info.dist {
                 min_loc = loc
-                min_value = val
+                min_info = info
             }
         }
 
-        for vector in direction_vectors {
+        directions: for vector in direction_vectors {
             next_loc := min_loc + vector
             if next_loc.x < 0 || next_loc.x >= GRID_WIDTH || next_loc.y < 0 || next_loc.y >= GRID_HEIGHT do continue
             if OBSTACLE_FLAGS & board[next_loc.x][next_loc.y].flags != {} do continue
             if next_loc in visited_set do continue
-            next_val := min_value + 1
-            prev_val, ok := unvisited_set[next_loc]
-            new_val := min(prev_val, next_val) if ok else next_val
-            if new_val > value do continue
-            unvisited_set[next_loc] = new_val
+            for traversed_loc in player.chosen_targets do if traversed_loc.loc == next_loc do continue directions
+            next_dist := min_info.dist + 1
+            if next_dist > distance do continue
+            existing_info, ok := unvisited_set[next_loc]
+            if !ok || next_dist < existing_info.dist do unvisited_set[next_loc] = {next_dist, min_loc}
         }
 
-        visited_set[min_loc] = min_value
+        visited_set[min_loc] = min_info
         delete_key(&unvisited_set, min_loc)
     }
 
-    for key, value in visited_set {
-        append(&movement_targets, Target{loc=key})
+    add_loop: for loc, info in visited_set {
+        append(&movement_targets, Target{loc=loc, prev_loc=info.prev_node})
     }
 }
 
@@ -89,7 +94,7 @@ make_fast_travel_targets :: proc() {
 
     for loc in zone_indices[region] {
         if OBSTACLE_FLAGS & board[loc.x][loc.y].flags != {} do continue
-        append(&fast_travel_targets, Target{loc=loc})
+        append(&fast_travel_targets, Target{loc=loc, prev_loc=hero_loc})
     }
 
     outer: for other_region in Region_ID {
@@ -102,7 +107,7 @@ make_fast_travel_targets :: proc() {
         }
         for loc in zone_indices[other_region] {
             if OBSTACLE_FLAGS & board[loc.x][loc.y].flags != {} do continue
-            append(&fast_travel_targets, Target{loc=loc})
+            append(&fast_travel_targets, Target{loc=loc, prev_loc = hero_loc})
         }
     }
 }
