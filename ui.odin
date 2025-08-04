@@ -116,6 +116,8 @@ draw_button: UI_Render_Proc : proc(element: UI_Element) {
         #partial switch button_element.kind {
         case .SECONDARY_MOVEMENT:
             player.target_list = movement_targets[:]
+        case .SECONDARY_FAST_TRAVEL:
+            player.target_list = fast_travel_targets[:]
         }
     }
 }

@@ -34,10 +34,12 @@ main :: proc() {
     })
 
     window_scale: i32 = 2 if window_size == .SMALL else 1
+
+    rl.SetConfigFlags({.MSAA_4X_HINT})
     rl.InitWindow(WIDTH / window_scale, HEIGHT / window_scale, "guards")
     defer rl.CloseWindow()
 
-    default_font = rl.LoadFont("times.ttf")
+    default_font = rl.LoadFontEx("times.ttf", 200, nil, 0)
     // default_font = rl.LoadFont("Inconsolata-Regular.ttf")
 
     board_render_texture = rl.LoadRenderTexture(i32(BOARD_TEXTURE_SIZE.x), i32(BOARD_TEXTURE_SIZE.y))

@@ -29,7 +29,29 @@ starting_terrain := [?]IVec2 {
     {18,1},
 }
 
+Region_ID :: enum {
+    NONE,
+    RED_JUNGLE,
+    RED_BASE,
+    RED_BEACH,
+    CENTRE,
+    BLUE_BEACH,
+    BLUE_BASE,
+    BLUE_JUNGLE,
+}
+
 zone_indices: [Region_ID][dynamic]IVec2
+
+fast_travel_adjacencies := [Region_ID]bit_set[Region_ID] {
+    .NONE = {},
+    .RED_JUNGLE = {.RED_BASE, .CENTRE},
+    .RED_BASE = {.RED_BEACH, .RED_JUNGLE},
+    .RED_BEACH = {.RED_BASE, .CENTRE},
+    .CENTRE = {.RED_BEACH, .RED_JUNGLE, .BLUE_BEACH, .BLUE_JUNGLE},
+    .BLUE_BEACH = {.BLUE_BASE, .CENTRE},
+    .BLUE_BASE = {.BLUE_BEACH, .BLUE_JUNGLE},
+    .BLUE_JUNGLE = {.BLUE_BASE, .CENTRE}
+}
 
 spawnpoints := [?]Spawnpoint_Marker{
     {{2, 11}, .HERO_SPAWNPOINT, .RED},

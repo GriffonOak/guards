@@ -141,24 +141,32 @@ resolve_event :: proc(event: Event) {
 
         for value, kind in card.secondaries {
             if value == 0 || kind == .DEFENSE do continue
+            button_kind := buttons_for_secondaries[kind]
+            if !make_targets(value, button_kind) do continue
+
             name, ok := reflect.enum_name_from_value(kind); assert(ok)
             text := strings.clone_to_cstring(strings.to_pascal_case(name))
-            add_button(button_location, text, buttons_for_secondaries[kind])
-            make_targets(value, kind)
+            add_button(button_location, text, button_kind)
             player.action_button_count += 1
             button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
         }
 
         if card.primary == .MOVEMENT || card.secondaries[.MOVEMENT] > 0 {
-            add_button(button_location, "Fast travel", .SECONDARY_FAST_TRAVEL)
-            player.action_button_count += 1
-            button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+            button_kind := Button_Kind.SECONDARY_FAST_TRAVEL
+            if make_targets(0, button_kind) {
+                add_button(button_location, "Fast travel", button_kind)
+                player.action_button_count += 1
+                button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+            }
         }
 
         if card.primary == .ATTACK || card.secondaries[.ATTACK] > 0 {
-            add_button(button_location, "Clear", .SECONDARY_CLEAR)
-            player.action_button_count += 1
-            button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+            button_kind := Button_Kind.SECONDARY_CLEAR
+            if make_targets(0, button_kind) {
+                add_button(button_location, "Clear", button_kind)
+                player.action_button_count += 1
+                button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+            }
         }
 
         add_button(button_location, "Hold", .SECONDARY_HOLD)
