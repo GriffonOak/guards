@@ -24,7 +24,7 @@ Begin_Card_Selection_Event :: struct {}
 
 Begin_Choosing_Action_Event :: struct {}
 
-Begin_Resolution_Event :: struct {}
+Begin_Resolution_Event :: struct {action_temp: Action_Temp}
 
 End_Resolution_Event :: struct {}
 
@@ -44,6 +44,10 @@ Begin_Upgrading_Event :: struct {}
 
 End_Upgrading_Event :: struct {}
 
+
+
+Resolve_Fast_Travel_Event :: struct {}
+
 Event :: union {
     Space_Clicked_Event,
     Card_Clicked_Event,
@@ -61,6 +65,11 @@ Event :: union {
     Retrieve_Cards_Event,
     Begin_Upgrading_Event,
     End_Upgrading_Event,
+
+
+
+
+    Resolve_Fast_Travel_Event,
 }
 
 event_queue: [dynamic]Event
@@ -72,6 +81,21 @@ resolve_event :: proc(event: Event) {
 
     case Space_Clicked_Event:
         fmt.println(var.space)
+        #partial switch player.stage {
+        case .RESOLVING:
+            if !ui_stack[0].variant.(UI_Board_Element).space_in_target_list do break
+
+            #partial switch player.current_action {
+            case .FAST_TRAVEL:
+                if len(player.chosen_targets) == 0 {
+                    append(&player.chosen_targets, var.space)
+                } else {
+                    player.chosen_targets[0] = var.space
+                }
+
+                append(&event_queue, Resolve_Fast_Travel_Event{})
+            }
+        }
 
     case Card_Clicked_Event:
         element := var.element
@@ -100,19 +124,20 @@ resolve_event :: proc(event: Event) {
         }
 
     case Confirm_Event:
-        if player.stage == .SELECTING {
+        #partial switch player.stage {
+        case .SELECTING:
             player.stage = .CONFIRMED
             pop(&ui_stack) // Confirm button
+            game_state.confirmed_players += 1
+            if game_state.confirmed_players == game_state.num_players {
+                game_state.stage = .RESOLUTION
+                game_state.resolved_players = 0
+    
+                // @Todo figure out resolution order
+                append(&event_queue, Begin_Choosing_Action_Event{})
+            }
         }
 
-        game_state.confirmed_players += 1
-        if game_state.confirmed_players == game_state.num_players {
-            game_state.stage = .RESOLUTION
-            game_state.resolved_players = 0
-
-            // @Todo figure out resolution order
-            append(&event_queue, Begin_Choosing_Action_Event{})
-        }
 
     case Begin_Card_Selection_Event:
         player.stage = .SELECTING
@@ -151,6 +176,19 @@ resolve_event :: proc(event: Event) {
             button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
         }
 
+        // movement_value := card.secondaries[.MOVEMENT]
+        // if movement_value > 0 {
+        //     button_kind := Button_Kind.SECONDARY_MOVEMENT
+        //     target_selection_step := &basic_movement_action[0].(Get_Target_Selection)
+        //     target_selection_step.criteria.(Movement_Action).max = movement_value
+        //     calculate_targets(target_selection_step)
+        //     if len(target_selection_step.targets) > 0 {
+        //         add_button(button_location, "Movement", button_kind)
+        //         player.action_button_count += 1
+        //         button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+        //     }
+        // }
+
         if card.primary == .MOVEMENT || card.secondaries[.MOVEMENT] > 0 {
             button_kind := Button_Kind.SECONDARY_FAST_TRAVEL
             if make_targets(0, button_kind) {
@@ -174,15 +212,27 @@ resolve_event :: proc(event: Event) {
     
     case Begin_Resolution_Event:
         player.stage = .RESOLVING
+
+        // Might not be the right time to do this
+        clear(&player.chosen_targets)
+
+
         for i in 0..<player.action_button_count {
             pop(&ui_stack)  // Purge action buttons
         }
-        start_next_action(player.resolution_list)
+        switch var.action_temp {
+        case .HOLD, .MOVEMENT:
+            append(&event_queue, End_Resolution_Event{})
+        case .FAST_TRAVEL:
+            player.current_action = .FAST_TRAVEL
+            // append(&ui_stack, confirm_button)
+        }
 
     case End_Resolution_Event:
         assert(player.stage == .RESOLVING)
         player.stage = .RESOLVED
         game_state.resolved_players += 1
+        player.target_list = {}
 
         element, card_element := find_played_card()
         assert(element != nil && card_element != nil)
@@ -237,5 +287,17 @@ resolve_event :: proc(event: Event) {
     case End_Upgrading_Event:
         game_state.turn_counter = 0
         append(&event_queue, Begin_Card_Selection_Event{})
+
+
+
+
+
+
+
+
+
+    case Resolve_Fast_Travel_Event:
+        translocate_unit(player.hero_location, player.chosen_targets[0])
+        append(&event_queue, End_Resolution_Event{})
     }
 }

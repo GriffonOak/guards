@@ -107,6 +107,8 @@ get_symmetric_space :: proc(pos: IVec2) -> ^Space {
 
 Space_Flags :: bit_set[Space_Flag]
 
+
+PERMANENT_FLAGS :: Space_Flags{.TERRAIN, .MELEE_MINION_SPAWNPOINT, .RANGED_MINION_SPAWNPOINT, .HEAVY_MINION_SPAWNPOINT, .HERO_SPAWNPOINT}
 SPAWNPOINT_FLAGS :: Space_Flags{.MELEE_MINION_SPAWNPOINT, .RANGED_MINION_SPAWNPOINT, .HEAVY_MINION_SPAWNPOINT, .HERO_SPAWNPOINT}
 MINION_FLAGS :: Space_Flags{.MELEE_MINION, .RANGED_MINION, .HEAVY_MINION}
 OBSTACLE_FLAGS :: Space_Flags{.TERRAIN, .HERO, .MELEE_MINION, .RANGED_MINION, .HEAVY_MINION, .TOKEN}
@@ -119,6 +121,7 @@ Space :: struct {
     spawnpoint_team: Team,
     unit_team: Team,
     hero_id: Hero_ID,
+    owner: ^Player,
 }
 
 board: [GRID_WIDTH][GRID_HEIGHT]Space
@@ -220,10 +223,23 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
         rl.DrawPolyLinesEx(space.position, 6, VERTICAL_SPACING / 2, 0, VERTICAL_SPACING * 0.08, color)
     }
 
-    if board_element.hovered_cell != {-1, -1} {
-        pos := board[board_element.hovered_cell.x][board_element.hovered_cell.y].position
+    if board_element.hovered_space != {-1, -1} {
+        pos := board[board_element.hovered_space.x][board_element.hovered_space.y].position
         // rl.DrawRing(pos, VERTICAL_SPACING * 0.45, VERTICAL_SPACING * 0.5, 0, 360, 100, rl.WHITE)
         rl.DrawPolyLinesEx(pos, 6, VERTICAL_SPACING * (1 / math.sqrt_f32(3) + 0.05), 0, VERTICAL_SPACING * 0.05, rl.WHITE)
+
+        draw_hover_effect: #partial switch player.stage {
+        case .RESOLVING:
+            #partial switch player.current_action {
+            case .FAST_TRAVEL:
+
+                if !board_element.space_in_target_list do break draw_hover_effect
+
+                player_loc := player.hero_location
+                player_pos := board[player_loc.x][player_loc.y].position
+                rl.DrawLineEx(pos, player_pos, 4, rl.VIOLET)
+            }
+        }
 
     }
 
@@ -339,7 +355,8 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
     board_element := assert_variant(&element.variant, UI_Board_Element)
 
     if !check_outside_or_deselected(input, element^) {
-        board_element.hovered_cell = {-1, -1}
+        board_element.hovered_space = {-1, -1}
+        board_element.space_in_target_list = false
         return false
     }
 
@@ -347,7 +364,7 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
 
     #partial switch var in input {
     case Mouse_Pressed_Event:
-        append(&event_queue, Space_Clicked_Event{board_element.hovered_cell})
+        append(&event_queue, Space_Clicked_Event{board_element.hovered_space})
     case Mouse_Motion_Event:
         mouse_within_board := ui_state.mouse_pos - {element.bounding_rect.x, element.bounding_rect.y}
 
@@ -357,8 +374,8 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
         // x_idx := int((mouse_within_board.x - BOARD_TEXTURE_SIZE.x / 2) / HORIZONTAL_SPACING + GRID_WIDTH / 2)
 
         // y_idx := int((BOARD_TEXTURE_SIZE.y / 2 - mouse_within_board.y) / VERTICAL_SPACING + 0.5 * GRID_HEIGHT - 0.25 - 0.5 * f32(x_idx + 1) + 0.25 * GRID_WIDTH)
-        // if x_idx < 0 || x_idx >= GRID_WIDTH || y_idx < 0 || y_idx >= GRID_HEIGHT do board_element.hovered_cell = {-1, -1}
-        // else do board_element.hovered_cell = {x_idx, y_idx}
+        // if x_idx < 0 || x_idx >= GRID_WIDTH || y_idx < 0 || y_idx >= GRID_HEIGHT do board_element.hovered_space = {-1, -1}
+        // else do board_element.hovered_space = {x_idx, y_idx}
 
         closest_idx := IVec2{-1, -1}
         closest_dist: f32 = 1e6
@@ -373,9 +390,11 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
             }
         }
         if closest_idx.x >= 0 &&  .TERRAIN not_in board[closest_idx.x][closest_idx.y].flags {
-            board_element.hovered_cell = closest_idx
+            board_element.hovered_space = closest_idx
+            board_element.space_in_target_list = space_in_target_list(closest_idx)
         } else {
-            board_element.hovered_cell = {-1, -1}
+            board_element.hovered_space = {-1, -1}
+            board_element.space_in_target_list = false
         }
     }
 

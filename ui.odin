@@ -3,7 +3,8 @@ package guards
 import rl "vendor:raylib"
 
 UI_Board_Element :: struct {
-    hovered_cell: IVec2
+    hovered_space: IVec2,
+    space_in_target_list: bool,
 }
 
 UI_Card_Element :: struct {
@@ -53,6 +54,8 @@ confirm_button := UI_Element {
     draw_button,
 }
 
+// undo_button := UI
+
 UI_Input_Proc :: #type proc(Input_Event, ^UI_Element) -> bool
 UI_Render_Proc :: #type proc(UI_Element)
 
@@ -73,7 +76,7 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
     button_element := assert_variant(&element.variant, UI_Button_Element)
     if !check_outside_or_deselected(input, element^) {
         #partial switch button_element.kind {
-        case .SECONDARY_MOVEMENT:
+        case .SECONDARY_MOVEMENT, .SECONDARY_FAST_TRAVEL:
             player.target_list = nil
         }
         button_element.hovered = false
@@ -85,11 +88,22 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
         switch button_element.kind {
         case .CONFIRM:
             append(&event_queue, Confirm_Event{})
-        case .PRIMARY, .SECONDARY_ATTACK, .SECONDARY_CLEAR, .SECONDARY_MOVEMENT, .SECONDARY_FAST_TRAVEL, .SECONDARY_HOLD:
-            player.resolution_list = hold_list
-            player.resolution_list.current_action = 0
-            append(&event_queue, Begin_Resolution_Event{})
+        case .PRIMARY, .SECONDARY_ATTACK, .SECONDARY_CLEAR, .SECONDARY_HOLD:
+            // player.resolution_list = hold_list
+            // player.resolution_list.current_action = 0
+            append(&event_queue, Begin_Resolution_Event{.HOLD})
+        case .SECONDARY_MOVEMENT:
+            append(&event_queue, Begin_Resolution_Event{.MOVEMENT})
+        case .SECONDARY_FAST_TRAVEL:
+            append(&event_queue, Begin_Resolution_Event{.FAST_TRAVEL})
         }
+    }
+
+    #partial switch button_element.kind {
+    case .SECONDARY_MOVEMENT:
+        player.target_list = movement_targets[:]
+    case .SECONDARY_FAST_TRAVEL:
+        player.target_list = fast_travel_targets[:]
     }
     button_element.hovered = true
     return true
@@ -112,13 +126,6 @@ draw_button: UI_Render_Proc : proc(element: UI_Element) {
     )
     if button_element.hovered {
         rl.DrawRectangleLinesEx(element.bounding_rect, TEXT_PADDING / 2, rl.WHITE)
-
-        #partial switch button_element.kind {
-        case .SECONDARY_MOVEMENT:
-            player.target_list = movement_targets[:]
-        case .SECONDARY_FAST_TRAVEL:
-            player.target_list = fast_travel_targets[:]
-        }
     }
 }
 

@@ -49,3 +49,28 @@ color_lerp :: proc(a, b: rl.Color, t: $T) -> (out: rl.Color) {
     }
     return out
 }
+
+space_in_target_list :: proc(space: IVec2) -> bool {
+    for loc in player.target_list {
+        if loc == space do return true
+    }
+    return false
+}
+
+translocate_unit :: proc(src, dest: IVec2) {
+    src_space := &board[src.x][src.y]
+    dest_space := &board[dest.x][dest.y]
+
+    src_transient_flags := src_space.flags - PERMANENT_FLAGS
+    src_space.flags -= src_transient_flags
+
+    dest_space.flags += src_transient_flags
+    dest_space.unit_team = src_space.unit_team
+    dest_space.hero_id = src_space.hero_id
+
+    if .HERO in src_transient_flags {
+        dest_space.owner = src_space.owner
+        dest_space.owner.hero_location = dest
+
+    }
+}
