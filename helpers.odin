@@ -51,8 +51,8 @@ color_lerp :: proc(a, b: rl.Color, t: $T) -> (out: rl.Color) {
 }
 
 space_in_target_list :: proc(space: IVec2) -> bool {
-    for loc in player.target_list {
-        if loc == space do return true
+    for target in player.target_list {
+        if target.loc  == space do return true
     }
     return false
 }

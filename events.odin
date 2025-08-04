@@ -88,9 +88,9 @@ resolve_event :: proc(event: Event) {
             #partial switch player.current_action {
             case .FAST_TRAVEL:
                 if len(player.chosen_targets) == 0 {
-                    append(&player.chosen_targets, var.space)
+                    append(&player.chosen_targets, Target{loc = var.space})
                 } else {
-                    player.chosen_targets[0] = var.space
+                    player.chosen_targets[0] = Target{loc = var.space}
                 }
 
                 append(&event_queue, Resolve_Fast_Travel_Event{})
@@ -297,7 +297,7 @@ resolve_event :: proc(event: Event) {
 
 
     case Resolve_Fast_Travel_Event:
-        translocate_unit(player.hero_location, player.chosen_targets[0])
+        translocate_unit(player.hero_location, player.chosen_targets[0].loc)
         append(&event_queue, End_Resolution_Event{})
     }
 }

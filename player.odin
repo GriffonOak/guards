@@ -95,8 +95,8 @@ Player :: struct {
 
     current_action: Action_Temp,
 
-    target_list: []IVec2,
-    chosen_targets: [dynamic]IVec2,
+    target_list: []Target,
+    chosen_targets: [dynamic]Target,
 }
 
 Hero_ID :: enum {

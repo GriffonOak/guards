@@ -2,16 +2,16 @@ package guards
 
 import "core:fmt"
 
-// Target :: struct {
-//     loc: IVec2,
-//     prev_loc: IVec2,
-// }
+Target :: struct {
+    loc: IVec2,
+    prev_loc: IVec2,
+}
 
-Target :: IVec2
+// Target :: IVec2
 
-movement_targets: [dynamic]IVec2
-fast_travel_targets: [dynamic]IVec2
-clear_targets: [dynamic]IVec2
+movement_targets: [dynamic]Target
+fast_travel_targets: [dynamic]Target
+clear_targets: [dynamic]Target
 
 make_targets :: proc(value: int, kind: Button_Kind) -> bool {
     #partial switch kind {
@@ -70,7 +70,7 @@ make_movement_targets :: proc(value: int) {
     }
 
     for key, value in visited_set {
-        append(&movement_targets, key)
+        append(&movement_targets, Target{loc=key})
     }
 }
 
@@ -89,7 +89,7 @@ make_fast_travel_targets :: proc() {
 
     for loc in zone_indices[region] {
         if OBSTACLE_FLAGS & board[loc.x][loc.y].flags != {} do continue
-        append(&fast_travel_targets, loc)
+        append(&fast_travel_targets, Target{loc=loc})
     }
 
     outer: for other_region in Region_ID {
@@ -102,7 +102,7 @@ make_fast_travel_targets :: proc() {
         }
         for loc in zone_indices[other_region] {
             if OBSTACLE_FLAGS & board[loc.x][loc.y].flags != {} do continue
-            append(&fast_travel_targets, loc)
+            append(&fast_travel_targets, Target{loc=loc})
         }
     }
 }
@@ -114,7 +114,7 @@ make_clear_targets :: proc() {
     for vector in direction_vectors {
         other_loc := hero_loc + vector
         if .TOKEN in board[other_loc.x][other_loc.y].flags {
-            append(&clear_targets, other_loc)
+            append(&clear_targets, Target{loc=other_loc})
         }
     }
 

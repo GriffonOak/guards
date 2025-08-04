@@ -213,8 +213,8 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
         }
     }
 
-    for loc in player.target_list {
-        space := board[loc.x][loc.y]
+    for target in player.target_list {
+        space := board[target.loc.x][target.loc.y]
 
         time := rl.GetTime()
 
