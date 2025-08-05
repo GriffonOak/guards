@@ -19,12 +19,13 @@ Confirm_Event :: struct {}
 Cancel_Event :: struct {}
 
 
-
 Begin_Card_Selection_Event :: struct {}
 
 Begin_Choosing_Action_Event :: struct {}
 
 Begin_Resolution_Event :: struct {action_temp: Action_Temp}
+
+Begin_Next_Action_Event :: struct {}
 
 End_Resolution_Event :: struct {}
 
@@ -89,8 +90,8 @@ resolve_event :: proc(event: Event) {
         case .RESOLVING:
             if !ui_stack[0].variant.(UI_Board_Element).space_in_target_list do break
 
-            #partial switch player.current_action {
-            case .FAST_TRAVEL:
+            #partial switch action in player.current_action {
+            case Fast_Travel_Action:
                 if len(player.chosen_targets) == 0 {
                     append(&player.chosen_targets, Target{loc = var.space})
                 } else {
@@ -98,16 +99,16 @@ resolve_event :: proc(event: Event) {
                 }
 
                 append(&event_queue, Resolve_Fast_Travel_Event{})
-            case .MOVEMENT:
-                _, card_elem := find_played_card()
-                card := card_elem.card
+            case Movement_Action:
+                // _, card_elem := find_played_card()
+                // card := card_elem.card
                 fmt.println(len(player.chosen_targets))
                 if len(player.chosen_targets) == player.num_locked_targets do break
                 last_target := player.chosen_targets[len(player.chosen_targets)-1].loc
                 // if var.space == player.chosen_targets[num_locked_targets - 1] do break
                 // fmt.println("this happened")
                 player.num_locked_targets = len(player.chosen_targets)
-                make_movement_targets(card.secondaries[.MOVEMENT] - player.num_locked_targets, last_target)
+                make_movement_targets(action.distance - player.num_locked_targets, last_target)
                 player.target_list = movement_targets[:]
             }
         }
@@ -152,8 +153,8 @@ resolve_event :: proc(event: Event) {
                 append(&event_queue, Begin_Choosing_Action_Event{})
             }
         case .RESOLVING:
-            #partial switch player.current_action {
-            case .MOVEMENT:
+            #partial switch action in player.current_action {
+            case Movement_Action:
                 // The button could just have this event, no need to do this roundabout thing
                 append(&event_queue, Resolve_Movement_Event{})
             }
@@ -162,13 +163,14 @@ resolve_event :: proc(event: Event) {
     case Cancel_Event:
         #partial switch player.stage {
         case .RESOLVING:
-            #partial switch player.current_action {
-            case .MOVEMENT:
+            #partial switch action in player.current_action {
+            case Movement_Action:
                 player.num_locked_targets = 0
                 clear(&player.chosen_targets)
 
-                _, card_elem := find_played_card()
-                movement_val := card_elem.card.secondaries[.MOVEMENT]
+                // _, card_elem := find_played_card()
+                // movement_val := card_elem.card.secondaries[.MOVEMENT]
+                movement_val := action.distance
                 make_movement_targets(movement_val, player.hero_location)
                 player.target_list = movement_targets[:]
             }
@@ -199,17 +201,17 @@ resolve_event :: proc(event: Event) {
             button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
         }
 
-        for value, kind in card.secondaries {
-            if value == 0 || kind == .DEFENSE do continue
-            button_kind := buttons_for_secondaries[kind]
-            if !make_targets(value, button_kind) do continue
+        // for value, kind in card.secondaries {
+        //     if value == 0 || kind == .DEFENSE do continue
+        //     button_kind := buttons_for_secondaries[kind]
+        //     if !make_targets(value, button_kind) do continue
 
-            name, ok := reflect.enum_name_from_value(kind); assert(ok)
-            text := strings.clone_to_cstring(strings.to_pascal_case(name))
-            add_button(button_location, text, button_kind)
-            player.action_button_count += 1
-            button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
-        }
+        //     name, ok := reflect.enum_name_from_value(kind); assert(ok)
+        //     text := strings.clone_to_cstring(strings.to_pascal_case(name))
+        //     add_button(button_location, text, button_kind)
+        //     player.action_button_count += 1
+        //     button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+        // }
 
         // movement_value := card.secondaries[.MOVEMENT]
         // if movement_value > 0 {
@@ -223,6 +225,17 @@ resolve_event :: proc(event: Event) {
         //         button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
         //     }
         // }
+
+        movement_value := card.secondaries[.MOVEMENT]
+        if movement_value > 0 {
+            basic_movement_action.distance = movement_value
+            button_kind := Button_Kind.SECONDARY_MOVEMENT
+            if make_targets(movement_value, button_kind) {
+                add_button(button_location, "Movement", button_kind)
+                player.action_button_count += 1
+                button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+            }            
+        }
 
         if card.primary == .MOVEMENT || card.secondaries[.MOVEMENT] > 0 {
             button_kind := Button_Kind.SECONDARY_FAST_TRAVEL
@@ -255,14 +268,17 @@ resolve_event :: proc(event: Event) {
         for i in 0..<player.action_button_count {
             pop(&ui_stack)  // Purge action buttons
         }
-        switch var.action_temp {
-        case .HOLD:
+        // player.current_action := action
+        // append(&event_queue, Begin_Next_Action_Event{})
+
+        switch action in var.action_temp {
+        case Hold_Action:
             append(&event_queue, End_Resolution_Event{})
-        case .FAST_TRAVEL:
-            player.current_action = .FAST_TRAVEL
+        case Fast_Travel_Action:
+            player.current_action = action
             // append(&ui_stack, confirm_button)
-        case .MOVEMENT:
-            player.current_action = .MOVEMENT
+        case Movement_Action:
+            player.current_action = action
             append(&ui_stack, confirm_button)
             append(&ui_stack, cancel_button)
         }

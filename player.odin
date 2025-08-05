@@ -79,10 +79,41 @@ Player_Stage :: enum {
     UPGRADING,
 }
 
-Action_Temp :: enum {
-    HOLD,
-    MOVEMENT,
-    FAST_TRAVEL,
+// Action_Temp :: enum {
+//     HOLD,
+//     MOVEMENT,
+//     FAST_TRAVEL,
+// }
+
+Self :: struct {}
+
+Hold_Action :: struct {}
+
+Action_Target :: union {
+    Self,
+    Target,
+}
+
+Movement_Action :: struct {
+    target: Action_Target,
+    distance: int
+}
+
+Fast_Travel_Action :: struct {}
+
+Action_Temp :: union {
+    Hold_Action,
+    Movement_Action,
+    Fast_Travel_Action,
+}
+
+basic_fast_travel_action := Fast_Travel_Action {}
+
+basic_hold_action := Hold_Action{}
+
+basic_movement_action := Movement_Action {
+    Self{},
+    0
 }
 
 Player :: struct {

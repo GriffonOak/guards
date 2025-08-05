@@ -10,7 +10,7 @@ Window_Size :: enum {
     BIG,
 }
 
-window_size: Window_Size = .SMALL
+window_size: Window_Size = .BIG
 
 default_font: rl.Font
 font_spacing :: 0

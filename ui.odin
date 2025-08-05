@@ -105,11 +105,11 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
         case .PRIMARY, .SECONDARY_ATTACK, .SECONDARY_CLEAR, .SECONDARY_HOLD:
             // player.resolution_list = hold_list
             // player.resolution_list.current_action = 0
-            append(&event_queue, Begin_Resolution_Event{.HOLD})
+            append(&event_queue, Begin_Resolution_Event{basic_hold_action})
         case .SECONDARY_MOVEMENT:
-            append(&event_queue, Begin_Resolution_Event{.MOVEMENT})
+            append(&event_queue, Begin_Resolution_Event{basic_movement_action})
         case .SECONDARY_FAST_TRAVEL:
-            append(&event_queue, Begin_Resolution_Event{.FAST_TRAVEL})
+            append(&event_queue, Begin_Resolution_Event{basic_fast_travel_action})
         }
     }
 
