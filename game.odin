@@ -86,11 +86,11 @@ spawn_heroes_at_start :: proc() {
 
         spawnpoint.flags += {.HERO}
         spawnpoint.unit_team = team
-        spawnpoint.hero_id = player.hero
+        spawnpoint.hero_id = player.hero.id
         spawnpoint.owner = player
 
-        player.hero_location = spawnpoint_marker.loc
-        fmt.println(player.hero_location)
+        player.hero.location = spawnpoint_marker.loc
+        fmt.println(player.hero.location)
     }
 }
 

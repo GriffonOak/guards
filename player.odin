@@ -124,17 +124,11 @@ basic_clear_action := Clear_Action{}
 Player :: struct {
     stage: Player_Stage,
     // cards: [Card_Color]^Card,
-    hero: Hero_ID,
-    hero_location: IVec2,
+    hero: Hero,
+    
     team: Team,
     action_button_count: int,
 
-    current_action: Action_Temp,
-
-    target_list: []Target,
-
-    num_locked_targets: int,
-    chosen_targets: [dynamic]Target,
 }
 
 Hero_ID :: enum {
@@ -142,14 +136,22 @@ Hero_ID :: enum {
     XARGATHA,
 }
 
-// Hero :: struct {
-//     hero_id: Hero_ID,
-// }
+Hero :: struct {
+    id: Hero_ID,
+    location: IVec2,
+
+    current_action: Action_Temp,
+    target_list: []Target,
+    num_locked_targets: int,
+    chosen_targets: [dynamic]Target,
+}
 
 
 player := Player {
     stage = .SELECTING,
-    hero = .XARGATHA,
+    hero = Hero{
+        id = .XARGATHA
+    },
     team = .RED
 }
 

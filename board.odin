@@ -213,7 +213,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
         }
     }
 
-    for target in player.target_list {
+    for target in player.hero.target_list {
         space := board[target.loc.x][target.loc.y]
 
         time := rl.GetTime()
@@ -232,16 +232,16 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
 
     draw_hover_effect: #partial switch player.stage {
     case .RESOLVING:
-        #partial switch action in player.current_action {
+        #partial switch action in player.hero.current_action {
         case Fast_Travel_Action:
             if !board_element.space_in_target_list do break draw_hover_effect
-            player_loc := player.hero_location
+            player_loc := player.hero.location
             player_pos := board[player_loc.x][player_loc.y].position
             rl.DrawLineEx(space_pos, player_pos, 4, rl.VIOLET)
         case Movement_Action:
             // target_slice := player.chosen_targets[:] if board_element.space_in_target_list else player.chosen_targets[:player.num_locked_targets]
-            current_loc := player.hero_location
-            for target in player.chosen_targets {
+            current_loc := player.hero.location
+            for target in player.hero.chosen_targets {
                 rl.DrawLineEx(board[current_loc.x][current_loc.y].position, board[target.loc.x][target.loc.y].position, 4, rl.VIOLET)
                 current_loc = target.loc
             }
@@ -364,8 +364,8 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
     if !check_outside_or_deselected(input, element^) {
         board_element.hovered_space = {-1, -1}
         board_element.space_in_target_list = false
-        if _, ok := player.current_action.(Movement_Action); ok && player.stage == .RESOLVING {
-            resize(&player.chosen_targets, player.num_locked_targets)
+        if _, ok := player.hero.current_action.(Movement_Action); ok && player.stage == .RESOLVING {
+            resize(&player.hero.chosen_targets, player.hero.num_locked_targets)
         }
         return false
     }
@@ -410,17 +410,17 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
 
         #partial switch player.stage {
         case .RESOLVING:
-            resize(&player.chosen_targets, player.num_locked_targets)
+            resize(&player.hero.chosen_targets, player.hero.num_locked_targets)
             if !board_element.space_in_target_list do break
-            #partial switch action in player.current_action {
+            #partial switch action in player.hero.current_action {
             case Movement_Action:
                 // Not an efficient loop here
                 current_loc := board_element.hovered_space
                 outer: for {
-                    for space in player.target_list {
+                    for space in player.hero.target_list {
                         if space.loc == current_loc {
                             if space.prev_loc == {-1, -1} do break outer
-                            inject_at(&player.chosen_targets, player.num_locked_targets, space)
+                            inject_at(&player.hero.chosen_targets, player.hero.num_locked_targets, space)
                             // rl.DrawLineEx(board[current_loc.x][current_loc.y].position, board[space.prev_loc.x][space.prev_loc.y].position, 4, rl.VIOLET)
                             current_loc = space.prev_loc
                         }

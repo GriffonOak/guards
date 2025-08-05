@@ -5,12 +5,19 @@ import "core:fmt"
 import "core:math"
 import "core:strings"
 
+
+// Todo list
+// Add dummy blue player that acts randomly
+// Make actions work with a slice of actions
+// Add attacking and skills to the game
+
+
 Window_Size :: enum {
     SMALL,
     BIG,
 }
 
-window_size: Window_Size = .BIG
+window_size: Window_Size = .SMALL
 
 default_font: rl.Font
 font_spacing :: 0

@@ -18,7 +18,7 @@ make_targets :: proc(value: int, action: Action_Temp) -> bool {
     case Hold_Action:
         return true  // ?
     case Movement_Action:
-        make_movement_targets(value, player.hero_location)
+        make_movement_targets(value, player.hero.location)
         return len(movement_targets) > 0
     case Fast_Travel_Action:
         make_fast_travel_targets()
@@ -65,7 +65,7 @@ make_movement_targets :: proc(distance: int, origin: IVec2) {
             if next_loc.x < 0 || next_loc.x >= GRID_WIDTH || next_loc.y < 0 || next_loc.y >= GRID_HEIGHT do continue
             if OBSTACLE_FLAGS & board[next_loc.x][next_loc.y].flags != {} do continue
             if next_loc in visited_set do continue
-            for traversed_loc in player.chosen_targets do if traversed_loc.loc == next_loc do continue directions
+            for traversed_loc in player.hero.chosen_targets do if traversed_loc.loc == next_loc do continue directions
             next_dist := min_info.dist + 1
             if next_dist > distance do continue
             existing_info, ok := unvisited_set[next_loc]
@@ -82,7 +82,7 @@ make_movement_targets :: proc(distance: int, origin: IVec2) {
 }
 
 make_fast_travel_targets :: proc() {
-    hero_loc := player.hero_location
+    hero_loc := player.hero.location
     region := board[hero_loc.x][hero_loc.y].region_id
 
     clear(&fast_travel_targets)
@@ -115,7 +115,7 @@ make_fast_travel_targets :: proc() {
 }
 
 make_clear_targets :: proc() {
-    hero_loc := player.hero_location
+    hero_loc := player.hero.location
 
     clear(&clear_targets)
     for vector in direction_vectors {

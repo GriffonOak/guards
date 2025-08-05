@@ -51,7 +51,7 @@ color_lerp :: proc(a, b: rl.Color, t: $T) -> (out: rl.Color) {
 }
 
 space_in_target_list :: proc(space: IVec2) -> bool {
-    for target in player.target_list {
+    for target in player.hero.target_list {
         if target.loc  == space do return true
     }
     return false
@@ -70,7 +70,7 @@ translocate_unit :: proc(src, dest: IVec2) {
 
     if .HERO in src_transient_flags {
         dest_space.owner = src_space.owner
-        dest_space.owner.hero_location = dest
+        dest_space.owner.hero.location = dest
 
     }
 }
