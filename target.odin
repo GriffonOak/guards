@@ -13,15 +13,17 @@ movement_targets: [dynamic]Target
 fast_travel_targets: [dynamic]Target
 clear_targets: [dynamic]Target
 
-make_targets :: proc(value: int, kind: Button_Kind) -> bool {
-    #partial switch kind {
-    case .SECONDARY_MOVEMENT:
+make_targets :: proc(value: int, action: Action_Temp) -> bool {
+    switch action_type in action {
+    case Hold_Action:
+        return true  // ?
+    case Movement_Action:
         make_movement_targets(value, player.hero_location)
         return len(movement_targets) > 0
-    case .SECONDARY_FAST_TRAVEL:
+    case Fast_Travel_Action:
         make_fast_travel_targets()
         return len(fast_travel_targets) > 0
-    case .SECONDARY_CLEAR:
+    case Clear_Action:
         make_clear_targets()
         return len(clear_targets) > 0
     }

@@ -12,24 +12,8 @@ UI_Card_Element :: struct {
     hovered: bool,
 }
 
-Button_Kind :: enum {
-    CONFIRM,
-    CANCEL,
-    PRIMARY,
-    SECONDARY_MOVEMENT,
-    SECONDARY_FAST_TRAVEL,
-    SECONDARY_ATTACK,
-    SECONDARY_CLEAR,
-    SECONDARY_HOLD,
-}
-
-buttons_for_secondaries: [Action_Kind]Button_Kind = #partial {
-    .MOVEMENT = .SECONDARY_MOVEMENT,
-    .ATTACK   = .SECONDARY_ATTACK,
-}
-
 UI_Button_Element :: struct {
-    kind: Button_Kind,
+    event: Event,
     text: cstring,
     hovered: bool,
 }
@@ -47,7 +31,7 @@ BUTTON_PADDING :: 10
 cancel_button := UI_Element {
     {WIDTH - CONFIRM_BUTTON_SIZE.x - BUTTON_PADDING, HEIGHT - CARD_HOVER_POSITION_RECT.height - 2 * (CONFIRM_BUTTON_SIZE.y + BUTTON_PADDING), CONFIRM_BUTTON_SIZE.x, CONFIRM_BUTTON_SIZE.y},
     UI_Button_Element {
-        .CANCEL,
+        Cancel_Event{},
         "Cancel",
         false
     },
@@ -58,7 +42,7 @@ cancel_button := UI_Element {
 confirm_button := UI_Element {
     {WIDTH - CONFIRM_BUTTON_SIZE.x - BUTTON_PADDING, HEIGHT - CARD_HOVER_POSITION_RECT.height - CONFIRM_BUTTON_SIZE.y - BUTTON_PADDING, CONFIRM_BUTTON_SIZE.x, CONFIRM_BUTTON_SIZE.y},
     UI_Button_Element{
-        .CONFIRM,
+        Confirm_Event{},
         "Confirm",
         false,
     },
@@ -87,9 +71,12 @@ ui_stack: [dynamic]UI_Element
 button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)-> bool {
     button_element := assert_variant(&element.variant, UI_Button_Element)
     if !check_outside_or_deselected(input, element^) {
-        #partial switch button_element.kind {
-        case .SECONDARY_MOVEMENT, .SECONDARY_FAST_TRAVEL:
-            player.target_list = nil
+        #partial switch event in button_element.event {
+        case Begin_Resolution_Event:
+            #partial switch action in event.action_temp {
+            case Movement_Action, Fast_Travel_Action:
+                player.target_list = nil
+            }
         }
         button_element.hovered = false
         return false
@@ -97,28 +84,18 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
 
     #partial switch var in input {
     case Mouse_Pressed_Event:
-        switch button_element.kind {
-        case .CONFIRM:
-            append(&event_queue, Confirm_Event{})
-        case .CANCEL:
-            append(&event_queue, Cancel_Event{})
-        case .PRIMARY, .SECONDARY_ATTACK, .SECONDARY_CLEAR, .SECONDARY_HOLD:
-            // player.resolution_list = hold_list
-            // player.resolution_list.current_action = 0
-            append(&event_queue, Begin_Resolution_Event{basic_hold_action})
-        case .SECONDARY_MOVEMENT:
-            append(&event_queue, Begin_Resolution_Event{basic_movement_action})
-        case .SECONDARY_FAST_TRAVEL:
-            append(&event_queue, Begin_Resolution_Event{basic_fast_travel_action})
-        }
+        append(&event_queue, button_element.event)
     }
 
     // It would be nice to have this be more general
-    #partial switch button_element.kind {
-    case .SECONDARY_MOVEMENT:
-        player.target_list = movement_targets[:]
-    case .SECONDARY_FAST_TRAVEL:
-        player.target_list = fast_travel_targets[:]
+    #partial switch event in button_element.event {
+    case Begin_Resolution_Event:
+        #partial switch action in event.action_temp {
+        case Movement_Action:
+            player.target_list = movement_targets[:]
+        case Fast_Travel_Action:
+            player.target_list = fast_travel_targets[:]
+        }
     }
     button_element.hovered = true
     return true
@@ -144,13 +121,10 @@ draw_button: UI_Render_Proc : proc(element: UI_Element) {
     }
 }
 
-add_button :: proc(loc: rl.Rectangle, text: cstring, kind: Button_Kind) {
+add_button :: proc(loc: rl.Rectangle, text: cstring, event: Event) {
     append(&ui_stack, UI_Element {
-        loc,
-        UI_Button_Element {
-            kind,
-            text,
-            false,
+        loc, UI_Button_Element {
+            event, text, false,
         },
         button_input_proc,
         draw_button,

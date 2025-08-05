@@ -196,66 +196,38 @@ resolve_event :: proc(event: Event) {
         button_location := rl.Rectangle{WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, BUTTON_PADDING, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}
 
         if card.primary != .DEFENSE {
-            add_button(button_location, "Primary", .PRIMARY)
+            add_button(button_location, "Primary", Begin_Resolution_Event{basic_hold_action})
             player.action_button_count += 1
             button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
         }
 
-        // for value, kind in card.secondaries {
-        //     if value == 0 || kind == .DEFENSE do continue
-        //     button_kind := buttons_for_secondaries[kind]
-        //     if !make_targets(value, button_kind) do continue
-
-        //     name, ok := reflect.enum_name_from_value(kind); assert(ok)
-        //     text := strings.clone_to_cstring(strings.to_pascal_case(name))
-        //     add_button(button_location, text, button_kind)
-        //     player.action_button_count += 1
-        //     button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
-        // }
-
-        // movement_value := card.secondaries[.MOVEMENT]
-        // if movement_value > 0 {
-        //     button_kind := Button_Kind.SECONDARY_MOVEMENT
-        //     target_selection_step := &basic_movement_action[0].(Get_Target_Selection)
-        //     target_selection_step.criteria.(Movement_Action).max = movement_value
-        //     calculate_targets(target_selection_step)
-        //     if len(target_selection_step.targets) > 0 {
-        //         add_button(button_location, "Movement", button_kind)
-        //         player.action_button_count += 1
-        //         button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
-        //     }
-        // }
-
         movement_value := card.secondaries[.MOVEMENT]
         if movement_value > 0 {
             basic_movement_action.distance = movement_value
-            button_kind := Button_Kind.SECONDARY_MOVEMENT
-            if make_targets(movement_value, button_kind) {
-                add_button(button_location, "Movement", button_kind)
+            if make_targets(movement_value, basic_movement_action) {
+                add_button(button_location, "Movement", Begin_Resolution_Event{basic_movement_action})
                 player.action_button_count += 1
                 button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
             }            
         }
 
         if card.primary == .MOVEMENT || card.secondaries[.MOVEMENT] > 0 {
-            button_kind := Button_Kind.SECONDARY_FAST_TRAVEL
-            if make_targets(0, button_kind) {
-                add_button(button_location, "Fast travel", button_kind)
+            if make_targets(0, basic_fast_travel_action) {
+                add_button(button_location, "Fast travel", Begin_Resolution_Event{basic_fast_travel_action})
                 player.action_button_count += 1
                 button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
             }
         }
 
         if card.primary == .ATTACK || card.secondaries[.ATTACK] > 0 {
-            button_kind := Button_Kind.SECONDARY_CLEAR
-            if make_targets(0, button_kind) {
-                add_button(button_location, "Clear", button_kind)
+            if make_targets(0, basic_clear_action) {
+                add_button(button_location, "Clear", Begin_Resolution_Event{basic_clear_action})
                 player.action_button_count += 1
                 button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
             }
         }
 
-        add_button(button_location, "Hold", .SECONDARY_HOLD)
+        add_button(button_location, "Hold", Begin_Resolution_Event{basic_hold_action})
         player.action_button_count += 1
     
     case Begin_Resolution_Event:
@@ -272,7 +244,7 @@ resolve_event :: proc(event: Event) {
         // append(&event_queue, Begin_Next_Action_Event{})
 
         switch action in var.action_temp {
-        case Hold_Action:
+        case Hold_Action, Clear_Action:
             append(&event_queue, End_Resolution_Event{})
         case Fast_Travel_Action:
             player.current_action = action

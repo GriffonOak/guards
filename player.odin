@@ -101,10 +101,13 @@ Movement_Action :: struct {
 
 Fast_Travel_Action :: struct {}
 
+Clear_Action :: struct {}
+
 Action_Temp :: union {
     Hold_Action,
     Movement_Action,
     Fast_Travel_Action,
+    Clear_Action,
 }
 
 basic_fast_travel_action := Fast_Travel_Action {}
@@ -115,6 +118,8 @@ basic_movement_action := Movement_Action {
     Self{},
     0
 }
+
+basic_clear_action := Clear_Action{}
 
 Player :: struct {
     stage: Player_Stage,
