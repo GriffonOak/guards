@@ -21,7 +21,12 @@ xargatha_cards := [?]Card {
         secondaries = #partial{.DEFENSE = 3},
         primary     = .SKILL,
         reach       = Range(3),
-        text        = "Target an enemy unit not adjacent to you\nand in range; if able, move the target\nup to 3 spaces to a space adjacent to you."
+        text        = "Target an enemy unit not adjacent to you\nand in range; if able, move the target\nup to 3 spaces to a space adjacent to you.",
+        primary_effect = []Action_Temp {
+            Choose_Target_Action {
+
+            }
+        }
     },
     {
         name        = "Threatening Slash",

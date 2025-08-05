@@ -184,7 +184,8 @@ resolve_event :: proc(event: Event) {
         button_location := rl.Rectangle{WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, BUTTON_PADDING, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}
 
         if card.primary != .DEFENSE {
-            add_button(button_location, "Primary", Begin_Resolution_Event{basic_hold_action})
+            
+            add_button(button_location, "Primary", Begin_Resolution_Event{card.primary_effect})
             player.action_button_count += 1
             button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
         }
@@ -306,12 +307,6 @@ resolve_event :: proc(event: Event) {
     case End_Upgrading_Event:
         game_state.turn_counter = 0
         append(&event_queue, Begin_Card_Selection_Event{})
-
-
-
-
-
-
 
     case Resolve_Current_Action_Event:
         #partial switch action in get_current_action(&player.hero) {

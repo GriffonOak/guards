@@ -79,12 +79,6 @@ Player_Stage :: enum {
     UPGRADING,
 }
 
-// Action_Temp :: enum {
-//     HOLD,
-//     MOVEMENT,
-//     FAST_TRAVEL,
-// }
-
 Self :: struct {}
 
 Hold_Action :: struct {}
@@ -103,11 +97,25 @@ Fast_Travel_Action :: struct {}
 
 Clear_Action :: struct {}
 
+Within_Reach :: struct {
+    origin: Action_Target
+}
+
+Selection_Criterion :: union {
+    Within_Reach,
+    Space_Flags,
+}
+
+Choose_Target_Action :: struct {
+    criteria: []Selection_Criterion
+}
+
 Action_Temp :: union {
     Hold_Action,
     Movement_Action,
     Fast_Travel_Action,
     Clear_Action,
+    Choose_Target_Action,
 }
 
 basic_fast_travel_action := []Action_Temp{Fast_Travel_Action{}}

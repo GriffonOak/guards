@@ -9,9 +9,11 @@ Target :: struct {
 
 // Target :: IVec2
 
+// These would be better off being maps for faster lookup
 movement_targets: [dynamic]Target
 fast_travel_targets: [dynamic]Target
 clear_targets: [dynamic]Target
+arbitrary_targets: [dynamic]Target
 
 make_targets :: proc(action: Action_Temp) -> []Target {
     switch action_type in action {
@@ -26,6 +28,9 @@ make_targets :: proc(action: Action_Temp) -> []Target {
     case Clear_Action:
         make_clear_targets()
         return clear_targets[:]
+    case Choose_Target_Action:
+        make_arbitrary_targets()
+        return arbitrary_targets[:]
     }
 
     assert(false)
@@ -128,6 +133,6 @@ make_clear_targets :: proc() {
     fmt.println(clear_targets)
 }
 
-// calculate_targets :: proc(selection: Get_Target_Selection) {
-
-// }
+make_arbitrary_targets :: proc(criteria: []Selection_Criterion) {
+    clear(&arbitrary_targets)
+}
