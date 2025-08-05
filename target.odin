@@ -13,23 +13,23 @@ movement_targets: [dynamic]Target
 fast_travel_targets: [dynamic]Target
 clear_targets: [dynamic]Target
 
-make_targets :: proc(value: int, action: Action_Temp) -> bool {
+make_targets :: proc(action: Action_Temp) -> []Target {
     switch action_type in action {
     case Hold_Action:
-        return true  // ?
+        return {}  // ?
     case Movement_Action:
-        make_movement_targets(value, player.hero.location)
-        return len(movement_targets) > 0
+        make_movement_targets(action_type.distance, player.hero.location)
+        return movement_targets[:]
     case Fast_Travel_Action:
         make_fast_travel_targets()
-        return len(fast_travel_targets) > 0
+        return fast_travel_targets[:]
     case Clear_Action:
         make_clear_targets()
-        return len(clear_targets) > 0
+        return clear_targets[:]
     }
 
     assert(false)
-    return false
+    return {}
 }
 
 make_movement_targets :: proc(distance: int, origin: IVec2) {

@@ -7,15 +7,21 @@ import "core:strings"
 
 
 // Todo list
-// Add dummy blue player that acts randomly
 // Make actions work with a slice of actions
 // Add attacking and skills to the game
+// Add dummy blue player that acts randomly
+// Snorri runes
 
 
 Window_Size :: enum {
     SMALL,
     BIG,
+    FULL_SCREEN,
 }
+
+
+WIDTH :: 1280 * 2
+HEIGHT :: 720 * 2
 
 window_size: Window_Size = .SMALL
 
@@ -24,13 +30,15 @@ font_spacing :: 0
 
 main :: proc() {
 
+    fmt.println(BOARD_TEXTURE_SIZE.y / VERTICAL_SPACING)
+
     input_queue: [dynamic]Input_Event
 
     active_element_index: int = -1
 
     for color, index in Card_Color {
-        CARD_HAND_WIDTH := BOARD_POSITION_RECT.width / 5
-        card_hand_position_rects[color] = {f32(index - 1) * CARD_HAND_WIDTH, HEIGHT - 100, CARD_HAND_WIDTH, 100}
+        // Add 100 to height here so the bounding rect goes offscreen
+        card_hand_position_rects[color] = {f32(index - 1) * CARD_HAND_WIDTH, CARD_HAND_Y_POSITION, CARD_HAND_WIDTH, CARD_HAND_HEIGHT + 100}
     }
 
     append(&ui_stack, UI_Element {

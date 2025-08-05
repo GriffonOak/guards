@@ -7,6 +7,7 @@ import "core:reflect"
 import "core:strings"
 
 VERTICAL_SPACING :: 67
+// VERTICAL_SPACING :: 60
 // sqrt 3
 HORIZONTAL_SPACING :: 1.732 * VERTICAL_SPACING * 0.5
 
@@ -130,6 +131,7 @@ board_render_texture: rl.RenderTexture2D
 
 
 BOARD_TEXTURE_SIZE :: Vec2{1200, 1200}
+// BOARD_TEXTURE_SIZE :: Vec2{1080, 1080}
 
 BOARD_POSITION_RECT :: rl.Rectangle{0, 0, BOARD_TEXTURE_SIZE.x, BOARD_TEXTURE_SIZE.y}
 
@@ -232,7 +234,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
 
     draw_hover_effect: #partial switch player.stage {
     case .RESOLVING:
-        #partial switch action in player.hero.current_action {
+        #partial switch action in get_current_action(&player.hero) {
         case Fast_Travel_Action:
             if !board_element.space_in_target_list do break draw_hover_effect
             player_loc := player.hero.location
@@ -364,8 +366,11 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
     if !check_outside_or_deselected(input, element^) {
         board_element.hovered_space = {-1, -1}
         board_element.space_in_target_list = false
-        if _, ok := player.hero.current_action.(Movement_Action); ok && player.stage == .RESOLVING {
-            resize(&player.hero.chosen_targets, player.hero.num_locked_targets)
+        action := get_current_action(&player.hero)
+        if player.stage == .RESOLVING && action != nil {
+            if _, ok := action.(Movement_Action); ok {
+                resize(&player.hero.chosen_targets, player.hero.num_locked_targets)
+            }
         }
         return false
     }
@@ -379,13 +384,6 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
         mouse_within_board := ui_state.mouse_pos - {element.bounding_rect.x, element.bounding_rect.y}
 
         mouse_within_board *= BOARD_TEXTURE_SIZE / {element.bounding_rect.width, element.bounding_rect.height}
-        // mouse_within_board += {VERTICAL_SPACING / 2, VERTICAL_SPACING / 2}
-
-        // x_idx := int((mouse_within_board.x - BOARD_TEXTURE_SIZE.x / 2) / HORIZONTAL_SPACING + GRID_WIDTH / 2)
-
-        // y_idx := int((BOARD_TEXTURE_SIZE.y / 2 - mouse_within_board.y) / VERTICAL_SPACING + 0.5 * GRID_HEIGHT - 0.25 - 0.5 * f32(x_idx + 1) + 0.25 * GRID_WIDTH)
-        // if x_idx < 0 || x_idx >= GRID_WIDTH || y_idx < 0 || y_idx >= GRID_HEIGHT do board_element.hovered_space = {-1, -1}
-        // else do board_element.hovered_space = {x_idx, y_idx}
 
         closest_idx := IVec2{-1, -1}
         closest_dist: f32 = 1e6
@@ -412,7 +410,7 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
         case .RESOLVING:
             resize(&player.hero.chosen_targets, player.hero.num_locked_targets)
             if !board_element.space_in_target_list do break
-            #partial switch action in player.hero.current_action {
+            #partial switch action in get_current_action(&player.hero) {
             case Movement_Action:
                 // Not an efficient loop here
                 current_loc := board_element.hovered_space

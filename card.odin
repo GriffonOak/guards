@@ -32,7 +32,7 @@ card_color_values := [Card_Color]rl.Color {
     .BLUE = rl.BLUE,
 }
 
-Action_Kind :: enum {
+Ability_Kind :: enum {
     NONE,
     ATTACK,
     SKILL,
@@ -41,7 +41,7 @@ Action_Kind :: enum {
     MOVEMENT,
 }
 
-ability_initials := [Action_Kind]string {
+ability_initials := [Ability_Kind]string {
     .NONE = "X",
     .ATTACK = "A",
     .SKILL = "S",
@@ -58,19 +58,13 @@ Action_Reach :: union {
     Radius,
 }
 
-// reach_names := [Action_Reach]string {
-//     .NONE = "foobar",
-//     .RANGE = "Rn",
-//     .RADIUS = "Rd",
-// }
-
 Card :: struct {
     name: string,
     color: Card_Color,
     initiative: int,
     tier: int,
-    secondaries: [Action_Kind]int,
-    primary: Action_Kind,
+    secondaries: [Ability_Kind]int,
+    primary: Ability_Kind,
     value: int,
     reach: Action_Reach,
     text: string,
@@ -84,7 +78,15 @@ CARD_SCALING_FACTOR :: 1
 CARD_HOVER_POSITION_RECT :: rl.Rectangle{WIDTH - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x, HEIGHT - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y, CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x, CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y}
 PLAYED_CARD_SIZE :: Vec2{150, 210}
 
-FIRST_CARD_RESOLVED_POSITION_RECT :: rl.Rectangle{25, BOARD_POSITION_RECT.height + 25, 100, 150}
+CARD_HAND_WIDTH :: BOARD_POSITION_RECT.width / 5
+CARD_HAND_HEIGHT :: 48 // CARD_HAND_WIDTH * 1.5
+CARD_HAND_Y_POSITION :: HEIGHT - CARD_HAND_HEIGHT
+
+BOARD_HAND_SPACE :: CARD_HAND_Y_POSITION - BOARD_TEXTURE_SIZE.y
+RESOLVED_CARD_HEIGHT :: BOARD_HAND_SPACE * 0.8
+RESOLVED_CARD_PADDING :: (BOARD_HAND_SPACE - RESOLVED_CARD_HEIGHT) / 2
+
+FIRST_CARD_RESOLVED_POSITION_RECT :: rl.Rectangle{RESOLVED_CARD_PADDING, BOARD_POSITION_RECT.height + RESOLVED_CARD_PADDING, RESOLVED_CARD_HEIGHT / 1.5, RESOLVED_CARD_HEIGHT}
 
 CARD_PLAYED_POSITION_RECT :: rl.Rectangle{BOARD_POSITION_RECT.width * 0.8 - PLAYED_CARD_SIZE.x / 2, BOARD_POSITION_RECT.height - PLAYED_CARD_SIZE.y / 2, PLAYED_CARD_SIZE.x, PLAYED_CARD_SIZE.y}
 

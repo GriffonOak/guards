@@ -6,9 +6,6 @@ Vec2 :: [2]f32
 
 IVec2 :: [2]int
 
-WIDTH :: 2000
-HEIGHT :: 1500
-
 team_colors := [Team]rl.Color{
     .NONE = rl.MAGENTA,
     .RED  = {237, 92, 2, 255},

@@ -110,16 +110,18 @@ Action_Temp :: union {
     Clear_Action,
 }
 
-basic_fast_travel_action := Fast_Travel_Action {}
+basic_fast_travel_action := []Action_Temp{Fast_Travel_Action{}}
 
-basic_hold_action := Hold_Action{}
+basic_hold_action := []Action_Temp{}
 
-basic_movement_action := Movement_Action {
-    Self{},
-    0
+basic_movement_action := []Action_Temp{
+    Movement_Action {
+        Self{},
+        0,
+    },
 }
 
-basic_clear_action := Clear_Action{}
+basic_clear_action := []Action_Temp{Clear_Action{}}
 
 Player :: struct {
     stage: Player_Stage,
@@ -136,11 +138,17 @@ Hero_ID :: enum {
     XARGATHA,
 }
 
+get_current_action :: proc(hero: ^Hero) -> ^Action_Temp {
+    if hero.current_action_index >= len(hero.action_list) do return nil
+    return &hero.action_list[hero.current_action_index]
+}
+
 Hero :: struct {
     id: Hero_ID,
     location: IVec2,
 
-    current_action: Action_Temp,
+    current_action_index: int,
+    action_list: []Action_Temp,
     target_list: []Target,
     num_locked_targets: int,
     chosen_targets: [dynamic]Target,
@@ -153,6 +161,14 @@ player := Player {
         id = .XARGATHA
     },
     team = .RED
+}
+
+player2 := Player {
+    stage = .SELECTING,
+    hero = Hero {
+        id = .NONE,
+    },
+    team = .BLUE,
 }
 
 // start_next_action :: proc(actions: Action_List) {

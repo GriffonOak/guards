@@ -73,7 +73,8 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
     if !check_outside_or_deselected(input, element^) {
         #partial switch event in button_element.event {
         case Begin_Resolution_Event:
-            #partial switch action in event.action_temp {
+            if len(event.action_list) == 0 do break
+            #partial switch action in event.action_list[0] {
             case Movement_Action, Fast_Travel_Action:
                 player.hero.target_list = nil
             }
@@ -90,7 +91,8 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
     // It would be nice to have this be more general
     #partial switch event in button_element.event {
     case Begin_Resolution_Event:
-        #partial switch action in event.action_temp {
+        if len(event.action_list) == 0 do break
+        #partial switch action in event.action_list[0] {
         case Movement_Action:
             player.hero.target_list = movement_targets[:]
         case Fast_Travel_Action:
