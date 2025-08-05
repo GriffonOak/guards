@@ -94,9 +94,9 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
         if len(event.action_list) == 0 do break
         #partial switch action in event.action_list[0] {
         case Movement_Action:
-            player.hero.target_list = movement_targets[:]
+            player.hero.target_list = movement_targets
         case Fast_Travel_Action:
-            player.hero.target_list = fast_travel_targets[:]
+            player.hero.target_list = fast_travel_targets
         }
     }
     button_element.hovered = true

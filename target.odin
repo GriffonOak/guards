@@ -4,33 +4,36 @@ import "core:fmt"
 
 Target :: struct {
     loc: IVec2,
-    prev_loc: IVec2,
+}
+
+Target_Info :: struct {
+    prev_loc: IVec2
 }
 
 // Target :: IVec2
 
 // These would be better off being maps for faster lookup
-movement_targets: [dynamic]Target
-fast_travel_targets: [dynamic]Target
-clear_targets: [dynamic]Target
-arbitrary_targets: [dynamic]Target
+movement_targets: map[Target]Target_Info
+fast_travel_targets: map[Target]Target_Info
+clear_targets: map[Target]Target_Info
+arbitrary_targets: map[Target]Target_Info
 
-make_targets :: proc(action: Action_Temp) -> []Target {
+make_targets :: proc(action: Action_Temp) -> map[Target]Target_Info {
     switch action_type in action {
     case Hold_Action:
         return {}  // ?
     case Movement_Action:
         make_movement_targets(action_type.distance, player.hero.location)
-        return movement_targets[:]
+        return movement_targets
     case Fast_Travel_Action:
         make_fast_travel_targets()
-        return fast_travel_targets[:]
+        return fast_travel_targets
     case Clear_Action:
         make_clear_targets()
-        return clear_targets[:]
+        return clear_targets
     case Choose_Target_Action:
-        make_arbitrary_targets()
-        return arbitrary_targets[:]
+        make_arbitrary_targets({})
+        return arbitrary_targets
     }
 
     assert(false)
@@ -82,7 +85,7 @@ make_movement_targets :: proc(distance: int, origin: IVec2) {
     }
 
     add_loop: for loc, info in visited_set {
-        append(&movement_targets, Target{loc=loc, prev_loc=info.prev_node})
+        movement_targets[Target{loc=loc}] = Target_Info{prev_loc = info.prev_node}
     }
 }
 
@@ -101,7 +104,7 @@ make_fast_travel_targets :: proc() {
 
     for loc in zone_indices[region] {
         if OBSTACLE_FLAGS & board[loc.x][loc.y].flags != {} do continue
-        append(&fast_travel_targets, Target{loc=loc, prev_loc=hero_loc})
+        fast_travel_targets[Target{loc=loc}] =  Target_Info{prev_loc=hero_loc}
     }
 
     outer: for other_region in Region_ID {
@@ -114,7 +117,7 @@ make_fast_travel_targets :: proc() {
         }
         for loc in zone_indices[other_region] {
             if OBSTACLE_FLAGS & board[loc.x][loc.y].flags != {} do continue
-            append(&fast_travel_targets, Target{loc=loc, prev_loc = hero_loc})
+            fast_travel_targets[Target{loc=loc}] =  Target_Info{prev_loc=hero_loc}
         }
     }
 }
@@ -126,13 +129,16 @@ make_clear_targets :: proc() {
     for vector in direction_vectors {
         other_loc := hero_loc + vector
         if .TOKEN in board[other_loc.x][other_loc.y].flags {
-            append(&clear_targets, Target{loc=other_loc})
+            clear_targets[Target{loc=other_loc}] = {}
         }
     }
 
     fmt.println(clear_targets)
 }
 
-make_arbitrary_targets :: proc(criteria: []Selection_Criterion) {
+// Varargs is cute here but it may not be necessary
+make_arbitrary_targets :: proc(criteria: ..Selection_Criterion) {
     clear(&arbitrary_targets)
+
+    for criterion in criteria
 }

@@ -13,6 +13,10 @@ import "core:strings"
 // Snorri runes
 
 
+// Ideas
+// Could maybe be an idea to use bit_set[0..<GRID_WIDTH*GRID_HEIGHT] types for calculating the intersection between targets
+// Might also be overkill :)
+
 Window_Size :: enum {
     SMALL,
     BIG,

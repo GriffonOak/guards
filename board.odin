@@ -414,15 +414,21 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
             case Movement_Action:
                 // Not an efficient loop here
                 current_loc := board_element.hovered_space
-                outer: for {
-                    for space in player.hero.target_list {
-                        if space.loc == current_loc {
-                            if space.prev_loc == {-1, -1} do break outer
-                            inject_at(&player.hero.chosen_targets, player.hero.num_locked_targets, space)
-                            // rl.DrawLineEx(board[current_loc.x][current_loc.y].position, board[space.prev_loc.x][space.prev_loc.y].position, 4, rl.VIOLET)
-                            current_loc = space.prev_loc
-                        }
-                    }
+                // outer: for {
+                //     for space in player.hero.target_list {
+                //         if space.loc == current_loc {
+                //             if space.prev_loc == {-1, -1} do break outer
+                //             inject_at(&player.hero.chosen_targets, player.hero.num_locked_targets, space)
+                //             current_loc = space.prev_loc
+                //         }
+                //     }
+                // }
+                for {
+                    the_target := Target{loc = current_loc}
+                    info, ok := player.hero.target_list[the_target]
+                    if !ok || info.prev_loc == {-1, -1} do break
+                    inject_at(&player.hero.chosen_targets, player.hero.num_locked_targets, the_target)
+                    current_loc = info.prev_loc
                 }
             }
         }

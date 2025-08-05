@@ -106,7 +106,7 @@ resolve_event :: proc(event: Event) {
 
                 player.hero.num_locked_targets = len(player.hero.chosen_targets)
                 make_movement_targets(action.distance - player.hero.num_locked_targets, last_target)
-                player.hero.target_list = movement_targets[:]
+                player.hero.target_list = movement_targets
             }
         }
 
@@ -160,7 +160,7 @@ resolve_event :: proc(event: Event) {
 
                 movement_val := action.distance
                 make_movement_targets(movement_val, player.hero.location)
-                player.hero.target_list = movement_targets[:]
+                player.hero.target_list = movement_targets
             }
         }
         
@@ -184,10 +184,11 @@ resolve_event :: proc(event: Event) {
         button_location := rl.Rectangle{WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, BUTTON_PADDING, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}
 
         if card.primary != .DEFENSE {
-            
-            add_button(button_location, "Primary", Begin_Resolution_Event{card.primary_effect})
-            player.action_button_count += 1
-            button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+            if len(card.primary_effect) > 0 && len(make_targets(card.primary_effect[0])) > 0 {
+                add_button(button_location, "Primary", Begin_Resolution_Event{card.primary_effect})
+                player.action_button_count += 1
+                button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+            }
         }
 
         movement_value := card.secondaries[.MOVEMENT]

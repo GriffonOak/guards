@@ -102,7 +102,7 @@ Within_Reach :: struct {
 }
 
 Selection_Criterion :: union {
-    Within_Reach,
+    Within_Distance,
     Space_Flags,
 }
 
@@ -157,7 +157,7 @@ Hero :: struct {
 
     current_action_index: int,
     action_list: []Action_Temp,
-    target_list: []Target,
+    target_list: map[Target]Target_Info,
     num_locked_targets: int,
     chosen_targets: [dynamic]Target,
 }
