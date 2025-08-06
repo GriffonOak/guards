@@ -90,7 +90,7 @@ resolve_event :: proc(event: Event) {
         case .RESOLVING:
             if !ui_stack[0].variant.(UI_Board_Element).space_in_target_list do break
 
-            #partial switch action in get_current_action(&player.hero) {
+            #partial switch &action in get_current_action(&player.hero) {
             case Fast_Travel_Action:
                 if len(player.hero.chosen_targets) == 0 {
                     append(&player.hero.chosen_targets, Target{loc = var.space})
@@ -107,6 +107,11 @@ resolve_event :: proc(event: Event) {
                 player.hero.num_locked_targets = len(player.hero.chosen_targets)
                 make_movement_targets(action.distance - player.hero.num_locked_targets, last_target)
                 player.hero.target_list = movement_targets
+
+            case Choose_Target_Action:
+                action.result = Target{loc=var.space}
+                fmt.println(action.result)
+                append(&event_queue, Resolve_Current_Action_Event{})
             }
         }
 
@@ -321,7 +326,7 @@ resolve_event :: proc(event: Event) {
                 // Stuff that happens on move through goes here
                 fmt.println(space)
             }
-            translocate_unit(player.hero.location, player.hero.chosen_targets[len(player.hero.chosen_targets) - 1].loc)
+            translocate_unit(calculate_implicit_target(action.target).loc, player.hero.chosen_targets[len(player.hero.chosen_targets) - 1].loc)
             player.hero.num_locked_targets = 0
         }
         

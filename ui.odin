@@ -93,6 +93,8 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
     case Begin_Resolution_Event:
         if len(event.action_list) == 0 do break
         #partial switch action in event.action_list[0] {
+        case Choose_Target_Action:
+            player.hero.target_list = arbitrary_targets
         case Movement_Action:
             player.hero.target_list = movement_targets
         case Fast_Travel_Action:

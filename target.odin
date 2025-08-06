@@ -23,7 +23,7 @@ make_targets :: proc(action: Action_Temp) -> map[Target]Target_Info {
     case Hold_Action:
         return {}  // ?
     case Movement_Action:
-        make_movement_targets(action_type.distance, player.hero.location)
+        make_movement_targets(action_type.distance, calculate_implicit_target(action_type.target).loc)
         return movement_targets
     case Fast_Travel_Action:
         make_fast_travel_targets()
@@ -32,7 +32,7 @@ make_targets :: proc(action: Action_Temp) -> map[Target]Target_Info {
         make_clear_targets()
         return clear_targets
     case Choose_Target_Action:
-        make_arbitrary_targets({})
+        make_arbitrary_targets(..action_type.criteria)
         return arbitrary_targets
     }
 
@@ -140,5 +140,38 @@ make_clear_targets :: proc() {
 make_arbitrary_targets :: proc(criteria: ..Selection_Criterion) {
     clear(&arbitrary_targets)
 
-    for criterion in criteria
+    // Start with completely populated board (Inefficient!)
+    for x in 0..<GRID_WIDTH {
+        for y in 0..<GRID_HEIGHT {
+            arbitrary_targets[Target{{x, y}}] = {}
+        }
+    }
+
+    for criterion in criteria {
+        for target, info in arbitrary_targets {
+            space := board[target.loc.x][target.loc.y]
+
+            switch selector in criterion {
+            case Within_Distance:
+
+                origin := calculate_implicit_target(selector.origin)
+                min_dist := calculate_implicit_quantity(selector.min)
+                max_dist := calculate_implicit_quantity(selector.max)
+
+                distance := calculate_hexagonal_distance(origin.loc, target.loc)
+                if distance > max_dist || distance < min_dist do delete_key(&arbitrary_targets, target)
+
+            case Contains_Any:
+
+                intersection := space.flags & selector
+                if intersection == {} do delete_key(&arbitrary_targets, target)
+
+            case Is_Enemy:
+
+                if player.team == .NONE || space.unit_team == .NONE || player.team == space.unit_team {
+                    delete_key(&arbitrary_targets, target)
+                }  
+            }
+        }
+    }
 }

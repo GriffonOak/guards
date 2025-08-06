@@ -74,3 +74,39 @@ translocate_unit :: proc(src, dest: IVec2) {
 
     }
 }
+
+calculate_hexagonal_distance :: proc(a, b: IVec2) -> int {
+    diff := a - b
+    if diff.x * diff.y <= 0 {
+        return max(abs(diff.x), abs(diff.y))
+    } else {
+        return abs(diff.x) + abs(diff.y)
+    }
+}
+
+calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity) -> (out: int) {
+    switch quantity in implicit_quantity {
+    case int: out = quantity
+    case Card_Reach:
+        _, card_elem := find_played_card()
+        assert(card_elem != nil)
+        // @Item Need to add items here also at some point
+        switch reach in card_elem.card.reach{
+        case Range: out = int(reach)
+        case Radius: out = int(reach)
+        case: assert(false)
+        }  
+    }
+    return 
+}
+
+calculate_implicit_target :: proc(implicit_target: Implicit_Target) -> (out: Target) {
+    switch target in implicit_target {
+    case Target: out = target
+    case Self: out = Target{player.hero.location}
+    case Previous_Choice:
+        prev_action := player.hero.action_list[player.hero.current_action_index - 1].(Choose_Target_Action)
+        out = prev_action.result
+    }
+    return
+}

@@ -110,10 +110,10 @@ Space_Flags :: bit_set[Space_Flag]
 
 
 SPAWNPOINT_FLAGS :: Space_Flags{.MELEE_MINION_SPAWNPOINT, .RANGED_MINION_SPAWNPOINT, .HEAVY_MINION_SPAWNPOINT, .HERO_SPAWNPOINT}
-PERMANENT_FLAGS :: SPAWNPOINT_FLAGS + {.TERRAIN}
-MINION_FLAGS :: Space_Flags{.MELEE_MINION, .RANGED_MINION, .HEAVY_MINION}
-UNIT_FLAGS :: MINION_FLAGS + {.HERO}
-OBSTACLE_FLAGS :: UNIT_FLAGS + {.TERRAIN, .TOKEN}
+PERMANENT_FLAGS  :: SPAWNPOINT_FLAGS + {.TERRAIN}
+MINION_FLAGS     :: Space_Flags{.MELEE_MINION, .RANGED_MINION, .HEAVY_MINION}
+UNIT_FLAGS       :: MINION_FLAGS + {.HERO}
+OBSTACLE_FLAGS   :: UNIT_FLAGS + {.TERRAIN, .TOKEN}
 
 Space :: struct {
     position: Vec2,
@@ -242,7 +242,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             rl.DrawLineEx(space_pos, player_pos, 4, rl.VIOLET)
         case Movement_Action:
             // target_slice := player.chosen_targets[:] if board_element.space_in_target_list else player.chosen_targets[:player.num_locked_targets]
-            current_loc := player.hero.location
+            current_loc := calculate_implicit_target(action.target).loc
             for target in player.hero.chosen_targets {
                 rl.DrawLineEx(board[current_loc.x][current_loc.y].position, board[target.loc.x][target.loc.y].position, 4, rl.VIOLET)
                 current_loc = target.loc

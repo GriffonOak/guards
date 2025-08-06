@@ -83,31 +83,51 @@ Self :: struct {}
 
 Hold_Action :: struct {}
 
-Action_Target :: union {
+Previous_Choice :: struct {}
+
+Implicit_Target :: union {
     Self,
     Target,
+    Previous_Choice,
 }
 
 Movement_Action :: struct {
-    target: Action_Target,
-    distance: int
+    target: Implicit_Target,
+    distance: int,
 }
 
 Fast_Travel_Action :: struct {}
 
 Clear_Action :: struct {}
 
-Within_Reach :: struct {
-    origin: Action_Target
+Card_Reach :: struct {}
+
+Implicit_Quantity :: union {
+    int,
+    Card_Reach,
 }
+
+Within_Distance :: struct {
+    origin: Implicit_Target,
+    min: Implicit_Quantity,
+    max: Implicit_Quantity,
+}
+
+Contains_Any :: Space_Flags
+Contains_All :: Space_Flags
+
+Is_Enemy :: struct {}
 
 Selection_Criterion :: union {
     Within_Distance,
-    Space_Flags,
+    Contains_Any,
+    // Contains_All,
+    Is_Enemy,
 }
 
 Choose_Target_Action :: struct {
-    criteria: []Selection_Criterion
+    criteria: []Selection_Criterion,
+    result: Target,
 }
 
 Action_Temp :: union {

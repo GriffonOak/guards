@@ -7,7 +7,9 @@ import "core:strings"
 
 
 // Todo list
-// Make actions work with a slice of actions
+// Remove the damn Target struct
+// Separate cards out of the ui stack
+// Unify different side buttons and have proc for adding / removing them
 // Add attacking and skills to the game
 // Add dummy blue player that acts randomly
 // Snorri runes

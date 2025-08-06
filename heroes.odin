@@ -24,7 +24,19 @@ xargatha_cards := [?]Card {
         text        = "Target an enemy unit not adjacent to you\nand in range; if able, move the target\nup to 3 spaces to a space adjacent to you.",
         primary_effect = []Action_Temp {
             Choose_Target_Action {
-                criteria = {}
+                criteria = {
+                    Within_Distance {
+                        Self{},
+                        2,
+                        Card_Reach{},
+                    },
+                    Contains_Any(UNIT_FLAGS),
+                    Is_Enemy{},
+                }
+            },
+            Movement_Action {
+                Previous_Choice{},
+                3,
             }
         }
     },
