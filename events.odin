@@ -164,7 +164,7 @@ resolve_event :: proc(event: Event) {
                 clear(&player.hero.chosen_targets)
 
                 movement_val := action.distance
-                make_movement_targets(movement_val, player.hero.location)
+                make_movement_targets(movement_val, calculate_implicit_target(action.target))
                 player.hero.target_list = movement_targets
             }
         }
@@ -248,10 +248,17 @@ resolve_event :: proc(event: Event) {
 
         action := get_current_action(&player.hero)
         player.hero.target_list = make_targets(action^)
-        #partial switch action in get_current_action(&player.hero) {
+        #partial switch &action_type in action {
         case Movement_Action:
             append(&ui_stack, confirm_button)
             append(&ui_stack, cancel_button)
+        case Choose_Target_Action:
+            if len(player.hero.target_list) == 1 {
+                for space in player.hero.target_list {
+                    action_type.result = space
+                }
+                append(&event_queue, Resolve_Current_Action_Event{})
+            }
         }
 
     case End_Resolution_Event:
