@@ -7,7 +7,6 @@ import "core:strings"
 
 
 // Todo list
-// Remove the damn Target struct
 // Separate cards out of the ui stack
 // Unify different side buttons and have proc for adding / removing them
 // Add attacking and skills to the game

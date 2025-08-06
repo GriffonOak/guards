@@ -177,7 +177,7 @@ Hero :: struct {
 
     current_action_index: int,
     action_list: []Action_Temp,
-    target_list: map[Target]Target_Info,
+    target_list: map[Target]Void,
     num_locked_targets: int,
     chosen_targets: [dynamic]Target,
 }

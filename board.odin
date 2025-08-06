@@ -409,24 +409,19 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
             if board_element.hovered_space not_in player.hero.target_list do break
             #partial switch action in get_current_action(&player.hero) {
             case Movement_Action:
-                // Not an efficient loop here
-                current_loc := board_element.hovered_space
-                // outer: for {
-                //     for space in player.hero.target_list {
-                //         if space.loc == current_loc {
-                //             if space.prev_loc == {-1, -1} do break outer
-                //             inject_at(&player.hero.chosen_targets, player.hero.num_locked_targets, space)
-                //             current_loc = space.prev_loc
-                //         }
-                //     }
-                // }
-                for {
-                    the_target := current_loc
-                    info, ok := player.hero.target_list[the_target]
-                    if !ok || info.prev_loc == {-1, -1} do break
-                    inject_at(&player.hero.chosen_targets, player.hero.num_locked_targets, the_target)
-                    current_loc = info.prev_loc
+
+                starting_space: Target
+                if player.hero.num_locked_targets > 0 {
+                    starting_space = player.hero.chosen_targets[player.hero.num_locked_targets - 1]
+                } else {
+                    starting_space = calculate_implicit_target(get_current_action(&player.hero).(Movement_Action).target)
                 }
+
+                path := find_shortest_path(starting_space, board_element.hovered_space)
+                defer delete(path)
+                for space in path do append(&player.hero.chosen_targets, space)
+                fmt.println(player.hero.chosen_targets)
+
             }
         }
     }
