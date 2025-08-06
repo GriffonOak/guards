@@ -1,10 +1,14 @@
 package guards
 
+// This is a good file. It knows exactly what it is trying to do and does it extremely well.
+
 import rl "vendor:raylib"
 
 import "core:fmt"
 import "core:reflect"
 import "core:strings"
+
+
 
 Space_Clicked_Event :: struct {
     space: IVec2
@@ -17,7 +21,6 @@ Card_Clicked_Event :: struct {
 Confirm_Event :: struct {}
 
 Cancel_Event :: struct {}
-
 
 Begin_Card_Selection_Event :: struct {}
 
@@ -48,6 +51,7 @@ Begin_Upgrading_Event :: struct {}
 End_Upgrading_Event :: struct {}
 
 
+
 Event :: union {
     Space_Clicked_Event,
     Card_Clicked_Event,
@@ -74,10 +78,13 @@ Event :: union {
 
     Begin_Upgrading_Event,
     End_Upgrading_Event,
-
 }
 
+
+
 event_queue: [dynamic]Event
+
+
 
 resolve_event :: proc(event: Event) {
 
@@ -210,7 +217,7 @@ resolve_event :: proc(event: Event) {
             }
         }
 
-        add_side_button("Hold", Begin_Resolution_Event{basic_hold_action})
+        add_side_button("Hold", Begin_Resolution_Event{})
     
     case Begin_Resolution_Event:
         player.stage = .RESOLVING
@@ -323,6 +330,8 @@ resolve_event :: proc(event: Event) {
         clear(&player.hero.chosen_targets)
         player.hero.current_action_index += 1
         append(&event_queue, Begin_Next_Action_Event{})
+
+        // Here would be where we need to handle minions outside the zone or wave pushes mid-turn
 
     }
 }

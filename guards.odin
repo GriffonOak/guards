@@ -23,16 +23,25 @@ Window_Size :: enum {
     FULL_SCREEN,
 }
 
+Vec2 :: [2]f32
+IVec2 :: [2]int
+
+Void :: struct {}
+
+
 
 WIDTH :: 1280 * 2
 HEIGHT :: 720 * 2
 
+FONT_SPACING :: 0
+
+
+
 window_size: Window_Size = .SMALL
 
 default_font: rl.Font
-font_spacing :: 0
 
-NULL_SPACE :: IVec2{-1, -1}
+
 
 main :: proc() {
 

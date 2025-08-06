@@ -1,74 +1,6 @@
 package guards
 
-// hold_list := Action_List {
-//     0, 
-//     {Hold_Action{}}
-// }
 
-// fast_travel_list := Action_List {
-//     0, {Fast_Travel_Action{}}
-// }
-
-// movement_list := Action_List {
-//     0, {Movement_Action{}}
-// }
-
-// Hold_Action :: struct {}
-
-// Movement_Action :: struct {
-//     max_distance: int
-// }
-
-// Fast_Travel_Action :: struct {}
-
-// Action_Step :: union {
-//     Hold_Action,
-//     Movement_Action,
-//     Fast_Travel_Action,
-// }
-
-// Action_List :: struct {
-//     current_action: int,
-//     actions: []Action_Step
-// }
-
-// Self :: struct {}
-
-// Target_Origin :: union {
-//     IVec2,
-//     Self,
-// }
-
-// Movement_Value :: struct {}
-
-// Amount :: union {
-//     int, 
-//     Movement_Value,
-// }
-
-// Movement_Targets :: struct {
-//     origin: Target_Origin,
-//     min, max: Amount,
-// }
-
-// Selection_Criteria :: union {
-//     Movement_Targets
-// }
-
-// Get_Target_Selection :: struct {
-//     amount: int,
-//     criteria: Selection_Criteria,
-//     targets: [dynamic]Target
-// }
-
-// basic_movement_action := Action {
-//     Get_Target_Selection {
-//         1, Movement_Targets{Self{},  0, Movement_Value},
-//         {},
-//     },
-//     Move{Self, 0}
-    
-// }
 
 Player_Stage :: enum {
     SELECTING,
@@ -79,94 +11,9 @@ Player_Stage :: enum {
     UPGRADING,
 }
 
-Self :: struct {}
-
-Hold_Action :: struct {}
-
-Previous_Choice :: struct {}
-
-Implicit_Target :: union {
-    Self,
-    Target,
-    Previous_Choice,
-}
-
-Movement_Action :: struct {
-    target: Implicit_Target,
-    distance: int,
-}
-
-Fast_Travel_Action :: struct {}
-
-Clear_Action :: struct {}
-
-Card_Reach :: struct {}
-
-Implicit_Quantity :: union {
-    int,
-    Card_Reach,
-}
-
-Within_Distance :: struct {
-    origin: Implicit_Target,
-    min: Implicit_Quantity,
-    max: Implicit_Quantity,
-}
-
-Contains_Any :: Space_Flags
-Contains_All :: Space_Flags
-
-Is_Enemy :: struct {}
-
-Selection_Criterion :: union {
-    Within_Distance,
-    Contains_Any,
-    // Contains_All,
-    Is_Enemy,
-}
-
-Choose_Target_Action :: struct {
-    criteria: []Selection_Criterion,
-    result: Target,
-}
-
-Action_Temp :: union {
-    Hold_Action,
-    Movement_Action,
-    Fast_Travel_Action,
-    Clear_Action,
-    Choose_Target_Action,
-}
-
-basic_fast_travel_action := []Action_Temp{Fast_Travel_Action{}}
-
-basic_hold_action := []Action_Temp{}
-
-basic_movement_action := []Action_Temp{
-    Movement_Action {
-        Self{},
-        0,
-    },
-}
-
-basic_clear_action := []Action_Temp{Clear_Action{}}
-
-Player :: struct {
-    stage: Player_Stage,
-    // cards: [Card_Color]^Card,
-    hero: Hero,
-    
-    team: Team,
-}
-
 Hero_ID :: enum {
     NONE,
     XARGATHA,
-}
-
-get_current_action :: proc(hero: ^Hero) -> ^Action_Temp {
-    if hero.current_action_index >= len(hero.action_list) do return nil
-    return &hero.action_list[hero.current_action_index]
 }
 
 Hero :: struct {
@@ -178,6 +25,14 @@ Hero :: struct {
     target_list: map[Target]Void,
     num_locked_targets: int,
     chosen_targets: [dynamic]Target,
+}
+
+Player :: struct {
+    stage: Player_Stage,
+    // cards: [Card_Color]^Card,  // soon, my love
+    hero: Hero,
+    
+    team: Team,
 }
 
 

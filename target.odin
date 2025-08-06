@@ -2,13 +2,19 @@ package guards
 
 import "core:fmt"
 
-// Target :: struct {
-//     loc: IVec2,
-// }
 
-Void :: struct {}
 
 Target :: IVec2
+
+Self :: struct {}
+
+Previous_Choice :: struct {}
+
+Implicit_Target :: union {
+    Target,
+    Self,
+    Previous_Choice,
+}
 
 // These would be better off being maps for faster lookup
 movement_targets: map[Target]Void
@@ -18,8 +24,6 @@ arbitrary_targets: map[Target]Void
 
 make_targets :: proc(action: Action_Temp) -> map[Target]Void {
     switch action_type in action {
-    case Hold_Action:
-        return {}  // ?
     case Movement_Action:
         make_movement_targets(action_type.distance, calculate_implicit_target(action_type.target))
         return movement_targets
@@ -216,7 +220,7 @@ make_arbitrary_targets :: proc(criteria: ..Selection_Criterion) {
                 intersection := space.flags & selector
                 if intersection == {} do delete_key(&arbitrary_targets, target)
 
-            case Is_Enemy:
+            case Is_Enemy_Unit:
 
                 if player.team == .NONE || space.unit_team == .NONE || player.team == space.unit_team {
                     delete_key(&arbitrary_targets, target)

@@ -6,10 +6,77 @@ import "core:math"
 import "core:reflect"
 import "core:strings"
 
+
+
+Spawnpoint_Marker :: struct {
+    loc: IVec2,
+    spawnpoint_flag: Space_Flag,
+    team: Team,
+}
+
+Space_Flag :: enum {
+    TERRAIN,
+    MELEE_MINION_SPAWNPOINT,
+    RANGED_MINION_SPAWNPOINT,
+    HEAVY_MINION_SPAWNPOINT,
+    HERO_SPAWNPOINT,
+    HERO,
+    MELEE_MINION,
+    RANGED_MINION,
+    HEAVY_MINION,
+    TOKEN,
+}
+
+
+Region_ID :: enum {
+    NONE,
+    RED_JUNGLE,
+    RED_BASE,
+    RED_BEACH,
+    CENTRE,
+    BLUE_BEACH,
+    BLUE_BASE,
+    BLUE_JUNGLE,
+}
+
+Space_Flags :: bit_set[Space_Flag]
+
+Space :: struct {
+    position: Vec2,
+    flags: Space_Flags,
+    region_id: Region_ID,
+    spawnpoint_team: Team,
+    unit_team: Team,
+    hero_id: Hero_ID,
+    owner: ^Player,
+}
+
+
+
 VERTICAL_SPACING :: 67
-// VERTICAL_SPACING :: 60
+
 // sqrt 3
 HORIZONTAL_SPACING :: 1.732 * VERTICAL_SPACING * 0.5
+
+GRID_WIDTH  :: 21
+GRID_HEIGHT :: 20
+
+BOARD_TEXTURE_SIZE :: Vec2{1200, 1200}
+// BOARD_TEXTURE_SIZE :: Vec2{1080, 1080}
+BOARD_POSITION_RECT :: rl.Rectangle{0, 0, BOARD_TEXTURE_SIZE.x, BOARD_TEXTURE_SIZE.y}
+
+WATER_COLOR  :: rl.Color{54, 186, 228, 255}
+CLIFF_COLOR  :: rl.Color{80, 76, 75, 255}
+SAND_COLOR   :: rl.Color{219, 182, 127, 255}
+STONE_COLOR  :: rl.Color{185, 140, 93, 255}
+JUNGLE_COLOR :: rl.Color{157, 177, 58, 255}
+
+SPAWNPOINT_FLAGS :: Space_Flags{.MELEE_MINION_SPAWNPOINT, .RANGED_MINION_SPAWNPOINT, .HEAVY_MINION_SPAWNPOINT, .HERO_SPAWNPOINT}
+PERMANENT_FLAGS  :: SPAWNPOINT_FLAGS + {.TERRAIN}
+MINION_FLAGS     :: Space_Flags{.MELEE_MINION, .RANGED_MINION, .HEAVY_MINION}
+UNIT_FLAGS       :: MINION_FLAGS + {.HERO}
+OBSTACLE_FLAGS   :: UNIT_FLAGS + {.TERRAIN, .TOKEN}
+
 
 starting_terrain := [?]IVec2 {
     {1,8}, {1,9}, {1,10}, {1,13}, {1,14}, {1,15}, {1,16}, {1,17}, {1,18},
@@ -30,19 +97,6 @@ starting_terrain := [?]IVec2 {
     {18,1},
 }
 
-Region_ID :: enum {
-    NONE,
-    RED_JUNGLE,
-    RED_BASE,
-    RED_BEACH,
-    CENTRE,
-    BLUE_BEACH,
-    BLUE_BASE,
-    BLUE_JUNGLE,
-}
-
-zone_indices: [Region_ID][dynamic]IVec2
-
 fast_travel_adjacencies := [Region_ID]bit_set[Region_ID] {
     .NONE = {},
     .RED_JUNGLE = {.RED_BASE, .CENTRE},
@@ -54,7 +108,7 @@ fast_travel_adjacencies := [Region_ID]bit_set[Region_ID] {
     .BLUE_JUNGLE = {.BLUE_BASE, .CENTRE}
 }
 
-spawnpoints := [?]Spawnpoint_Marker{
+spawnpoints := [?]Spawnpoint_Marker {
     {{2, 11}, .HERO_SPAWNPOINT, .RED},
     {{3, 9}, .HERO_SPAWNPOINT, .RED},
     {{3, 7}, .HERO_SPAWNPOINT, .RED},
@@ -79,182 +133,41 @@ spawnpoints := [?]Spawnpoint_Marker{
     
 }
 
-GRID_WIDTH :: 21
-GRID_HEIGHT :: 20
-
-Spawnpoint_Marker :: struct {
-    loc: IVec2,
-    spawnpoint_flag: Space_Flag,
-    team: Team,
+spawnpoint_to_minion := #partial [Space_Flag]Space_Flag {
+    .MELEE_MINION_SPAWNPOINT = .MELEE_MINION,
+    .RANGED_MINION_SPAWNPOINT = .RANGED_MINION,
+    .HEAVY_MINION_SPAWNPOINT = .HEAVY_MINION,
 }
 
-Space_Flag :: enum {
-    TERRAIN,
-    MELEE_MINION_SPAWNPOINT,
-    RANGED_MINION_SPAWNPOINT,
-    HEAVY_MINION_SPAWNPOINT,
-    HERO_SPAWNPOINT,
-    HERO,
-    MELEE_MINION,
-    RANGED_MINION,
-    HEAVY_MINION,
-    TOKEN,
+region_colors := [Region_ID]rl.Color {
+    .NONE = rl.MAGENTA,
+    .RED_BASE = STONE_COLOR,
+    .RED_BEACH = SAND_COLOR,
+    .RED_JUNGLE = JUNGLE_COLOR,
+    .CENTRE = STONE_COLOR,
+    .BLUE_JUNGLE = JUNGLE_COLOR,
+    .BLUE_BEACH = SAND_COLOR,
+    .BLUE_BASE = STONE_COLOR,
 }
 
-get_symmetric_space :: proc(pos: IVec2) -> ^Space {
-    sym_idx := IVec2{GRID_WIDTH, GRID_HEIGHT} - pos - 1
-    return &board[sym_idx.x][sym_idx.y]
+minion_initials := #partial [Space_Flag]cstring {
+    .MELEE_MINION  = "M",
+    .RANGED_MINION = "R",
+    .HEAVY_MINION  = "H",
 }
 
-Space_Flags :: bit_set[Space_Flag]
-
-
-SPAWNPOINT_FLAGS :: Space_Flags{.MELEE_MINION_SPAWNPOINT, .RANGED_MINION_SPAWNPOINT, .HEAVY_MINION_SPAWNPOINT, .HERO_SPAWNPOINT}
-PERMANENT_FLAGS  :: SPAWNPOINT_FLAGS + {.TERRAIN}
-MINION_FLAGS     :: Space_Flags{.MELEE_MINION, .RANGED_MINION, .HEAVY_MINION}
-UNIT_FLAGS       :: MINION_FLAGS + {.HERO}
-OBSTACLE_FLAGS   :: UNIT_FLAGS + {.TERRAIN, .TOKEN}
-
-Space :: struct {
-    position: Vec2,
-    flags: Space_Flags,
-    region_id: Region_ID,
-    spawnpoint_team: Team,
-    unit_team: Team,
-    hero_id: Hero_ID,
-    owner: ^Player,
-}
+zone_indices: [Region_ID][dynamic]IVec2
 
 board: [GRID_WIDTH][GRID_HEIGHT]Space
 
 board_render_texture: rl.RenderTexture2D
 
 
-BOARD_TEXTURE_SIZE :: Vec2{1200, 1200}
-// BOARD_TEXTURE_SIZE :: Vec2{1080, 1080}
 
-BOARD_POSITION_RECT :: rl.Rectangle{0, 0, BOARD_TEXTURE_SIZE.x, BOARD_TEXTURE_SIZE.y}
-
-
-render_board_to_texture :: proc(board_element: UI_Board_Element) {
-    rl.BeginTextureMode(board_render_texture)
-
-    rl.ClearBackground({54, 186, 228, 255})
-
-    for arr in board {
-        for space in arr {
-            color := rl.WHITE
-            if .TERRAIN in space.flags do color = CLIFF_COLOR
-            else do color = region_colors[space.region_id]
-            rl.DrawPoly(space.position, 6, VERTICAL_SPACING / math.sqrt_f32(3), 0, color)
-
-            // Make the highlight
-            brightness_increase :: 50
-            if .TERRAIN not_in space.flags {
-                new_color := rl.WHITE
-                for &val, idx in new_color do val = 255 if color[idx] + brightness_increase < color[idx] else color[idx] + brightness_increase
-                rl.DrawPoly(space.position, 6, 0.9 * VERTICAL_SPACING / math.sqrt_f32(3), 0, new_color)
-                rl.DrawCircleV(space.position, 0.92 * VERTICAL_SPACING / 2, color)
-            }
-            // if space != 
-
-            spawnpoint_flags := space.flags & SPAWNPOINT_FLAGS
-            if spawnpoint_flags != {} {
-                color = team_colors[space.spawnpoint_team]
-                if .HERO_SPAWNPOINT in space.flags {
-                    rl.DrawRing(space.position, VERTICAL_SPACING * 0.35, VERTICAL_SPACING * 0.26, 0, 360, 20, color)
-                } else {
-                    // spawnpoint_type := Space_Flag(log2(transmute(int) spawnpoint_flags))
-                    spawnpoint_type: Space_Flag
-                    for flag in minion_spawnpoint_array {
-                        if flag in spawnpoint_flags {
-                            spawnpoint_type = flag
-                            break
-                        }
-                    }
-                    initial := minion_initials[spawnpoint_to_minion[spawnpoint_type]]
-
-                    FONT_SIZE :: 0.8 * VERTICAL_SPACING
-
-                    text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, font_spacing)
-                    rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, font_spacing, color)
-                }
-            }
-
-            minion_flags := space.flags & MINION_FLAGS 
-            if minion_flags != {} {
-                color = team_colors[space.unit_team]
-                minion_type: Space_Flag
-                for flag in minion_flag_array {
-                    if flag in minion_flags {
-                        minion_type = flag
-                        break
-                    }
-                }
-                initial := minion_initials[minion_type]
-
-                FONT_SIZE :: 0.8 * VERTICAL_SPACING
-
-                text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, font_spacing)
-                rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.45, color)
-                rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, font_spacing, rl.BLACK)
-
-            }
-
-            if .HERO in space.flags {
-                color = team_colors[space.unit_team]
-                name, ok := reflect.enum_name_from_value(space.hero_id); assert(ok)
-                initial := strings.clone_to_cstring(name[:1])
-
-                FONT_SIZE :: 0.8 * VERTICAL_SPACING
-
-                text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, font_spacing)
-                rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.45, color)
-                rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, font_spacing, rl.BLACK)
-            }
-        }
-    }
-
-    for target in player.hero.target_list {
-        space := board[target.x][target.y]
-
-        time := rl.GetTime()
-
-        color_blend := (math.sin(2 * time) + 1) / 2
-        color: = color_lerp(rl.WHITE, rl.VIOLET, color_blend)
-        rl.DrawPolyLinesEx(space.position, 6, VERTICAL_SPACING / 2, 0, VERTICAL_SPACING * 0.08, color)
-    }
-
-    space_pos: Vec2
-    if board_element.hovered_space != {-1, -1} {
-        space_pos = board[board_element.hovered_space.x][board_element.hovered_space.y].position
-        // rl.DrawRing(pos, VERTICAL_SPACING * 0.45, VERTICAL_SPACING * 0.5, 0, 360, 100, rl.WHITE)
-        rl.DrawPolyLinesEx(space_pos, 6, VERTICAL_SPACING * (1 / math.sqrt_f32(3) + 0.05), 0, VERTICAL_SPACING * 0.05, rl.WHITE)
-    }
-
-    draw_hover_effect: #partial switch player.stage {
-    case .RESOLVING:
-        #partial switch action in get_current_action(&player.hero) {
-        case Fast_Travel_Action:
-            if board_element.hovered_space not_in player.hero.target_list do break draw_hover_effect
-            player_loc := player.hero.location
-            player_pos := board[player_loc.x][player_loc.y].position
-            rl.DrawLineEx(space_pos, player_pos, 4, rl.VIOLET)
-        case Movement_Action:
-            // target_slice := player.chosen_targets[:] if board_element.space_in_target_list else player.chosen_targets[:player.num_locked_targets]
-            current_loc := calculate_implicit_target(action.target)
-            for target in player.hero.chosen_targets {
-                rl.DrawLineEx(board[current_loc.x][current_loc.y].position, board[target.x][target.y].position, 4, rl.VIOLET)
-                current_loc = target
-            }
-        }
-    }
-
-
-
-    rl.EndTextureMode()
+get_symmetric_space :: proc(pos: IVec2) -> ^Space {
+    sym_idx := IVec2{GRID_WIDTH, GRID_HEIGHT} - pos - 1
+    return &board[sym_idx.x][sym_idx.y]
 }
-
 
 setup_space_positions :: proc() {
     for &x_arr, x_idx in board {
@@ -429,6 +342,111 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
     return
 }
 
+render_board_to_texture :: proc(board_element: UI_Board_Element) {
+    rl.BeginTextureMode(board_render_texture)
+
+    rl.ClearBackground(WATER_COLOR)
+
+    for arr in board {
+        for space in arr {
+            color := rl.WHITE
+            if .TERRAIN in space.flags do color = CLIFF_COLOR
+            else do color = region_colors[space.region_id]
+            rl.DrawPoly(space.position, 6, VERTICAL_SPACING / math.sqrt_f32(3), 0, color)
+
+            // Make the highlight
+            brightness_increase :: 50
+            if .TERRAIN not_in space.flags {
+                new_color := rl.WHITE
+                for &val, idx in new_color do val = 255 if color[idx] + brightness_increase < color[idx] else color[idx] + brightness_increase
+                rl.DrawPoly(space.position, 6, 0.9 * VERTICAL_SPACING / math.sqrt_f32(3), 0, new_color)
+                rl.DrawCircleV(space.position, 0.92 * VERTICAL_SPACING / 2, color)
+            }
+            // if space != 
+
+            spawnpoint_flags := space.flags & SPAWNPOINT_FLAGS
+            if spawnpoint_flags != {} {
+                color = team_colors[space.spawnpoint_team]
+                if .HERO_SPAWNPOINT in space.flags {
+                    rl.DrawRing(space.position, VERTICAL_SPACING * 0.35, VERTICAL_SPACING * 0.26, 0, 360, 20, color)
+                } else {
+                    // spawnpoint_type := Space_Flag(log2(transmute(int) spawnpoint_flags))
+                    spawnpoint_type := get_first_set_bit(spawnpoint_flags).?
+                    initial := minion_initials[spawnpoint_to_minion[spawnpoint_type]]
+
+                    FONT_SIZE :: 0.8 * VERTICAL_SPACING
+
+                    text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, FONT_SPACING)
+                    rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, color)
+                }
+            }
+
+            minion_flags := space.flags & MINION_FLAGS 
+            if minion_flags != {} {
+                color = team_colors[space.unit_team]
+                minion_type := get_first_set_bit(minion_flags).?
+                initial := minion_initials[minion_type]
+
+                FONT_SIZE :: 0.8 * VERTICAL_SPACING
+
+                text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, FONT_SPACING)
+                rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.45, color)
+                rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, rl.BLACK)
+
+            }
+
+            if .HERO in space.flags {
+                color = team_colors[space.unit_team]
+                name, ok := reflect.enum_name_from_value(space.hero_id); assert(ok)
+                initial := strings.clone_to_cstring(name[:1])
+
+                FONT_SIZE :: 0.8 * VERTICAL_SPACING
+
+                text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, FONT_SPACING)
+                rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.45, color)
+                rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, rl.BLACK)
+            }
+        }
+    }
+
+    for target in player.hero.target_list {
+        space := board[target.x][target.y]
+
+        time := rl.GetTime()
+
+        color_blend := (math.sin(2 * time) + 1) / 2
+        color: = color_lerp(rl.WHITE, rl.VIOLET, color_blend)
+        rl.DrawPolyLinesEx(space.position, 6, VERTICAL_SPACING / 2, 0, VERTICAL_SPACING * 0.08, color)
+    }
+
+    space_pos: Vec2
+    if board_element.hovered_space != {-1, -1} {
+        space_pos = board[board_element.hovered_space.x][board_element.hovered_space.y].position
+        // rl.DrawRing(pos, VERTICAL_SPACING * 0.45, VERTICAL_SPACING * 0.5, 0, 360, 100, rl.WHITE)
+        rl.DrawPolyLinesEx(space_pos, 6, VERTICAL_SPACING * (1 / math.sqrt_f32(3) + 0.05), 0, VERTICAL_SPACING * 0.05, rl.WHITE)
+    }
+
+    draw_hover_effect: #partial switch player.stage {
+    case .RESOLVING:
+        #partial switch action in get_current_action(&player.hero) {
+        case Fast_Travel_Action:
+            if board_element.hovered_space not_in player.hero.target_list do break draw_hover_effect
+            player_loc := player.hero.location
+            player_pos := board[player_loc.x][player_loc.y].position
+            rl.DrawLineEx(space_pos, player_pos, 4, rl.VIOLET)
+        case Movement_Action:
+            // target_slice := player.chosen_targets[:] if board_element.space_in_target_list else player.chosen_targets[:player.num_locked_targets]
+            current_loc := calculate_implicit_target(action.target)
+            for target in player.hero.chosen_targets {
+                rl.DrawLineEx(board[current_loc.x][current_loc.y].position, board[target.x][target.y].position, 4, rl.VIOLET)
+                current_loc = target
+            }
+        }
+    }
+
+    rl.EndTextureMode()
+}
+
 draw_board: UI_Render_Proc : proc(element: UI_Element) {
     board_element, ok := element.variant.(UI_Board_Element)
     assert(ok)
@@ -436,5 +454,4 @@ draw_board: UI_Render_Proc : proc(element: UI_Element) {
     rl.DrawTexturePro(board_render_texture.texture, {0, 0, BOARD_TEXTURE_SIZE.x, -BOARD_TEXTURE_SIZE.y}, element.bounding_rect, {0, 0}, 0, rl.WHITE)
 
     rl.DrawRectangleLinesEx(BOARD_POSITION_RECT, 4, rl.WHITE)
-
 }

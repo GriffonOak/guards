@@ -1,6 +1,7 @@
 package guards
 
 import "core:fmt"
+import rl "vendor:raylib"
 
 Direction :: enum {
     NORTH,
@@ -9,15 +10,6 @@ Direction :: enum {
     SOUTH,
     SOUTH_WEST,
     NORTH_WEST,
-}
-
-direction_vectors := [Direction]IVec2 {
-    .NORTH = {0, 1},
-    .NORTH_EAST = {1, 0},
-    .SOUTH_EAST = {1, -1},
-    .SOUTH = {0, -1},
-    .SOUTH_WEST = {-1, 0},
-    .NORTH_WEST = {-1, 1}
 }
 
 Team :: enum {
@@ -42,6 +34,8 @@ Game_State :: struct {
     current_battle_zone: Region_ID
 }
 
+
+
 game_state: Game_State = {
     num_players = 1, 
     confirmed_players = 0,
@@ -49,18 +43,29 @@ game_state: Game_State = {
     current_battle_zone = .CENTRE,
 }
 
+team_colors := [Team]rl.Color{
+    .NONE = rl.MAGENTA,
+    .RED  = {237, 92, 2, 255},
+    .BLUE = {22, 147, 255, 255},
+}
+
+direction_vectors := [Direction]IVec2 {
+    .NORTH = {0, 1},
+    .NORTH_EAST = {1, 0},
+    .SOUTH_EAST = {1, -1},
+    .SOUTH = {0, -1},
+    .SOUTH_WEST = {-1, 0},
+    .NORTH_WEST = {-1, 1}
+}
+
+
+
 spawn_minions :: proc(zone: Region_ID) {
     for index in zone_indices[zone] {
         space := &board[index.x][index.y]
         spawnpoint_flags := space.flags & (SPAWNPOINT_FLAGS - {.HERO_SPAWNPOINT})
         if spawnpoint_flags != {} {
-            spawnpoint_type: Space_Flag
-            for flag in minion_spawnpoint_array {
-                if flag in spawnpoint_flags {
-                    spawnpoint_type = flag
-                    break
-                }
-            }
+            spawnpoint_type := get_first_set_bit(spawnpoint_flags).?
 
             minion_to_spawn := spawnpoint_to_minion[spawnpoint_type]
             space.flags += {minion_to_spawn}

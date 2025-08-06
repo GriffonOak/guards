@@ -6,6 +6,8 @@ import "core:log"
 
 import rl "vendor:raylib"
 
+
+
 Input_Event :: union {
     Mouse_Pressed_Event,
     Mouse_Motion_Event,
@@ -63,7 +65,11 @@ UI_State :: struct {
     pressed_keys: ba.Bit_Array,
 }
 
+
+
 ui_state: UI_State
+
+
 
 check_for_input_events :: proc(q: ^[dynamic]Input_Event) {
     p := rl.GetMousePosition() * (1.0 if window_size == .BIG else 2.0)

@@ -31,7 +31,7 @@ xargatha_cards := [?]Card {
                         Card_Reach{},
                     },
                     Contains_Any(UNIT_FLAGS),
-                    Is_Enemy{},
+                    Is_Enemy_Unit{},
                 }
             },
             Movement_Action {

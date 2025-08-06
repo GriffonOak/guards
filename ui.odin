@@ -2,6 +2,8 @@ package guards
 
 import rl "vendor:raylib"
 
+
+
 UI_Board_Element :: struct {
     hovered_space: IVec2,
 }
@@ -23,14 +25,8 @@ UI_Variant :: union {
     UI_Button_Element,
 }
 
-BUTTON_PADDING :: 10
-
 UI_Input_Proc :: #type proc(Input_Event, ^UI_Element) -> bool
 UI_Render_Proc :: #type proc(UI_Element)
-
-null_input_proc: UI_Input_Proc : proc(_: Input_Event, _: ^UI_Element) -> bool { return false }
-null_render_proc: UI_Render_Proc : proc(_: UI_Element) {}
-
 
 UI_Element :: struct {
     bounding_rect: rl.Rectangle,
@@ -39,7 +35,43 @@ UI_Element :: struct {
     render: UI_Render_Proc,
 }
 
+Side_Button_Manager :: struct {
+    button_count: int,
+    button_location: rl.Rectangle
+}
+
+
+
+BUTTON_PADDING :: 10
+
+SELECTION_BUTTON_SIZE :: Vec2{400, 100}
+FIRST_SIDE_BUTTON_LOCATION :: rl.Rectangle{WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, BUTTON_PADDING, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}
+
+
+
 ui_stack: [dynamic]UI_Element
+
+side_button_manager := Side_Button_Manager {
+    0,
+    FIRST_SIDE_BUTTON_LOCATION
+}
+
+
+
+null_input_proc: UI_Input_Proc : proc(_: Input_Event, _: ^UI_Element) -> bool { return false }
+null_render_proc: UI_Render_Proc : proc(_: UI_Element) {}
+
+check_outside_or_deselected :: proc(input: Input_Event, element: UI_Element) -> bool {
+    #partial switch var in input {
+    case Mouse_Up_Event, Mouse_Down_Event, Mouse_Pressed_Event, Mouse_Motion_Event:
+        if !rl.CheckCollisionPointRec(ui_state.mouse_pos, element.bounding_rect) {
+            return false
+        }
+    case Input_Already_Consumed:
+        return false
+    }
+    return true
+}
 
 button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)-> bool {
     button_element := assert_variant(&element.variant, UI_Button_Element)
@@ -90,25 +122,12 @@ draw_button: UI_Render_Proc : proc(element: UI_Element) {
         button_element.text,
         {element.bounding_rect.x + TEXT_PADDING, element.bounding_rect.y + TEXT_PADDING}, 
         element.bounding_rect.height - 2 * TEXT_PADDING,
-        font_spacing,
+        FONT_SPACING,
         rl.BLACK
     )
     if button_element.hovered {
         rl.DrawRectangleLinesEx(element.bounding_rect, TEXT_PADDING / 2, rl.WHITE)
     }
-}
-
-Side_Button_Manager :: struct {
-    button_count: int,
-    button_location: rl.Rectangle
-}
-
-SELECTION_BUTTON_SIZE :: Vec2{400, 100}
-FIRST_SIDE_BUTTON_LOCATION :: rl.Rectangle{WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, BUTTON_PADDING, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}
-
-side_button_manager := Side_Button_Manager {
-    0,
-    FIRST_SIDE_BUTTON_LOCATION
 }
 
 add_side_button :: proc(text: cstring, event: Event) {

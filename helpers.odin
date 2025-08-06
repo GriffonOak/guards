@@ -2,23 +2,14 @@ package guards
 
 import "base:intrinsics"
 import rl "vendor:raylib"
+import "core:fmt"
+
+
 
 assert_variant :: proc(u: ^$U, $V: typeid) -> ^V where intrinsics.type_is_union(U) && intrinsics.type_is_variant_of(U, V) {
     out, ok := &u.(V)
     assert(ok)
     return out
-}
-
-check_outside_or_deselected :: proc(input: Input_Event, element: UI_Element) -> bool {
-    #partial switch var in input {
-    case Mouse_Up_Event, Mouse_Down_Event, Mouse_Pressed_Event, Mouse_Motion_Event:
-        if !rl.CheckCollisionPointRec(ui_state.mouse_pos, element.bounding_rect) {
-            return false
-        }
-    case Input_Already_Consumed:
-        return false
-    }
-    return true
 }
 
 find_played_card :: proc() -> (element: ^UI_Element, card_element: ^UI_Card_Element) {
@@ -39,9 +30,9 @@ retrieve_cards :: proc() {
     }
 }
 
-// lerp :: proc(a, b: $T, t: $T2) -> T {
-//     return b * t + a * (1-t)
-// }
+lerp :: proc(a, b: $T, t: $T2) -> T {
+    return b * t + a * (1-t)
+}
 
 color_lerp :: proc(a, b: rl.Color, t: $T) -> (out: rl.Color) {
     for val, index in a {
@@ -102,4 +93,11 @@ calculate_implicit_target :: proc(implicit_target: Implicit_Target) -> (out: Tar
         out = prev_action.result
     }
     return
+}
+
+get_first_set_bit :: proc(bs: bit_set[$T]) -> Maybe(T) where intrinsics.type_is_enum(T) {
+    for enum_type in T {
+        if enum_type in bs do return enum_type
+    }
+    return nil
 }
