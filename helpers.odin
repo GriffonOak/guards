@@ -89,10 +89,19 @@ calculate_implicit_target :: proc(implicit_target: Implicit_Target) -> (out: Tar
     case Target: out = target
     case Self: out = player.hero.location
     case Previous_Choice:
-        prev_action := player.hero.action_list[player.hero.current_action_index - 1].(Choose_Target_Action)
+        prev_action := player.hero.action_list[player.hero.current_action_index - 1].variant.(Choose_Target_Action)
         out = prev_action.result
     }
     return
+}
+
+calculate_implicit_target_set :: proc(implicit_set: Implicit_Target_Set) -> Target_Set {
+    switch set in implicit_set {
+    case Target_Set: return set
+    case []Selection_Criterion: return make_arbitrary_targets(..set)
+    }
+    assert(false)
+    return {}
 }
 
 get_first_set_bit :: proc(bs: bit_set[$T]) -> Maybe(T) where intrinsics.type_is_enum(T) {

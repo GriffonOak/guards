@@ -79,7 +79,7 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
         #partial switch event in button_element.event {
         case Begin_Resolution_Event:
             if len(event.action_list) == 0 do break
-            #partial switch action in event.action_list[0] {
+            #partial switch action in event.action_list[0].variant {
             case Movement_Action, Fast_Travel_Action:
                 player.hero.target_list = nil
             }
@@ -97,14 +97,7 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
     #partial switch event in button_element.event {
     case Begin_Resolution_Event:
         if len(event.action_list) == 0 do break
-        #partial switch action in event.action_list[0] {
-        case Choose_Target_Action:
-            player.hero.target_list = arbitrary_targets
-        case Movement_Action:
-            player.hero.target_list = movement_targets
-        case Fast_Travel_Action:
-            player.hero.target_list = fast_travel_targets
-        }
+        player.hero.target_list = event.action_list[0].targets
     }
     button_element.hovered = true
     return true

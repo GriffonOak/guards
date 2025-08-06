@@ -51,7 +51,7 @@ Card :: struct {
     value: int,
     reach: Action_Reach,
     text: string,
-    primary_effect: []Action_Temp,
+    primary_effect: []Action,
     texture: rl.Texture2D,
     state: Card_State,
 }

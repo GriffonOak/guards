@@ -22,22 +22,29 @@ xargatha_cards := [?]Card {
         primary     = .SKILL,
         reach       = Range(3),
         text        = "Target an enemy unit not adjacent to you\nand in range; if able, move the target\nup to 3 spaces to a space adjacent to you.",
-        primary_effect = []Action_Temp {
-            Choose_Target_Action {
+        primary_effect = []Action {
+            { variant = Choose_Target_Action {
                 criteria = {
                     Within_Distance {
-                        Self{},
-                        2,
-                        Card_Reach{},
+                        origin = Self{},
+                        min = 2,
+                        max = Card_Reach{},
                     },
                     Contains_Any(UNIT_FLAGS),
                     Is_Enemy_Unit{},
                 }
-            },
-            Movement_Action {
-                Previous_Choice{},
-                3,
-            }
+            }},
+            { variant = Movement_Action {
+                target = Previous_Choice{},
+                distance = 3,
+                valid_destinations = []Selection_Criterion {
+                    Within_Distance {
+                        origin = Self{},
+                        min = 1,
+                        max = 1,
+                    }
+                }
+            }}
         }
     },
     {

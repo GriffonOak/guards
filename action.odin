@@ -28,47 +28,63 @@ Selection_Criterion :: union {
 }
 
 
-
+Path :: struct {
+    num_locked_spaces: int,
+    spaces: [dynamic]Target,
+}
 
 Movement_Action :: struct {
     target: Implicit_Target,
     distance: int,
+    valid_destinations: Implicit_Target_Set,
+
+    path: Path
 }
 
-Fast_Travel_Action :: struct {}
+Fast_Travel_Action :: struct {
+    result: Target,
+}
 
 Clear_Action :: struct {}
 
 Choose_Target_Action :: struct {
     criteria: []Selection_Criterion,
+
     result: Target,
 }
 
-Action_Temp :: union {
+Action_Variant :: union {
     Movement_Action,
     Fast_Travel_Action,
     Clear_Action,
     Choose_Target_Action,
 }
 
-
-
-basic_fast_travel_action := []Action_Temp{Fast_Travel_Action{}}
-
-basic_hold_action := []Action_Temp{}
-
-basic_movement_action := []Action_Temp{
-    Movement_Action {
-        Self{},
-        0,
-    },
+Action :: struct {
+    variant: Action_Variant,
+    targets: Target_Set,
 }
 
-basic_clear_action := []Action_Temp{Clear_Action{}}
+
+
+basic_fast_travel_action := []Action{{variant=Fast_Travel_Action{}}}
+
+basic_hold_action := []Action{}
+
+basic_movement_action := []Action{
+    {
+        variant = Movement_Action {
+            target   = Self{},
+            distance = 0,
+        }
+    }
+}
+
+basic_clear_action := []Action{{variant = Clear_Action{}}}
 
 
 
-get_current_action :: proc(hero: ^Hero) -> ^Action_Temp {
+get_current_action :: proc(hero: ^Hero) -> ^Action {
     if hero.current_action_index >= len(hero.action_list) do return nil
     return &hero.action_list[hero.current_action_index]
 }

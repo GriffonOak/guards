@@ -21,10 +21,10 @@ Hero :: struct {
     location: IVec2,
 
     current_action_index: int,
-    action_list: []Action_Temp,
-    target_list: map[Target]Void,
-    num_locked_targets: int,
-    chosen_targets: [dynamic]Target,
+    action_list: []Action,
+    // target_list: map[Target]Void,
+    // num_locked_targets: int,
+    // chosen_targets: [dynamic]Target,
 }
 
 Player :: struct {

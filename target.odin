@@ -6,6 +6,13 @@ import "core:fmt"
 
 Target :: IVec2
 
+Target_Set :: map[Target]Void
+
+Implicit_Target_Set :: union {
+    Target_Set,
+    []Selection_Criterion,
+}
+
 Self :: struct {}
 
 Previous_Choice :: struct {}
@@ -16,30 +23,22 @@ Implicit_Target :: union {
     Previous_Choice,
 }
 
-// These would be better off being maps for faster lookup
-movement_targets: map[Target]Void
-fast_travel_targets: map[Target]Void
-clear_targets: map[Target]Void
-arbitrary_targets: map[Target]Void
 
-make_targets :: proc(action: Action_Temp) -> map[Target]Void {
-    switch action_type in action {
+
+
+populate_targets :: proc(action: ^Action) {
+    // if action.targets != nil do delete(action.targets)
+    
+    switch variant in action.variant {
     case Movement_Action:
-        make_movement_targets(action_type.distance, calculate_implicit_target(action_type.target))
-        return movement_targets
+        action.targets =  make_movement_targets(variant.distance, variant.target, variant.valid_destinations)
     case Fast_Travel_Action:
-        make_fast_travel_targets()
-        return fast_travel_targets
+        action.targets =  make_fast_travel_targets()
     case Clear_Action:
-        make_clear_targets()
-        return clear_targets
+        action.targets =  make_clear_targets()
     case Choose_Target_Action:
-        make_arbitrary_targets(..action_type.criteria)
-        return arbitrary_targets
+        action.targets =  make_arbitrary_targets(..variant.criteria)
     }
-
-    assert(false)
-    return {}
 }
 
 Dijkstra_Info :: struct {
@@ -47,17 +46,15 @@ Dijkstra_Info :: struct {
     prev_node: IVec2,
 }
 
-make_movement_targets :: proc(distance: int, origin: IVec2) {
+make_movement_targets :: proc(distance: int, origin: Implicit_Target, valid_destinations: Implicit_Target_Set = nil) -> (out: Target_Set) {
 
     visited_set: map[IVec2]Dijkstra_Info
     unvisited_set: map[IVec2]Dijkstra_Info
     defer delete(visited_set)
     defer delete(unvisited_set)
-    unvisited_set[origin] = {0, {-1, -1}}
+    unvisited_set[calculate_implicit_target(origin)] = {0, {-1, -1}}
 
     // dijkstra's algorithm!
-
-    clear(&movement_targets)
 
     for len(unvisited_set) > 0 {
         // find minimum
@@ -75,7 +72,12 @@ make_movement_targets :: proc(distance: int, origin: IVec2) {
             if next_loc.x < 0 || next_loc.x >= GRID_WIDTH || next_loc.y < 0 || next_loc.y >= GRID_HEIGHT do continue
             if OBSTACLE_FLAGS & board[next_loc.x][next_loc.y].flags != {} do continue
             if next_loc in visited_set do continue
-            for traversed_loc in player.hero.chosen_targets do if traversed_loc == next_loc do continue directions
+            if player.stage == .RESOLVING {
+                #partial switch &action in get_current_action(&player.hero).variant {
+                case Movement_Action:
+                    for traversed_loc in action.path.spaces do if traversed_loc == next_loc do continue directions
+                }
+            }
             next_dist := min_info.dist + 1
             if next_dist > distance do continue
             existing_info, ok := unvisited_set[next_loc]
@@ -86,14 +88,31 @@ make_movement_targets :: proc(distance: int, origin: IVec2) {
         delete_key(&unvisited_set, min_loc)
     }
 
-    add_loop: for loc, info in visited_set {
-        // movement_targets[loc] = Target_Info{prev_loc = info.prev_node}
-        movement_targets[loc] = {}
+    if valid_destinations != nil {
+        destination_set := calculate_implicit_target_set(valid_destinations)
+        fmt.println(destination_set)
+        for valid_endpoint in destination_set {
+            for potential_target, info in visited_set {
+                // @Speed this is kind of abismal, we will be duplicating a lot of work here
+                path, ok := find_shortest_path(potential_target, valid_endpoint).?
+                if !ok do break 
+                defer delete(path)
+                if len(path) + info.dist <= distance do out[potential_target] = {} 
+            }
+        }
+
+        fmt.println(visited_set)
+    } else {
+        add_loop: for loc, info in visited_set {
+            out[loc] = {}
+        }
     }
+
+    return out
 }
 
 // Unify dijkstra implementations at some point if possible
-find_shortest_path :: proc(start, end: Target) -> (out: [dynamic]Target) {
+find_shortest_path :: proc(start, end: Target) -> Maybe([dynamic]Target) {
 
     visited_set: map[IVec2]Dijkstra_Info
     unvisited_set: map[IVec2]Dijkstra_Info
@@ -116,11 +135,12 @@ find_shortest_path :: proc(start, end: Target) -> (out: [dynamic]Target) {
 
         // found the endpoint! prepare the way
         if min_loc == end {
+            out: [dynamic]Target
             visited_set[min_loc] = min_info
             for ; min_loc != {-1, -1} && min_loc != start; min_loc = visited_set[min_loc].prev_node {
                 inject_at(&out, 0, min_loc)
             }
-            return
+            return out
         }
 
         directions: for vector in direction_vectors {
@@ -128,7 +148,12 @@ find_shortest_path :: proc(start, end: Target) -> (out: [dynamic]Target) {
             if next_loc.x < 0 || next_loc.x >= GRID_WIDTH || next_loc.y < 0 || next_loc.y >= GRID_HEIGHT do continue
             if OBSTACLE_FLAGS & board[next_loc.x][next_loc.y].flags != {} do continue
             if next_loc in visited_set do continue
-            for traversed_loc in player.hero.chosen_targets do if traversed_loc == next_loc do continue directions
+            if player.stage == .RESOLVING {
+                #partial switch &action in get_current_action(&player.hero).variant {
+                case Movement_Action:
+                    for traversed_loc in action.path.spaces do if traversed_loc == next_loc do continue directions
+                }
+            }
             next_dist := min_info.dist + 1
             existing_info, ok := unvisited_set[next_loc]
             if !ok || next_dist < existing_info.dist do unvisited_set[next_loc] = {next_dist, min_loc}
@@ -137,15 +162,12 @@ find_shortest_path :: proc(start, end: Target) -> (out: [dynamic]Target) {
         visited_set[min_loc] = min_info
         delete_key(&unvisited_set, min_loc)
     }
-    assert(false)
-    return
+    return nil
 }
 
-make_fast_travel_targets :: proc() {
+make_fast_travel_targets :: proc() -> (out: Target_Set) {
     hero_loc := player.hero.location
     region := board[hero_loc.x][hero_loc.y].region_id
-
-    clear(&fast_travel_targets)
 
     for loc in zone_indices[region] {
         space := board[loc.x][loc.y]
@@ -156,8 +178,7 @@ make_fast_travel_targets :: proc() {
 
     for loc in zone_indices[region] {
         if OBSTACLE_FLAGS & board[loc.x][loc.y].flags != {} do continue
-        // fast_travel_targets[loc] = Target_Info{prev_loc=hero_loc}
-        fast_travel_targets[loc] = {}
+        out[loc] = {}
     }
 
     outer: for other_region in Region_ID {
@@ -170,39 +191,36 @@ make_fast_travel_targets :: proc() {
         }
         for loc in zone_indices[other_region] {
             if OBSTACLE_FLAGS & board[loc.x][loc.y].flags != {} do continue
-            // fast_travel_targets[loc] = Target_Info{prev_loc=hero_loc}
-            fast_travel_targets[loc] = {}
+            out[loc] = {}
         }
     }
+    return out
 }
 
-make_clear_targets :: proc() {
+make_clear_targets :: proc() -> (out: Target_Set) {
     hero_loc := player.hero.location
 
-    clear(&clear_targets)
     for vector in direction_vectors {
         other_loc := hero_loc + vector
         if .TOKEN in board[other_loc.x][other_loc.y].flags {
-            clear_targets[other_loc] = {}
+            out[other_loc] = {}
         }
     }
-
-    fmt.println(clear_targets)
+    return out
 }
 
 // Varargs is cute here but it may not be necessary
-make_arbitrary_targets :: proc(criteria: ..Selection_Criterion) {
-    clear(&arbitrary_targets)
+make_arbitrary_targets :: proc(criteria: ..Selection_Criterion) -> (out: Target_Set) {
 
     // Start with completely populated board (Inefficient!)
     for x in 0..<GRID_WIDTH {
         for y in 0..<GRID_HEIGHT {
-            arbitrary_targets[{x, y}] = {}
+            out[{x, y}] = {}
         }
     }
 
     for criterion in criteria {
-        for target, info in arbitrary_targets {
+        for target, info in out {
             space := board[target.x][target.y]
 
             switch selector in criterion {
@@ -213,19 +231,20 @@ make_arbitrary_targets :: proc(criteria: ..Selection_Criterion) {
                 max_dist := calculate_implicit_quantity(selector.max)
 
                 distance := calculate_hexagonal_distance(origin, target)
-                if distance > max_dist || distance < min_dist do delete_key(&arbitrary_targets, target)
+                if distance > max_dist || distance < min_dist do delete_key(&out, target)
 
             case Contains_Any:
 
                 intersection := space.flags & selector
-                if intersection == {} do delete_key(&arbitrary_targets, target)
+                if intersection == {} do delete_key(&out, target)
 
             case Is_Enemy_Unit:
 
                 if player.team == .NONE || space.unit_team == .NONE || player.team == space.unit_team {
-                    delete_key(&arbitrary_targets, target)
+                    delete_key(&out, target)
                 }  
             }
         }
     }
+    return out
 }

@@ -280,8 +280,8 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
         board_element.hovered_space = {-1, -1}
         action := get_current_action(&player.hero)
         if player.stage == .RESOLVING && action != nil {
-            if _, ok := action.(Movement_Action); ok {
-                resize(&player.hero.chosen_targets, player.hero.num_locked_targets)
+            if move_action, ok := action.variant.(Movement_Action); ok {
+                resize(&move_action.path.spaces, move_action.path.num_locked_spaces)
             }
         }
         return false
@@ -318,22 +318,25 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
 
         #partial switch player.stage {
         case .RESOLVING:
-            resize(&player.hero.chosen_targets, player.hero.num_locked_targets)
-            if board_element.hovered_space not_in player.hero.target_list do break
-            #partial switch action in get_current_action(&player.hero) {
+            action := get_current_action(&player.hero)
+            #partial switch &action_variant in action.variant {
             case Movement_Action:
-
-                starting_space: Target
-                if player.hero.num_locked_targets > 0 {
-                    starting_space = player.hero.chosen_targets[player.hero.num_locked_targets - 1]
-                } else {
-                    starting_space = calculate_implicit_target(get_current_action(&player.hero).(Movement_Action).target)
+                resize(&action_variant.path.spaces, action_variant.path.num_locked_spaces)
+                if board_element.hovered_space not_in action.targets {
+                    break
                 }
 
-                path := find_shortest_path(starting_space, board_element.hovered_space)
+                starting_space: Target
+                if action_variant.path.num_locked_spaces > 0 {
+                    starting_space = action_variant.path.spaces[action_variant.path.num_locked_spaces - 1]
+                } else {
+                    starting_space = calculate_implicit_target(action_variant.target)
+                }
+
+                path, ok := find_shortest_path(starting_space, board_element.hovered_space).?
+                if !ok do break
                 defer delete(path)
-                for space in path do append(&player.hero.chosen_targets, space)
-                fmt.println(player.hero.chosen_targets)
+                for space in path do append(&action_variant.path.spaces, space)
 
             }
         }
@@ -409,16 +412,6 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
         }
     }
 
-    for target in player.hero.target_list {
-        space := board[target.x][target.y]
-
-        time := rl.GetTime()
-
-        color_blend := (math.sin(2 * time) + 1) / 2
-        color: = color_lerp(rl.WHITE, rl.VIOLET, color_blend)
-        rl.DrawPolyLinesEx(space.position, 6, VERTICAL_SPACING / 2, 0, VERTICAL_SPACING * 0.08, color)
-    }
-
     space_pos: Vec2
     if board_element.hovered_space != {-1, -1} {
         space_pos = board[board_element.hovered_space.x][board_element.hovered_space.y].position
@@ -428,18 +421,40 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
 
     draw_hover_effect: #partial switch player.stage {
     case .RESOLVING:
-        #partial switch action in get_current_action(&player.hero) {
+        action := get_current_action(&player.hero)
+        for target in action.targets {
+            space := board[target.x][target.y]
+
+            time := rl.GetTime()
+
+            color_blend := (math.sin(2 * time) + 1) / 2
+            color: = color_lerp(rl.WHITE, rl.VIOLET, color_blend)
+            rl.DrawPolyLinesEx(space.position, 6, VERTICAL_SPACING / 2, 0, VERTICAL_SPACING * 0.08, color)
+        }
+
+        #partial switch variant in action.variant {
         case Fast_Travel_Action:
-            if board_element.hovered_space not_in player.hero.target_list do break draw_hover_effect
+            if board_element.hovered_space not_in action.targets do break draw_hover_effect
             player_loc := player.hero.location
             player_pos := board[player_loc.x][player_loc.y].position
             rl.DrawLineEx(space_pos, player_pos, 4, rl.VIOLET)
         case Movement_Action:
             // target_slice := player.chosen_targets[:] if board_element.space_in_target_list else player.chosen_targets[:player.num_locked_targets]
-            current_loc := calculate_implicit_target(action.target)
-            for target in player.hero.chosen_targets {
+            current_loc := calculate_implicit_target(variant.target)
+            for target in variant.path.spaces {
                 rl.DrawLineEx(board[current_loc.x][current_loc.y].position, board[target.x][target.y].position, 4, rl.VIOLET)
                 current_loc = target
+            }
+        }
+    }
+
+    when ODIN_DEBUG {
+        for x in 0..<GRID_WIDTH {
+            for y in 0..<GRID_HEIGHT {
+                space := board[x][y]
+                coords := fmt.ctprintf("%d,%d", x, y)
+                bound := rl.MeasureTextEx(default_font, coords, 30, 0)
+                rl.DrawTextEx(default_font, coords, space.position - bound / 2, 30, 0, rl.BLACK)
             }
         }
     }
