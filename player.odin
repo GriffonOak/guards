@@ -157,8 +157,6 @@ Player :: struct {
     hero: Hero,
     
     team: Team,
-    action_button_count: int,
-
 }
 
 Hero_ID :: enum {
@@ -198,12 +196,3 @@ player2 := Player {
     },
     team = .BLUE,
 }
-
-// start_next_action :: proc(actions: Action_List) {
-//     current_action := actions.actions[actions.current_action]
-//     switch var in current_action {
-//     case Hold_Action:
-//         append(&event_queue, End_Resolution_Event{})
-//     case Movement_Action, Fast_Travel_Action:
-//     }
-// }

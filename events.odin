@@ -127,7 +127,7 @@ resolve_event :: proc(event: Event) {
                 other_element.bounding_rect = card_hand_position_rects[other_card.card.color]
                 other_card.card.state = .IN_HAND
             } else {
-                append(&ui_stack, confirm_button)
+                add_side_button("Confirm card", Confirm_Event{})
             }
 
             element.bounding_rect = CARD_PLAYED_POSITION_RECT
@@ -135,14 +135,14 @@ resolve_event :: proc(event: Event) {
         case .PLAYED:
             element.bounding_rect = card_hand_position_rects[card_element.card.color]
             card_element.card.state = .IN_HAND
-            pop(&ui_stack)
+            clear_side_buttons()
         }
 
     case Confirm_Event:
         #partial switch player.stage {
         case .SELECTING:
             player.stage = .CONFIRMED
-            pop(&ui_stack) // Confirm button
+            clear_side_buttons()
             game_state.confirmed_players += 1
             if game_state.confirmed_players == game_state.num_players {
                 game_state.stage = .RESOLUTION
@@ -152,7 +152,7 @@ resolve_event :: proc(event: Event) {
                 append(&event_queue, Begin_Choosing_Action_Event{})
             }
         case .RESOLVING:
-            append(&event_queue, Resolve_Current_Action_Event{})
+            assert(false)
         }
 
     case Cancel_Event:
@@ -180,19 +180,12 @@ resolve_event :: proc(event: Event) {
         element, card_element := find_played_card()
         assert(element != nil && card_element != nil)
 
-        // Make some buttons, yeah?
-        SELECTION_BUTTON_SIZE :: Vec2{400, 100}
 
         card := card_element.card
 
-        player.action_button_count = 0
-        button_location := rl.Rectangle{WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, BUTTON_PADDING, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}
-
         if card.primary != .DEFENSE {
             if len(card.primary_effect) > 0 && len(make_targets(card.primary_effect[0])) > 0 {
-                add_button(button_location, "Primary", Begin_Resolution_Event{card.primary_effect})
-                player.action_button_count += 1
-                button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+                add_side_button("Primary", Begin_Resolution_Event{card.primary_effect})
             }
         }
 
@@ -201,30 +194,23 @@ resolve_event :: proc(event: Event) {
             movement_action := &basic_movement_action[0].(Movement_Action)
             movement_action.distance = movement_value
             if len(make_targets(movement_action^)) > 0 {
-                add_button(button_location, "Movement", Begin_Resolution_Event{basic_movement_action})
-                player.action_button_count += 1
-                button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+                add_side_button("Movement", Begin_Resolution_Event{basic_movement_action})
             }            
         }
 
         if card.primary == .MOVEMENT || card.secondaries[.MOVEMENT] > 0 {
             if len(make_targets(basic_fast_travel_action[0])) > 0 {
-                add_button(button_location, "Fast travel", Begin_Resolution_Event{basic_fast_travel_action})
-                player.action_button_count += 1
-                button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+                add_side_button("Fast travel", Begin_Resolution_Event{basic_fast_travel_action})
             }
         }
 
         if card.primary == .ATTACK || card.secondaries[.ATTACK] > 0 {
             if len(make_targets(basic_clear_action[0])) > 0 {
-                add_button(button_location, "Clear", Begin_Resolution_Event{basic_clear_action})
-                player.action_button_count += 1
-                button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+                add_side_button("Clear", Begin_Resolution_Event{basic_clear_action})
             }
         }
 
-        add_button(button_location, "Hold", Begin_Resolution_Event{basic_hold_action})
-        player.action_button_count += 1
+        add_side_button("Hold", Begin_Resolution_Event{basic_hold_action})
     
     case Begin_Resolution_Event:
         player.stage = .RESOLVING
@@ -233,10 +219,8 @@ resolve_event :: proc(event: Event) {
         // Might not be the right time to do this
         clear(&player.hero.chosen_targets)
 
+        clear_side_buttons()
 
-        for i in 0..<player.action_button_count {
-            pop(&ui_stack)  // Purge action buttons
-        }
         player.hero.action_list = var.action_list
         append(&event_queue, Begin_Next_Action_Event{})
 
@@ -250,8 +234,8 @@ resolve_event :: proc(event: Event) {
         player.hero.target_list = make_targets(action^)
         #partial switch &action_type in action {
         case Movement_Action:
-            append(&ui_stack, confirm_button)
-            append(&ui_stack, cancel_button)
+            add_side_button("Confirm move", Resolve_Current_Action_Event{})
+            add_side_button("Reset move", Cancel_Event{})
         case Choose_Target_Action:
             if len(player.hero.target_list) == 1 {
                 for space in player.hero.target_list {
@@ -322,12 +306,11 @@ resolve_event :: proc(event: Event) {
         append(&event_queue, Begin_Card_Selection_Event{})
 
     case Resolve_Current_Action_Event:
+        clear_side_buttons()
         #partial switch action in get_current_action(&player.hero) {
         case Fast_Travel_Action:
             translocate_unit(player.hero.location, player.hero.chosen_targets[0])
         case Movement_Action:
-            pop(&ui_stack)
-            pop(&ui_stack)
             if len(player.hero.chosen_targets) == 0 do break
             for space in player.hero.chosen_targets[:len(player.hero.chosen_targets) - 1] {
                 // Stuff that happens on move through goes here

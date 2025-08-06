@@ -23,33 +23,7 @@ UI_Variant :: union {
     UI_Button_Element,
 }
 
-CONFIRM_BUTTON_SIZE :: Vec2{300, 100}
-
 BUTTON_PADDING :: 10
-
-cancel_button := UI_Element {
-    {WIDTH - CONFIRM_BUTTON_SIZE.x - BUTTON_PADDING, HEIGHT - CARD_HOVER_POSITION_RECT.height - 2 * (CONFIRM_BUTTON_SIZE.y + BUTTON_PADDING), CONFIRM_BUTTON_SIZE.x, CONFIRM_BUTTON_SIZE.y},
-    UI_Button_Element {
-        Cancel_Event{},
-        "Cancel",
-        false
-    },
-    button_input_proc,
-    draw_button,
-}
-
-confirm_button := UI_Element {
-    {WIDTH - CONFIRM_BUTTON_SIZE.x - BUTTON_PADDING, HEIGHT - CARD_HOVER_POSITION_RECT.height - CONFIRM_BUTTON_SIZE.y - BUTTON_PADDING, CONFIRM_BUTTON_SIZE.x, CONFIRM_BUTTON_SIZE.y},
-    UI_Button_Element{
-        Confirm_Event{},
-        "Confirm",
-        false,
-    },
-    button_input_proc,
-    draw_button,
-}
-
-// undo_button := UI
 
 UI_Input_Proc :: #type proc(Input_Event, ^UI_Element) -> bool
 UI_Render_Proc :: #type proc(UI_Element)
@@ -124,12 +98,33 @@ draw_button: UI_Render_Proc : proc(element: UI_Element) {
     }
 }
 
-add_button :: proc(loc: rl.Rectangle, text: cstring, event: Event) {
+Side_Button_Manager :: struct {
+    button_count: int,
+    button_location: rl.Rectangle
+}
+
+SELECTION_BUTTON_SIZE :: Vec2{400, 100}
+FIRST_SIDE_BUTTON_LOCATION :: rl.Rectangle{WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, BUTTON_PADDING, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}
+
+side_button_manager := Side_Button_Manager {
+    0,
+    FIRST_SIDE_BUTTON_LOCATION
+}
+
+add_side_button :: proc(text: cstring, event: Event) {
     append(&ui_stack, UI_Element {
-        loc, UI_Button_Element {
+        side_button_manager.button_location, UI_Button_Element {
             event, text, false,
         },
         button_input_proc,
         draw_button,
     })
+    side_button_manager.button_count += 1
+    side_button_manager.button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+}
+
+clear_side_buttons :: proc() {
+    resize(&ui_stack, len(ui_stack) - side_button_manager.button_count)
+    side_button_manager.button_count = 0
+    side_button_manager.button_location = FIRST_SIDE_BUTTON_LOCATION
 }
