@@ -88,7 +88,7 @@ resolve_event :: proc(event: Event) {
         fmt.println(var.space)
         #partial switch player.stage {
         case .RESOLVING:
-            if !ui_stack[0].variant.(UI_Board_Element).space_in_target_list do break
+            if ui_stack[0].variant.(UI_Board_Element).hovered_space not_in player.hero.target_list do break
 
             #partial switch &action in get_current_action(&player.hero) {
             case Fast_Travel_Action:

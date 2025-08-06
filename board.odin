@@ -236,7 +236,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
     case .RESOLVING:
         #partial switch action in get_current_action(&player.hero) {
         case Fast_Travel_Action:
-            if !board_element.space_in_target_list do break draw_hover_effect
+            if board_element.hovered_space not_in player.hero.target_list do break draw_hover_effect
             player_loc := player.hero.location
             player_pos := board[player_loc.x][player_loc.y].position
             rl.DrawLineEx(space_pos, player_pos, 4, rl.VIOLET)
@@ -365,7 +365,6 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
 
     if !check_outside_or_deselected(input, element^) {
         board_element.hovered_space = {-1, -1}
-        board_element.space_in_target_list = false
         action := get_current_action(&player.hero)
         if player.stage == .RESOLVING && action != nil {
             if _, ok := action.(Movement_Action); ok {
@@ -399,17 +398,15 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
         }
         if closest_idx.x >= 0 &&  .TERRAIN not_in board[closest_idx.x][closest_idx.y].flags {
             board_element.hovered_space = closest_idx
-            board_element.space_in_target_list = space_in_target_list(closest_idx)
         } else {
             board_element.hovered_space = {-1, -1}
-            board_element.space_in_target_list = false
         }
 
 
         #partial switch player.stage {
         case .RESOLVING:
             resize(&player.hero.chosen_targets, player.hero.num_locked_targets)
-            if !board_element.space_in_target_list do break
+            if board_element.hovered_space not_in player.hero.target_list do break
             #partial switch action in get_current_action(&player.hero) {
             case Movement_Action:
                 // Not an efficient loop here

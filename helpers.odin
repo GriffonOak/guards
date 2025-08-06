@@ -50,13 +50,6 @@ color_lerp :: proc(a, b: rl.Color, t: $T) -> (out: rl.Color) {
     return out
 }
 
-space_in_target_list :: proc(space: IVec2) -> bool {
-    for target in player.hero.target_list {
-        if target == space do return true
-    }
-    return false
-}
-
 translocate_unit :: proc(src, dest: IVec2) {
     src_space := &board[src.x][src.y]
     dest_space := &board[dest.x][dest.y]

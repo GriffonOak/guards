@@ -4,7 +4,6 @@ import rl "vendor:raylib"
 
 UI_Board_Element :: struct {
     hovered_space: IVec2,
-    space_in_target_list: bool,
 }
 
 UI_Card_Element :: struct {

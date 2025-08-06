@@ -34,6 +34,8 @@ window_size: Window_Size = .SMALL
 default_font: rl.Font
 font_spacing :: 0
 
+NULL_SPACE :: IVec2{-1, -1}
+
 main :: proc() {
 
     fmt.println(BOARD_TEXTURE_SIZE.y / VERTICAL_SPACING)
