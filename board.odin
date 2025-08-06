@@ -419,19 +419,46 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
         rl.DrawPolyLinesEx(space_pos, 6, VERTICAL_SPACING * (1 / math.sqrt_f32(3) + 0.05), 0, VERTICAL_SPACING * 0.05, rl.WHITE)
     }
 
-    draw_hover_effect: #partial switch player.stage {
-    case .RESOLVING:
-        action := get_current_action(&player.hero)
-        for target in action.targets {
+    highlight_spaces :: proc(targets: Target_Set, valid_destinations: Implicit_Target_Set = nil) {
+        destination_set: Target_Set
+        if valid_destinations != nil {
+            context.allocator = context.temp_allocator
+            destination_set = calculate_implicit_target_set(valid_destinations)
+        }
+
+        for target in targets {
             space := board[target.x][target.y]
 
             time := rl.GetTime()
 
             color_blend := (math.sin(2 * time) + 1) / 2
             color: = color_lerp(rl.WHITE, rl.VIOLET, color_blend)
-            rl.DrawPolyLinesEx(space.position, 6, VERTICAL_SPACING / 2, 0, VERTICAL_SPACING * 0.08, color)
+            if valid_destinations != nil && target not_in destination_set {
+                rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.08, color)
+            } else {
+                rl.DrawPolyLinesEx(space.position, 6, VERTICAL_SPACING / 2, 0, VERTICAL_SPACING * 0.08, color)
+            }
+        }
+    }
+
+    draw_hover_effect: #partial switch player.stage {
+    case .CHOOSING_ACTION:
+        // See if any side buttons are hovered
+        for &ui_element in ui_stack[side_button_manager.first_button_index:][:side_button_manager.button_count] {
+            button_element := assert_variant(&ui_element.variant, UI_Button_Element)
+            event, ok := button_element.event.(Begin_Resolution_Event)
+            if ok && button_element.hovered && len(event.action_list) > 0 {
+                action := event.action_list[0]
+                if action_type, ok := action.variant.(Movement_Action); ok && action_type.valid_destinations != nil {
+                    highlight_spaces(action.targets, action_type.valid_destinations)
+                } else {
+                    highlight_spaces(action.targets)
+                }
+            }
         }
 
+    case .RESOLVING:
+        action := get_current_action(&player.hero)
         #partial switch variant in action.variant {
         case Fast_Travel_Action:
             if board_element.hovered_space not_in action.targets do break draw_hover_effect
@@ -445,6 +472,12 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
                 rl.DrawLineEx(board[current_loc.x][current_loc.y].position, board[target.x][target.y].position, 4, rl.VIOLET)
                 current_loc = target
             }
+        }
+
+        if action_type, ok := action.variant.(Movement_Action); ok && action_type.valid_destinations != nil {
+            highlight_spaces(action.targets, action_type.valid_destinations)
+        } else {
+            highlight_spaces(action.targets)
         }
     }
 

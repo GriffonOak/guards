@@ -100,8 +100,7 @@ calculate_implicit_target_set :: proc(implicit_set: Implicit_Target_Set) -> Targ
     case Target_Set: return set
     case []Selection_Criterion: return make_arbitrary_targets(..set)
     }
-    assert(false)
-    return {}
+    return nil
 }
 
 get_first_set_bit :: proc(bs: bit_set[$T]) -> Maybe(T) where intrinsics.type_is_enum(T) {

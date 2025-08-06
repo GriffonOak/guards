@@ -95,29 +95,31 @@ resolve_event :: proc(event: Event) {
         fmt.println(var.space)
         #partial switch player.stage {
         case .RESOLVING:
-            if ui_stack[0].variant.(UI_Board_Element).hovered_space not_in player.hero.target_list do break
+            action := get_current_action(&player.hero)
 
-            #partial switch &action in get_current_action(&player.hero).variant {
+            if ui_stack[0].variant.(UI_Board_Element).hovered_space not_in action.targets do break
+
+            #partial switch &action_variant in action.variant {
             case Fast_Travel_Action:
-                action.result = var.space
+                action_variant.result = var.space
                 append(&event_queue, Resolve_Current_Action_Event{})
 
             case Movement_Action:
-                if len(action.path.spaces) == action.path.num_locked_spaces do break
+                if len(action_variant.path.spaces) == action_variant.path.num_locked_spaces do break
 
-                action.path.num_locked_spaces = len(action.path.spaces)
-                last_target := action.path.spaces[len(action.path.spaces)-1]
+                action_variant.path.num_locked_spaces = len(action_variant.path.spaces)
+                last_target := action_variant.path.spaces[len(action_variant.path.spaces)-1]
 
-                delete(player.hero.target_list)
-                player.hero.target_list = make_movement_targets(
-                    distance = action.distance - action.path.num_locked_spaces,
+                delete(action.targets)
+                action.targets = make_movement_targets(
+                    distance = action_variant.distance - action_variant.path.num_locked_spaces,
                     origin = last_target,
-                    valid_destinations = action.valid_destinations,
+                    valid_destinations = action_variant.valid_destinations,
                 )
 
             case Choose_Target_Action:
-                action.result = var.space
-                fmt.println(action.result)
+                action_variant.result = var.space
+                fmt.println(action_variant.result)
                 append(&event_queue, Resolve_Current_Action_Event{})
 
             }
@@ -166,14 +168,15 @@ resolve_event :: proc(event: Event) {
     case Cancel_Event:
         #partial switch player.stage {
         case .RESOLVING:
-            #partial switch &action in get_current_action(&player.hero).variant {
+            action := get_current_action(&player.hero)
+            #partial switch &action_variant in action.variant {
             case Movement_Action:
-                action.path.num_locked_spaces = 0
-                clear(&action.path.spaces)
+                action_variant.path.num_locked_spaces = 0
+                clear(&action_variant.path.spaces)
 
-                movement_val := action.distance
-                delete(player.hero.target_list)
-                player.hero.target_list = make_movement_targets(movement_val, action.target, action.valid_destinations)
+                movement_val := action_variant.distance
+                delete(action.targets)
+                action.targets = make_movement_targets(movement_val, action_variant.target, action_variant.valid_destinations)
             }
         }
         
@@ -247,9 +250,12 @@ resolve_event :: proc(event: Event) {
         #partial switch &action_type in action.variant {
         case Movement_Action:
             add_side_button("Reset move", Cancel_Event{})
-            // if &action_type.valid_destinations == nil {
-            add_side_button("Confirm move", Resolve_Current_Action_Event{})
-            // }
+
+            // This is technically wrong because a move of 0 could still be a valid destination
+            if action_type.valid_destinations == nil {
+                add_side_button("Confirm move", Resolve_Current_Action_Event{})
+            }
+
         case Choose_Target_Action:
             if len(action.targets) == 1 {
                 // Don't know a better way of extracting just the first element
@@ -263,6 +269,7 @@ resolve_event :: proc(event: Event) {
     case End_Resolution_Event:
         assert(player.stage == .RESOLVING)
         player.stage = .RESOLVED
+        game_state.resolved_players += 1
 
         element, card_element := find_played_card()
         assert(element != nil && card_element != nil)
@@ -276,8 +283,6 @@ resolve_event :: proc(event: Event) {
         
     case Resolutions_Completed_Event:
         // Check for end of turn effects and stuff here
-
-
         game_state.turn_counter += 1
         if game_state.turn_counter >= 4 {
             append(&event_queue, Begin_Minion_Battle_Event{})

@@ -52,7 +52,8 @@ make_movement_targets :: proc(distance: int, origin: Implicit_Target, valid_dest
     unvisited_set: map[IVec2]Dijkstra_Info
     defer delete(visited_set)
     defer delete(unvisited_set)
-    unvisited_set[calculate_implicit_target(origin)] = {0, {-1, -1}}
+    start := calculate_implicit_target(origin)
+    unvisited_set[start] = {0, {-1, -1}}
 
     // dijkstra's algorithm!
 
@@ -100,13 +101,14 @@ make_movement_targets :: proc(distance: int, origin: Implicit_Target, valid_dest
                 if len(path) + info.dist <= distance do out[potential_target] = {} 
             }
         }
-
         fmt.println(visited_set)
     } else {
         add_loop: for loc, info in visited_set {
             out[loc] = {}
         }
     }
+
+    if start in out do delete_key(&out, start)
 
     return out
 }

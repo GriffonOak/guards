@@ -37,6 +37,7 @@ UI_Element :: struct {
 
 Side_Button_Manager :: struct {
     button_count: int,
+    first_button_index: int,
     button_location: rl.Rectangle
 }
 
@@ -52,8 +53,9 @@ FIRST_SIDE_BUTTON_LOCATION :: rl.Rectangle{WIDTH - SELECTION_BUTTON_SIZE.x - BUT
 ui_stack: [dynamic]UI_Element
 
 side_button_manager := Side_Button_Manager {
-    0,
-    FIRST_SIDE_BUTTON_LOCATION
+    button_count = 0,
+    first_button_index = 0,
+    button_location = FIRST_SIDE_BUTTON_LOCATION
 }
 
 
@@ -76,14 +78,14 @@ check_outside_or_deselected :: proc(input: Input_Event, element: UI_Element) -> 
 button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)-> bool {
     button_element := assert_variant(&element.variant, UI_Button_Element)
     if !check_outside_or_deselected(input, element^) {
-        #partial switch event in button_element.event {
-        case Begin_Resolution_Event:
-            if len(event.action_list) == 0 do break
-            #partial switch action in event.action_list[0].variant {
-            case Movement_Action, Fast_Travel_Action:
-                player.hero.target_list = nil
-            }
-        }
+        // #partial switch event in button_element.event {
+        // case Begin_Resolution_Event:
+        //     if len(event.action_list) == 0 do break
+        //     #partial switch action in event.action_list[0].variant {
+        //     case Movement_Action, Fast_Travel_Action:
+        //         player.hero.target_list = nil
+        //     }
+        // }
         button_element.hovered = false
         return false
     }
@@ -94,11 +96,11 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
     }
 
     // It would be nice to have this be more general
-    #partial switch event in button_element.event {
-    case Begin_Resolution_Event:
-        if len(event.action_list) == 0 do break
-        player.hero.target_list = event.action_list[0].targets
-    }
+    // #partial switch event in button_element.event {
+    // case Begin_Resolution_Event:
+    //     if len(event.action_list) == 0 do break
+    //     player.hero.target_list = event.action_list[0].targets
+    // }
     button_element.hovered = true
     return true
 }
@@ -124,6 +126,9 @@ draw_button: UI_Render_Proc : proc(element: UI_Element) {
 }
 
 add_side_button :: proc(text: cstring, event: Event) {
+    if side_button_manager.button_count == 0 {
+        side_button_manager.first_button_index = len(ui_stack)
+    }
     append(&ui_stack, UI_Element {
         side_button_manager.button_location, UI_Button_Element {
             event, text, false,
