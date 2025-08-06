@@ -93,23 +93,23 @@ resolve_event :: proc(event: Event) {
             #partial switch &action in get_current_action(&player.hero) {
             case Fast_Travel_Action:
                 if len(player.hero.chosen_targets) == 0 {
-                    append(&player.hero.chosen_targets, Target{loc = var.space})
+                    append(&player.hero.chosen_targets, var.space)
                 } else {
-                    player.hero.chosen_targets[0] = Target{loc = var.space}
+                    player.hero.chosen_targets[0] = var.space
                 }
 
                 append(&event_queue, Resolve_Current_Action_Event{})
             case Movement_Action:
 
                 if len(player.hero.chosen_targets) == player.hero.num_locked_targets do break
-                last_target := player.hero.chosen_targets[len(player.hero.chosen_targets)-1].loc
+                last_target := player.hero.chosen_targets[len(player.hero.chosen_targets)-1]
 
                 player.hero.num_locked_targets = len(player.hero.chosen_targets)
                 make_movement_targets(action.distance - player.hero.num_locked_targets, last_target)
                 player.hero.target_list = movement_targets
 
             case Choose_Target_Action:
-                action.result = Target{loc=var.space}
+                action.result = var.space
                 fmt.println(action.result)
                 append(&event_queue, Resolve_Current_Action_Event{})
             }
@@ -317,7 +317,7 @@ resolve_event :: proc(event: Event) {
     case Resolve_Current_Action_Event:
         #partial switch action in get_current_action(&player.hero) {
         case Fast_Travel_Action:
-            translocate_unit(player.hero.location, player.hero.chosen_targets[0].loc)
+            translocate_unit(player.hero.location, player.hero.chosen_targets[0])
         case Movement_Action:
             pop(&ui_stack)
             pop(&ui_stack)
@@ -326,7 +326,7 @@ resolve_event :: proc(event: Event) {
                 // Stuff that happens on move through goes here
                 fmt.println(space)
             }
-            translocate_unit(calculate_implicit_target(action.target).loc, player.hero.chosen_targets[len(player.hero.chosen_targets) - 1].loc)
+            translocate_unit(calculate_implicit_target(action.target), player.hero.chosen_targets[len(player.hero.chosen_targets) - 1])
             player.hero.num_locked_targets = 0
         }
         

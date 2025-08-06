@@ -52,7 +52,7 @@ color_lerp :: proc(a, b: rl.Color, t: $T) -> (out: rl.Color) {
 
 space_in_target_list :: proc(space: IVec2) -> bool {
     for target in player.hero.target_list {
-        if target.loc  == space do return true
+        if target == space do return true
     }
     return false
 }
@@ -103,7 +103,7 @@ calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity) -> (ou
 calculate_implicit_target :: proc(implicit_target: Implicit_Target) -> (out: Target) {
     switch target in implicit_target {
     case Target: out = target
-    case Self: out = Target{player.hero.location}
+    case Self: out = player.hero.location
     case Previous_Choice:
         prev_action := player.hero.action_list[player.hero.current_action_index - 1].(Choose_Target_Action)
         out = prev_action.result

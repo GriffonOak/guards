@@ -216,7 +216,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
     }
 
     for target in player.hero.target_list {
-        space := board[target.loc.x][target.loc.y]
+        space := board[target.x][target.y]
 
         time := rl.GetTime()
 
@@ -242,10 +242,10 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             rl.DrawLineEx(space_pos, player_pos, 4, rl.VIOLET)
         case Movement_Action:
             // target_slice := player.chosen_targets[:] if board_element.space_in_target_list else player.chosen_targets[:player.num_locked_targets]
-            current_loc := calculate_implicit_target(action.target).loc
+            current_loc := calculate_implicit_target(action.target)
             for target in player.hero.chosen_targets {
-                rl.DrawLineEx(board[current_loc.x][current_loc.y].position, board[target.loc.x][target.loc.y].position, 4, rl.VIOLET)
-                current_loc = target.loc
+                rl.DrawLineEx(board[current_loc.x][current_loc.y].position, board[target.x][target.y].position, 4, rl.VIOLET)
+                current_loc = target
             }
         }
     }
@@ -424,7 +424,7 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
                 //     }
                 // }
                 for {
-                    the_target := Target{loc = current_loc}
+                    the_target := current_loc
                     info, ok := player.hero.target_list[the_target]
                     if !ok || info.prev_loc == {-1, -1} do break
                     inject_at(&player.hero.chosen_targets, player.hero.num_locked_targets, the_target)

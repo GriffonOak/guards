@@ -2,15 +2,15 @@ package guards
 
 import "core:fmt"
 
-Target :: struct {
-    loc: IVec2,
-}
+// Target :: struct {
+//     loc: IVec2,
+// }
 
 Target_Info :: struct {
     prev_loc: IVec2
 }
 
-// Target :: IVec2
+Target :: IVec2
 
 // These would be better off being maps for faster lookup
 movement_targets: map[Target]Target_Info
@@ -23,7 +23,7 @@ make_targets :: proc(action: Action_Temp) -> map[Target]Target_Info {
     case Hold_Action:
         return {}  // ?
     case Movement_Action:
-        make_movement_targets(action_type.distance, calculate_implicit_target(action_type.target).loc)
+        make_movement_targets(action_type.distance, calculate_implicit_target(action_type.target))
         return movement_targets
     case Fast_Travel_Action:
         make_fast_travel_targets()
@@ -73,7 +73,7 @@ make_movement_targets :: proc(distance: int, origin: IVec2) {
             if next_loc.x < 0 || next_loc.x >= GRID_WIDTH || next_loc.y < 0 || next_loc.y >= GRID_HEIGHT do continue
             if OBSTACLE_FLAGS & board[next_loc.x][next_loc.y].flags != {} do continue
             if next_loc in visited_set do continue
-            for traversed_loc in player.hero.chosen_targets do if traversed_loc.loc == next_loc do continue directions
+            for traversed_loc in player.hero.chosen_targets do if traversed_loc == next_loc do continue directions
             next_dist := min_info.dist + 1
             if next_dist > distance do continue
             existing_info, ok := unvisited_set[next_loc]
@@ -85,7 +85,7 @@ make_movement_targets :: proc(distance: int, origin: IVec2) {
     }
 
     add_loop: for loc, info in visited_set {
-        movement_targets[Target{loc=loc}] = Target_Info{prev_loc = info.prev_node}
+        movement_targets[loc] = Target_Info{prev_loc = info.prev_node}
     }
 }
 
@@ -104,7 +104,7 @@ make_fast_travel_targets :: proc() {
 
     for loc in zone_indices[region] {
         if OBSTACLE_FLAGS & board[loc.x][loc.y].flags != {} do continue
-        fast_travel_targets[Target{loc=loc}] =  Target_Info{prev_loc=hero_loc}
+        fast_travel_targets[loc] = Target_Info{prev_loc=hero_loc}
     }
 
     outer: for other_region in Region_ID {
@@ -117,7 +117,7 @@ make_fast_travel_targets :: proc() {
         }
         for loc in zone_indices[other_region] {
             if OBSTACLE_FLAGS & board[loc.x][loc.y].flags != {} do continue
-            fast_travel_targets[Target{loc=loc}] =  Target_Info{prev_loc=hero_loc}
+            fast_travel_targets[loc] = Target_Info{prev_loc=hero_loc}
         }
     }
 }
@@ -129,7 +129,7 @@ make_clear_targets :: proc() {
     for vector in direction_vectors {
         other_loc := hero_loc + vector
         if .TOKEN in board[other_loc.x][other_loc.y].flags {
-            clear_targets[Target{loc=other_loc}] = {}
+            clear_targets[other_loc] = {}
         }
     }
 
@@ -143,13 +143,13 @@ make_arbitrary_targets :: proc(criteria: ..Selection_Criterion) {
     // Start with completely populated board (Inefficient!)
     for x in 0..<GRID_WIDTH {
         for y in 0..<GRID_HEIGHT {
-            arbitrary_targets[Target{{x, y}}] = {}
+            arbitrary_targets[{x, y}] = {}
         }
     }
 
     for criterion in criteria {
         for target, info in arbitrary_targets {
-            space := board[target.loc.x][target.loc.y]
+            space := board[target.x][target.y]
 
             switch selector in criterion {
             case Within_Distance:
@@ -158,7 +158,7 @@ make_arbitrary_targets :: proc(criteria: ..Selection_Criterion) {
                 min_dist := calculate_implicit_quantity(selector.min)
                 max_dist := calculate_implicit_quantity(selector.max)
 
-                distance := calculate_hexagonal_distance(origin.loc, target.loc)
+                distance := calculate_hexagonal_distance(origin, target)
                 if distance > max_dist || distance < min_dist do delete_key(&arbitrary_targets, target)
 
             case Contains_Any:
