@@ -5,6 +5,8 @@ import "core:fmt"
 import "core:math"
 import "core:strings"
 
+import "core:mem"
+
 
 // Todo list
 // Separate cards out of the ui stack
@@ -37,7 +39,7 @@ FONT_SPACING :: 0
 
 
 
-window_size: Window_Size = .BIG
+window_size: Window_Size = .SMALL
 
 default_font: rl.Font
 
@@ -45,9 +47,43 @@ default_font: rl.Font
 
 main :: proc() {
 
-    fmt.println(BOARD_TEXTURE_SIZE.y / VERTICAL_SPACING)
+    when ODIN_DEBUG {
+        default_allocator := context.allocator
+        tracking_allocator: mem.Tracking_Allocator
+        mem.tracking_allocator_init(&tracking_allocator, default_allocator)
+        context.allocator = mem.tracking_allocator(&tracking_allocator)
 
-    input_queue: [dynamic]Input_Event
+        defer {
+            for _, entry in tracking_allocator.allocation_map {
+                fmt.printf("- %v leaked %v bytes\n", entry.location, entry.size)
+            }
+            for entry in tracking_allocator.bad_free_array {
+                fmt.printf("- %v bad free\n", entry.location)
+            }
+            mem.tracking_allocator_destroy(&tracking_allocator)
+        }
+    }
+
+    // arena_buffer := make([]u8, 80000)
+    // defer delete(arena_buffer)
+
+    // arena: mem.Arena
+    // mem.arena_init(&arena, arena_buffer[:])
+    // arena_allocator := mem.arena_allocator(&arena)
+    // context.allocator = arena_allocator
+
+    // defer free_all(arena_allocator)
+
+    // input_queue = make([dynamic]Input_Event)
+    // event_queue = make([dynamic]Event)
+
+    defer {
+        delete(input_queue)
+        delete(event_queue)
+        for id in Region_ID do delete(zone_indices[id])
+        delete(ui_stack)
+        delete(game_state.players)
+    }
 
     active_element_index: int = -1
 
@@ -160,6 +196,8 @@ main :: proc() {
         // rl.DrawCircleV({200, 200}, 200, rl.RED)
 
         rl.EndDrawing()
+
+        free_all(context.temp_allocator)
     }
 }
 

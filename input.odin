@@ -69,7 +69,7 @@ UI_State :: struct {
 
 ui_state: UI_State
 
-
+input_queue: [dynamic]Input_Event
 
 check_for_input_events :: proc(q: ^[dynamic]Input_Event) {
     p := rl.GetMousePosition() * (1.0 if window_size == .BIG else 2.0)

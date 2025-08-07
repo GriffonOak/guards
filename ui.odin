@@ -36,7 +36,7 @@ UI_Element :: struct {
 }
 
 Side_Button_Manager :: struct {
-    button_count: int,
+    buttons: []UI_Element,
     first_button_index: int,
     button_location: rl.Rectangle
 }
@@ -53,7 +53,7 @@ FIRST_SIDE_BUTTON_LOCATION :: rl.Rectangle{WIDTH - SELECTION_BUTTON_SIZE.x - BUT
 ui_stack: [dynamic]UI_Element
 
 side_button_manager := Side_Button_Manager {
-    button_count = 0,
+    buttons = {},
     first_button_index = 0,
     button_location = FIRST_SIDE_BUTTON_LOCATION
 }
@@ -78,14 +78,6 @@ check_outside_or_deselected :: proc(input: Input_Event, element: UI_Element) -> 
 button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)-> bool {
     button_element := assert_variant(&element.variant, UI_Button_Element)
     if !check_outside_or_deselected(input, element^) {
-        // #partial switch event in button_element.event {
-        // case Begin_Resolution_Event:
-        //     if len(event.action_list) == 0 do break
-        //     #partial switch action in event.action_list[0].variant {
-        //     case Movement_Action, Fast_Travel_Action:
-        //         player.hero.target_list = nil
-        //     }
-        // }
         button_element.hovered = false
         return false
     }
@@ -95,12 +87,6 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
         append(&event_queue, button_element.event)
     }
 
-    // It would be nice to have this be more general
-    // #partial switch event in button_element.event {
-    // case Begin_Resolution_Event:
-    //     if len(event.action_list) == 0 do break
-    //     player.hero.target_list = event.action_list[0].targets
-    // }
     button_element.hovered = true
     return true
 }
@@ -126,7 +112,7 @@ draw_button: UI_Render_Proc : proc(element: UI_Element) {
 }
 
 add_side_button :: proc(text: cstring, event: Event) {
-    if side_button_manager.button_count == 0 {
+    if len(side_button_manager.buttons) == 0 {
         side_button_manager.first_button_index = len(ui_stack)
     }
     append(&ui_stack, UI_Element {
@@ -136,12 +122,19 @@ add_side_button :: proc(text: cstring, event: Event) {
         button_input_proc,
         draw_button,
     })
-    side_button_manager.button_count += 1
+    side_button_manager.buttons = ui_stack[side_button_manager.first_button_index:][:len(side_button_manager.buttons) + 1]
     side_button_manager.button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
 }
 
+pop_side_button :: proc() {
+    if len(side_button_manager.buttons) == 0 do return
+    pop(&ui_stack)
+    side_button_manager.buttons = ui_stack[side_button_manager.first_button_index:][:len(side_button_manager.buttons) - 1]
+    side_button_manager.button_location.y -= SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+}
+
 clear_side_buttons :: proc() {
-    resize(&ui_stack, len(ui_stack) - side_button_manager.button_count)
-    side_button_manager.button_count = 0
+    resize(&ui_stack, len(ui_stack) - len(side_button_manager.buttons))
+    side_button_manager.buttons = {}
     side_button_manager.button_location = FIRST_SIDE_BUTTON_LOCATION
 }

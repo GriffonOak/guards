@@ -122,6 +122,8 @@ card_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element) 
 }
 
 create_texture_for_card :: proc(card: ^Card) {
+    context.allocator = context.temp_allocator
+
     render_texture := rl.LoadRenderTexture(i32(CARD_TEXTURE_SIZE.x), i32(CARD_TEXTURE_SIZE.y))
 
     TEXT_PADDING :: 6
@@ -145,9 +147,7 @@ create_texture_for_card :: proc(card: ^Card) {
     }
 
     name_cstring := strings.clone_to_cstring(card.name)
-    defer delete(name_cstring)
     text_cstring := strings.clone_to_cstring(card.text)
-    defer delete(text_cstring)
 
     name_length_px := rl.MeasureTextEx(default_font, name_cstring, TITLE_FONT_SIZE, FONT_SPACING).x
     name_offset := COLORED_BAND_WIDTH + (CARD_TEXTURE_SIZE.x - COLORED_BAND_WIDTH - name_length_px) / 2

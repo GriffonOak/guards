@@ -346,6 +346,8 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
 }
 
 render_board_to_texture :: proc(board_element: UI_Board_Element) {
+    context.allocator = context.temp_allocator
+
     rl.BeginTextureMode(board_render_texture)
 
     rl.ClearBackground(WATER_COLOR)
@@ -365,7 +367,6 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
                 rl.DrawPoly(space.position, 6, 0.9 * VERTICAL_SPACING / math.sqrt_f32(3), 0, new_color)
                 rl.DrawCircleV(space.position, 0.92 * VERTICAL_SPACING / 2, color)
             }
-            // if space != 
 
             spawnpoint_flags := space.flags & SPAWNPOINT_FLAGS
             if spawnpoint_flags != {} {
@@ -444,7 +445,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
     draw_hover_effect: #partial switch player.stage {
     case .CHOOSING_ACTION:
         // See if any side buttons are hovered
-        for &ui_element in ui_stack[side_button_manager.first_button_index:][:side_button_manager.button_count] {
+        for &ui_element in side_button_manager.buttons {
             button_element := assert_variant(&ui_element.variant, UI_Button_Element)
             event, ok := button_element.event.(Begin_Resolution_Event)
             if ok && button_element.hovered && len(event.action_list) > 0 {

@@ -109,6 +109,8 @@ resolve_event :: proc(event: Event) {
 
                 action_variant.path.num_locked_spaces = len(action_variant.path.spaces)
                 last_target := action_variant.path.spaces[len(action_variant.path.spaces)-1]
+                
+                // target_valid := action_variant.valid_destinations != nil && 
 
                 delete(action.targets)
                 action.targets = make_movement_targets(
@@ -116,6 +118,9 @@ resolve_event :: proc(event: Event) {
                     origin = last_target,
                     valid_destinations = action_variant.valid_destinations,
                 )
+
+                assert(len(side_button_manager.buttons) > 0)
+                // if side_button_manager.
 
             case Choose_Target_Action:
                 action_variant.result = var.space
@@ -325,19 +330,22 @@ resolve_event :: proc(event: Event) {
 
     case Resolve_Current_Action_Event:
         clear_side_buttons()
-        #partial switch &action in get_current_action(&player.hero).variant {
+        action := get_current_action(&player.hero)
+        #partial switch &variant in action.variant {
         case Fast_Travel_Action:
-            translocate_unit(player.hero.location, action.result)
+            translocate_unit(player.hero.location, variant.result)
         case Movement_Action:
-            if len(action.path.spaces) == 0 do break
-            for space in action.path.spaces {
+            if len(variant.path.spaces) == 0 do break
+            for space in variant.path.spaces {
                 // Stuff that happens on move through goes here
                 fmt.println(space)
             }
-            translocate_unit(calculate_implicit_target(action.target), action.path.spaces[len(action.path.spaces) - 1])
-            action.path.num_locked_spaces = 0
-            clear(&action.path.spaces)
+            translocate_unit(calculate_implicit_target(variant.target), variant.path.spaces[len(variant.path.spaces) - 1])
+            variant.path.num_locked_spaces = 0
+            delete(variant.path.spaces)
         }
+
+        delete(action.targets)
         
         player.hero.current_action_index += 1
         append(&event_queue, Begin_Next_Action_Event{})
