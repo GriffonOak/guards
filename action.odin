@@ -92,32 +92,61 @@ Action :: struct {
 
 player_movement_tooltip: cstring = "Choose a space to move to."
 
-basic_fast_travel_action := []Action {
-    {
-        tooltip = "Choose a space to fast travel to.",
-        variant = Fast_Travel_Action{}
-    }
-}
+first_choice_action := Action {
+    tooltip = "Choose an action to take with your played card.",
+    variant = Choice_Action {
+        choices = {
+            {"Primary", 0},
+            {"Movement", -2},
+            {"Fast Travel", -3},
+            {"Clear", -4},
+            {"Hold", -5}
 
-basic_hold_action := []Action {}
-
-basic_movement_action := []Action {
-    {
-        tooltip = player_movement_tooltip,
-        variant = Movement_Action {
-            target   = Self{},
-            distance = Card_Secondary_Value{.MOVEMENT},
         }
     }
 }
 
-basic_clear_action := []Action {
-    {
-        tooltip = "Choose any number of tokens adjacent to you to remove.",
-        variant = Clear_Action{}
+basic_movement_action := Action {
+    tooltip = player_movement_tooltip,
+    variant = Movement_Action {
+        target   = Self{},
+        distance = Card_Secondary_Value{.MOVEMENT},
     }
 }
 
-get_current_action :: proc(hero: ^Hero) -> ^Action {
-    return &hero.action_list[hero.current_action_index]
+basic_fast_travel_action := Action {
+    tooltip = "Choose a space to fast travel to.",
+    variant = Fast_Travel_Action{},
+}
+
+basic_clear_action := Action {
+    tooltip = "Choose any number of tokens adjacent to you to remove.",
+    variant = Clear_Action{}
+}
+
+basic_hold_action := Action {
+    variant = Halt_Action {}
+}
+
+basic_actions := []Action {
+    {},
+    first_choice_action,
+    basic_movement_action,
+    basic_fast_travel_action,
+    basic_clear_action,
+    basic_hold_action,
+}
+
+get_current_action :: proc() -> ^Action {
+    return get_action_at_index(player.hero.current_action_index)
+}
+
+get_action_at_index :: proc(index: int) -> ^Action {
+    if index < 0 {
+        return &basic_actions[abs(index)]
+    }
+    if index < len(player.hero.action_list) {
+        return &player.hero.action_list[index]
+    }
+    return nil
 }

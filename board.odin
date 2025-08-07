@@ -312,7 +312,7 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
 
         #partial switch player.stage {
         case .RESOLVING:
-            action := get_current_action(&player.hero)
+            action := get_current_action()
             #partial switch &action_variant in action.variant {
             case Movement_Action:
                 // resize(&action_variant.path.spaces, action_variant.path.num_locked_spaces)
@@ -437,13 +437,13 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
         }
     }
 
-    highlight_action_targets :: proc(actions: []Action, index: int = 0) {
-        action := actions[index]
+    highlight_action_targets :: proc(index: int = 0) {
+        action := get_action_at_index(index)
 
         #partial switch variant in action.variant {
         case Choice_Action:
             for choice in variant.choices {
-                highlight_action_targets(actions, choice.jump_index)
+                highlight_action_targets(choice.jump_index)
             }
         case Movement_Action:
             highlight_spaces(action.targets, variant.valid_destinations)
@@ -453,27 +453,16 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
     }
 
     draw_hover_effect: #partial switch player.stage {
-    case .CHOOSING_ACTION:
-        // See if any side buttons are hovered
-        // @Note: This searching over the UI element code is pretty similar to the choice action case, wonder if I could unify them
-        for &ui_element in side_button_manager.buttons {
-            button_element := assert_variant(&ui_element.variant, UI_Button_Element)
-            event, ok := button_element.event.(Begin_Resolution_Event)
-            if ok && button_element.hovered && len(event.action_list) > 0 {
-                highlight_action_targets(event.action_list)
-            }
-        }
-
     case .RESOLVING:
-        action := get_current_action(&player.hero)
+        action := get_current_action()
         #partial switch variant in action.variant {
         case Fast_Travel_Action:
-            if board_element.hovered_space not_in action.targets do break draw_hover_effect
-            player_loc := player.hero.location
-            player_pos := board[player_loc.x][player_loc.y].position
-            rl.DrawLineEx(space_pos, player_pos, 4, rl.VIOLET)
+            if board_element.hovered_space in action.targets {
+                player_loc := player.hero.location
+                player_pos := board[player_loc.x][player_loc.y].position
+                rl.DrawLineEx(space_pos, player_pos, 4, rl.VIOLET)
+            }
         case Movement_Action:
-            // target_slice := player.chosen_targets[:] if board_element.space_in_target_list else player.chosen_targets[:player.num_locked_targets]
             current_loc := calculate_implicit_target(variant.target)
             for target in variant.path.spaces {
                 rl.DrawLineEx(board[current_loc.x][current_loc.y].position, board[target.x][target.y].position, 4, rl.VIOLET)
@@ -486,7 +475,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
                 event, ok := button_element.event.(Resolve_Current_Action_Event)
                 index := event.jump_index.?
                 if ok && button_element.hovered {
-                    highlight_action_targets(player.hero.action_list, index)
+                    highlight_action_targets(index)
                 }
             }
         }

@@ -39,7 +39,7 @@ FONT_SPACING :: 0
 
 
 
-window_size: Window_Size = .BIG
+window_size: Window_Size = .SMALL
 
 default_font: rl.Font
 

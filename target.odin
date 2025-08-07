@@ -26,10 +26,11 @@ Implicit_Target :: union {
 
 
 
-populate_targets :: proc(actions: []Action, index: int = 0) {
-    action := &actions[index]
+populate_targets :: proc(index: int = 0) {
+    action := get_action_at_index(index)
+    if action == nil do return 
 
-    switch &variant in actions[index].variant {
+    switch &variant in action.variant {
     case Movement_Action:
         action.targets =  make_movement_targets(variant.distance, variant.target, variant.valid_destinations)
     case Fast_Travel_Action:
@@ -40,7 +41,7 @@ populate_targets :: proc(actions: []Action, index: int = 0) {
         action.targets =  make_arbitrary_targets(..variant.criteria)
     case Choice_Action:
         for choice in variant.choices {
-            populate_targets(actions, choice.jump_index)
+            populate_targets(choice.jump_index)
         }
     case Halt_Action:
 
@@ -95,7 +96,7 @@ make_movement_targets :: proc(distance: Implicit_Quantity, origin: Implicit_Targ
             if OBSTACLE_FLAGS & board[next_loc.x][next_loc.y].flags != {} do continue
             if next_loc in visited_set do continue
             if player.stage == .RESOLVING {
-                #partial switch &action in get_current_action(&player.hero).variant {
+                #partial switch &action in get_current_action().variant {
                 case Movement_Action:
                     for traversed_loc in action.path.spaces do if traversed_loc == next_loc do continue directions
                 }
@@ -170,7 +171,7 @@ find_shortest_path :: proc(start, end: Target) -> Maybe([dynamic]Target) {
             if OBSTACLE_FLAGS & board[next_loc.x][next_loc.y].flags != {} do continue
             if next_loc in visited_set do continue
             if player.stage == .RESOLVING {
-                #partial switch &action in get_current_action(&player.hero).variant {
+                #partial switch &action in get_current_action().variant {
                 case Movement_Action:
                     for traversed_loc in action.path.spaces do if traversed_loc == next_loc do continue directions
                 }

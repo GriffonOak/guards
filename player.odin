@@ -6,7 +6,6 @@ Player_Stage :: enum {
     NONE,
     SELECTING,
     CONFIRMED,
-    CHOOSING_ACTION,
     RESOLVING,
     RESOLVED,
     UPGRADING,

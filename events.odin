@@ -24,9 +24,7 @@ Cancel_Event :: struct {}
 
 Begin_Card_Selection_Event :: struct {}
 
-Begin_Choosing_Action_Event :: struct {}
-
-Begin_Resolution_Event :: struct {action_list: []Action}
+Begin_Resolution_Event :: struct {}
 
 Begin_Next_Action_Event :: struct {}
 
@@ -62,8 +60,6 @@ Event :: union {
 
     Begin_Card_Selection_Event,
 
-    Begin_Choosing_Action_Event,
-
     Begin_Resolution_Event,
     Begin_Next_Action_Event,
     Resolve_Current_Action_Event,
@@ -96,7 +92,7 @@ resolve_event :: proc(event: Event) {
     case Space_Clicked_Event:
         #partial switch player.stage {
         case .RESOLVING:
-            action := get_current_action(&player.hero)
+            action := get_current_action()
 
             if ui_stack[0].variant.(UI_Board_Element).hovered_space not_in action.targets do break
 
@@ -175,7 +171,7 @@ resolve_event :: proc(event: Event) {
                 game_state.resolved_players = 0
     
                 // @Todo figure out resolution order
-                append(&event_queue, Begin_Choosing_Action_Event{})
+                append(&event_queue, Begin_Resolution_Event{})
             }
         case .RESOLVING:
             assert(false)
@@ -184,7 +180,7 @@ resolve_event :: proc(event: Event) {
     case Cancel_Event:
         #partial switch player.stage {
         case .RESOLVING:
-            action := get_current_action(&player.hero)
+            action := get_current_action()
             #partial switch &action_variant in action.variant {
             case Movement_Action:
                 action_variant.path.num_locked_spaces = 0
@@ -208,67 +204,27 @@ resolve_event :: proc(event: Event) {
         game_state.confirmed_players = 0
         tooltip = "Choose a card to play and then confirm it."
 
-    case Begin_Choosing_Action_Event:
-        player.stage = .CHOOSING_ACTION
+    case Begin_Resolution_Event:
+        player.stage = .RESOLVING
         // Find the played card
         element, card_element := find_played_card()
         assert(element != nil && card_element != nil)
-        tooltip = "Choose an action to take with your played card."
 
         card := card_element.card
 
-        primary: if card.primary != .DEFENSE {
-            if len(card.primary_effect) == 0 do break primary
-            populate_targets(card.primary_effect)
-            if action_can_be_taken(card.primary_effect[0]) {
-                add_side_button("Primary", Begin_Resolution_Event{card.primary_effect})
-            }
-        }
+        player.hero.action_list = card.primary_effect
 
-        movement_value := card.secondaries[.MOVEMENT]
-        if movement_value > 0 {
-            populate_targets(basic_movement_action)
-            if action_can_be_taken(basic_movement_action[0]) {
-                add_side_button("Movement", Begin_Resolution_Event{basic_movement_action})
-            }            
-        }
+        player.hero.current_action_index = -1
 
-        if card.primary == .MOVEMENT || card.secondaries[.MOVEMENT] > 0 {
-            populate_targets(basic_fast_travel_action)
-            if action_can_be_taken(basic_fast_travel_action[0]) {
-                add_side_button("Fast travel", Begin_Resolution_Event{basic_fast_travel_action})
-            }
-        }
-
-        if card.primary == .ATTACK || card.secondaries[.ATTACK] > 0 {
-            populate_targets(basic_clear_action)
-            if action_can_be_taken(basic_clear_action[0]) {
-                add_side_button("Clear", Begin_Resolution_Event{basic_clear_action})
-            }
-        }
-
-        add_side_button("Hold", Begin_Resolution_Event{})
-    
-    case Begin_Resolution_Event:
-        player.stage = .RESOLVING
-        player.hero.current_action_index = 0
-
-        clear_side_buttons()
-
-        player.hero.action_list = var.action_list
         append(&event_queue, Begin_Next_Action_Event{})
 
     case Begin_Next_Action_Event:
-        if player.hero.current_action_index >= len(player.hero.action_list) {
-            append(&event_queue, End_Resolution_Event{})
-            return
-        }
 
-        action := get_current_action(&player.hero)
+        action := get_current_action()
         tooltip = action.tooltip
         fmt.printfln("ACTION: %v", reflect.union_variant_typeid(action.variant))
         if len(action.targets) == 0 {
-            populate_targets(player.hero.action_list, index = player.hero.current_action_index)
+            populate_targets(index = player.hero.current_action_index)
         }
 
         if action.optional {
@@ -298,8 +254,9 @@ resolve_event :: proc(event: Event) {
             choices_added: int
             most_recent_choice: int
             for choice in action_type.choices {
-                child_action := &player.hero.action_list[choice.jump_index]
-                populate_targets(player.hero.action_list, choice.jump_index)
+                child_action := get_action_at_index(choice.jump_index)
+                if child_action == nil do continue
+                populate_targets(choice.jump_index)
                 if action_can_be_taken(child_action^) {
                     add_side_button(choice.name, Resolve_Current_Action_Event{choice.jump_index})
                     choices_added += 1
@@ -352,7 +309,6 @@ resolve_event :: proc(event: Event) {
 
     case End_Minion_Battle_Event:
 
-
         if false { // count up the minions here, see if one side has 0
             append(&event_queue, Begin_Wave_Push_Event{})
         } else {
@@ -379,7 +335,7 @@ resolve_event :: proc(event: Event) {
     case Resolve_Current_Action_Event:
         clear_side_buttons()
 
-        action := get_current_action(&player.hero)
+        action := get_current_action()
 
         #partial switch &variant in action.variant {
         case Fast_Travel_Action:
@@ -408,13 +364,20 @@ resolve_event :: proc(event: Event) {
 
         // Here would be where we need to handle minions outside the zone or wave pushes mid-turn
 
+        // Determine next action
         if index, ok := var.jump_index.?; ok {
+            if index == -1 {
+                append(&event_queue, End_Resolution_Event{})
+                return
+            }
             player.hero.current_action_index = index
         } else {
             player.hero.current_action_index += 1
+            if player.hero.current_action_index >= len(player.hero.action_list) || player.hero.current_action_index < 0 {
+                append(&event_queue, End_Resolution_Event{})
+                return
+            }
         }
         append(&event_queue, Begin_Next_Action_Event{})
-
-
     }
 }

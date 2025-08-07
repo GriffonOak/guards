@@ -92,7 +92,7 @@ xargatha_cards := [?]Card {
             },
             Action {  // 2
                 optional = true,
-                skip_index = 4,
+                skip_index = -1,
                 tooltip = "You may choose a ranged minion to move, or you may skip.",
                 variant = Choose_Target_Action {
                     criteria = {
