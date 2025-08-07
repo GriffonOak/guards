@@ -27,9 +27,8 @@ Implicit_Target :: union {
 
 
 populate_targets :: proc(action: ^Action) {
-    // if action.targets != nil do delete(action.targets)
     
-    switch variant in action.variant {
+    switch &variant in action.variant {
     case Movement_Action:
         action.targets =  make_movement_targets(variant.distance, variant.target, variant.valid_destinations)
     case Fast_Travel_Action:
@@ -38,7 +37,20 @@ populate_targets :: proc(action: ^Action) {
         action.targets =  make_clear_targets()
     case Choose_Target_Action:
         action.targets =  make_arbitrary_targets(..variant.criteria)
+    case Optional_Action:
+        assert(len(variant.steps) > 0)
+        populate_targets(&variant.steps[0])
     }
+}
+
+action_can_be_taken :: proc(action: Action) -> bool {
+    switch variant in action.variant {
+    case Movement_Action, Fast_Travel_Action, Clear_Action, Choose_Target_Action:
+        return len(action.targets) > 0
+    case Optional_Action:
+        return true
+    }
+    return false
 }
 
 Dijkstra_Info :: struct {
@@ -46,7 +58,7 @@ Dijkstra_Info :: struct {
     prev_node: IVec2,
 }
 
-make_movement_targets :: proc(distance: int, origin: Implicit_Target, valid_destinations: Implicit_Target_Set = nil) -> (out: Target_Set) {
+make_movement_targets :: proc(distance: Implicit_Quantity, origin: Implicit_Target, valid_destinations: Implicit_Target_Set = nil) -> (out: Target_Set) {
 
     visited_set: map[IVec2]Dijkstra_Info
     unvisited_set: map[IVec2]Dijkstra_Info
@@ -54,6 +66,8 @@ make_movement_targets :: proc(distance: int, origin: Implicit_Target, valid_dest
     defer delete(unvisited_set)
     start := calculate_implicit_target(origin)
     unvisited_set[start] = {0, {-1, -1}}
+
+    real_distance := calculate_implicit_quantity(distance)
 
     // dijkstra's algorithm!
 
@@ -80,7 +94,7 @@ make_movement_targets :: proc(distance: int, origin: Implicit_Target, valid_dest
                 }
             }
             next_dist := min_info.dist + 1
-            if next_dist > distance do continue
+            if next_dist > real_distance do continue
             existing_info, ok := unvisited_set[next_loc]
             if !ok || next_dist < existing_info.dist do unvisited_set[next_loc] = {next_dist, min_loc}
         }
@@ -91,17 +105,15 @@ make_movement_targets :: proc(distance: int, origin: Implicit_Target, valid_dest
 
     if valid_destinations != nil {
         destination_set := calculate_implicit_target_set(valid_destinations)
-        fmt.println(destination_set)
         for valid_endpoint in destination_set {
             for potential_target, info in visited_set {
                 // @Speed this is kind of abismal, we will be duplicating a lot of work here
                 path, ok := find_shortest_path(potential_target, valid_endpoint).?
                 if !ok do break 
                 defer delete(path)
-                if len(path) + info.dist <= distance do out[potential_target] = {} 
+                if len(path) + info.dist <= real_distance do out[potential_target] = {} 
             }
         }
-        fmt.println(visited_set)
     } else {
         add_loop: for loc, info in visited_set {
             out[loc] = {}

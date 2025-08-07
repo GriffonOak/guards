@@ -71,6 +71,7 @@ calculate_hexagonal_distance :: proc(a, b: IVec2) -> int {
 calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity) -> (out: int) {
     switch quantity in implicit_quantity {
     case int: out = quantity
+
     case Card_Reach:
         _, card_elem := find_played_card()
         assert(card_elem != nil)
@@ -79,7 +80,17 @@ calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity) -> (ou
         case Range: out = int(reach)
         case Radius: out = int(reach)
         case: assert(false)
-        }  
+        } 
+
+    case Card_Primary_Value:
+        _, card_elem := find_played_card()
+        assert(card_elem != nil)
+        return card_elem.card.value
+
+    case Card_Secondary_Value:
+        _, card_elem := find_played_card()
+        assert(card_elem != nil)
+        return card_elem.card.secondaries[quantity.kind]
     }
     return 
 }

@@ -88,11 +88,10 @@ event_queue: [dynamic]Event
 
 resolve_event :: proc(event: Event) {
 
-    fmt.println(event)
+    fmt.printfln("EVENT: %v", reflect.union_variant_typeid(event))
     switch var in event {
 
     case Space_Clicked_Event:
-        fmt.println(var.space)
         #partial switch player.stage {
         case .RESOLVING:
             action := get_current_action(&player.hero)
@@ -119,7 +118,7 @@ resolve_event :: proc(event: Event) {
 
                 delete(action.targets)
                 action.targets = make_movement_targets(
-                    distance = action_variant.distance - action_variant.path.num_locked_spaces,
+                    distance = Implicit_Quantity(calculate_implicit_quantity(action_variant.distance) - action_variant.path.num_locked_spaces),
                     origin = last_target,
                     valid_destinations = action_variant.valid_destinations,
                 )
@@ -135,7 +134,6 @@ resolve_event :: proc(event: Event) {
 
             case Choose_Target_Action:
                 action_variant.result = var.space
-                fmt.println(action_variant.result)
                 append(&event_queue, Resolve_Current_Action_Event{})
 
             }
@@ -218,15 +216,13 @@ resolve_event :: proc(event: Event) {
         primary: if card.primary != .DEFENSE {
             if len(card.primary_effect) == 0 do break primary
             populate_targets(&card.primary_effect[0])
-            if len(card.primary_effect[0].targets) > 0 {
+            if action_can_be_taken(card.primary_effect[0]) {
                 add_side_button("Primary", Begin_Resolution_Event{card.primary_effect})
             }
         }
 
         movement_value := card.secondaries[.MOVEMENT]
         if movement_value > 0 {
-            movement_action := &basic_movement_action[0].variant.(Movement_Action)
-            movement_action.distance = movement_value
             populate_targets(&basic_movement_action[0])
             if len(basic_movement_action[0].targets) > 0 {
                 add_side_button("Movement", Begin_Resolution_Event{basic_movement_action})
@@ -265,6 +261,7 @@ resolve_event :: proc(event: Event) {
         }
 
         action := get_current_action(&player.hero)
+        fmt.printfln("ACTION: %v", reflect.union_variant_typeid(action.variant))
         if len(action.targets) == 0 {
             populate_targets(action)
         }
@@ -285,6 +282,10 @@ resolve_event :: proc(event: Event) {
                 }
                 append(&event_queue, Resolve_Current_Action_Event{})
             }
+        case Optional_Action:
+            add_side_button("Skip", Resolve_Current_Action_Event{})
+            action_type.entered = true
+            append(&event_queue, Begin_Next_Action_Event{})
         }
 
     case End_Resolution_Event:
@@ -345,28 +346,32 @@ resolve_event :: proc(event: Event) {
         append(&event_queue, Begin_Card_Selection_Event{})
 
     case Resolve_Current_Action_Event:
-        clear_side_buttons()
         action := get_current_action(&player.hero)
         #partial switch &variant in action.variant {
         case Fast_Travel_Action:
             translocate_unit(player.hero.location, variant.result)
         case Movement_Action:
+            pop_side_button()
+            pop_side_button()  // Confirm and reset buttons
             if len(variant.path.spaces) == 0 do break
             for space in variant.path.spaces {
                 // Stuff that happens on move through goes here
-                fmt.println(space)
+                // fmt.println(space)
             }
             translocate_unit(calculate_implicit_target(variant.target), variant.path.spaces[len(variant.path.spaces) - 1])
             variant.path.num_locked_spaces = 0
 
-            fmt.println(variant.path.spaces)
-            clear(&variant.path.spaces)
-
+            delete(variant.path.spaces)
+            variant.path.spaces = nil
+        case Optional_Action:
+            pop_side_button()  // Skip button
+            variant.entered = false
         }
 
-        clear(&action.targets)
+        delete(action.targets)
+        action.targets = nil
         
-        player.hero.current_action_index += 1
+        walk_to_next_action(&player.hero)
         append(&event_queue, Begin_Next_Action_Event{})
 
         // Here would be where we need to handle minions outside the zone or wave pushes mid-turn

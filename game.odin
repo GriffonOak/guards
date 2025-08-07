@@ -77,7 +77,6 @@ spawn_minions :: proc(zone: Region_ID) {
 
 spawn_heroes_at_start :: proc() {
     num_spawns: [Team]int
-    fmt.println(game_state.players)
     for &player in game_state.players {
         team := player.team
         spawnpoint_marker := spawnpoints[num_spawns[team]]
@@ -95,7 +94,6 @@ spawn_heroes_at_start :: proc() {
         spawnpoint.owner = player
 
         player.hero.location = spawnpoint_marker.loc
-        fmt.println(player.hero.location)
     }
 }
 
