@@ -44,11 +44,12 @@ Side_Button_Manager :: struct {
 
 
 BUTTON_PADDING :: 10
+TOOLTIP_FONT_SIZE :: 50
 
 SELECTION_BUTTON_SIZE :: Vec2{400, 100}
-FIRST_SIDE_BUTTON_LOCATION :: rl.Rectangle{WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, BUTTON_PADDING, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}
+FIRST_SIDE_BUTTON_LOCATION :: rl.Rectangle{WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, BUTTON_PADDING + TOOLTIP_FONT_SIZE, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}
 
-
+tooltip: cstring
 
 ui_stack: [dynamic]UI_Element
 
@@ -109,6 +110,14 @@ draw_button: UI_Render_Proc : proc(element: UI_Element) {
     if button_element.hovered {
         rl.DrawRectangleLinesEx(element.bounding_rect, TEXT_PADDING / 2, rl.WHITE)
     }
+}
+
+render_tooltip :: proc() {
+    if tooltip == nil do return
+    dimensions := rl.MeasureTextEx(default_font, tooltip, TOOLTIP_FONT_SIZE, FONT_SPACING)
+    top_width := WIDTH - BOARD_TEXTURE_SIZE.x
+    offset := BOARD_TEXTURE_SIZE.x + (top_width - dimensions.x) / 2
+    rl.DrawTextEx(default_font, tooltip, {offset, 0}, TOOLTIP_FONT_SIZE, FONT_SPACING, rl.WHITE)
 }
 
 add_side_button :: proc(text: cstring, event: Event) {

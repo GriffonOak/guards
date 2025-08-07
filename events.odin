@@ -194,7 +194,7 @@ resolve_event :: proc(event: Event) {
 
                 assert(len(side_button_manager.buttons) > 0)
                 top_button := side_button_manager.buttons[len(side_button_manager.buttons) - 1].variant.(UI_Button_Element)
-                if _, ok := top_button.event.(Resolve_Current_Action_Event); ok {
+                if _, ok := top_button.event.(Resolve_Current_Action_Event); ok && action_variant.valid_destinations != nil {
                     pop_side_button()
                 }
             }
@@ -261,6 +261,7 @@ resolve_event :: proc(event: Event) {
         }
 
         action := get_current_action(&player.hero)
+        tooltip = action.tooltip
         fmt.printfln("ACTION: %v", reflect.union_variant_typeid(action.variant))
         if len(action.targets) == 0 {
             populate_targets(action)
@@ -283,9 +284,10 @@ resolve_event :: proc(event: Event) {
                 append(&event_queue, Resolve_Current_Action_Event{})
             }
         case Optional_Action:
-            add_side_button("Skip", Resolve_Current_Action_Event{})
-            action_type.entered = true
-            append(&event_queue, Begin_Next_Action_Event{})
+            if !action_type.entered {
+                add_side_button("Skip", Resolve_Current_Action_Event{})
+            }
+            append(&event_queue, Resolve_Current_Action_Event{})
         }
 
     case End_Resolution_Event:
@@ -364,13 +366,16 @@ resolve_event :: proc(event: Event) {
             delete(variant.path.spaces)
             variant.path.spaces = nil
         case Optional_Action:
-            pop_side_button()  // Skip button
-            variant.entered = false
+            if variant.entered {
+                pop_side_button()  // Skip button
+            }
         }
 
         delete(action.targets)
         action.targets = nil
         
+        tooltip = nil
+
         walk_to_next_action(&player.hero)
         append(&event_queue, Begin_Next_Action_Event{})
 

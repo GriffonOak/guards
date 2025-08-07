@@ -129,17 +129,32 @@ walk_to_next_action :: proc(hero: ^Hero) -> bool {
 }
 
 walk_next_action_list :: proc(list: []Action, index: ^int) -> bool {
-    current_action := list[index^]
+    current_action := &list[index^]
     #partial switch &variant in current_action.variant {
     case Optional_Action:
         if !variant.entered {
             variant.entered = true
             return true
         }
-        if walk_next_action_list(variant.steps, &variant.step_index) do return true
+        if variant.step_index < len(variant.steps) && walk_next_action_list(variant.steps, &variant.step_index) do return true
     }
 
     index^ += 1
-    return index^ < len(list)
+    return index^ <= len(list)
 
+}
+
+get_previous_action :: proc(hero: ^Hero) -> ^Action {
+    return get_previous_action_from_list(hero.action_list, hero.current_action_index)
+}
+
+get_previous_action_from_list :: proc(list: []Action, index: int) -> ^Action {
+    if index >= len(list) do return nil
+    #partial switch variant in list[index].variant {
+    case Optional_Action:
+        if variant.entered && variant.step_index < len(variant.steps) {
+            return get_previous_action_from_list(variant.steps, variant.step_index)
+        }
+    }
+    return &list[index - 1]
 }
