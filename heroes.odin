@@ -24,6 +24,7 @@ xargatha_cards := [?]Card {
         text        = "Target an enemy unit not adjacent to you\nand in range; if able, move the target\nup to 3 spaces to a space adjacent to you.",
         primary_effect = []Action {
             Action { 
+                tooltip = "Target an enemy unit not adjacent to you and in range.",
                 variant = Choose_Target_Action {
                     criteria = {
                         Within_Distance {
@@ -37,6 +38,7 @@ xargatha_cards := [?]Card {
                 }
             },
             Action {
+                tooltip = "Move the target up to 3 spaces to a space adjacent to you.",
                 variant = Movement_Action {
                     target = Previous_Choice{},
                     distance = 3,
@@ -72,44 +74,76 @@ xargatha_cards := [?]Card {
         reach       = Radius(2),
         text        = "Before or after movement, you may\nmove an enemy ranged minion\nin radius up to 2 spaces.",
         primary_effect = []Action {
-            // Action {
-            //     variant = In_Any_Order_Action {
-            //         options = []Action {
-                        Action {
-                            variant = Optional_Action {
-                                steps = []Action {
-                                    Action {
-                                        variant = Choose_Target_Action {
-                                            criteria = {
-                                                Within_Distance {
-                                                    origin = Self {},
-                                                    min = 1,
-                                                    max = Card_Reach{},
-                                                },
-                                                Contains_Any({.RANGED_MINION}),
-                                                Is_Enemy_Unit{},
-                                            }
-                                        }
-                                    },
-                                    Action {
-                                        variant = Movement_Action {
-                                            target = Previous_Choice{},
-                                            distance = 2,
-                                        }
-                                    }
-
-                                }
-                            }
+            Action {  // 0
+                tooltip = "You may either move yourself or a ranged minion.",
+                variant = Choice_Action {
+                    choices = {
+                        {"Move self", 1},
+                        {"Move minion", 5},
+                    },
+                }
+            },
+            Action {  // 1
+                tooltip = player_movement_tooltip,
+                variant = Movement_Action {
+                    target = Self{},
+                    distance = Card_Primary_Value{},
+                }
+            },
+            Action {  // 2
+                optional = true,
+                skip_index = 4,
+                tooltip = "You may choose a ranged minion to move, or you may skip.",
+                variant = Choose_Target_Action {
+                    criteria = {
+                        Within_Distance {
+                            origin = Self {},
+                            min = 1,
+                            max = Card_Reach{},
                         },
-                        Action {
-                            variant = Movement_Action {
-                                target = Self{},
-                                distance = Card_Primary_Value{},
-                            }
-                        }
-            //         }
-            //     }
-            // }
+                        Contains_Any({.RANGED_MINION}),
+                        Is_Enemy_Unit{},
+                    }
+                }
+            },
+            Action {  // 3
+                tooltip = "Move the ranged minion up to 2 spaces.",
+                variant = Movement_Action {
+                    target = Previous_Choice{},
+                    distance = 2,
+                }
+            },
+            Action {  // 4
+                variant = Halt_Action{}
+            },
+            Action {  // 5
+                tooltip = "Choose a ranged minion to move.",
+                variant = Choose_Target_Action {
+                    criteria = {
+                        Within_Distance {
+                            origin = Self {},
+                            min = 1,
+                            max = Card_Reach{},
+                        },
+                        Contains_Any({.RANGED_MINION}),
+                        Is_Enemy_Unit{},
+                    }
+                }
+            },
+            Action {  // 6
+                tooltip = "Move the ranged minion up to 2 spaces.",
+                variant = Movement_Action {
+                    target = Previous_Choice{},
+                    distance = 2,
+                }
+            },
+            Action {  // 7
+                tooltip = player_movement_tooltip,
+                variant = Movement_Action {
+                    target = Self{},
+                    distance = Card_Primary_Value{},
+                }
+            },
         }
     },
     {

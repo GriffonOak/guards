@@ -103,4 +103,6 @@ begin_game :: proc() {
     spawn_minions(game_state.current_battle_zone)
 
     spawn_heroes_at_start()
+
+    append(&event_queue, Begin_Card_Selection_Event{})
 }

@@ -437,19 +437,30 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
         }
     }
 
+    highlight_action_targets :: proc(actions: []Action, index: int = 0) {
+        action := actions[index]
+
+        #partial switch variant in action.variant {
+        case Choice_Action:
+            for choice in variant.choices {
+                highlight_action_targets(actions, choice.jump_index)
+            }
+        case Movement_Action:
+            highlight_spaces(action.targets, variant.valid_destinations)
+        case:
+            highlight_spaces(action.targets)
+        }
+    }
+
     draw_hover_effect: #partial switch player.stage {
     case .CHOOSING_ACTION:
         // See if any side buttons are hovered
+        // @Note: This searching over the UI element code is pretty similar to the choice action case, wonder if I could unify them
         for &ui_element in side_button_manager.buttons {
             button_element := assert_variant(&ui_element.variant, UI_Button_Element)
             event, ok := button_element.event.(Begin_Resolution_Event)
             if ok && button_element.hovered && len(event.action_list) > 0 {
-                action := event.action_list[0]
-                if action_type, ok := action.variant.(Movement_Action); ok && action_type.valid_destinations != nil {
-                    highlight_spaces(action.targets, action_type.valid_destinations)
-                } else {
-                    highlight_spaces(action.targets)
-                }
+                highlight_action_targets(event.action_list)
             }
         }
 
@@ -467,6 +478,16 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             for target in variant.path.spaces {
                 rl.DrawLineEx(board[current_loc.x][current_loc.y].position, board[target.x][target.y].position, 4, rl.VIOLET)
                 current_loc = target
+            }
+        case Choice_Action:
+            // See if any side buttons are hovered
+            for &ui_element in side_button_manager.buttons {
+                button_element := assert_variant(&ui_element.variant, UI_Button_Element)
+                event, ok := button_element.event.(Resolve_Current_Action_Event)
+                index := event.jump_index.?
+                if ok && button_element.hovered {
+                    highlight_action_targets(player.hero.action_list, index)
+                }
             }
         }
 

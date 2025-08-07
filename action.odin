@@ -61,27 +61,36 @@ Choose_Target_Action :: struct {
     result: Target,
 }
 
-Optional_Action :: struct {
-    entered: bool,
-    step_index: int,
-    steps: []Action,
+Choice :: struct {
+    name: cstring,
+    jump_index: int,
 }
+
+Choice_Action :: struct {
+    choices: []Choice,
+    result: int,
+}
+
+Halt_Action :: struct {}
 
 Action_Variant :: union {
     Movement_Action,
     Fast_Travel_Action,
     Clear_Action,
     Choose_Target_Action,
-    Optional_Action,
+    Choice_Action,
+    Halt_Action,
 }
 
 Action :: struct {
     tooltip: cstring,
+    optional: bool,
+    skip_index: int,
     variant: Action_Variant,
     targets: Target_Set,
 }
 
-
+player_movement_tooltip: cstring = "Choose a space to move to."
 
 basic_fast_travel_action := []Action {
     {
@@ -94,7 +103,7 @@ basic_hold_action := []Action {}
 
 basic_movement_action := []Action {
     {
-        tooltip = "Choose a space to move to.",
+        tooltip = player_movement_tooltip,
         variant = Movement_Action {
             target   = Self{},
             distance = Card_Secondary_Value{.MOVEMENT},
@@ -110,51 +119,5 @@ basic_clear_action := []Action {
 }
 
 get_current_action :: proc(hero: ^Hero) -> ^Action {
-    return get_current_action_from_list(hero.action_list, hero.current_action_index)
-}
-
-get_current_action_from_list :: proc(list: []Action, index: int) -> ^Action {
-    if index >= len(list) do return nil
-    #partial switch variant in list[index].variant {
-    case Optional_Action:
-        if variant.entered && variant.step_index < len(variant.steps) {
-            return get_current_action_from_list(variant.steps, variant.step_index)
-        }
-    }
-    return &list[index]
-}
-
-walk_to_next_action :: proc(hero: ^Hero) -> bool {
-    return walk_next_action_list(hero.action_list, &hero.current_action_index)
-}
-
-walk_next_action_list :: proc(list: []Action, index: ^int) -> bool {
-    current_action := &list[index^]
-    #partial switch &variant in current_action.variant {
-    case Optional_Action:
-        if !variant.entered {
-            variant.entered = true
-            return true
-        }
-        if variant.step_index < len(variant.steps) && walk_next_action_list(variant.steps, &variant.step_index) do return true
-    }
-
-    index^ += 1
-    return index^ <= len(list)
-
-}
-
-get_previous_action :: proc(hero: ^Hero) -> ^Action {
-    return get_previous_action_from_list(hero.action_list, hero.current_action_index)
-}
-
-get_previous_action_from_list :: proc(list: []Action, index: int) -> ^Action {
-    if index >= len(list) do return nil
-    #partial switch variant in list[index].variant {
-    case Optional_Action:
-        if variant.entered && variant.step_index < len(variant.steps) {
-            return get_previous_action_from_list(variant.steps, variant.step_index)
-        }
-    }
-    return &list[index - 1]
+    return &hero.action_list[hero.current_action_index]
 }

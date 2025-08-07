@@ -3,6 +3,7 @@ package guards
 
 
 Player_Stage :: enum {
+    NONE,
     SELECTING,
     CONFIRMED,
     CHOOSING_ACTION,
@@ -37,7 +38,6 @@ Player :: struct {
 
 
 player := Player {
-    stage = .SELECTING,
     hero = Hero{
         id = .XARGATHA
     },
@@ -45,7 +45,6 @@ player := Player {
 }
 
 player2 := Player {
-    stage = .SELECTING,
     hero = Hero {
         id = .NONE,
     },

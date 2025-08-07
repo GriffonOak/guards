@@ -26,9 +26,10 @@ Implicit_Target :: union {
 
 
 
-populate_targets :: proc(action: ^Action) {
-    
-    switch &variant in action.variant {
+populate_targets :: proc(actions: []Action, index: int = 0) {
+    action := &actions[index]
+
+    switch &variant in actions[index].variant {
     case Movement_Action:
         action.targets =  make_movement_targets(variant.distance, variant.target, variant.valid_destinations)
     case Fast_Travel_Action:
@@ -37,9 +38,12 @@ populate_targets :: proc(action: ^Action) {
         action.targets =  make_clear_targets()
     case Choose_Target_Action:
         action.targets =  make_arbitrary_targets(..variant.criteria)
-    case Optional_Action:
-        assert(len(variant.steps) > 0)
-        populate_targets(&variant.steps[0])
+    case Choice_Action:
+        for choice in variant.choices {
+            populate_targets(actions, choice.jump_index)
+        }
+    case Halt_Action:
+
     }
 }
 
@@ -47,7 +51,10 @@ action_can_be_taken :: proc(action: Action) -> bool {
     switch variant in action.variant {
     case Movement_Action, Fast_Travel_Action, Clear_Action, Choose_Target_Action:
         return len(action.targets) > 0
-    case Optional_Action:
+    case Halt_Action:
+        return true
+    case Choice_Action:
+        // Not technically correct! Need to see if all child actions are takeable
         return true
     }
     return false

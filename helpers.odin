@@ -100,7 +100,7 @@ calculate_implicit_target :: proc(implicit_target: Implicit_Target) -> (out: Tar
     case Target: out = target
     case Self: out = player.hero.location
     case Previous_Choice:
-        prev_action := get_previous_action(&player.hero).variant.(Choose_Target_Action)
+        prev_action := player.hero.action_list[player.hero.current_action_index - 1].variant.(Choose_Target_Action)
         out = prev_action.result
     }
     return

@@ -30,7 +30,9 @@ Begin_Resolution_Event :: struct {action_list: []Action}
 
 Begin_Next_Action_Event :: struct {}
 
-Resolve_Current_Action_Event :: struct {}
+Resolve_Current_Action_Event :: struct {
+    jump_index: Maybe(int)
+}
 
 End_Resolution_Event :: struct {}
 
@@ -204,18 +206,20 @@ resolve_event :: proc(event: Event) {
         player.stage = .SELECTING
         game_state.stage = .SELECTION
         game_state.confirmed_players = 0
+        tooltip = "Choose a card to play and then confirm it."
 
     case Begin_Choosing_Action_Event:
         player.stage = .CHOOSING_ACTION
         // Find the played card
         element, card_element := find_played_card()
         assert(element != nil && card_element != nil)
+        tooltip = "Choose an action to take with your played card."
 
         card := card_element.card
 
         primary: if card.primary != .DEFENSE {
             if len(card.primary_effect) == 0 do break primary
-            populate_targets(&card.primary_effect[0])
+            populate_targets(card.primary_effect)
             if action_can_be_taken(card.primary_effect[0]) {
                 add_side_button("Primary", Begin_Resolution_Event{card.primary_effect})
             }
@@ -223,22 +227,22 @@ resolve_event :: proc(event: Event) {
 
         movement_value := card.secondaries[.MOVEMENT]
         if movement_value > 0 {
-            populate_targets(&basic_movement_action[0])
-            if len(basic_movement_action[0].targets) > 0 {
+            populate_targets(basic_movement_action)
+            if action_can_be_taken(basic_movement_action[0]) {
                 add_side_button("Movement", Begin_Resolution_Event{basic_movement_action})
             }            
         }
 
         if card.primary == .MOVEMENT || card.secondaries[.MOVEMENT] > 0 {
-            populate_targets(&basic_fast_travel_action[0])
-            if len(basic_fast_travel_action[0].targets) > 0 {
+            populate_targets(basic_fast_travel_action)
+            if action_can_be_taken(basic_fast_travel_action[0]) {
                 add_side_button("Fast travel", Begin_Resolution_Event{basic_fast_travel_action})
             }
         }
 
         if card.primary == .ATTACK || card.secondaries[.ATTACK] > 0 {
-            populate_targets(&basic_clear_action[0])
-            if len(basic_clear_action[0].targets) > 0 {
+            populate_targets(basic_clear_action)
+            if action_can_be_taken(basic_clear_action[0]) {
                 add_side_button("Clear", Begin_Resolution_Event{basic_clear_action})
             }
         }
@@ -257,14 +261,18 @@ resolve_event :: proc(event: Event) {
     case Begin_Next_Action_Event:
         if player.hero.current_action_index >= len(player.hero.action_list) {
             append(&event_queue, End_Resolution_Event{})
-            break
+            return
         }
 
         action := get_current_action(&player.hero)
         tooltip = action.tooltip
         fmt.printfln("ACTION: %v", reflect.union_variant_typeid(action.variant))
         if len(action.targets) == 0 {
-            populate_targets(action)
+            populate_targets(player.hero.action_list, index = player.hero.current_action_index)
+        }
+
+        if action.optional {
+            add_side_button("Skip", Resolve_Current_Action_Event{action.skip_index})
         }
 
         #partial switch &action_type in action.variant {
@@ -276,22 +284,43 @@ resolve_event :: proc(event: Event) {
             }
 
         case Choose_Target_Action:
-            if len(action.targets) == 1 {
+            if len(action.targets) == 0 {
+                append(&event_queue, End_Resolution_Event{})
+            } else if len(action.targets) == 1 && !action.optional {
                 // Don't know a better way of extracting just the first element
                 for space in action.targets {
                     action_type.result = space
                 }
                 append(&event_queue, Resolve_Current_Action_Event{})
             }
-        case Optional_Action:
-            if !action_type.entered {
-                add_side_button("Skip", Resolve_Current_Action_Event{})
+
+        case Choice_Action:
+            choices_added: int
+            most_recent_choice: int
+            for choice in action_type.choices {
+                child_action := &player.hero.action_list[choice.jump_index]
+                populate_targets(player.hero.action_list, choice.jump_index)
+                if action_can_be_taken(child_action^) {
+                    add_side_button(choice.name, Resolve_Current_Action_Event{choice.jump_index})
+                    choices_added += 1
+                    most_recent_choice = choice.jump_index
+                }
             }
-            append(&event_queue, Resolve_Current_Action_Event{})
+            if choices_added == 0 {
+                append(&event_queue, End_Resolution_Event{})
+            } if choices_added == 1 {
+                append(&event_queue, Resolve_Current_Action_Event{most_recent_choice})
+            }
+
+        case Halt_Action: 
+            append(&event_queue, End_Resolution_Event{})
+            return
+
         }
 
     case End_Resolution_Event:
         assert(player.stage == .RESOLVING)
+        clear_side_buttons()
         player.stage = .RESOLVED
         game_state.resolved_players += 1
 
@@ -348,27 +377,28 @@ resolve_event :: proc(event: Event) {
         append(&event_queue, Begin_Card_Selection_Event{})
 
     case Resolve_Current_Action_Event:
+        clear_side_buttons()
+
         action := get_current_action(&player.hero)
+
         #partial switch &variant in action.variant {
         case Fast_Travel_Action:
             translocate_unit(player.hero.location, variant.result)
         case Movement_Action:
-            pop_side_button()
-            pop_side_button()  // Confirm and reset buttons
             if len(variant.path.spaces) == 0 do break
+            defer {
+                delete(variant.path.spaces)
+                variant.path.spaces = nil
+                variant.path.num_locked_spaces = 0
+            }
+            if _, ok := var.jump_index.?; ok do break  // Movement Skipped
             for space in variant.path.spaces {
                 // Stuff that happens on move through goes here
                 // fmt.println(space)
             }
             translocate_unit(calculate_implicit_target(variant.target), variant.path.spaces[len(variant.path.spaces) - 1])
-            variant.path.num_locked_spaces = 0
-
-            delete(variant.path.spaces)
-            variant.path.spaces = nil
-        case Optional_Action:
-            if variant.entered {
-                pop_side_button()  // Skip button
-            }
+        case Choice_Action:
+            variant.result = var.jump_index.?
         }
 
         delete(action.targets)
@@ -376,10 +406,15 @@ resolve_event :: proc(event: Event) {
         
         tooltip = nil
 
-        walk_to_next_action(&player.hero)
+        // Here would be where we need to handle minions outside the zone or wave pushes mid-turn
+
+        if index, ok := var.jump_index.?; ok {
+            player.hero.current_action_index = index
+        } else {
+            player.hero.current_action_index += 1
+        }
         append(&event_queue, Begin_Next_Action_Event{})
 
-        // Here would be where we need to handle minions outside the zone or wave pushes mid-turn
 
     }
 }
