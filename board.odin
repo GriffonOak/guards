@@ -278,12 +278,6 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
 
     if !check_outside_or_deselected(input, element^) {
         board_element.hovered_space = {-1, -1}
-        action := get_current_action(&player.hero)
-        if player.stage == .RESOLVING && action != nil {
-            if move_action, ok := action.variant.(Movement_Action); ok {
-                resize(&move_action.path.spaces, move_action.path.num_locked_spaces)
-            }
-        }
         return false
     }
 
@@ -321,10 +315,11 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
             action := get_current_action(&player.hero)
             #partial switch &action_variant in action.variant {
             case Movement_Action:
-                resize(&action_variant.path.spaces, action_variant.path.num_locked_spaces)
-                if board_element.hovered_space not_in action.targets {
-                    break
-                }
+                // resize(&action_variant.path.spaces, action_variant.path.num_locked_spaces)
+                for len(action_variant.path.spaces) > action_variant.path.num_locked_spaces {
+                    pop(&action_variant.path.spaces)
+                } 
+                if board_element.hovered_space not_in action.targets do break
 
                 starting_space: Target
                 if action_variant.path.num_locked_spaces > 0 {

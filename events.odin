@@ -110,7 +110,12 @@ resolve_event :: proc(event: Event) {
                 action_variant.path.num_locked_spaces = len(action_variant.path.spaces)
                 last_target := action_variant.path.spaces[len(action_variant.path.spaces)-1]
                 
-                // target_valid := action_variant.valid_destinations != nil && 
+                target_valid: bool = true
+                if action_variant.valid_destinations != nil {
+                    context.allocator = context.temp_allocator
+                    destination_set := calculate_implicit_target_set(action_variant.valid_destinations)
+                    target_valid = var.space in destination_set
+                }
 
                 delete(action.targets)
                 action.targets = make_movement_targets(
@@ -120,7 +125,13 @@ resolve_event :: proc(event: Event) {
                 )
 
                 assert(len(side_button_manager.buttons) > 0)
-                // if side_button_manager.
+                top_button := side_button_manager.buttons[len(side_button_manager.buttons) - 1].variant.(UI_Button_Element)
+
+                if _, ok := top_button.event.(Cancel_Event); ok && target_valid {
+                    add_side_button("Confirm move", Resolve_Current_Action_Event{})
+                } else if _, ok := top_button.event.(Resolve_Current_Action_Event); ok && !target_valid {
+                    pop_side_button()
+                }
 
             case Choose_Target_Action:
                 action_variant.result = var.space
@@ -182,6 +193,12 @@ resolve_event :: proc(event: Event) {
                 movement_val := action_variant.distance
                 delete(action.targets)
                 action.targets = make_movement_targets(movement_val, action_variant.target, action_variant.valid_destinations)
+
+                assert(len(side_button_manager.buttons) > 0)
+                top_button := side_button_manager.buttons[len(side_button_manager.buttons) - 1].variant.(UI_Button_Element)
+                if _, ok := top_button.event.(Resolve_Current_Action_Event); ok {
+                    pop_side_button()
+                }
             }
         }
         
@@ -255,7 +272,6 @@ resolve_event :: proc(event: Event) {
         #partial switch &action_type in action.variant {
         case Movement_Action:
             add_side_button("Reset move", Cancel_Event{})
-
             // This is technically wrong because a move of 0 could still be a valid destination
             if action_type.valid_destinations == nil {
                 add_side_button("Confirm move", Resolve_Current_Action_Event{})
@@ -342,10 +358,13 @@ resolve_event :: proc(event: Event) {
             }
             translocate_unit(calculate_implicit_target(variant.target), variant.path.spaces[len(variant.path.spaces) - 1])
             variant.path.num_locked_spaces = 0
-            delete(variant.path.spaces)
+
+            fmt.println(variant.path.spaces)
+            clear(&variant.path.spaces)
+
         }
 
-        delete(action.targets)
+        clear(&action.targets)
         
         player.hero.current_action_index += 1
         append(&event_queue, Begin_Next_Action_Event{})
