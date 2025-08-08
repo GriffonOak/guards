@@ -6,6 +6,8 @@ import "core:math"
 import "core:reflect"
 import "core:strings"
 
+import "core:log"
+
 
 
 Spawnpoint_Marker :: struct {
@@ -249,8 +251,8 @@ setup_regions :: proc() {
 
 setup_spawnpoints :: proc() {
     for marker in spawnpoints {
-        assert(marker.spawnpoint_flag in SPAWNPOINT_FLAGS)
-        assert(marker.team != .NONE)
+        log.assert(marker.spawnpoint_flag in SPAWNPOINT_FLAGS, "Provided spawnpoint has no spawnpoint marker")
+        log.assert(marker.team != .NONE, "Provided spawnpoint has no team")
         space := &board[marker.loc.x][marker.loc.y]
         symmetric_space := get_symmetric_space(marker.loc)
         space.flags += {marker.spawnpoint_flag}
@@ -394,7 +396,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
 
             if .HERO in space.flags {
                 color = team_colors[space.unit_team]
-                name, ok := reflect.enum_name_from_value(space.hero_id); assert(ok)
+                name, ok := reflect.enum_name_from_value(space.hero_id); log.assert(ok, "Invalid hero name?")
                 initial := strings.clone_to_cstring(name[:1])
 
                 FONT_SIZE :: 0.8 * VERTICAL_SPACING
@@ -518,9 +520,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
 }
 
 draw_board: UI_Render_Proc : proc(element: UI_Element) {
-    board_element, ok := element.variant.(UI_Board_Element)
-    assert(ok)
-    // render_board_to_texture(board_element)
+
     rl.DrawTexturePro(board_render_texture.texture, {0, 0, BOARD_TEXTURE_SIZE.x, -BOARD_TEXTURE_SIZE.y}, element.bounding_rect, {0, 0}, 0, rl.WHITE)
 
     rl.DrawRectangleLinesEx(BOARD_POSITION_RECT, 4, rl.WHITE)

@@ -93,8 +93,7 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
 }
 
 draw_button: UI_Render_Proc : proc(element: UI_Element) {
-    button_element, ok := element.variant.(UI_Button_Element)
-    assert(ok)
+    button_element := assert_variant_rdonly(element.variant, UI_Button_Element)
 
     TEXT_PADDING :: 20
 

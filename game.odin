@@ -3,6 +3,8 @@ package guards
 import "core:fmt"
 import rl "vendor:raylib"
 
+import "core:log"
+
 Direction :: enum {
     NORTH,
     NORTH_EAST,
@@ -81,7 +83,7 @@ spawn_heroes_at_start :: proc() {
     for &player in game_state.players {
         team := player.team
         spawnpoint_marker := spawnpoints[num_spawns[team]]
-        assert(spawnpoint_marker.spawnpoint_flag == .HERO_SPAWNPOINT)
+        log.assert(spawnpoint_marker.spawnpoint_flag == .HERO_SPAWNPOINT)
         spawnpoint: ^Space
         if team == .BLUE {
             spawnpoint = get_symmetric_space(spawnpoint_marker.loc)
@@ -126,5 +128,9 @@ defeat_minion :: proc(target: Target) {
 
 remove_minion :: proc(target: Target) {
     space := &board[target.x][target.y]
+    if space.flags & MINION_FLAGS != {} {
+
+    }
+    minion_team := space.unit_team
     space.flags -= MINION_FLAGS
 }

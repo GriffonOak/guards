@@ -4,6 +4,7 @@ import rl "vendor:raylib"
 import "core:fmt"
 import "core:math"
 import "core:strings"
+import "core:log"
 
 import "core:mem"
 
@@ -46,23 +47,29 @@ default_font: rl.Font
 
 main :: proc() {
 
+
     when ODIN_DEBUG {
         default_allocator := context.allocator
         tracking_allocator: mem.Tracking_Allocator
         mem.tracking_allocator_init(&tracking_allocator, default_allocator)
         context.allocator = mem.tracking_allocator(&tracking_allocator)
 
+        context.logger = log.create_console_logger()
+
         defer {
             for _, entry in tracking_allocator.allocation_map {
-                fmt.printf("- %v leaked %v bytes\n", entry.location, entry.size)
+                log.debugf("- %v leaked %v bytes", entry.location, entry.size)
             }
             for entry in tracking_allocator.bad_free_array {
-                fmt.printf("- %v bad free\n", entry.location)
+                log.debugf("- %v bad free", entry.location)
             }
             mem.tracking_allocator_destroy(&tracking_allocator)
         }
+    } else {
+        context.logger = log.create_console_logger(lowest = .Info)
     }
 
+    
     // arena_buffer := make([]u8, 80000)
     // defer delete(arena_buffer)
 

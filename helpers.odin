@@ -4,22 +4,37 @@ import "base:intrinsics"
 import rl "vendor:raylib"
 import "core:fmt"
 
+import "core:log"
 
 
-assert_variant :: proc(u: ^$U, $V: typeid) -> ^V where intrinsics.type_is_union(U) && intrinsics.type_is_variant_of(U, V) {
+
+assert_variant :: proc(u: ^$U, $V: typeid, loc := #caller_location) -> ^V where intrinsics.type_is_union(U) && intrinsics.type_is_variant_of(U, V) {
     out, ok := &u.(V)
-    assert(ok)
+    log.assertf(ok, "Type assertion failed: %v to %v", u, typeid_of(V), loc = loc)
     return out
 }
 
-find_played_card :: proc() -> (element: ^UI_Element, card_element: ^UI_Card_Element) {
+assert_variant_rdonly :: proc(u: $U, $V: typeid, loc := #caller_location) -> V where intrinsics.type_is_union(U) && intrinsics.type_is_variant_of(U, V) {
+    out, ok := u.(V)
+    log.assertf(ok, "Type assertion failed: %v to %v", u, typeid_of(V), loc = loc)
+    return out
+}
+
+find_played_card_elements :: proc(panic := true, loc := #caller_location) -> (element: ^UI_Element, card_element: ^UI_Card_Element) {
     for &ui_element in ui_stack[1:][:5] {
         card_element = assert_variant(&ui_element.variant, UI_Card_Element)
         if card_element.card.state == .PLAYED {
             return &ui_element, card_element
         }
     }
+    if panic do log.assert(false, "No played card!", loc = loc)
     return nil, nil
+}
+
+find_played_card :: proc(loc := #caller_location) -> ^Card{
+
+    _, card_elem := find_played_card_elements(loc = loc)
+    return card_elem.card
 }
 
 retrieve_cards :: proc() {
@@ -73,19 +88,15 @@ calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity) -> (ou
     case int: out = quantity
 
     case Card_Reach:
-        _, card_elem := find_played_card()
-        assert(card_elem != nil)
         // @Item Need to add items here also at some point
-        switch reach in card_elem.card.reach{
+        switch reach in find_played_card().reach{
         case Range: out = int(reach)
         case Radius: out = int(reach)
         case: assert(false)
         } 
 
     case Card_Value:
-        _, card_elem := find_played_card()
-        assert(card_elem != nil)
-        return card_elem.card.values[quantity.kind]
+        return find_played_card().values[quantity.kind]
 
     case Sum:
         for summand in quantity do out += calculate_implicit_quantity(summand)
@@ -124,10 +135,7 @@ calculate_implicit_condition :: proc(implicit_condition: Implicit_Condition) -> 
     switch condition in implicit_condition {
     case bool: return condition
     case Greater_Than: return calculate_implicit_quantity(condition.term_1) > calculate_implicit_quantity(condition.term_2)
-    case Primary_Is_Not:
-        _, card_elem := find_played_card()
-        assert(card_elem != nil)
-        return card_elem.card.primary != condition.kind
+    case Primary_Is_Not: return find_played_card().primary != condition.kind
     case And:
         out := true
         for extra_condition in condition do out &&= calculate_implicit_condition(extra_condition)

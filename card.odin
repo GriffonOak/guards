@@ -183,8 +183,7 @@ create_texture_for_card :: proc(card: ^Card) {
 }
 
 draw_card: UI_Render_Proc: proc(element: UI_Element) {
-    card_element, ok := element.variant.(UI_Card_Element)
-    assert(ok) 
+    card_element := assert_variant_rdonly(element.variant, UI_Card_Element)
 
     amount_to_show := element.bounding_rect.height / element.bounding_rect.width * CARD_TEXTURE_SIZE.y
     rl.DrawRectangleRec(element.bounding_rect, card_color_values[card_element.card.color])

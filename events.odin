@@ -7,6 +7,7 @@ import rl "vendor:raylib"
 import "core:fmt"
 import "core:reflect"
 import "core:strings"
+import "core:log"
 
 
 
@@ -86,7 +87,7 @@ event_queue: [dynamic]Event
 
 resolve_event :: proc(event: Event) {
 
-    fmt.printfln("EVENT: %v", reflect.union_variant_typeid(event))
+    log.infof("EVENT: %v", reflect.union_variant_typeid(event))
     switch var in event {
 
     case Space_Clicked_Event:
@@ -121,7 +122,7 @@ resolve_event :: proc(event: Event) {
                     valid_destinations = action_variant.valid_destinations,
                 )
 
-                assert(len(side_button_manager.buttons) > 0)
+                log.assert(len(side_button_manager.buttons) > 0, "No side buttons!?")
                 top_button := side_button_manager.buttons[len(side_button_manager.buttons) - 1].variant.(UI_Button_Element)
 
                 if _, ok := top_button.event.(Cancel_Event); ok && target_valid {
@@ -144,7 +145,7 @@ resolve_event :: proc(event: Event) {
         if player.stage != .SELECTING do return
         #partial switch card_element.card.state {
         case .IN_HAND:
-            other_element, other_card := find_played_card()
+            other_element, other_card := find_played_card_elements(panic = false)
             if other_element != nil {
                 other_element.bounding_rect = card_hand_position_rects[other_card.card.color]
                 other_card.card.state = .IN_HAND
@@ -174,7 +175,7 @@ resolve_event :: proc(event: Event) {
                 append(&event_queue, Begin_Resolution_Event{})
             }
         case .RESOLVING:
-            assert(false)
+            log.errorf("Unreachable")
         }
 
     case Cancel_Event:
@@ -190,7 +191,7 @@ resolve_event :: proc(event: Event) {
                 delete(action.targets)
                 action.targets = make_movement_targets(movement_val, action_variant.target, action_variant.valid_destinations)
 
-                assert(len(side_button_manager.buttons) > 0)
+                log.assert(len(side_button_manager.buttons) > 0, "No side buttons!?")
                 top_button := side_button_manager.buttons[len(side_button_manager.buttons) - 1].variant.(UI_Button_Element)
                 if _, ok := top_button.event.(Resolve_Current_Action_Event); ok && action_variant.valid_destinations != nil {
                     pop_side_button()
@@ -206,11 +207,9 @@ resolve_event :: proc(event: Event) {
 
     case Begin_Resolution_Event:
         player.stage = .RESOLVING
-        // Find the played card
-        element, card_element := find_played_card()
-        assert(element != nil && card_element != nil)
 
-        card := card_element.card
+        // Find the played card
+        card := find_played_card()
 
         player.hero.action_list = card.primary_effect
 
@@ -222,7 +221,7 @@ resolve_event :: proc(event: Event) {
 
         action := get_current_action()
         tooltip = action.tooltip
-        fmt.printfln("ACTION: %v", reflect.union_variant_typeid(action.variant))
+        log.infof("ACTION: %v", reflect.union_variant_typeid(action.variant))
         if len(action.targets) == 0 {
             populate_targets(index = player.hero.current_action_index)
         }
@@ -272,7 +271,7 @@ resolve_event :: proc(event: Event) {
         case Attack_Action:
             target := calculate_implicit_target(action_type.target)
             space := &board[target.x][target.y]
-            fmt.printfln("Attack of strength %v", calculate_implicit_quantity(action_type.strength))
+            log.debugf("Attack strength: %v", calculate_implicit_quantity(action_type.strength))
             // Here we assume the target must be an enemy. Enemy should always be in the selection flags for attacks.
             if MINION_FLAGS & space.flags != {} {
                 defeat_minion(target)
@@ -287,13 +286,12 @@ resolve_event :: proc(event: Event) {
         }
 
     case End_Resolution_Event:
-        assert(player.stage == .RESOLVING)
+        log.assert(player.stage == .RESOLVING, "Player is not resolving!")
         clear_side_buttons()
         player.stage = .RESOLVED
         game_state.resolved_players += 1
 
-        element, card_element := find_played_card()
-        assert(element != nil && card_element != nil)
+        element, card_element := find_played_card_elements()
         card_element.card.state = .RESOLVED
         element.bounding_rect = FIRST_CARD_RESOLVED_POSITION_RECT
         element.bounding_rect.x += f32(game_state.turn_counter) * (FIRST_CARD_RESOLVED_POSITION_RECT.x + FIRST_CARD_RESOLVED_POSITION_RECT.width)
@@ -360,7 +358,7 @@ resolve_event :: proc(event: Event) {
             if _, ok := var.jump_index.?; ok do break  // Movement Skipped
             for space in variant.path.spaces {
                 // Stuff that happens on move through goes here
-                // fmt.println(space)
+                log.debugf("Traversed_space: %v", space)
             }
             translocate_unit(calculate_implicit_target(variant.target), variant.path.spaces[len(variant.path.spaces) - 1])
         case Choice_Action:
