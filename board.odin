@@ -315,10 +315,8 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
             action := get_current_action()
             #partial switch &action_variant in action.variant {
             case Movement_Action:
-                // resize(&action_variant.path.spaces, action_variant.path.num_locked_spaces)
-                for len(action_variant.path.spaces) > action_variant.path.num_locked_spaces {
-                    pop(&action_variant.path.spaces)
-                } 
+                resize(&action_variant.path.spaces, action_variant.path.num_locked_spaces)
+
                 if board_element.hovered_space not_in action.targets do break
 
                 starting_space: Target
@@ -328,12 +326,10 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
                     starting_space = calculate_implicit_target(action_variant.target)
                 }
 
-                path, ok := find_shortest_path(starting_space, board_element.hovered_space).?
-                if !ok do break
-                defer delete(path)
-                for space in path {
-                    append(&action_variant.path.spaces, space)
-                } 
+                current_space := board_element.hovered_space
+                for ; current_space != starting_space; current_space = action.targets[current_space].prev_node {
+                    inject_at(&action_variant.path.spaces, action_variant.path.num_locked_spaces, current_space)
+                }
 
             }
         }
@@ -439,12 +435,6 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             }
         }
 
-        destination_set: Target_Set
-        if valid_destinations != nil {
-            context.allocator = context.temp_allocator
-            destination_set = calculate_implicit_target_set(valid_destinations)
-        }
-
         for target, info in action.targets {
             space := board[target.x][target.y]
             phase: f64 = 0
@@ -468,7 +458,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             color_blend := (math.sin(frequency * time + phase) + 1) / 2
             // color: = color_lerp(rl.BLUE, rl.ORANGE, color_blend)
             color := color_lerp(rl.BLACK, rl.WHITE, color_blend)
-            if valid_destinations != nil && target not_in destination_set {
+            if valid_destinations != nil && target not_in valid_destinations {
                 rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.08, color)
             } else {
                 rl.DrawPolyLinesEx(space.position, 6, VERTICAL_SPACING / 2, 0, VERTICAL_SPACING * 0.08, color)

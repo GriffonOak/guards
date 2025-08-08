@@ -73,12 +73,13 @@ Dijkstra_Info :: struct {
     prev_node: IVec2,
 }
 
-make_movement_targets :: proc(distance: Implicit_Quantity, origin: Implicit_Target, valid_destinations: Implicit_Target_Set = nil) -> (out: Target_Set) {
+make_movement_targets :: proc(distance: Implicit_Quantity, origin: Implicit_Target, valid_destinations: Implicit_Target_Set = nil, allocator := context.allocator) -> (out: Target_Set) {
+
+    context.allocator = allocator
 
     visited_set: map[IVec2]Dijkstra_Info
     unvisited_set: map[IVec2]Dijkstra_Info
-    defer delete(visited_set)
-    defer delete(unvisited_set)
+
     start := calculate_implicit_target(origin)
     unvisited_set[start] = {0, {-1, -1}}
 
@@ -121,12 +122,19 @@ make_movement_targets :: proc(distance: Implicit_Quantity, origin: Implicit_Targ
     if valid_destinations != nil {
         destination_set := calculate_implicit_target_set(valid_destinations)
         for valid_endpoint in destination_set {
-            for potential_target, info in visited_set {
-                // @Speed this is kind of abismal, we will be duplicating a lot of work here
-                path, ok := find_shortest_path(potential_target, valid_endpoint).?
-                if !ok do break 
-                defer delete(path)
-                if len(path) + info.dist <= real_distance do out[potential_target] = {} 
+            endpoint_info, ok := visited_set[valid_endpoint]
+            if !ok do continue
+            reachable_targets_from_endpoint := make_movement_targets(
+                real_distance,
+                valid_endpoint,
+                allocator = context.temp_allocator,
+            )
+            for potential_target, potential_info in visited_set {
+                target_info, ok := reachable_targets_from_endpoint[potential_target]
+
+                if ok && target_info.dist + potential_info.dist <= real_distance {
+                    out[potential_target] = Target_Info{potential_info.dist, potential_info.prev_node}
+                } 
             }
         }
     } else {
@@ -135,63 +143,9 @@ make_movement_targets :: proc(distance: Implicit_Quantity, origin: Implicit_Targ
         }
     }
 
-    if start in out do delete_key(&out, start)
+    // if start in out do delete_key(&out, start)
 
     return out
-}
-
-// Unify dijkstra implementations at some point if possible
-find_shortest_path :: proc(start, end: Target) -> Maybe([dynamic]Target) {
-
-    visited_set: map[IVec2]Dijkstra_Info
-    unvisited_set: map[IVec2]Dijkstra_Info
-    defer delete(visited_set)
-    defer delete(unvisited_set)
-    unvisited_set[start] = {0, {-1, -1}}
-
-    // dijkstra's algorithm!
-
-    for len(unvisited_set) > 0 {
-        // find minimum
-        min_info := Dijkstra_Info{1e6, {-1, -1}}
-        min_loc := IVec2{-1, -1}
-        for loc, info in unvisited_set {
-            if info.dist < min_info.dist || (info.dist == min_info.dist && loc.x + loc.y * GRID_WIDTH < min_loc.x + min_loc.y * GRID_WIDTH) {
-                min_loc = loc
-                min_info = info
-            }
-        }
-
-        // found the endpoint! prepare the way
-        if min_loc == end {
-            out: [dynamic]Target
-            visited_set[min_loc] = min_info
-            for ; min_loc != {-1, -1} && min_loc != start; min_loc = visited_set[min_loc].prev_node {
-                inject_at(&out, 0, min_loc)
-            }
-            return out
-        }
-
-        directions: for vector in direction_vectors {
-            next_loc := min_loc + vector
-            if next_loc.x < 0 || next_loc.x >= GRID_WIDTH || next_loc.y < 0 || next_loc.y >= GRID_HEIGHT do continue
-            if OBSTACLE_FLAGS & board[next_loc.x][next_loc.y].flags != {} do continue
-            if next_loc in visited_set do continue
-            if player.stage == .RESOLVING {
-                #partial switch &action in get_current_action().variant {
-                case Movement_Action:
-                    for traversed_loc in action.path.spaces do if traversed_loc == next_loc do continue directions
-                }
-            }
-            next_dist := min_info.dist + 1
-            existing_info, ok := unvisited_set[next_loc]
-            if !ok || next_dist < existing_info.dist do unvisited_set[next_loc] = {next_dist, min_loc}
-        }
-
-        visited_set[min_loc] = min_info
-        delete_key(&unvisited_set, min_loc)
-    }
-    return nil
 }
 
 make_fast_travel_targets :: proc() -> (out: Target_Set) {
