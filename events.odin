@@ -272,6 +272,7 @@ resolve_event :: proc(event: Event) {
         case Attack_Action:
             target := calculate_implicit_target(action_type.target)
             space := &board[target.x][target.y]
+            fmt.printfln("Attack of strength %v", calculate_implicit_quantity(action_type.strength))
             // Here we assume the target must be an enemy. Enemy should always be in the selection flags for attacks.
             if MINION_FLAGS & space.flags != {} {
                 defeat_minion(target)

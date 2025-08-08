@@ -8,10 +8,16 @@ Card_Value :: struct {
     kind: Ability_Kind
 }
 
+Sum :: []Implicit_Quantity
+
+Count_Targets :: []Selection_Criterion
+
 Implicit_Quantity :: union {
     int,
     Card_Reach,
     Card_Value,
+    Sum,
+    Count_Targets,
 }
 
 Within_Distance :: struct {
@@ -66,7 +72,7 @@ Choice :: struct {
 
 Attack_Action :: struct {
     target: Implicit_Target,
-    value: Implicit_Quantity,
+    strength: Implicit_Quantity,
 }
 
 Choice_Action :: struct {
@@ -90,6 +96,8 @@ Greater_Than :: struct {
     term_1, term_2: Implicit_Quantity
 }
 
+And :: []Implicit_Condition
+
 Primary_Is_Not :: struct {
     kind: Ability_Kind
 }
@@ -98,6 +106,7 @@ Implicit_Condition :: union {
     bool,
     Greater_Than,
     Primary_Is_Not,
+    And,
 }
 
 Action :: struct {
@@ -127,7 +136,7 @@ first_choice_action := Action {
 
 basic_movement_action := Action {
     tooltip = player_movement_tooltip,
-    condition = Primary_Is_Not{.MOVEMENT},
+    condition = And{Primary_Is_Not{.MOVEMENT}, Greater_Than{Card_Value{.MOVEMENT}, 0}},
     variant = Movement_Action {
         target   = Self{},
         distance = Card_Value{.MOVEMENT},

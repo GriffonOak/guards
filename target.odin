@@ -43,7 +43,7 @@ populate_targets :: proc(index: int = 0) {
     case Clear_Action:
         action.targets =  make_clear_targets()
     case Choose_Target_Action:
-        action.targets =  make_arbitrary_targets(..variant.criteria)
+        action.targets =  make_arbitrary_targets(variant.criteria)
     case Choice_Action:
         for choice in variant.choices {
             populate_targets(choice.jump_index)
@@ -192,48 +192,60 @@ make_clear_targets :: proc() -> (out: Target_Set) {
     return out
 }
 
-// Varargs is cute here but it may not be necessary
-make_arbitrary_targets :: proc(criteria: ..Selection_Criterion) -> (out: Target_Set) {
+target_fulfills_criterion :: proc(target: Target, criterion: Selection_Criterion) -> bool {
+    space := board[target.x][target.y]
+
+    switch selector in criterion {
+    case Within_Distance:
+
+        origin := calculate_implicit_target(selector.origin)
+        min_dist := calculate_implicit_quantity(selector.min)
+        max_dist := calculate_implicit_quantity(selector.max)
+
+        distance := calculate_hexagonal_distance(origin, target)
+        if distance <= max_dist && distance >= min_dist do return true
+
+    case Contains_Any:
+
+        intersection := space.flags & selector
+        if intersection != {} do return true
+
+    case Is_Enemy_Unit:
+
+        if player.team != .NONE && space.unit_team != .NONE && player.team != space.unit_team {
+            return true
+        }
+    
+    case Not_Previously_Targeted:
+
+        // Inefficient, could just look at the very end
+        previous_target := calculate_implicit_target(Previous_Choice{})
+        if target != previous_target {
+            return true
+        }
+    }
+    return false
+}
+
+make_arbitrary_targets :: proc(criteria: []Selection_Criterion, allocator := context.allocator) -> (out: Target_Set) {
+
+    context.allocator = allocator
 
     // Start with completely populated board (Inefficient!)
+    // @Speed
     for x in 0..<GRID_WIDTH {
         for y in 0..<GRID_HEIGHT {
-            out[{x, y}] = {}
+            target := Target{x, y}
+            if target_fulfills_criterion(target, criteria[0]) {
+                out[target] = {}
+            }
         }
     }
 
-    for criterion in criteria {
+    for criterion in criteria[1:] {
         for target, info in out {
-            space := board[target.x][target.y]
-
-            switch selector in criterion {
-            case Within_Distance:
-
-                origin := calculate_implicit_target(selector.origin)
-                min_dist := calculate_implicit_quantity(selector.min)
-                max_dist := calculate_implicit_quantity(selector.max)
-
-                distance := calculate_hexagonal_distance(origin, target)
-                if distance > max_dist || distance < min_dist do delete_key(&out, target)
-
-            case Contains_Any:
-
-                intersection := space.flags & selector
-                if intersection == {} do delete_key(&out, target)
-
-            case Is_Enemy_Unit:
-
-                if player.team == .NONE || space.unit_team == .NONE || player.team == space.unit_team {
-                    delete_key(&out, target)
-                }
-            
-            case Not_Previously_Targeted:
-
-                // Inefficient, could just look at the very end
-                previous_target := calculate_implicit_target(Previous_Choice{})
-                if target == previous_target {
-                    delete_key(&out, target)
-                }
+            if !target_fulfills_criterion(target, criterion) {
+                delete_key(&out, target)
             }
         }
     }

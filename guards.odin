@@ -10,7 +10,6 @@ import "core:mem"
 
 // Todo list
 // Separate cards out of the ui stack
-// Add attacking and skills to the game
 // Add dummy blue player that acts randomly
 // Snorri runes
 

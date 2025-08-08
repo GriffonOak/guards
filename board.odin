@@ -418,6 +418,8 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
         valid_destinations: Target_Set = nil
         origin: Target
 
+        frequency: f64 = 4
+
         #partial switch variant in action.variant {
         case Choice_Action:
             for choice in variant.choices {
@@ -433,12 +435,13 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             } else {
                 origin = variant.path.spaces[variant.path.num_locked_spaces - 1]
             }
+        case Choose_Target_Action:
+            frequency = 14
         }
 
         for target, info in action.targets {
             space := board[target.x][target.y]
             phase: f64 = 0
-            frequency: f64 = 4
 
             // Different effects for highlighted spaces
             #partial switch variant in action.variant {
@@ -448,16 +451,16 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             case Fast_Travel_Action:
                 region_id := space.region_id
                 phase = math.TAU * f64(region_id) / f64(len(Region_ID) - 1)
-
-            case Choose_Target_Action:
-                frequency = 14
             }
 
             time := rl.GetTime()
 
             color_blend := (math.sin(frequency * time + phase) + 1) / 2
+            color_blend = color_blend * color_blend
+            base_color := rl.DARKGRAY
+            highlight_color := rl.LIGHTGRAY
             // color: = color_lerp(rl.BLUE, rl.ORANGE, color_blend)
-            color := color_lerp(rl.BLACK, rl.WHITE, color_blend)
+            color := color_lerp(base_color, highlight_color, color_blend)
             if valid_destinations != nil && target not_in valid_destinations {
                 rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.08, color)
             } else {

@@ -30,7 +30,7 @@ xargatha_cards := [?]Card {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previous_Choice{},
-                    value = Card_Value{.ATTACK},
+                    strength = Card_Value{.ATTACK},
                 }
             },
             Action {
@@ -54,7 +54,7 @@ xargatha_cards := [?]Card {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previous_Choice{},
-                    value = Card_Value{.ATTACK},
+                    strength = Card_Value{.ATTACK},
                 }
             },
         }
@@ -106,7 +106,43 @@ xargatha_cards := [?]Card {
         tier        = 1,
         values      = #partial{.ATTACK = 5, .DEFENSE = 6, .MOVEMENT = 5},
         primary     = .ATTACK,
-        text        = "Target a unit adjacent to you. +1 Attack\nfor each other enemy unit adjacent to you."
+        primary_sign = PLUS_SIGN,
+        text        = "Target a unit adjacent to you. +1 Attack\nfor each other enemy unit adjacent to you.",
+        primary_effect = []Action {
+            Action {
+                tooltip = "Target a unit adjacent to you.",
+                variant = Choose_Target_Action {
+                    criteria = {
+                        Within_Distance {
+                            origin = Self{},
+                            min = 1,
+                            max = 1
+                        },
+                        Contains_Any(UNIT_FLAGS),
+                        Is_Enemy_Unit{},
+                    }
+                }
+            },
+            Action {
+                tooltip = "Waiting for opponent to defend...",
+                variant = Attack_Action {
+                    target = Previous_Choice{},
+                    strength = Sum {
+                        Card_Value{.ATTACK}, 
+                        Count_Targets {
+                            Within_Distance {
+                                origin = Self{},
+                                min = 1,
+                                max = 1
+                            },
+                            Contains_Any(UNIT_FLAGS),
+                            Is_Enemy_Unit{},
+                        },
+                        -1
+                    }
+                }
+            },
+        }
     },
     {
         name        = "Charm",

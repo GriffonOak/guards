@@ -41,6 +41,8 @@ Action_Reach :: union {
     Radius,
 }
 
+PLUS_SIGN: cstring : "+"
+
 Card :: struct {
     name: string,
     color: Card_Color,
@@ -48,6 +50,7 @@ Card :: struct {
     tier: int,
     values: [Ability_Kind]int,
     primary: Ability_Kind,
+    primary_sign: cstring,
     reach: Action_Reach,
     text: string,
     primary_effect: []Action,
@@ -137,11 +140,11 @@ create_texture_for_card :: proc(card: ^Card) {
     rl.DrawRectangleRec({0, 0, COLORED_BAND_WIDTH, CARD_TEXTURE_SIZE.y / 2}, card_color_values[card.color])
     // rl.DrawRectangleRec({0, 0, CARD_TEXTURE_SIZE.x, COLORED_BAND_WIDTH}, card_color_values[card.color])
 
-    rl.DrawTextEx(default_font, fmt.ctprintf("%dI", card.initiative), {TEXT_PADDING, TEXT_PADDING}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+    rl.DrawTextEx(default_font, fmt.ctprintf("I%d", card.initiative), {TEXT_PADDING, TEXT_PADDING}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     secondaries_index := 1
     for val, ability in card.values {
         if val == 0 || ability == card.primary do continue
-        rl.DrawTextEx(default_font, fmt.ctprintf("%d%s", val, ability_initials[ability]), {TEXT_PADDING, TEXT_PADDING + f32(secondaries_index) * TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+        rl.DrawTextEx(default_font, fmt.ctprintf("%s%d", ability_initials[ability], val), {TEXT_PADDING, TEXT_PADDING + f32(secondaries_index) * TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
         secondaries_index += 1
     }
 
@@ -159,7 +162,7 @@ create_texture_for_card :: proc(card: ^Card) {
     primary_value := card.values[card.primary]
     switch card.primary {
     case .ATTACK, .DEFENSE, .MOVEMENT, .DEFENSE_SKILL:
-        rl.DrawTextEx(default_font, fmt.ctprintf("%d%s", primary_value, ability_initials[card.primary]), {TEXT_PADDING, CARD_TEXTURE_SIZE.y - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+        rl.DrawTextEx(default_font, fmt.ctprintf("%s%d%s", ability_initials[card.primary], primary_value, card.primary_sign), {TEXT_PADDING, CARD_TEXTURE_SIZE.y - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     case .SKILL:
         rl.DrawTextEx(default_font, fmt.ctprintf("%s", ability_initials[card.primary]), {TEXT_PADDING, CARD_TEXTURE_SIZE.y - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     case .NONE:

@@ -86,6 +86,13 @@ calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity) -> (ou
         _, card_elem := find_played_card()
         assert(card_elem != nil)
         return card_elem.card.values[quantity.kind]
+
+    case Sum:
+        for summand in quantity do out += calculate_implicit_quantity(summand)
+
+    case Count_Targets:
+        targets := make_arbitrary_targets(quantity, context.temp_allocator)
+        return len(targets)
     }
     return 
 }
@@ -108,7 +115,7 @@ calculate_implicit_target :: proc(implicit_target: Implicit_Target) -> (out: Tar
 calculate_implicit_target_set :: proc(implicit_set: Implicit_Target_Set) -> Target_Set {
     switch set in implicit_set {
     case Target_Set: return set
-    case []Selection_Criterion: return make_arbitrary_targets(..set)
+    case []Selection_Criterion: return make_arbitrary_targets(set)
     }
     return nil
 }
@@ -121,6 +128,10 @@ calculate_implicit_condition :: proc(implicit_condition: Implicit_Condition) -> 
         _, card_elem := find_played_card()
         assert(card_elem != nil)
         return card_elem.card.primary != condition.kind
+    case And:
+        out := true
+        for extra_condition in condition do out &&= calculate_implicit_condition(extra_condition)
+        return out
     }
     return false
 }
