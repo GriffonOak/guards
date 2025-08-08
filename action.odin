@@ -4,17 +4,14 @@ package guards
 
 Card_Reach :: struct {}
 
-Card_Primary_Value :: struct {}
-
-Card_Secondary_Value :: struct {
+Card_Value :: struct {
     kind: Ability_Kind
 }
 
 Implicit_Quantity :: union {
     int,
     Card_Reach,
-    Card_Primary_Value,
-    Card_Secondary_Value,
+    Card_Value,
 }
 
 Within_Distance :: struct {
@@ -27,12 +24,14 @@ Contains_Any :: Space_Flags
 Contains_All :: Space_Flags
 
 Is_Enemy_Unit :: struct {}
+Not_Previously_Targeted :: struct {}
 
 Selection_Criterion :: union {
     Within_Distance,
     Contains_Any,
     // Contains_All,
     Is_Enemy_Unit,
+    Not_Previously_Targeted,
 }
 
 
@@ -57,13 +56,17 @@ Clear_Action :: struct {}
 
 Choose_Target_Action :: struct {
     criteria: []Selection_Criterion,
-
     result: Target,
 }
 
 Choice :: struct {
     name: cstring,
     jump_index: int,
+}
+
+Attack_Action :: struct {
+    target: Implicit_Target,
+    value: Implicit_Quantity,
 }
 
 Choice_Action :: struct {
@@ -76,15 +79,31 @@ Halt_Action :: struct {}
 Action_Variant :: union {
     Movement_Action,
     Fast_Travel_Action,
+    Attack_Action,
     Clear_Action,
     Choose_Target_Action,
     Choice_Action,
     Halt_Action,
 }
 
+Greater_Than :: struct {
+    term_1, term_2: Implicit_Quantity
+}
+
+Primary_Is_Not :: struct {
+    kind: Ability_Kind
+}
+
+Implicit_Condition :: union {
+    bool,
+    Greater_Than,
+    Primary_Is_Not,
+}
+
 Action :: struct {
     tooltip: cstring,
     optional: bool,
+    condition: Implicit_Condition,
     skip_index: int,
     variant: Action_Variant,
     targets: Target_Set,
@@ -108,15 +127,17 @@ first_choice_action := Action {
 
 basic_movement_action := Action {
     tooltip = player_movement_tooltip,
+    condition = Primary_Is_Not{.MOVEMENT},
     variant = Movement_Action {
         target   = Self{},
-        distance = Card_Secondary_Value{.MOVEMENT},
+        distance = Card_Value{.MOVEMENT},
     }
 }
 
 basic_fast_travel_action := Action {
     tooltip = "Choose a space to fast travel to.",
     variant = Fast_Travel_Action{},
+    condition = Greater_Than{Card_Value{.MOVEMENT}, 0}
 }
 
 basic_clear_action := Action {

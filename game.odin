@@ -27,6 +27,7 @@ Game_Stage :: enum {
 Game_State :: struct {
     num_players: int,
     players: [dynamic]^Player,
+    minion_counts: [Team]int,
     confirmed_players: int,
     resolved_players,
     turn_counter: int,
@@ -93,6 +94,9 @@ spawn_heroes_at_start :: proc() {
         spawnpoint.hero_id = player.hero.id
         spawnpoint.owner = player
 
+        player.hero.coins = 0
+        player.hero.level = 1
+
         player.hero.location = spawnpoint_marker.loc
     }
 }
@@ -105,4 +109,22 @@ begin_game :: proc() {
     spawn_heroes_at_start()
 
     append(&event_queue, Begin_Card_Selection_Event{})
+}
+
+defeat_minion :: proc(target: Target) {
+    space := &board[target.x][target.y]
+    minion := space.flags & MINION_FLAGS
+
+    if .HEAVY_MINION in minion {
+        player.hero.coins += 2
+    } else {
+        player.hero.coins += 2
+    }
+
+    remove_minion(target)
+}
+
+remove_minion :: proc(target: Target) {
+    space := &board[target.x][target.y]
+    space.flags -= MINION_FLAGS
 }

@@ -22,6 +22,8 @@ Hero :: struct {
 
     current_action_index: int,
     action_list: []Action,
+    coins: int,
+    level: int,
     // target_list: map[Target]Void,
     // num_locked_targets: int,
     // chosen_targets: [dynamic]Target,

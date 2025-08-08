@@ -82,15 +82,10 @@ calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity) -> (ou
         case: assert(false)
         } 
 
-    case Card_Primary_Value:
+    case Card_Value:
         _, card_elem := find_played_card()
         assert(card_elem != nil)
-        return card_elem.card.value
-
-    case Card_Secondary_Value:
-        _, card_elem := find_played_card()
-        assert(card_elem != nil)
-        return card_elem.card.secondaries[quantity.kind]
+        return card_elem.card.values[quantity.kind]
     }
     return 
 }
@@ -100,8 +95,12 @@ calculate_implicit_target :: proc(implicit_target: Implicit_Target) -> (out: Tar
     case Target: out = target
     case Self: out = player.hero.location
     case Previous_Choice:
-        prev_action := player.hero.action_list[player.hero.current_action_index - 1].variant.(Choose_Target_Action)
-        out = prev_action.result
+        #reverse for action in player.hero.action_list[:player.hero.current_action_index] {
+            if variant, ok := action.variant.(Choose_Target_Action); ok {
+                out = variant.result
+                return
+            }
+        }
     }
     return
 }
@@ -112,6 +111,18 @@ calculate_implicit_target_set :: proc(implicit_set: Implicit_Target_Set) -> Targ
     case []Selection_Criterion: return make_arbitrary_targets(..set)
     }
     return nil
+}
+
+calculate_implicit_condition :: proc(implicit_condition: Implicit_Condition) -> bool {
+    switch condition in implicit_condition {
+    case bool: return condition
+    case Greater_Than: return calculate_implicit_quantity(condition.term_1) > calculate_implicit_quantity(condition.term_2)
+    case Primary_Is_Not:
+        _, card_elem := find_played_card()
+        assert(card_elem != nil)
+        return card_elem.card.primary != condition.kind
+    }
+    return false
 }
 
 get_first_set_bit :: proc(bs: bit_set[$T]) -> Maybe(T) where intrinsics.type_is_enum(T) {

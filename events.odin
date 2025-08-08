@@ -269,6 +269,16 @@ resolve_event :: proc(event: Event) {
                 append(&event_queue, Resolve_Current_Action_Event{most_recent_choice})
             }
 
+        case Attack_Action:
+            target := calculate_implicit_target(action_type.target)
+            space := &board[target.x][target.y]
+            // Here we assume the target must be an enemy. Enemy should always be in the selection flags for attacks.
+            if MINION_FLAGS & space.flags != {} {
+                defeat_minion(target)
+                append(&event_queue, Resolve_Current_Action_Event{})
+            }
+
+
         case Halt_Action: 
             append(&event_queue, End_Resolution_Event{})
             return
@@ -300,7 +310,6 @@ resolve_event :: proc(event: Event) {
             append(&event_queue, Begin_Card_Selection_Event{})
         }
 
-        // anyway
 
     case Begin_Minion_Battle_Event:
         // Let the team captain choose which minions to delete

@@ -46,9 +46,8 @@ Card :: struct {
     color: Card_Color,
     initiative: int,
     tier: int,
-    secondaries: [Ability_Kind]int,
+    values: [Ability_Kind]int,
     primary: Ability_Kind,
-    value: int,
     reach: Action_Reach,
     text: string,
     primary_effect: []Action,
@@ -140,8 +139,8 @@ create_texture_for_card :: proc(card: ^Card) {
 
     rl.DrawTextEx(default_font, fmt.ctprintf("%dI", card.initiative), {TEXT_PADDING, TEXT_PADDING}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     secondaries_index := 1
-    for val, ability in card.secondaries {
-        if val == 0 do continue
+    for val, ability in card.values {
+        if val == 0 || ability == card.primary do continue
         rl.DrawTextEx(default_font, fmt.ctprintf("%d%s", val, ability_initials[ability]), {TEXT_PADDING, TEXT_PADDING + f32(secondaries_index) * TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
         secondaries_index += 1
     }
@@ -157,9 +156,10 @@ create_texture_for_card :: proc(card: ^Card) {
 
     rl.DrawTextEx(default_font, text_cstring, {TEXT_PADDING, CARD_TEXTURE_SIZE.y - text_dimensions.y - TEXT_PADDING}, TEXT_FONT_SIZE, FONT_SPACING, rl.BLACK)
 
+    primary_value := card.values[card.primary]
     switch card.primary {
     case .ATTACK, .DEFENSE, .MOVEMENT, .DEFENSE_SKILL:
-        rl.DrawTextEx(default_font, fmt.ctprintf("%d%s", card.value, ability_initials[card.primary]), {TEXT_PADDING, CARD_TEXTURE_SIZE.y - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+        rl.DrawTextEx(default_font, fmt.ctprintf("%d%s", primary_value, ability_initials[card.primary]), {TEXT_PADDING, CARD_TEXTURE_SIZE.y - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     case .SKILL:
         rl.DrawTextEx(default_font, fmt.ctprintf("%s", ability_initials[card.primary]), {TEXT_PADDING, CARD_TEXTURE_SIZE.y - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     case .NONE:

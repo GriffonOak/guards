@@ -331,7 +331,9 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
                 path, ok := find_shortest_path(starting_space, board_element.hovered_space).?
                 if !ok do break
                 defer delete(path)
-                for space in path do append(&action_variant.path.spaces, space)
+                for space in path {
+                    append(&action_variant.path.spaces, space)
+                } 
 
             }
         }
@@ -415,40 +417,62 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
         rl.DrawPolyLinesEx(space_pos, 6, VERTICAL_SPACING * (1 / math.sqrt_f32(3) + 0.05), 0, VERTICAL_SPACING * 0.05, rl.WHITE)
     }
 
-    highlight_spaces :: proc(targets: Target_Set, valid_destinations: Implicit_Target_Set = nil) {
+    highlight_action_targets :: proc(action: Action) {
+
+        valid_destinations: Target_Set = nil
+        origin: Target
+
+        #partial switch variant in action.variant {
+        case Choice_Action:
+            for choice in variant.choices {
+                next_choice := get_action_at_index(choice.jump_index)
+                if next_choice == nil do continue
+                highlight_action_targets(next_choice^)
+            }
+            return
+        case Movement_Action:
+            valid_destinations = calculate_implicit_target_set(variant.valid_destinations)
+            if variant.path.num_locked_spaces == 0 {
+                origin = calculate_implicit_target(variant.target)
+            } else {
+                origin = variant.path.spaces[variant.path.num_locked_spaces - 1]
+            }
+        }
+
         destination_set: Target_Set
         if valid_destinations != nil {
             context.allocator = context.temp_allocator
             destination_set = calculate_implicit_target_set(valid_destinations)
         }
 
-        for target in targets {
+        for target, info in action.targets {
             space := board[target.x][target.y]
+            phase: f64 = 0
+            frequency: f64 = 4
+
+            // Different effects for highlighted spaces
+            #partial switch variant in action.variant {
+            case Movement_Action:
+                phase = -f64(info.dist)
+
+            case Fast_Travel_Action:
+                region_id := space.region_id
+                phase = math.TAU * f64(region_id) / f64(len(Region_ID) - 1)
+
+            case Choose_Target_Action:
+                frequency = 14
+            }
 
             time := rl.GetTime()
 
-            color_blend := (math.sin(2 * time) + 1) / 2
-            color: = color_lerp(rl.WHITE, rl.VIOLET, color_blend)
+            color_blend := (math.sin(frequency * time + phase) + 1) / 2
+            // color: = color_lerp(rl.BLUE, rl.ORANGE, color_blend)
+            color := color_lerp(rl.BLACK, rl.WHITE, color_blend)
             if valid_destinations != nil && target not_in destination_set {
                 rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.08, color)
             } else {
                 rl.DrawPolyLinesEx(space.position, 6, VERTICAL_SPACING / 2, 0, VERTICAL_SPACING * 0.08, color)
             }
-        }
-    }
-
-    highlight_action_targets :: proc(index: int = 0) {
-        action := get_action_at_index(index)
-
-        #partial switch variant in action.variant {
-        case Choice_Action:
-            for choice in variant.choices {
-                highlight_action_targets(choice.jump_index)
-            }
-        case Movement_Action:
-            highlight_spaces(action.targets, variant.valid_destinations)
-        case:
-            highlight_spaces(action.targets)
         }
     }
 
@@ -474,16 +498,15 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
                 button_element := assert_variant(&ui_element.variant, UI_Button_Element)
                 event, ok := button_element.event.(Resolve_Current_Action_Event)
                 index := event.jump_index.?
-                if ok && button_element.hovered {
-                    highlight_action_targets(index)
+                next_action := get_action_at_index(index)
+                if ok && next_action != nil && button_element.hovered {
+                    highlight_action_targets(next_action^)
                 }
             }
         }
 
-        if action_type, ok := action.variant.(Movement_Action); ok && action_type.valid_destinations != nil {
-            highlight_spaces(action.targets, action_type.valid_destinations)
-        } else {
-            highlight_spaces(action.targets)
+        if _, ok := action.variant.(Choice_Action); !ok && action != nil {
+            highlight_action_targets(action^)
         }
     }
 
