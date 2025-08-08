@@ -10,6 +10,9 @@ import "core:mem"
 
 
 // Todo list
+// Active effects
+// Minion battles
+// Heavy immunity / immunity in general
 // Separate cards out of the ui stack
 // Add dummy blue player that acts randomly
 // Snorri runes

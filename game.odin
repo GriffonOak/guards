@@ -26,6 +26,32 @@ Game_Stage :: enum {
     UPGRADES,
 }
 
+Active_Effect_ID :: enum {
+    NONE,
+    XARGATHA_STONE_GAZE,
+}
+
+Single_Turn :: int
+
+Effect_Duration :: union {
+    // End_Of_Turn,
+    // End_Of_Round,
+    Single_Turn,
+}
+
+Active_Effect :: struct {
+    duration: Effect_Duration,
+    target_set: Implicit_Target_Set,
+    _criteria: [dynamic]Selection_Criterion
+}
+
+Active_Effect_Descriptor :: struct {
+    id: Active_Effect_ID,
+    duration_type: Effect_Duration,
+    duration_value: Implicit_Quantity,
+    target_set: Implicit_Target_Set
+}
+
 Game_State :: struct {
     num_players: int,
     players: [dynamic]^Player,
@@ -33,6 +59,7 @@ Game_State :: struct {
     confirmed_players: int,
     resolved_players,
     turn_counter: int,
+    ongoing_active_effects: [Active_Effect_ID]Active_Effect,
     stage: Game_Stage,
     current_battle_zone: Region_ID
 }

@@ -2,6 +2,8 @@ package guards
 
 /// XARGATHA
 
+smem := Card_Reach{&xargatha_cards[4]}
+
 xargatha_cards := [?]Card {
     {
         name        = "Cleave",
@@ -234,6 +236,26 @@ xargatha_cards := [?]Card {
         values      = #partial{.DEFENSE = 5, .MOVEMENT = 3},
         primary     = .SKILL,
         reach       = Radius(2),
-        text        = "Next turn: Enemy heroes in radius count\nas both heroes and terrain, and cannot\nperform movement actions."
+        text        = "Next turn: Enemy heroes in radius count\nas both heroes and terrain, and cannot\nperform movement actions.",
+        primary_effect = {
+            Action {
+                tooltip = "You should never see this.",
+                variant = Add_Active_Effect_Action {
+                    effect = Active_Effect_Descriptor {
+                        id = .XARGATHA_FREEZE,
+                        duration = Single_Turn(Sum{Current_Turn{}, 1}),
+                        target_set = []Selection_Criterion {
+                            Within_Distance {
+                                Self{},  // @Note Self is not technically correct here, needs to *always* target xargatha
+                                0,
+                                smem,
+                            },
+                            Contains_Any({.HERO}),
+                            // Is_Enemy_Unit{}
+                        }
+                    }
+                }
+            }
+        }
     }
 }

@@ -2,7 +2,9 @@ package guards
 
 
 
-Card_Reach :: struct {}
+Card_Reach :: struct {
+    // card: ^Card,
+}
 
 Card_Value :: struct {
     kind: Ability_Kind
@@ -78,6 +80,10 @@ Attack_Action :: struct {
 Choice_Action :: struct {
     choices: []Choice,
     result: int,
+}
+
+Add_Active_Effect_Action :: struct {
+    effect: Active_Effect_Descriptor,
 }
 
 Halt_Action :: struct {}
