@@ -169,3 +169,9 @@ get_first_set_bit :: proc(bs: bit_set[$T]) -> Maybe(T) where intrinsics.type_is_
     }
     return nil
 }
+
+get_enemy_team :: proc(team: Team) -> Team {
+    if team == .NONE do return .NONE
+
+    return .BLUE if team == .RED else .RED
+}

@@ -236,6 +236,8 @@ target_fulfills_criterion :: proc(target: Target, criterion: Selection_Criterion
         if target != previous_target {
             return true
         }
+    case Ignoring_Immunity:
+        return true
     }
     return false
 }

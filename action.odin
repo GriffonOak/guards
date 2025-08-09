@@ -51,12 +51,15 @@ Contains_All :: Space_Flags
 Is_Enemy_Unit :: struct {}
 Not_Previously_Targeted :: struct {}
 
+Ignoring_Immunity :: struct {}
+
 Selection_Criterion :: union {
     Within_Distance,
     Contains_Any,
     // Contains_All,
     Is_Enemy_Unit,
     Not_Previously_Targeted,
+    Ignoring_Immunity,
 }
 
 
@@ -142,7 +145,9 @@ Action :: struct {
     targets: Target_Set,
 }
 
-player_movement_tooltip: cstring = "Choose a space to move to."
+player_movement_tooltip: cstring : "Choose a space to move to."
+
+first_choice_tooltip: cstring : "Choose an action to take with your played card."
 
 HALT_INDEX :: -999
 FIRST_PRIMARY_INDEX :: 0
@@ -152,27 +157,14 @@ BASIC_CLEAR_INDEX :: -4
 BASIC_HOLD_INDEX :: -5
 
 first_choice_action := Action {
-    tooltip = "Choose an action to take with your played card.",
+    tooltip = first_choice_tooltip,
     variant = Choice_Action {
-        choices = {
+        choices = []Choice {
             {"Primary", FIRST_PRIMARY_INDEX},
             {"Movement", BASIC_MOVEMENT_INDEX},
             {"Fast Travel", BASIC_FAST_TRAVEL_INDEX},
             {"Clear", BASIC_CLEAR_INDEX},
-            {"Hold", HALT_INDEX}
-        }
-    }
-}
-
-first_choice_action2 := Action {
-    tooltip = "Choose an action to take sdugh card.",
-    variant = Choice_Action {
-        choices = {
-            {"Primary", FIRST_PRIMARY_INDEX},
-            {"Movement", BASIC_MOVEMENT_INDEX},
-            {"Fast Travel", BASIC_FAST_TRAVEL_INDEX},
-            {"Clear", BASIC_CLEAR_INDEX},
-            {"Hold", HALT_INDEX}
+            {"Hold", HALT_INDEX},
         }
     }
 }
@@ -188,8 +180,8 @@ basic_movement_action := Action {
 
 basic_fast_travel_action := Action {
     tooltip = "Choose a space to fast travel to.",
+    condition = Greater_Than{Card_Value{kind=.MOVEMENT}, 0},
     variant = Fast_Travel_Action{},
-    condition = Greater_Than{Card_Value{kind=.MOVEMENT}, 0}
 }
 
 basic_clear_action := Action {
@@ -197,12 +189,16 @@ basic_clear_action := Action {
     variant = Clear_Action{}
 }
 
+
+// basic_actions := []Action {
+//     blank_action,
+//     first_choice_action,
+//     basic_movement_action,
+//     basic_fast_travel_action,
+//     basic_clear_action,
+// }
+
 basic_actions: [5]Action
-    // {},
-    // first_choice_action,
-    // basic_movement_action,
-    // basic_fast_travel_action,
-    // basic_clear_action,
 
 get_current_action :: proc() -> ^Action {
     return get_action_at_index(player.hero.current_action_index)

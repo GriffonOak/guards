@@ -41,7 +41,9 @@ Begin_Minion_Battle_Event :: struct {}
 
 End_Minion_Battle_Event :: struct {}
 
-Begin_Wave_Push_Event :: struct {}
+Begin_Wave_Push_Event :: struct {
+    pushing_team: Team
+}
 
 End_Wave_Push_Event :: struct {}
 
@@ -51,6 +53,10 @@ Begin_Upgrading_Event :: struct {}
 
 End_Upgrading_Event :: struct {}
 
+
+Game_Over_Event :: struct {
+    winning_team: Team
+}
 
 
 Event :: union {
@@ -77,6 +83,8 @@ Event :: union {
 
     Begin_Upgrading_Event,
     End_Upgrading_Event,
+
+    Game_Over_Event,
 }
 
 
@@ -273,8 +281,11 @@ resolve_event :: proc(event: Event) {
             log.debugf("Attack strength: %v", calculate_implicit_quantity(action_type.strength))
             // Here we assume the target must be an enemy. Enemy should always be in the selection flags for attacks.
             if MINION_FLAGS & space.flags != {} {
-                defeat_minion(target)
-                append(&event_queue, Resolve_Current_Action_Event{})
+                if !defeat_minion(target) {
+                    append(&event_queue, Resolve_Current_Action_Event{})
+                } else {
+                    // get interrupted lol
+                }
             }
         
         case Add_Active_Effect_Action:
@@ -323,11 +334,14 @@ resolve_event :: proc(event: Event) {
 
 
     case Begin_Minion_Battle_Event:
+        game_state.stage = .MINION_BATTLE
         // Let the team captain choose which minions to delete
         append(&event_queue, End_Minion_Battle_Event{})
 
 
     case End_Minion_Battle_Event:
+
+        pushing_team: Team
 
         if false { // count up the minions here, see if one side has 0
             append(&event_queue, Begin_Wave_Push_Event{})
@@ -336,8 +350,45 @@ resolve_event :: proc(event: Event) {
         }
 
     case Begin_Wave_Push_Event:
-        // pass
+        // Check if game over
+
+        game_state.wave_counters -= 1
+
+        prev_battle_zone := game_state.current_battle_zone
+
+        game_state.current_battle_zone += Region_ID(1) if var.pushing_team == .RED else Region_ID(-1)
+
+        if game_state.wave_counters == 0 || game_state.current_battle_zone == .RED_BASE || game_state.current_battle_zone == .BLUE_BASE {
+            // Win on base push or last push
+            append(&event_queue, Game_Over_Event{var.pushing_team})
+            return
+        }
+
+        // Remove all minions in current battle zone
+        for target in zone_indices[prev_battle_zone] {
+            space := &board[target.x][target.y]
+            space.flags -= MINION_FLAGS
+        }
+
+        game_state.minion_counts[.RED] = 0
+        game_state.minion_counts[.BLUE] = 0
+
+        spawn_minions(game_state.current_battle_zone)
+
+        // deal with unspawned minions
+
+        append(&event_queue, End_Wave_Push_Event{})
+
+
     case End_Wave_Push_Event:
+        switch game_state.stage {
+        case .MINION_BATTLE:
+            append(&event_queue, Retrieve_Cards_Event{})
+        case .RESOLUTION:
+            append(&event_queue, Resolve_Current_Action_Event{})
+        case .SELECTION, .UPGRADES:
+            log.assertf(false, "Invalid state at end of wave push: %v", game_state.stage)
+        }
         // pass
 
     case Retrieve_Cards_Event:
@@ -399,5 +450,9 @@ resolve_event :: proc(event: Event) {
             }
         }
         append(&event_queue, Begin_Next_Action_Event{})
+
+    case Game_Over_Event:
+        // not too much fanfare here
+        log.infof("%v team has won!", var.winning_team)
     }
 }

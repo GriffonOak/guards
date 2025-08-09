@@ -23,6 +23,7 @@ Team :: enum {
 Game_Stage :: enum {
     SELECTION,
     RESOLUTION,
+    MINION_BATTLE,
     UPGRADES,
 }
 
@@ -46,6 +47,10 @@ Active_Effect :: struct {
     parent_card: ^Card,
 }
 
+// Interrupt :: struct {
+//     event_when_resolved: Event
+// }
+
 
 Game_State :: struct {
     num_players: int,
@@ -54,9 +59,11 @@ Game_State :: struct {
     confirmed_players: int,
     resolved_players,
     turn_counter: int,
+    wave_counters: int,
     ongoing_active_effects: map[Active_Effect_ID]Active_Effect,
     stage: Game_Stage,
-    current_battle_zone: Region_ID
+    current_battle_zone: Region_ID,
+    // current_interrupt: Interrupt,
 }
 
 
@@ -95,6 +102,7 @@ spawn_minions :: proc(zone: Region_ID) {
             minion_to_spawn := spawnpoint_to_minion[spawnpoint_type]
             space.flags += {minion_to_spawn}
             space.unit_team = space.spawnpoint_team
+            game_state.minion_counts[space.spawnpoint_team] += 1
         }
 
     }
@@ -127,6 +135,7 @@ spawn_heroes_at_start :: proc() {
 
 begin_game :: proc() {
     game_state.current_battle_zone = .CENTRE
+    game_state.wave_counters = 5
 
     spawn_minions(game_state.current_battle_zone)
 
@@ -135,24 +144,35 @@ begin_game :: proc() {
     append(&event_queue, Begin_Card_Selection_Event{})
 }
 
-defeat_minion :: proc(target: Target) {
+defeat_minion :: proc(target: Target) -> (will_interrupt: bool){
     space := &board[target.x][target.y]
     minion := space.flags & MINION_FLAGS
+    log.assert(space.flags & MINION_FLAGS != {}, "Tried to defeat a minion in a space with no minions!")
+    minion_team := space.unit_team
 
     if .HEAVY_MINION in minion {
-        player.hero.coins += 2
+        log.assert(game_state.minion_counts[minion_team] == 1, "Heavy minion defeated with an invalid number of minions left!")
+        player.hero.coins += 4
     } else {
         player.hero.coins += 2
     }
 
-    remove_minion(target)
+    return remove_minion(target)
 }
 
-remove_minion :: proc(target: Target) {
+remove_minion :: proc(target: Target) -> (will_interrupt: bool) {
     space := &board[target.x][target.y]
-    if space.flags & MINION_FLAGS != {} {
-
-    }
+    log.assert(space.flags & MINION_FLAGS != {}, "Tried to remove a minion from a space with no minions!")
     minion_team := space.unit_team
+    log.assert(game_state.minion_counts[minion_team] > 0, "Removing a minion but the game state claims there are 0 minions")
     space.flags -= MINION_FLAGS
+
+    game_state.minion_counts[minion_team] -= 1
+
+    log.infof("Minion removed, new counts: %v", game_state.minion_counts)
+    if game_state.minion_counts[minion_team] == 0 {
+        append(&event_queue, Begin_Wave_Push_Event{get_enemy_team(minion_team)})
+        return true
+    }
+    return false
 }
