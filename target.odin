@@ -28,9 +28,6 @@ Implicit_Target :: union {
     Previous_Choice,
 }
 
-
-
-
 populate_targets :: proc(index: int = 0) {
     action := get_action_at_index(index)
     if action == nil do return 
@@ -48,18 +45,20 @@ populate_targets :: proc(index: int = 0) {
         for choice in variant.choices {
             populate_targets(choice.jump_index)
         }
-    case Halt_Action, Attack_Action:
+    case Halt_Action, Attack_Action, Add_Active_Effect_Action:
 
     }
 }
 
-action_can_be_taken :: proc(action: Action) -> bool {
+action_can_be_taken :: proc(index: int = 0) -> bool {
+    if index == HALT_INDEX do return true
+    action := get_action_at_index(index)
     if action.condition != nil && !calculate_implicit_condition(action.condition) do return false
 
     switch variant in action.variant {
     case Movement_Action, Fast_Travel_Action, Clear_Action, Choose_Target_Action:
         return len(action.targets) > 0
-    case Halt_Action, Attack_Action:
+    case Halt_Action, Attack_Action, Add_Active_Effect_Action:
         return true
     case Choice_Action:
         // Not technically correct! Need to see if all child actions are takeable

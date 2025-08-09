@@ -439,6 +439,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             }
         case Choose_Target_Action:
             frequency = 14
+
         }
 
         for target, info in action.targets {
@@ -453,6 +454,10 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             case Fast_Travel_Action:
                 region_id := space.region_id
                 phase = math.TAU * f64(region_id) / f64(len(Region_ID) - 1)
+
+            // case Choose_Target_Action:
+            //     delta := target.position 
+            //     phase = math.atan2()
             }
 
             time := rl.GetTime()

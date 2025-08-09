@@ -28,10 +28,10 @@ Game_Stage :: enum {
 
 Active_Effect_ID :: enum {
     NONE,
-    XARGATHA_STONE_GAZE,
+    XARGATHA_FREEZE,
 }
 
-Single_Turn :: int
+Single_Turn :: Implicit_Quantity
 
 Effect_Duration :: union {
     // End_Of_Turn,
@@ -40,17 +40,12 @@ Effect_Duration :: union {
 }
 
 Active_Effect :: struct {
+    id: Active_Effect_ID,
     duration: Effect_Duration,
     target_set: Implicit_Target_Set,
-    _criteria: [dynamic]Selection_Criterion
+    parent_card: ^Card,
 }
 
-Active_Effect_Descriptor :: struct {
-    id: Active_Effect_ID,
-    duration_type: Effect_Duration,
-    duration_value: Implicit_Quantity,
-    target_set: Implicit_Target_Set
-}
 
 Game_State :: struct {
     num_players: int,
@@ -59,7 +54,7 @@ Game_State :: struct {
     confirmed_players: int,
     resolved_players,
     turn_counter: int,
-    ongoing_active_effects: [Active_Effect_ID]Active_Effect,
+    ongoing_active_effects: map[Active_Effect_ID]Active_Effect,
     stage: Game_Stage,
     current_battle_zone: Region_ID
 }

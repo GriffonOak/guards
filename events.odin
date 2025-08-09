@@ -210,6 +210,7 @@ resolve_event :: proc(event: Event) {
 
         // Find the played card
         card := find_played_card()
+        card.turn_played = game_state.turn_counter
 
         player.hero.action_list = card.primary_effect
 
@@ -253,10 +254,8 @@ resolve_event :: proc(event: Event) {
             choices_added: int
             most_recent_choice: int
             for choice in action_type.choices {
-                child_action := get_action_at_index(choice.jump_index)
-                if child_action == nil do continue
                 populate_targets(choice.jump_index)
-                if action_can_be_taken(child_action^) {
+                if action_can_be_taken(choice.jump_index) {
                     add_side_button(choice.name, Resolve_Current_Action_Event{choice.jump_index})
                     choices_added += 1
                     most_recent_choice = choice.jump_index
@@ -277,11 +276,16 @@ resolve_event :: proc(event: Event) {
                 defeat_minion(target)
                 append(&event_queue, Resolve_Current_Action_Event{})
             }
-
+        
+        case Add_Active_Effect_Action:
+            effect := action_type.effect
+            log.infof("Adding active effect: %v", effect.id)
+            effect.parent_card = find_played_card()
+            game_state.ongoing_active_effects[effect.id] = effect
+            append(&event_queue, Resolve_Current_Action_Event{})
 
         case Halt_Action: 
             append(&event_queue, End_Resolution_Event{})
-            return
 
         }
 
@@ -302,8 +306,16 @@ resolve_event :: proc(event: Event) {
         
     case Resolutions_Completed_Event:
         // Check for end of turn effects and stuff here
+        for effect_id, effect in game_state.ongoing_active_effects {
+            if turn, ok := effect.duration.(Single_Turn); ok && calculate_implicit_quantity(turn) == game_state.turn_counter {
+                log.infof("Removing active effect: %v", effect_id)
+                delete_key(&game_state.ongoing_active_effects, effect_id)
+            }
+        }
+
         game_state.turn_counter += 1
         if game_state.turn_counter >= 4 {
+            // End of round stuffs
             append(&event_queue, Begin_Minion_Battle_Event{})
         } else {
             append(&event_queue, Begin_Card_Selection_Event{})
@@ -374,7 +386,7 @@ resolve_event :: proc(event: Event) {
 
         // Determine next action
         if index, ok := var.jump_index.?; ok {
-            if index == -1 {
+            if index == HALT_INDEX {
                 append(&event_queue, End_Resolution_Event{})
                 return
             }

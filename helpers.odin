@@ -89,14 +89,16 @@ calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity) -> (ou
 
     case Card_Reach:
         // @Item Need to add items here also at some point
-        switch reach in find_played_card().reach{
+        card := calculate_implicit_card(quantity.card)
+        switch reach in card.reach{
         case Range: out = int(reach)
         case Radius: out = int(reach)
         case: assert(false)
         } 
 
     case Card_Value:
-        return find_played_card().values[quantity.kind]
+        card := calculate_implicit_card(quantity.card)
+        return card.values[quantity.kind]
 
     case Sum:
         for summand in quantity do out += calculate_implicit_quantity(summand)
@@ -104,6 +106,14 @@ calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity) -> (ou
     case Count_Targets:
         targets := make_arbitrary_targets(quantity, context.temp_allocator)
         return len(targets)
+
+    case Turn_Played:
+        card := calculate_implicit_card(quantity.card)
+        return card.turn_played
+
+    // case Current_Turn:
+    //     return game_state.turn_counter
+
     }
     return 
 }
@@ -142,6 +152,15 @@ calculate_implicit_condition :: proc(implicit_condition: Implicit_Condition) -> 
         return out
     }
     return false
+}
+
+calculate_implicit_card :: proc(implicit_card: Implicit_Card) -> ^Card {
+    switch card in implicit_card {
+    case ^Card: return card
+    case Card_Creating_Effect:
+        return game_state.ongoing_active_effects[card.effect].parent_card
+    }
+    return find_played_card()  // Default to returning the played card
 }
 
 get_first_set_bit :: proc(bs: bit_set[$T]) -> Maybe(T) where intrinsics.type_is_enum(T) {

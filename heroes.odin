@@ -2,8 +2,6 @@ package guards
 
 /// XARGATHA
 
-smem := Card_Reach{&xargatha_cards[4]}
-
 xargatha_cards := [?]Card {
     {
         name        = "Cleave",
@@ -32,13 +30,13 @@ xargatha_cards := [?]Card {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previous_Choice{},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{kind=.ATTACK},
                 }
             },
             Action {
                 tooltip = "May repeat once on a different enemy hero.",
                 optional = true,
-                skip_index = -1,
+                skip_index = HALT_INDEX,
                 variant = Choose_Target_Action {
                     criteria = {
                         Within_Distance {
@@ -56,7 +54,7 @@ xargatha_cards := [?]Card {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previous_Choice{},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{kind=.ATTACK},
                 }
             },
         }
@@ -130,7 +128,7 @@ xargatha_cards := [?]Card {
                 variant = Attack_Action {
                     target = Previous_Choice{},
                     strength = Sum {
-                        Card_Value{.ATTACK}, 
+                        Card_Value{kind=.ATTACK}, 
                         Count_Targets {
                             Within_Distance {
                                 origin = Self{},
@@ -169,12 +167,12 @@ xargatha_cards := [?]Card {
                 tooltip = player_movement_tooltip,
                 variant = Movement_Action {
                     target = Self{},
-                    distance = Card_Value{.MOVEMENT},
+                    distance = Card_Value{kind=.MOVEMENT},
                 }
             },
             Action {  // 2
                 optional = true,
-                skip_index = -1,
+                skip_index = HALT_INDEX,
                 tooltip = "You may choose a ranged minion to move, or you may skip.",
                 variant = Choose_Target_Action {
                     criteria = {
@@ -223,7 +221,7 @@ xargatha_cards := [?]Card {
                 tooltip = player_movement_tooltip,
                 variant = Movement_Action {
                     target = Self{},
-                    distance = Card_Value{.MOVEMENT},
+                    distance = Card_Value{kind=.MOVEMENT},
                 }
             },
         }
@@ -241,14 +239,15 @@ xargatha_cards := [?]Card {
             Action {
                 tooltip = "You should never see this.",
                 variant = Add_Active_Effect_Action {
-                    effect = Active_Effect_Descriptor {
+                    effect = Active_Effect {
                         id = .XARGATHA_FREEZE,
-                        duration = Single_Turn(Sum{Current_Turn{}, 1}),
+                        duration = Single_Turn(Sum{Turn_Played{Card_Creating_Effect{.XARGATHA_FREEZE}}, 1}),
                         target_set = []Selection_Criterion {
                             Within_Distance {
                                 Self{},  // @Note Self is not technically correct here, needs to *always* target xargatha
+                                         // Something like Hero_Location{.XARGATHA}
                                 0,
-                                smem,
+                                Card_Reach{Card_Creating_Effect{.XARGATHA_FREEZE}},
                             },
                             Contains_Any({.HERO}),
                             // Is_Enemy_Unit{}

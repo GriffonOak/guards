@@ -50,6 +50,16 @@ default_font: rl.Font
 
 main :: proc() {
 
+    basic_actions = {
+        {},
+        first_choice_action,
+        basic_movement_action,
+        basic_fast_travel_action,
+        basic_clear_action,
+    }
+
+    fmt.println(basic_actions)
+
 
     when ODIN_DEBUG {
         default_allocator := context.allocator

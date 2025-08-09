@@ -1,18 +1,33 @@
 package guards
 
 
+Card_Creating_Effect :: struct {
+    effect: Active_Effect_ID
+}
+
+Implicit_Card :: union {
+    ^Card,
+    Card_Creating_Effect,
+}
 
 Card_Reach :: struct {
-    // card: ^Card,
+    card: Implicit_Card,
 }
 
 Card_Value :: struct {
-    kind: Ability_Kind
+    card: Implicit_Card,
+    kind: Ability_Kind,
 }
 
 Sum :: []Implicit_Quantity
 
 Count_Targets :: []Selection_Criterion
+
+// Current_Turn :: struct {}
+
+Turn_Played :: struct {
+    card: Implicit_Card
+}
 
 Implicit_Quantity :: union {
     int,
@@ -20,6 +35,8 @@ Implicit_Quantity :: union {
     Card_Value,
     Sum,
     Count_Targets,
+    // Current_Turn,
+    Turn_Played,
 }
 
 Within_Distance :: struct {
@@ -83,7 +100,7 @@ Choice_Action :: struct {
 }
 
 Add_Active_Effect_Action :: struct {
-    effect: Active_Effect_Descriptor,
+    effect: Active_Effect,
 }
 
 Halt_Action :: struct {}
@@ -95,6 +112,7 @@ Action_Variant :: union {
     Clear_Action,
     Choose_Target_Action,
     Choice_Action,
+    Add_Active_Effect_Action,
     Halt_Action,
 }
 
@@ -126,33 +144,52 @@ Action :: struct {
 
 player_movement_tooltip: cstring = "Choose a space to move to."
 
+HALT_INDEX :: -999
+FIRST_PRIMARY_INDEX :: 0
+BASIC_MOVEMENT_INDEX :: -2
+BASIC_FAST_TRAVEL_INDEX :: -3
+BASIC_CLEAR_INDEX :: -4
+BASIC_HOLD_INDEX :: -5
+
 first_choice_action := Action {
     tooltip = "Choose an action to take with your played card.",
     variant = Choice_Action {
         choices = {
-            {"Primary", 0},
-            {"Movement", -2},
-            {"Fast Travel", -3},
-            {"Clear", -4},
-            {"Hold", -5}
+            {"Primary", FIRST_PRIMARY_INDEX},
+            {"Movement", BASIC_MOVEMENT_INDEX},
+            {"Fast Travel", BASIC_FAST_TRAVEL_INDEX},
+            {"Clear", BASIC_CLEAR_INDEX},
+            {"Hold", HALT_INDEX}
+        }
+    }
+}
 
+first_choice_action2 := Action {
+    tooltip = "Choose an action to take sdugh card.",
+    variant = Choice_Action {
+        choices = {
+            {"Primary", FIRST_PRIMARY_INDEX},
+            {"Movement", BASIC_MOVEMENT_INDEX},
+            {"Fast Travel", BASIC_FAST_TRAVEL_INDEX},
+            {"Clear", BASIC_CLEAR_INDEX},
+            {"Hold", HALT_INDEX}
         }
     }
 }
 
 basic_movement_action := Action {
     tooltip = player_movement_tooltip,
-    condition = And{Primary_Is_Not{.MOVEMENT}, Greater_Than{Card_Value{.MOVEMENT}, 0}},
+    condition = And{Primary_Is_Not{.MOVEMENT}, Greater_Than{Card_Value{kind=.MOVEMENT}, 0}},
     variant = Movement_Action {
         target   = Self{},
-        distance = Card_Value{.MOVEMENT},
+        distance = Card_Value{kind=.MOVEMENT},
     }
 }
 
 basic_fast_travel_action := Action {
     tooltip = "Choose a space to fast travel to.",
     variant = Fast_Travel_Action{},
-    condition = Greater_Than{Card_Value{.MOVEMENT}, 0}
+    condition = Greater_Than{Card_Value{kind=.MOVEMENT}, 0}
 }
 
 basic_clear_action := Action {
@@ -160,26 +197,23 @@ basic_clear_action := Action {
     variant = Clear_Action{}
 }
 
-basic_hold_action := Action {
-    variant = Halt_Action {}
-}
-
-basic_actions := []Action {
-    {},
-    first_choice_action,
-    basic_movement_action,
-    basic_fast_travel_action,
-    basic_clear_action,
-    basic_hold_action,
-}
+basic_actions: [5]Action
+    // {},
+    // first_choice_action,
+    // basic_movement_action,
+    // basic_fast_travel_action,
+    // basic_clear_action,
 
 get_current_action :: proc() -> ^Action {
     return get_action_at_index(player.hero.current_action_index)
 }
 
 get_action_at_index :: proc(index: int) -> ^Action {
+    if index == HALT_INDEX {
+        return nil
+    }
     if index < 0 {
-        return &basic_actions[abs(index)]
+        return &basic_actions[-index]
     }
     if index < len(player.hero.action_list) {
         return &player.hero.action_list[index]

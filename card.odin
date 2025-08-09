@@ -56,6 +56,7 @@ Card :: struct {
     primary_effect: []Action,
     texture: rl.Texture2D,
     state: Card_State,
+    turn_played: int
 }
 
 
