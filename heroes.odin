@@ -250,7 +250,7 @@ xargatha_cards := [?]Card {
                                 Card_Reach{Card_Creating_Effect{.XARGATHA_FREEZE}},
                             },
                             Contains_Any({.HERO}),
-                            // Is_Enemy_Unit{}
+                            Is_Enemy_Unit{}
                         }
                     }
                 }
