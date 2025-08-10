@@ -1,52 +1,93 @@
 package guards
 
 
-Card_Creating_Effect :: struct {
-    effect: Active_Effect_ID
-}
 
-Implicit_Card :: union {
-    ^Card,
-    Card_Creating_Effect,
-}
+// Card_Creating_Effect :: struct {
+//     effect: Active_Effect_ID
+// }
 
-Card_Reach :: struct {
-    card: Implicit_Card,
-}
 
-Card_Value :: struct {
-    card: Implicit_Card,
-    kind: Ability_Kind,
-}
 
-Sum :: []Implicit_Quantity
 
-Count_Targets :: []Selection_Criterion
+
+/// COMMENT THIS UNION IN / OUT IN HERE & IMPLICIT.ODIN FOR BUG
+
+// Implicit_Card :: union {
+//     ^Card,
+//     Card_Creating_Effect,
+// }
+
+
+
+
+
+// Card_Reach :: struct {
+//     card: Implicit_Card,
+// }
+
+// Card_Value :: struct {
+//     card: Implicit_Card,
+//     kind: Ability_Kind,
+// }
+
+// Sum :: []Implicit_Quantity
+
+// Count_Targets :: []Selection_Criterion
 
 // Current_Turn :: struct {}
 
-Turn_Played :: struct {
-    card: Implicit_Card
-}
+// Turn_Played :: struct {
+//     card: Implicit_Card
+// }
 
-Minion_Difference :: struct {}
+// Minion_Difference :: struct {}
 
-Implicit_Quantity :: union {
-    int,
-    Card_Reach,
-    Card_Value,
-    Sum,
-    Count_Targets,
-    // Current_Turn,
-    Turn_Played,
-    Minion_Difference,
-}
+// Implicit_Quantity :: union {
+//     int,
+//     Card_Reach,
+//     Card_Value,
+//     Sum,
+//     Count_Targets,
+//     // Current_Turn,
+//     Turn_Played,
+//     Minion_Difference,
+// }
+
+
+
+
+
+
+// Greater_Than :: struct {
+//     term_1, term_2: Implicit_Quantity
+// }
+
+// And :: []Implicit_Condition
+
+// Primary_Is_Not :: struct {
+//     kind: Ability_Kind
+// }
+
+// Implicit_Condition :: union {
+//     bool,
+//     Greater_Than,
+//     Primary_Is_Not,
+//     And,
+// }
+
+
+
+
+
+
+
 
 Within_Distance :: struct {
     origin: Implicit_Target,
     min: Implicit_Quantity,
     max: Implicit_Quantity,
 }
+
 
 Contains_Any :: Space_Flags
 Contains_All :: Space_Flags
@@ -99,14 +140,14 @@ Choice :: struct {
     jump_index: int,
 }
 
-Attack_Action :: struct {
-    target: Implicit_Target,
-    strength: Implicit_Quantity,
-}
-
 Choice_Action :: struct {
     choices: []Choice,
     result: int,
+}
+
+Attack_Action :: struct {
+    target: Implicit_Target,
+    strength: Implicit_Quantity,
 }
 
 Add_Active_Effect_Action :: struct {
@@ -129,23 +170,6 @@ Action_Variant :: union {
     Minion_Removal_Action,
 }
 
-Greater_Than :: struct {
-    term_1, term_2: Implicit_Quantity
-}
-
-And :: []Implicit_Condition
-
-Primary_Is_Not :: struct {
-    kind: Ability_Kind
-}
-
-Implicit_Condition :: union {
-    bool,
-    Greater_Than,
-    Primary_Is_Not,
-    And,
-}
-
 Action :: struct {
     tooltip: cstring,
     optional: bool,
@@ -156,7 +180,6 @@ Action :: struct {
 }
 
 player_movement_tooltip: cstring : "Choose a space to move to."
-
 first_choice_tooltip: cstring : "Choose an action to take with your played card."
 
 HALT_INDEX :: -999
@@ -166,46 +189,46 @@ BASIC_FAST_TRAVEL_INDEX :: -3
 BASIC_CLEAR_INDEX :: -4
 BASIC_HOLD_INDEX :: -5
 
-first_choice_action := Action {
-    tooltip = first_choice_tooltip,
-    variant = Choice_Action {
-        choices = []Choice {
-            {"Primary", FIRST_PRIMARY_INDEX},
-            {"Movement", BASIC_MOVEMENT_INDEX},
-            {"Fast Travel", BASIC_FAST_TRAVEL_INDEX},
-            {"Clear", BASIC_CLEAR_INDEX},
-            {"Hold", HALT_INDEX},
+// first_choice_action := 
+
+// basic_movement_action := 
+
+// basic_fast_travel_action := 
+
+// basic_clear_action := 
+
+basic_actions := []Action {
+    {},
+    Action {
+        tooltip = first_choice_tooltip,
+        variant = Choice_Action {
+            choices = []Choice {
+                {"Primary", FIRST_PRIMARY_INDEX},
+                {"Movement", BASIC_MOVEMENT_INDEX},
+                {"Fast Travel", BASIC_FAST_TRAVEL_INDEX},
+                {"Clear", BASIC_CLEAR_INDEX},
+                {"Hold", HALT_INDEX},
+            }
         }
-    }
+    },
+    Action {
+        tooltip = player_movement_tooltip,
+        condition = And{Primary_Is_Not{.MOVEMENT}, Greater_Than{Card_Value{kind=.MOVEMENT}, 0}},
+        variant = Movement_Action {
+            target   = Self{},
+            distance = Card_Value{kind=.MOVEMENT},
+        }
+    },
+    Action {
+        tooltip = "Choose a space to fast travel to.",
+        condition = Greater_Than{Card_Value{kind=.MOVEMENT}, 0},
+        variant = Fast_Travel_Action{},
+    },
+    Action {
+        tooltip = "Choose any number of tokens adjacent to you to remove.",
+        variant = Clear_Action{}
+    },
 }
-
-basic_movement_action := Action {
-    tooltip = player_movement_tooltip,
-    condition = And{Primary_Is_Not{.MOVEMENT}, Greater_Than{Card_Value{kind=.MOVEMENT}, 0}},
-    variant = Movement_Action {
-        target   = Self{},
-        distance = Card_Value{kind=.MOVEMENT},
-    }
-}
-
-basic_fast_travel_action := Action {
-    tooltip = "Choose a space to fast travel to.",
-    condition = Greater_Than{Card_Value{kind=.MOVEMENT}, 0},
-    variant = Fast_Travel_Action{},
-}
-
-basic_clear_action := Action {
-    tooltip = "Choose any number of tokens adjacent to you to remove.",
-    variant = Clear_Action{}
-}
-
-// basic_actions := []Action {
-//     blank_action,
-//     first_choice_action,
-//     basic_movement_action,
-//     basic_fast_travel_action,
-//     basic_clear_action,
-// }
 
 minion_removal_action := []Action {
     {
@@ -222,8 +245,6 @@ minion_removal_action := []Action {
         variant = Minion_Removal_Action {}
     }
 }
-
-basic_actions: [5]Action
 
 get_current_action :: proc() -> ^Action {
     return get_action_at_index(player.hero.current_action_index)
