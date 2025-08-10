@@ -11,7 +11,6 @@ import "core:mem"
 
 
 // Todo list
-// Active effects
 // Minion battles
 // Heavy immunity / immunity in general
 // Separate cards out of the ui stack
@@ -43,7 +42,7 @@ FONT_SPACING :: 0
 
 
 
-window_size: Window_Size = .SMALL
+window_size: Window_Size = .BIG
 
 default_font: rl.Font
 

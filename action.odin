@@ -29,6 +29,8 @@ Turn_Played :: struct {
     card: Implicit_Card
 }
 
+Minion_Difference :: struct {}
+
 Implicit_Quantity :: union {
     int,
     Card_Reach,
@@ -37,6 +39,7 @@ Implicit_Quantity :: union {
     Count_Targets,
     // Current_Turn,
     Turn_Played,
+    Minion_Difference,
 }
 
 Within_Distance :: struct {
@@ -49,6 +52,7 @@ Contains_Any :: Space_Flags
 Contains_All :: Space_Flags
 
 Is_Enemy_Unit :: struct {}
+Is_Friendly_Unit :: struct {}
 Not_Previously_Targeted :: struct {}
 
 Ignoring_Immunity :: struct {}
@@ -58,6 +62,7 @@ Selection_Criterion :: union {
     Contains_Any,
     // Contains_All,
     Is_Enemy_Unit,
+    Is_Friendly_Unit,
     Not_Previously_Targeted,
     Ignoring_Immunity,
 }
@@ -84,7 +89,9 @@ Clear_Action :: struct {}
 
 Choose_Target_Action :: struct {
     criteria: []Selection_Criterion,
-    result: Target,
+    num_targets: Implicit_Quantity,
+    result: [dynamic]Target,
+    // result: Target
 }
 
 Choice :: struct {
@@ -108,6 +115,8 @@ Add_Active_Effect_Action :: struct {
 
 Halt_Action :: struct {}
 
+Minion_Removal_Action :: struct {}
+
 Action_Variant :: union {
     Movement_Action,
     Fast_Travel_Action,
@@ -117,6 +126,7 @@ Action_Variant :: union {
     Choice_Action,
     Add_Active_Effect_Action,
     Halt_Action,
+    Minion_Removal_Action,
 }
 
 Greater_Than :: struct {
@@ -189,7 +199,6 @@ basic_clear_action := Action {
     variant = Clear_Action{}
 }
 
-
 // basic_actions := []Action {
 //     blank_action,
 //     first_choice_action,
@@ -197,6 +206,22 @@ basic_clear_action := Action {
 //     basic_fast_travel_action,
 //     basic_clear_action,
 // }
+
+minion_removal_action := []Action {
+    {
+        tooltip = "Choose minions to remove.",
+        variant = Choose_Target_Action {
+            num_targets = Minion_Difference{},
+            criteria = {
+                Contains_Any({.MELEE_MINION, .RANGED_MINION}),
+                Is_Friendly_Unit{},
+            }
+        }
+    },
+    {
+        variant = Minion_Removal_Action {}
+    }
+}
 
 basic_actions: [5]Action
 
@@ -213,6 +238,9 @@ get_action_at_index :: proc(index: int) -> ^Action {
     }
     if index < len(player.hero.action_list) {
         return &player.hero.action_list[index]
+    }
+    if index <= 100 {
+        return &minion_removal_action[index - 100]
     }
     return nil
 }

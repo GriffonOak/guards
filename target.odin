@@ -45,7 +45,7 @@ populate_targets :: proc(index: int = 0) {
         for choice in variant.choices {
             populate_targets(choice.jump_index)
         }
-    case Halt_Action, Attack_Action, Add_Active_Effect_Action:
+    case Halt_Action, Attack_Action, Add_Active_Effect_Action, Minion_Removal_Action:
 
     }
 }
@@ -72,7 +72,7 @@ action_can_be_taken :: proc(index: int = 0) -> bool {
     switch variant in action.variant {
     case Movement_Action, Fast_Travel_Action, Clear_Action, Choose_Target_Action:
         return len(action.targets) > 0
-    case Halt_Action, Attack_Action, Add_Active_Effect_Action:
+    case Halt_Action, Attack_Action, Add_Active_Effect_Action, Minion_Removal_Action:
         return true
     case Choice_Action:
         // Not technically correct! Need to see if all child actions are takeable
@@ -216,30 +216,29 @@ target_fulfills_criterion :: proc(target: Target, criterion: Selection_Criterion
         max_dist := calculate_implicit_quantity(selector.max)
 
         distance := calculate_hexagonal_distance(origin, target)
-        if distance <= max_dist && distance >= min_dist do return true
+        return distance <= max_dist && distance >= min_dist
 
     case Contains_Any:
 
         intersection := space.flags & selector
-        if intersection != {} do return true
+        return intersection != {}
 
     case Is_Enemy_Unit:
 
         if player.team != .NONE && space.unit_team != .NONE && player.team != space.unit_team {
             return true
         }
-    
-    case Not_Previously_Targeted:
+        return false
 
-        // Inefficient, could just look at the very end
-        previous_target := calculate_implicit_target(Previous_Choice{})
-        if target != previous_target {
+    case Is_Friendly_Unit:
+        if player.team != .NONE && space.unit_team != .NONE && player.team == space.unit_team {
             return true
         }
-    case Ignoring_Immunity:
-        return true
+        return false
+
+    case Ignoring_Immunity, Not_Previously_Targeted:
     }
-    return false
+    return true
 }
 
 make_arbitrary_targets :: proc(criteria: []Selection_Criterion, allocator := context.allocator) -> (out: Target_Set) {
@@ -257,12 +256,36 @@ make_arbitrary_targets :: proc(criteria: []Selection_Criterion, allocator := con
         }
     }
 
+    ignore_immunity := false
+
     for criterion in criteria[1:] {
+        switch variant in criterion {
+        case Within_Distance, Contains_Any, Is_Enemy_Unit, Is_Friendly_Unit:
+            for target, info in out {
+                if !target_fulfills_criterion(target, criterion) {
+                    delete_key(&out, target)
+                }
+            }
+
+        case Not_Previously_Targeted:
+            previous_target := calculate_implicit_target(Previous_Choice{})
+            delete_key(&out, previous_target)
+
+        case Ignoring_Immunity:
+            ignore_immunity = true
+
+        }
+    }
+
+    if !ignore_immunity {
         for target, info in out {
-            if !target_fulfills_criterion(target, criterion) {
+            space := board[target.x][target.y]
+            if space.flags & {.IMMUNE} != {} {
                 delete_key(&out, target)
             }
         }
     }
+
+
     return out
 }

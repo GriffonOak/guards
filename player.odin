@@ -9,6 +9,8 @@ Player_Stage :: enum {
     RESOLVING,
     RESOLVED,
     UPGRADING,
+
+    INTERRUPTING,
 }
 
 Hero_ID :: enum {
@@ -35,6 +37,7 @@ Player :: struct {
     hero: Hero,
     
     team: Team,
+    is_team_captain: bool,
 }
 
 
@@ -42,7 +45,8 @@ player := Player {
     hero = Hero{
         id = .XARGATHA
     },
-    team = .RED
+    team = .RED,
+    is_team_captain = true,
 }
 
 player2 := Player {

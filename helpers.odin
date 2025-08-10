@@ -114,6 +114,9 @@ calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity) -> (ou
     // case Current_Turn:
     //     return game_state.turn_counter
 
+    case Minion_Difference:
+        return abs(game_state.minion_counts[.RED] - game_state.minion_counts[.BLUE])
+
     }
     return 
 }
@@ -125,7 +128,7 @@ calculate_implicit_target :: proc(implicit_target: Implicit_Target) -> (out: Tar
     case Previous_Choice:
         #reverse for action in player.hero.action_list[:player.hero.current_action_index] {
             if variant, ok := action.variant.(Choose_Target_Action); ok {
-                out = variant.result
+                out = variant.result[0]
                 return
             }
         }

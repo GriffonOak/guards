@@ -27,6 +27,7 @@ Space_Flag :: enum {
     RANGED_MINION,
     HEAVY_MINION,
     TOKEN,
+    IMMUNE,
 }
 
 

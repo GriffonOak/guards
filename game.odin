@@ -101,6 +101,9 @@ spawn_minions :: proc(zone: Region_ID) {
 
             minion_to_spawn := spawnpoint_to_minion[spawnpoint_type]
             space.flags += {minion_to_spawn}
+            if minion_to_spawn == .HEAVY_MINION {
+                space.flags += {.IMMUNE}
+            }
             space.unit_team = space.spawnpoint_team
             game_state.minion_counts[space.spawnpoint_team] += 1
         }
@@ -170,9 +173,22 @@ remove_minion :: proc(target: Target) -> (will_interrupt: bool) {
     game_state.minion_counts[minion_team] -= 1
 
     log.infof("Minion removed, new counts: %v", game_state.minion_counts)
+
     if game_state.minion_counts[minion_team] == 0 {
         append(&event_queue, Begin_Wave_Push_Event{get_enemy_team(minion_team)})
         return true
+    } else if game_state.minion_counts[minion_team] == 1 {
+        remove_heavy_immunity(minion_team)
     }
     return false
+}
+
+remove_heavy_immunity :: proc(team: Team) {
+    zone := zone_indices[game_state.current_battle_zone]
+    for target in zone {
+        space := &board[target.x][target.y]
+        if space.flags & {.HEAVY_MINION} != {} {
+            space.flags -= {.IMMUNE}
+        }
+    }
 }

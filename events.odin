@@ -39,6 +39,10 @@ Resolutions_Completed_Event :: struct {}
 
 Begin_Minion_Battle_Event :: struct {}
 
+Begin_Minion_Removal_Event :: struct {
+    team: Team
+}
+
 End_Minion_Battle_Event :: struct {}
 
 Begin_Wave_Push_Event :: struct {
@@ -73,7 +77,9 @@ Event :: union {
     End_Resolution_Event,
 
     Resolutions_Completed_Event,
+
     Begin_Minion_Battle_Event,
+    Begin_Minion_Removal_Event,
     End_Minion_Battle_Event,
 
     Begin_Wave_Push_Event,
@@ -100,7 +106,7 @@ resolve_event :: proc(event: Event) {
 
     case Space_Clicked_Event:
         #partial switch player.stage {
-        case .RESOLVING:
+        case .RESOLVING, .INTERRUPTING:
             action := get_current_action()
 
             if ui_stack[0].variant.(UI_Board_Element).hovered_space not_in action.targets do break
@@ -140,8 +146,10 @@ resolve_event :: proc(event: Event) {
                 }
 
             case Choose_Target_Action:
-                action_variant.result = var.space
-                append(&event_queue, Resolve_Current_Action_Event{})
+                append(&action_variant.result, var.space)
+                if len(action_variant.result) == calculate_implicit_quantity(action_variant.num_targets) {
+                    append(&event_queue, Resolve_Current_Action_Event{})
+                }
 
             }
         }
@@ -248,12 +256,12 @@ resolve_event :: proc(event: Event) {
             }
 
         case Choose_Target_Action:
+            clear(&action_type.result)
             if len(action.targets) == 0 {
                 append(&event_queue, End_Resolution_Event{})
-            } else if len(action.targets) == 1 && !action.optional {
-                // Don't know a better way of extracting just the first element
+            } else if len(action.targets) == calculate_implicit_quantity(action_type.num_targets) && !action.optional {
                 for space in action.targets {
-                    action_type.result = space
+                    append(&action_type.result, space)
                 }
                 append(&event_queue, Resolve_Current_Action_Event{})
             }
@@ -298,6 +306,14 @@ resolve_event :: proc(event: Event) {
         case Halt_Action: 
             append(&event_queue, End_Resolution_Event{})
 
+        case Minion_Removal_Action:
+            assert(player.is_team_captain && player.stage == .RESOLVED && game_state.stage == .MINION_BATTLE)
+            minions_to_remove := minion_removal_action[0].variant.(Choose_Target_Action).result
+            for minion in minions_to_remove {
+                log.assert(!remove_minion(minion), "Minion removal during battle caused wave push!")
+            }
+            append(&event_queue, End_Minion_Battle_Event{})
+            player.stage = .RESOLVED
         }
 
     case End_Resolution_Event:
@@ -336,6 +352,44 @@ resolve_event :: proc(event: Event) {
     case Begin_Minion_Battle_Event:
         game_state.stage = .MINION_BATTLE
         // Let the team captain choose which minions to delete
+        // append(&event_queue, End_Minion_Battle_Event{})
+
+        minion_difference := game_state.minion_counts[.RED] - game_state.minion_counts[.BLUE]
+        // pushing_team := .RED if minion_difference > 0 else .BLUE
+        // pushed_team := get_enemy_team(pushing_team)
+        if minion_difference > 0 {
+            if minion_difference >= game_state.minion_counts[.BLUE] {
+                append(&event_queue, Begin_Wave_Push_Event{.RED})
+            } else {
+                append(&event_queue, Begin_Minion_Removal_Event{.BLUE})
+            }
+        } else if minion_difference < 0 {
+            if -minion_difference >= game_state.minion_counts[.RED] {
+                append(&event_queue, Begin_Wave_Push_Event{.BLUE})
+            } else {
+                append(&event_queue, Begin_Minion_Removal_Event{.RED})
+            }
+        }
+
+    case Begin_Minion_Removal_Event:
+        if player.team == var.team && player.is_team_captain {
+            player.hero.current_action_index = 100
+            player.stage = .INTERRUPTING
+            append(&event_queue, Begin_Next_Action_Event{}) 
+            break
+        }
+
+        minion_difference := abs(game_state.minion_counts[.RED] - game_state.minion_counts[.BLUE])
+
+        for target in zone_indices[game_state.current_battle_zone] {
+            space := &board[target.x][target.y]
+            if space.flags & {.RANGED_MINION, .MELEE_MINION} != {} && space.unit_team == var.team {
+                log.assert(!remove_minion(target), "Minion removal during battle caused wave push!")
+                minion_difference -= 1
+                if minion_difference == 0 do break
+            }
+        }
+
         append(&event_queue, End_Minion_Battle_Event{})
 
 
@@ -444,6 +498,7 @@ resolve_event :: proc(event: Event) {
             player.hero.current_action_index = index
         } else {
             player.hero.current_action_index += 1
+            if player.hero.current_action_index >= 100 do return
             if player.hero.current_action_index >= len(player.hero.action_list) || player.hero.current_action_index < 0 {
                 append(&event_queue, End_Resolution_Event{})
                 return

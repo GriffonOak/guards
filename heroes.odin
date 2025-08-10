@@ -15,6 +15,7 @@ xargatha_cards := [?]Card {
             Action {
                 tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     criteria = {
                         Within_Distance {
                             origin = Self{},
@@ -38,6 +39,7 @@ xargatha_cards := [?]Card {
                 optional = true,
                 skip_index = HALT_INDEX,
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     criteria = {
                         Within_Distance {
                             origin = Self{},
@@ -72,6 +74,7 @@ xargatha_cards := [?]Card {
             Action { 
                 tooltip = "Target an enemy unit not adjacent to you and in range.",
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     criteria = {
                         Within_Distance {
                             origin = Self{},
@@ -112,6 +115,7 @@ xargatha_cards := [?]Card {
             Action {
                 tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     criteria = {
                         Within_Distance {
                             origin = Self{},
@@ -137,6 +141,7 @@ xargatha_cards := [?]Card {
                             },
                             Contains_Any(UNIT_FLAGS),
                             Is_Enemy_Unit{},
+                            Ignoring_Immunity{},
                         },
                         -1
                     }
@@ -175,6 +180,7 @@ xargatha_cards := [?]Card {
                 skip_index = HALT_INDEX,
                 tooltip = "You may choose a ranged minion to move, or you may skip.",
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     criteria = {
                         Within_Distance {
                             origin = Self {},
@@ -199,6 +205,7 @@ xargatha_cards := [?]Card {
             Action {  // 5
                 tooltip = "Choose a ranged minion to move.",
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     criteria = {
                         Within_Distance {
                             origin = Self {},
