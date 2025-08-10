@@ -111,42 +111,6 @@ spawn_minions :: proc(zone: Region_ID) {
     }
 }
 
-spawn_heroes_at_start :: proc() {
-    num_spawns: [Team]int
-    for &player in game_state.players {
-        team := player.team
-        spawnpoint_marker := spawnpoints[num_spawns[team]]
-        log.assert(spawnpoint_marker.spawnpoint_flag == .HERO_SPAWNPOINT)
-        spawnpoint: ^Space
-        if team == .BLUE {
-            spawnpoint = get_symmetric_space(spawnpoint_marker.loc)
-        } else {
-            spawnpoint = &board[spawnpoint_marker.loc.x][spawnpoint_marker.loc.y]
-        }
-
-        spawnpoint.flags += {.HERO}
-        spawnpoint.unit_team = team
-        spawnpoint.hero_id = player.hero.id
-        spawnpoint.owner = player
-
-        player.hero.coins = 0
-        player.hero.level = 1
-
-        player.hero.location = spawnpoint_marker.loc
-    }
-}
-
-begin_game :: proc() {
-    game_state.current_battle_zone = .CENTRE
-    game_state.wave_counters = 5
-
-    spawn_minions(game_state.current_battle_zone)
-
-    spawn_heroes_at_start()
-
-    append(&event_queue, Begin_Card_Selection_Event{})
-}
-
 defeat_minion :: proc(target: Target) -> (will_interrupt: bool){
     space := &board[target.x][target.y]
     minion := space.flags & MINION_FLAGS

@@ -105,25 +105,6 @@ card_color_values := [Card_Color]rl.Color {
 
 
 
-card_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element) -> (output: bool = false) {
-
-    card_element := assert_variant(&element.variant, UI_Card_Element)
-
-    if !check_outside_or_deselected(input, element^) {
-        card_element.hovered = false
-        return false
-    }
-
-    try_to_play: #partial switch var in input {
-    case Mouse_Pressed_Event:
-        append(&event_queue, Card_Clicked_Event{element})
-    }
-
-
-    card_element.hovered = true
-    return true
-}
-
 create_texture_for_card :: proc(card: ^Card) {
     context.allocator = context.temp_allocator
 
