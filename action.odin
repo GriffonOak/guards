@@ -239,7 +239,7 @@ get_action_at_index :: proc(index: int) -> ^Action {
     if index < len(player.hero.action_list) {
         return &player.hero.action_list[index]
     }
-    if index <= 100 {
+    if index >= 100 {
         return &minion_removal_action[index - 100]
     }
     return nil

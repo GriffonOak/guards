@@ -23,7 +23,7 @@ xargatha_cards := [?]Card {
                             max = 1
                         },
                         Contains_Any(UNIT_FLAGS),
-                        Is_Enemy_Unit{},
+                        // Is_Enemy_Unit{},
                     }
                 }
             },
@@ -123,7 +123,7 @@ xargatha_cards := [?]Card {
                             max = 1
                         },
                         Contains_Any(UNIT_FLAGS),
-                        Is_Enemy_Unit{},
+                        // Is_Enemy_Unit{},
                     }
                 }
             },

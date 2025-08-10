@@ -314,7 +314,7 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
 
 
         #partial switch player.stage {
-        case .RESOLVING:
+        case .RESOLVING, .INTERRUPTING:
             action := get_current_action()
             #partial switch &action_variant in action.variant {
             case Movement_Action:
@@ -478,7 +478,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
     }
 
     draw_hover_effect: #partial switch player.stage {
-    case .RESOLVING:
+    case .RESOLVING, .INTERRUPTING:
         action := get_current_action()
         #partial switch variant in action.variant {
         case Fast_Travel_Action:

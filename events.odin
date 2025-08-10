@@ -307,7 +307,7 @@ resolve_event :: proc(event: Event) {
             append(&event_queue, End_Resolution_Event{})
 
         case Minion_Removal_Action:
-            assert(player.is_team_captain && player.stage == .RESOLVED && game_state.stage == .MINION_BATTLE)
+            assert(player.is_team_captain && player.stage == .INTERRUPTING && game_state.stage == .MINION_BATTLE)
             minions_to_remove := minion_removal_action[0].variant.(Choose_Target_Action).result
             for minion in minions_to_remove {
                 log.assert(!remove_minion(minion), "Minion removal during battle caused wave push!")
@@ -369,6 +369,8 @@ resolve_event :: proc(event: Event) {
             } else {
                 append(&event_queue, Begin_Minion_Removal_Event{.RED})
             }
+        } else {
+            append(&event_queue, End_Minion_Battle_Event{})
         }
 
     case Begin_Minion_Removal_Event:
@@ -498,7 +500,10 @@ resolve_event :: proc(event: Event) {
             player.hero.current_action_index = index
         } else {
             player.hero.current_action_index += 1
-            if player.hero.current_action_index >= 100 do return
+            if player.hero.current_action_index >= 100 {
+                append(&event_queue, Begin_Next_Action_Event{})
+                return
+            }
             if player.hero.current_action_index >= len(player.hero.action_list) || player.hero.current_action_index < 0 {
                 append(&event_queue, End_Resolution_Event{})
                 return
