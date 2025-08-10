@@ -12,10 +12,10 @@ package guards
 
 /// COMMENT THIS UNION IN / OUT IN HERE & IMPLICIT.ODIN FOR BUG
 
-// Implicit_Card :: union {
-//     ^Card,
-//     Card_Creating_Effect,
-// }
+Implicit_Card :: union {
+    ^Card,
+    Card_Creating_Effect,
+}
 
 
 

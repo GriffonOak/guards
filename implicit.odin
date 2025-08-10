@@ -9,10 +9,10 @@ Card_Creating_Effect :: struct {
 
 
 /// COMMENT THIS UNION IN / OUT IN HERE & ACTION.ODIN FOR BUG
-Implicit_Card :: union {
-    ^Card,
-    Card_Creating_Effect,
-}
+// Implicit_Card :: union {
+//     ^Card,
+//     Card_Creating_Effect,
+// }
 
 
 Card_Reach :: struct {
