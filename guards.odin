@@ -198,6 +198,8 @@ main :: proc() {
             element.render(element)
         }
 
+        render_player_info()
+
         render_tooltip()
 
         rl.EndTextureMode()

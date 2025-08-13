@@ -447,7 +447,6 @@ resolve_event :: proc(event: Event) {
         case .SELECTION, .UPGRADES:
             log.assertf(false, "Invalid state at end of wave push: %v", game_state.stage)
         }
-        // pass
 
     case Retrieve_Cards_Event:
         // need to retrieve cards here :D
@@ -456,6 +455,18 @@ resolve_event :: proc(event: Event) {
 
     case Begin_Upgrading_Event:
         // append(&event_queue, End_Upgrading_Event{})
+
+        if player.hero.coins < player.hero.level {
+            player.hero.coins += 1
+            log.infof("Pity coin collected. Current coin count: %v", player.hero.coins)
+        } else {
+            for player.hero.coins >= player.hero.level {
+                player.hero.coins -= player.hero.level
+                player.hero.level += 1
+                log.infof("Player levelled up!. Current level: %v", player.hero.level)
+            }
+        }
+        append(&event_queue, End_Upgrading_Event{})
 
     case End_Upgrading_Event:
         game_state.turn_counter = 0
