@@ -13,20 +13,7 @@ Target_Info :: struct {
 
 Target_Set :: map[Target]Target_Info
 
-Implicit_Target_Set :: union {
-    Target_Set,
-    []Selection_Criterion,
-}
 
-Self :: struct {}
-
-Previous_Choice :: struct {}
-
-Implicit_Target :: union {
-    Target,
-    Self,
-    Previous_Choice,
-}
 
 populate_targets :: proc(index: int = 0) {
     action := get_action_at_index(index)

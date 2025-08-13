@@ -1,46 +1,6 @@
 package guards
 
 
-Card_Creating_Effect :: struct {
-    effect: Active_Effect_ID
-}
-
-Implicit_Card :: union {
-    Card_ID,
-    Card_Creating_Effect,
-}
-
-Card_Reach :: struct {
-    card: Implicit_Card,
-}
-
-Card_Value :: struct {
-    card: Implicit_Card,
-    kind: Ability_Kind,
-}
-
-Sum :: []Implicit_Quantity
-
-Count_Targets :: []Selection_Criterion
-
-// Current_Turn :: struct {}
-
-Turn_Played :: struct {
-    card: Implicit_Card
-}
-
-Minion_Difference :: struct {}
-
-Implicit_Quantity :: union {
-    int,
-    Card_Reach,
-    Card_Value,
-    Sum,
-    Count_Targets,
-    // Current_Turn,
-    Turn_Played,
-    Minion_Difference,
-}
 
 Within_Distance :: struct {
     origin: Implicit_Target,
@@ -66,6 +26,7 @@ Selection_Criterion :: union {
     Not_Previously_Targeted,
     Ignoring_Immunity,
 }
+
 
 
 Path :: struct {
@@ -127,23 +88,6 @@ Action_Variant :: union {
     Add_Active_Effect_Action,
     Halt_Action,
     Minion_Removal_Action,
-}
-
-Greater_Than :: struct {
-    term_1, term_2: Implicit_Quantity
-}
-
-And :: []Implicit_Condition
-
-Primary_Is_Not :: struct {
-    kind: Ability_Kind
-}
-
-Implicit_Condition :: union {
-    bool,
-    Greater_Than,
-    Primary_Is_Not,
-    And,
 }
 
 Action :: struct {
