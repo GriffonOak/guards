@@ -44,7 +44,7 @@ Active_Effect :: struct {
     id: Active_Effect_ID,
     duration: Effect_Duration,
     target_set: Implicit_Target_Set,
-    parent_card: ^Card,
+    parent_card_id: Card_ID,
 }
 
 // Interrupt :: struct {

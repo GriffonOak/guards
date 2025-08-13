@@ -42,7 +42,7 @@ FONT_SPACING :: 0
 
 
 
-window_size: Window_Size = .BIG
+window_size: Window_Size = .SMALL
 
 default_font: rl.Font
 
@@ -133,12 +133,12 @@ main :: proc() {
 
     setup_board()
 
-    for &card, index in xargatha_cards {   
+    for &card, index in hero_cards[.XARGATHA] {   
         create_texture_for_card(&card)
         card.state = .IN_HAND
         append(&ui_stack, UI_Element{
             card_hand_position_rects[card.color],
-            UI_Card_Element{&card, false},
+            UI_Card_Element{make_card_id(card, .XARGATHA), false},
             card_input_proc,
             draw_card,
         })

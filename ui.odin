@@ -9,7 +9,7 @@ UI_Board_Element :: struct {
 }
 
 UI_Card_Element :: struct {
-    card: ^Card,
+    card_id: Card_ID,
     hovered: bool,
 }
 

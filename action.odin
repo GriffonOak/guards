@@ -6,7 +6,7 @@ Card_Creating_Effect :: struct {
 }
 
 Implicit_Card :: union {
-    ^Card,
+    Card_ID,
     Card_Creating_Effect,
 }
 

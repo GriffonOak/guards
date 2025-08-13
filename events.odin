@@ -80,11 +80,12 @@ Event :: union {
 
     Begin_Minion_Battle_Event,
     Begin_Minion_Removal_Event,
-    End_Minion_Battle_Event,
-
+    
     Begin_Wave_Push_Event,
     End_Wave_Push_Event,
-
+    
+    End_Minion_Battle_Event,
+    
     Retrieve_Cards_Event,
 
     Begin_Upgrading_Event,
@@ -157,23 +158,28 @@ resolve_event :: proc(event: Event) {
     case Card_Clicked_Event:
         element := var.element
         card_element := assert_variant(&element.variant, UI_Card_Element)
+        card, ok := get_card_by_id(card_element.card_id)
+        log.assert(ok, "Card element clicked with no card associated!")
 
         if player.stage != .SELECTING do return
-        #partial switch card_element.card.state {
+        #partial switch card.state {
         case .IN_HAND:
-            other_element, other_card := find_played_card_elements(panic = false)
+            other_element, other_card_elem := find_played_card_elements(panic = false)
             if other_element != nil {
-                other_element.bounding_rect = card_hand_position_rects[other_card.card.color]
-                other_card.card.state = .IN_HAND
+                other_card, ok := get_card_by_id(other_card_elem.card_id)
+                if ok {
+                    other_element.bounding_rect = card_hand_position_rects[other_card.color]
+                    other_card.state = .IN_HAND
+                }
             } else {
                 add_side_button("Confirm card", Confirm_Event{})
             }
 
             element.bounding_rect = CARD_PLAYED_POSITION_RECT
-            card_element.card.state = .PLAYED
+            card.state = .PLAYED
         case .PLAYED:
-            element.bounding_rect = card_hand_position_rects[card_element.card.color]
-            card_element.card.state = .IN_HAND
+            element.bounding_rect = card_hand_position_rects[card.color]
+            card.state = .IN_HAND
             clear_side_buttons()
         }
 
@@ -299,7 +305,7 @@ resolve_event :: proc(event: Event) {
         case Add_Active_Effect_Action:
             effect := action_type.effect
             log.infof("Adding active effect: %v", effect.id)
-            effect.parent_card = find_played_card()
+            effect.parent_card_id = find_played_card_id()
             game_state.ongoing_active_effects[effect.id] = effect
             append(&event_queue, Resolve_Current_Action_Event{})
 
@@ -307,7 +313,7 @@ resolve_event :: proc(event: Event) {
             append(&event_queue, End_Resolution_Event{})
 
         case Minion_Removal_Action:
-            assert(player.is_team_captain && player.stage == .INTERRUPTING && game_state.stage == .MINION_BATTLE)
+            log.assert(player.is_team_captain && player.stage == .INTERRUPTING && game_state.stage == .MINION_BATTLE)
             minions_to_remove := minion_removal_action[0].variant.(Choose_Target_Action).result
             for minion in minions_to_remove {
                 log.assert(!remove_minion(minion), "Minion removal during battle caused wave push!")
@@ -323,7 +329,9 @@ resolve_event :: proc(event: Event) {
         game_state.resolved_players += 1
 
         element, card_element := find_played_card_elements()
-        card_element.card.state = .RESOLVED
+        card, ok := get_card_by_id(card_element.card_id)
+        log.assert(ok)
+        card.state = .RESOLVED
         element.bounding_rect = FIRST_CARD_RESOLVED_POSITION_RECT
         element.bounding_rect.x += f32(game_state.turn_counter) * (FIRST_CARD_RESOLVED_POSITION_RECT.x + FIRST_CARD_RESOLVED_POSITION_RECT.width)
 
@@ -397,13 +405,7 @@ resolve_event :: proc(event: Event) {
 
     case End_Minion_Battle_Event:
 
-        pushing_team: Team
-
-        if false { // count up the minions here, see if one side has 0
-            append(&event_queue, Begin_Wave_Push_Event{})
-        } else {
-            append(&event_queue, Retrieve_Cards_Event{})
-        }
+        append(&event_queue, Retrieve_Cards_Event{})
 
     case Begin_Wave_Push_Event:
         // Check if game over
@@ -453,7 +455,7 @@ resolve_event :: proc(event: Event) {
         append(&event_queue, Begin_Upgrading_Event{})
 
     case Begin_Upgrading_Event:
-        append(&event_queue, End_Upgrading_Event{})
+        // append(&event_queue, End_Upgrading_Event{})
 
     case End_Upgrading_Event:
         game_state.turn_counter = 0

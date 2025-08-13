@@ -23,25 +23,36 @@ assert_variant_rdonly :: proc(u: $U, $V: typeid, loc := #caller_location) -> V w
 find_played_card_elements :: proc(panic := true, loc := #caller_location) -> (element: ^UI_Element, card_element: ^UI_Card_Element) {
     for &ui_element in ui_stack[1:][:5] {
         card_element = assert_variant(&ui_element.variant, UI_Card_Element)
-        if card_element.card.state == .PLAYED {
+        card, ok := get_card_by_id(card_element.card_id)
+        log.assert(ok || !panic, "Card element had no assigned card!", loc = loc)
+        if ok && card.state == .PLAYED {
             return &ui_element, card_element
         }
     }
-    if panic do log.assert(false, "No played card!", loc = loc)
+    log.assert(!panic, "No played card!", loc = loc)
     return nil, nil
 }
 
-find_played_card :: proc(loc := #caller_location) -> ^Card{
+find_played_card_id :: proc(loc := #caller_location) -> Card_ID {
 
     _, card_elem := find_played_card_elements(loc = loc)
-    return card_elem.card
+    return card_elem.card_id
+}
+
+find_played_card :: proc(loc := #caller_location) -> ^Card{
+    card, ok := get_card_by_id(find_played_card_id())
+    return card
 }
 
 retrieve_cards :: proc() {
+    // @Cleanup this should be rewritten
+
     for &ui_element in ui_stack[1:][:5] {
         card_element := assert_variant(&ui_element.variant, UI_Card_Element)
-        ui_element.bounding_rect = card_hand_position_rects[card_element.card.color]
-        card_element.card.state = .IN_HAND
+        card, ok := get_card_by_id(card_element.card_id)
+        log.assert(ok, "element with no card blah blah")
+        ui_element.bounding_rect = card_hand_position_rects[card.color]
+        card.state = .IN_HAND
     }
 }
 
@@ -159,9 +170,12 @@ calculate_implicit_condition :: proc(implicit_condition: Implicit_Condition) -> 
 
 calculate_implicit_card :: proc(implicit_card: Implicit_Card) -> ^Card {
     switch card in implicit_card {
-    case ^Card: return card
+    case Card_ID:
+        card_pointer, ok := get_card_by_id(card)
+        return card_pointer
     case Card_Creating_Effect:
-        return game_state.ongoing_active_effects[card.effect].parent_card
+        card_pointer, ok := get_card_by_id(game_state.ongoing_active_effects[card.effect].parent_card_id)
+        return card_pointer
     }
     return find_played_card()  // Default to returning the played card
 }

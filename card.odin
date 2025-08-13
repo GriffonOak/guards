@@ -4,6 +4,8 @@ import rl "vendor:raylib"
 import "core:strings"
 import "core:fmt"
 
+import "core:log"
+
 
 
 Card_Color :: enum {
@@ -46,8 +48,10 @@ PLUS_SIGN: cstring : "+"
 Card :: struct {
     name: string,
     color: Card_Color,
-    initiative: int,
     tier: int,
+    alternate: bool,
+
+    initiative: int,
     values: [Ability_Kind]int,
     primary: Ability_Kind,
     primary_sign: cstring,
@@ -59,7 +63,17 @@ Card :: struct {
     turn_played: int
 }
 
+Card_ID :: struct {
+    hero_id: Hero_ID,
+    color: Card_Color,
+    tier: int,
+    alternate: bool,
+}
 
+Card_Holder :: struct {
+    starter_cards: [Card_Color]Card,
+    upgrades: [Card_Color][2][2]Card,
+}
 
 CARD_TEXTURE_SIZE :: Vec2{500, 700}
 
@@ -95,12 +109,12 @@ ability_initials := [Ability_Kind]string {
 card_hand_position_rects: [Card_Color]rl.Rectangle
 
 card_color_values := [Card_Color]rl.Color {
-    .NONE = rl.MAGENTA,
+    .NONE   = rl.MAGENTA,
     .SILVER = rl.GRAY,
-    .GOLD = rl.GOLD,
-    .RED = rl.RED,
-    .GREEN = rl.LIME,
-    .BLUE = rl.BLUE,
+    .GOLD   = rl.GOLD,
+    .RED    = rl.RED,
+    .GREEN  = rl.LIME,
+    .BLUE   = rl.BLUE,
 }
 
 
@@ -186,15 +200,46 @@ create_texture_for_card :: proc(card: ^Card) {
 draw_card: UI_Render_Proc: proc(element: UI_Element) {
     card_element := assert_variant_rdonly(element.variant, UI_Card_Element)
 
+    card, ok := get_card_by_id(card_element.card_id)
+    log.assert(ok, "Tried to draw card element with no assigned card!")
+
     amount_to_show := element.bounding_rect.height / element.bounding_rect.width * CARD_TEXTURE_SIZE.y
-    rl.DrawRectangleRec(element.bounding_rect, card_color_values[card_element.card.color])
+    rl.DrawRectangleRec(element.bounding_rect, card_color_values[card.color])
 
     // Looks a little bunk but I should revisit this
     // rl.DrawTexturePro(card_element.card.texture, {0, CARD_TEXTURE_SIZE.y - amount_to_show, CARD_TEXTURE_SIZE.x, -amount_to_show}, element.bounding_rect, {}, 0, rl.WHITE)
 
     if card_element.hovered {
-        rl.DrawTexturePro(card_element.card.texture, {0, 0, CARD_TEXTURE_SIZE.x, -CARD_TEXTURE_SIZE.y}, CARD_HOVER_POSITION_RECT, {}, 0, rl.WHITE)
+        rl.DrawTexturePro(card.texture, {0, 0, CARD_TEXTURE_SIZE.x, -CARD_TEXTURE_SIZE.y}, CARD_HOVER_POSITION_RECT, {}, 0, rl.WHITE)
         rl.DrawRectangleLinesEx(element.bounding_rect, 10, rl.WHITE)
         // rl.DrawRectangleLinesEx(CARD_HOVER_POSITION_RECT, 2, rl.RAYWHITE)
+    }
+}
+
+get_card_by_id :: proc(card_id: Card_ID) -> (^Card, bool) { // #optional_ok {
+    card_slice := hero_cards[card_id.hero_id]
+
+    for &card in card_slice {
+        if card.color == card_id.color {
+            if card.color == .GOLD || card.color == .SILVER {
+                return &card, true
+            }
+            if card.tier == card_id.tier {
+                if card.alternate == card.alternate {
+                    return &card, true
+                }
+            }
+        }
+    }
+
+    return nil, false
+}
+
+make_card_id :: proc(card: Card, hero_id: Hero_ID) -> Card_ID {
+    return Card_ID {
+        hero_id,
+        card.color,
+        card.tier,
+        card.alternate,
     }
 }
