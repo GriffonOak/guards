@@ -100,6 +100,7 @@ spawn_minions :: proc(zone: Region_ID) {
             spawnpoint_type := get_first_set_bit(spawnpoint_flags).?
 
             minion_to_spawn := spawnpoint_to_minion[spawnpoint_type]
+            if minion_to_spawn == .RANGED_MINION && space.spawnpoint_team == .RED do continue
             space.flags += {minion_to_spawn}
             if minion_to_spawn == .HEAVY_MINION {
                 space.flags += {.IMMUNE}

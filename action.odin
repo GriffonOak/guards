@@ -91,7 +91,7 @@ Action_Variant :: union {
 }
 
 Action :: struct {
-    tooltip: cstring,
+    tooltip: Tooltip,
     optional: bool,
     condition: Implicit_Condition,
     skip_index: int,
@@ -153,7 +153,17 @@ basic_clear_action := Action {
 
 minion_removal_action := []Action {
     {
-        tooltip = "Choose minions to remove.",
+        tooltip = Formatted_String{
+            format = "Choose %v minion%v to remove.",
+            arguments = {
+                Implicit_Quantity(Minion_Difference{}),
+                Conditional_String_Argument {
+                    condition = Greater_Than{Minion_Difference{}, 1},
+                    arg1 = string("s"),
+                    arg2 = string(""),
+                }
+            }
+        },
         variant = Choose_Target_Action {
             num_targets = Minion_Difference{},
             criteria = {

@@ -42,7 +42,9 @@ FONT_SPACING :: 0
 
 
 
-window_size: Window_Size = .BIG
+window_size: Window_Size = .SMALL
+
+window_scale: f32 = 1 if window_size == .BIG else 2
 
 default_font: rl.Font
 
@@ -118,10 +120,10 @@ main :: proc() {
         draw_board,
     })
 
-    window_scale: i32 = 2 if window_size == .SMALL else 1
+    // window_scale: i32 = 2 if window_size == .SMALL else 1
 
     rl.SetConfigFlags({.MSAA_4X_HINT})
-    rl.InitWindow(WIDTH / window_scale, HEIGHT / window_scale, "guards")
+    rl.InitWindow(i32(WIDTH / window_scale), i32(HEIGHT / window_scale), "guards")
     defer rl.CloseWindow()
 
     default_font = rl.LoadFontEx("times.ttf", 200, nil, 0)
@@ -145,6 +147,7 @@ main :: proc() {
     }
 
     append(&game_state.players, &player)
+    append(&event_queue, Toggle_Fullscreen_Event{})
     begin_game()
 
     for !rl.WindowShouldClose() {
@@ -155,12 +158,10 @@ main :: proc() {
         for event in input_queue {
             #partial switch var in event {
             case Key_Pressed_Event:
-                if var.key == .EQUAL && window_size == .SMALL {
-                    window_size = .BIG
-                    rl.SetWindowSize(WIDTH, HEIGHT)
-                } else if var.key == .MINUS && window_size == .BIG {
-                    window_size = .SMALL
-                    rl.SetWindowSize(WIDTH / 2, HEIGHT / 2)
+                #partial switch var.key {
+                case .EQUAL: append(&event_queue, Increase_Window_Size_Event{})
+                case.MINUS: append(&event_queue, Decrease_Window_Size_Event{})
+                case .F: append(&event_queue, Toggle_Fullscreen_Event{})
                 }
             }
 
@@ -208,11 +209,11 @@ main :: proc() {
 
         // rl.DrawCircleV({200, 200}, 200, rl.RED)
 
-        scale_factor: f32 = 1.0 if window_size == .BIG else 0.5
+        // scale_factor: f32 = 1.0 if window_size == .BIG else 0.5
         rl.DrawTexturePro(
             window_texture.texture,
             {0, 0, WIDTH, -HEIGHT},
-            {0, 0, scale_factor * WIDTH, scale_factor * HEIGHT},
+            {0, 0, WIDTH / window_scale, HEIGHT / window_scale},
             {0, 0}, 0, rl.WHITE
         )
 

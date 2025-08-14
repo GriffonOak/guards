@@ -1,5 +1,6 @@
 package guards
 
+import "core:fmt"
 import rl "vendor:raylib"
 
 
@@ -41,15 +42,42 @@ Side_Button_Manager :: struct {
     button_location: rl.Rectangle
 }
 
+Conditional_String_Argument :: struct {
+    condition: Implicit_Condition,
+    arg1, arg2: string,  // This should be able to work with the `any` type, but for some reason it doesn't :(
+}
+
+Formatted_String_Argument :: union {
+    Implicit_Quantity,
+    Conditional_String_Argument,
+    any,
+}
+
+Formatted_String :: struct {
+    format: string,
+    arguments: []Formatted_String_Argument
+}
+
+
+Tooltip :: union {
+    cstring,
+    Formatted_String,
+}
+
 
 
 BUTTON_PADDING :: 10
 TOOLTIP_FONT_SIZE :: 50
 
 SELECTION_BUTTON_SIZE :: Vec2{400, 100}
-FIRST_SIDE_BUTTON_LOCATION :: rl.Rectangle{BOARD_TEXTURE_SIZE.x + BUTTON_PADDING, BUTTON_PADDING + TOOLTIP_FONT_SIZE, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}
+FIRST_SIDE_BUTTON_LOCATION :: rl.Rectangle {
+    BOARD_TEXTURE_SIZE.x + BUTTON_PADDING, 
+    HEIGHT - BUTTON_PADDING - SELECTION_BUTTON_SIZE.y,
+    SELECTION_BUTTON_SIZE.x,
+    SELECTION_BUTTON_SIZE.y
+}
 
-tooltip: cstring
+tooltip: Tooltip
 
 ui_stack: [dynamic]UI_Element
 
@@ -111,12 +139,34 @@ draw_button: UI_Render_Proc : proc(element: UI_Element) {
     }
 }
 
+format_tooltip :: proc(tooltip: Tooltip) -> cstring {
+    context.allocator = context.temp_allocator
+    switch variant in tooltip {
+    case cstring: return variant
+    case Formatted_String:
+        args: [dynamic]any  // spicy
+        for arg in variant.arguments {
+            switch arg_variant in arg {
+            case Implicit_Quantity:
+                append(&args, calculate_implicit_quantity(arg_variant))
+            case Conditional_String_Argument:
+                append(&args, arg_variant.arg1 if calculate_implicit_condition(arg_variant.condition) else arg_variant.arg2)
+            case any: append(&args, arg_variant)
+            }
+        }
+        return fmt.ctprintf(variant.format, ..args[:])
+
+    }
+    return nil
+}
+
 render_tooltip :: proc() {
     if tooltip == nil do return
-    dimensions := rl.MeasureTextEx(default_font, tooltip, TOOLTIP_FONT_SIZE, FONT_SPACING)
+    tooltip_text := format_tooltip(tooltip)
+    dimensions := rl.MeasureTextEx(default_font, tooltip_text, TOOLTIP_FONT_SIZE, FONT_SPACING)
     top_width := WIDTH - BOARD_TEXTURE_SIZE.x
     offset := BOARD_TEXTURE_SIZE.x + (top_width - dimensions.x) / 2
-    rl.DrawTextEx(default_font, tooltip, {offset, 0}, TOOLTIP_FONT_SIZE, FONT_SPACING, rl.WHITE)
+    rl.DrawTextEx(default_font, tooltip_text, {offset, 0}, TOOLTIP_FONT_SIZE, FONT_SPACING, rl.WHITE)
 }
 
 add_side_button :: proc(text: cstring, event: Event) {
@@ -131,14 +181,14 @@ add_side_button :: proc(text: cstring, event: Event) {
         draw_button,
     })
     side_button_manager.buttons = ui_stack[side_button_manager.first_button_index:][:len(side_button_manager.buttons) + 1]
-    side_button_manager.button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+    side_button_manager.button_location.y -= SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
 }
 
 pop_side_button :: proc() {
     if len(side_button_manager.buttons) == 0 do return
     pop(&ui_stack)
     side_button_manager.buttons = ui_stack[side_button_manager.first_button_index:][:len(side_button_manager.buttons) - 1]
-    side_button_manager.button_location.y -= SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+    side_button_manager.button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
 }
 
 clear_side_buttons :: proc() {

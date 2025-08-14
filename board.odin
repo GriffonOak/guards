@@ -422,6 +422,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
         origin: Target
 
         frequency: f64 = 4
+        time := rl.GetTime()
 
         #partial switch variant in action.variant {
         case Choice_Action:
@@ -440,7 +441,13 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             }
         case Choose_Target_Action:
             frequency = 14
+            for target in variant.result {
+                space := board[target.x][target.y]
+                selected_color := rl.LIGHTGRAY
+                pulse := f32(math.sin(1.5 * time) * VERTICAL_SPACING * 0.03)
 
+                rl.DrawRing(space.position, VERTICAL_SPACING * 0.4 + pulse, VERTICAL_SPACING * 0.5 + pulse, 0, 360, 20, selected_color)
+            }
         }
 
         for target, info in action.targets {
@@ -461,7 +468,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             //     phase = math.atan2()
             }
 
-            time := rl.GetTime()
+            
 
             color_blend := (math.sin(frequency * time + phase) + 1) / 2
             color_blend = color_blend * color_blend

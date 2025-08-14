@@ -10,6 +10,10 @@ import "core:strings"
 import "core:log"
 
 
+Increase_Window_Size_Event :: struct {}  
+Decrease_Window_Size_Event :: struct {}  
+Toggle_Fullscreen_Event :: struct {}  
+
 
 Space_Clicked_Event :: struct {
     space: IVec2
@@ -64,6 +68,11 @@ Game_Over_Event :: struct {
 
 
 Event :: union {
+
+    Increase_Window_Size_Event,
+    Decrease_Window_Size_Event,
+    Toggle_Fullscreen_Event,
+
     Space_Clicked_Event,
     Card_Clicked_Event,
     Confirm_Event,
@@ -104,6 +113,31 @@ resolve_event :: proc(event: Event) {
 
     log.infof("EVENT: %v", reflect.union_variant_typeid(event))
     switch var in event {
+
+    case Increase_Window_Size_Event:
+        if window_size == .SMALL {
+            window_size = .BIG
+            rl.SetWindowSize(WIDTH, HEIGHT)
+            window_scale = 1
+        }
+
+    case Decrease_Window_Size_Event:
+        if window_size == .BIG {
+            window_size = .SMALL
+            rl.SetWindowSize(WIDTH / 2, HEIGHT / 2)
+            window_scale = 2
+        }
+    
+    case Toggle_Fullscreen_Event:
+        rl.ToggleBorderlessWindowed()
+        if window_size != .FULL_SCREEN {
+            window_size = .FULL_SCREEN
+            window_scale = WIDTH / f32(rl.GetRenderWidth())
+        } else {
+            window_size = .SMALL
+            rl.SetWindowSize(WIDTH / 2, HEIGHT / 2)
+            window_scale = 2
+        }
 
     case Space_Clicked_Event:
         #partial switch player.stage {
@@ -205,7 +239,7 @@ resolve_event :: proc(event: Event) {
 
     case Cancel_Event:
         #partial switch player.stage {
-        case .RESOLVING:
+        case .RESOLVING, .INTERRUPTING:
             action := get_current_action()
             #partial switch &action_variant in action.variant {
             case Movement_Action:
@@ -224,7 +258,7 @@ resolve_event :: proc(event: Event) {
             case Choose_Target_Action:
                 log.assert(len(side_button_manager.buttons) > 0, "No side buttons!?")
                 top_button := side_button_manager.buttons[len(side_button_manager.buttons) - 1].variant.(UI_Button_Element)
-                if _, ok := top_button.event.(Cancel_Event); ok && action_variant.valid_destinations != nil {
+                if _, ok := top_button.event.(Cancel_Event); ok {
                     pop_side_button()
                 }
                 for space in action_variant.result {
@@ -476,7 +510,7 @@ resolve_event :: proc(event: Event) {
             for player.hero.coins >= player.hero.level {
                 player.hero.coins -= player.hero.level
                 player.hero.level += 1
-                log.infof("Player levelled up!. Current level: %v", player.hero.level)
+                log.infof("Player levelled up! Current level: %v", player.hero.level)
             }
         }
         append(&event_queue, End_Upgrading_Event{})

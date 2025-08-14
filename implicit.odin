@@ -85,7 +85,7 @@ Implicit_Condition :: union {
 
 calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity) -> (out: int) {
     switch quantity in implicit_quantity {
-    case int: out = quantity
+    case int: return quantity
 
     case Card_Reach:
         // @Item Need to add items here also at some point
