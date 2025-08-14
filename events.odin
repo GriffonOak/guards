@@ -148,8 +148,11 @@ resolve_event :: proc(event: Event) {
 
             case Choose_Target_Action:
                 append(&action_variant.result, var.space)
+                delete_key(&action.targets, var.space)
                 if len(action_variant.result) == calculate_implicit_quantity(action_variant.num_targets) {
                     append(&event_queue, Resolve_Current_Action_Event{})
+                } else if len(side_button_manager.buttons) == 0 {
+                    add_side_button("Cancel", Cancel_Event{})
                 }
 
             }
@@ -218,6 +221,16 @@ resolve_event :: proc(event: Event) {
                 if _, ok := top_button.event.(Resolve_Current_Action_Event); ok && action_variant.valid_destinations != nil {
                     pop_side_button()
                 }
+            case Choose_Target_Action:
+                log.assert(len(side_button_manager.buttons) > 0, "No side buttons!?")
+                top_button := side_button_manager.buttons[len(side_button_manager.buttons) - 1].variant.(UI_Button_Element)
+                if _, ok := top_button.event.(Cancel_Event); ok && action_variant.valid_destinations != nil {
+                    pop_side_button()
+                }
+                for space in action_variant.result {
+                    action.targets[space] = {}
+                }
+                clear(&action_variant.result)
             }
         }
         
