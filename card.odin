@@ -35,6 +35,15 @@ Ability_Kind :: enum {
     MOVEMENT,
 }
 
+Item_Kind :: enum {
+    INITIATIVE,
+    ATTACK,
+    DEFENSE,
+    MOVEMENT,
+    RANGE,
+    RADIUS,
+}
+
 Range  :: distinct int
 Radius :: distinct int
 
@@ -46,7 +55,7 @@ Action_Reach :: union {
 PLUS_SIGN: cstring : "+"
 
 Card :: struct {
-    name: string,
+    name: cstring,
     color: Card_Color,
     tier: int,
     alternate: bool,
@@ -56,8 +65,12 @@ Card :: struct {
     primary: Ability_Kind,
     primary_sign: cstring,
     reach: Action_Reach,
+    reach_sign: cstring,
+    item: Item_Kind,
     text: string,
     primary_effect: []Action,
+
+
     texture: rl.Texture2D,
     state: Card_State,
     turn_played: int
@@ -92,7 +105,7 @@ RESOLVED_CARD_PADDING :: (BOARD_HAND_SPACE - RESOLVED_CARD_HEIGHT) / 2
 
 FIRST_CARD_RESOLVED_POSITION_RECT :: rl.Rectangle{RESOLVED_CARD_PADDING, BOARD_POSITION_RECT.height + RESOLVED_CARD_PADDING, RESOLVED_CARD_HEIGHT / 1.5, RESOLVED_CARD_HEIGHT}
 
-CARD_PLAYED_POSITION_RECT :: rl.Rectangle{BOARD_POSITION_RECT.width * 0.8 - PLAYED_CARD_SIZE.x / 2, BOARD_POSITION_RECT.height - PLAYED_CARD_SIZE.y / 2, PLAYED_CARD_SIZE.x, PLAYED_CARD_SIZE.y}
+CARD_PLAYED_POSITION_RECT :: rl.Rectangle{BOARD_POSITION_RECT.width * 0.8 - PLAYED_CARD_SIZE.x / 2, BOARD_POSITION_RECT.height - PLAYED_CARD_SIZE.y / 4, PLAYED_CARD_SIZE.x, PLAYED_CARD_SIZE.y}
 
 
 
@@ -152,8 +165,8 @@ create_texture_for_card :: proc(card: ^Card) {
 
     rl.ClearBackground(rl.RAYWHITE)
 
+    // Secondaries ribbon & initiative
     rl.DrawRectangleRec({0, 0, COLORED_BAND_WIDTH, CARD_TEXTURE_SIZE.y / 2}, card_color_values[card.color])
-    // rl.DrawRectangleRec({0, 0, CARD_TEXTURE_SIZE.x, COLORED_BAND_WIDTH}, card_color_values[card.color])
 
     rl.DrawTextEx(default_font, fmt.ctprintf("I%d", card.initiative), {TEXT_PADDING, TEXT_PADDING}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     secondaries_index := 1
@@ -162,18 +175,35 @@ create_texture_for_card :: proc(card: ^Card) {
         rl.DrawTextEx(default_font, fmt.ctprintf("%s%d", ability_initials[ability], val), {TEXT_PADDING, TEXT_PADDING + f32(secondaries_index) * TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
         secondaries_index += 1
     }
+    
 
-    name_cstring := strings.clone_to_cstring(card.name)
-    text_cstring := strings.clone_to_cstring(card.text)
-
-    name_length_px := rl.MeasureTextEx(default_font, name_cstring, TITLE_FONT_SIZE, FONT_SPACING).x
+    // Name
+    name_length_px := rl.MeasureTextEx(default_font, card.name, TITLE_FONT_SIZE, FONT_SPACING).x
     name_offset := COLORED_BAND_WIDTH + (CARD_TEXTURE_SIZE.x - COLORED_BAND_WIDTH - name_length_px) / 2
-    rl.DrawTextEx(default_font, name_cstring, {name_offset, TEXT_PADDING}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+    rl.DrawTextEx(default_font, card.name, {name_offset, TEXT_PADDING}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
 
+
+    // Tier
+    tier_ball_loc := Vec2{CARD_TEXTURE_SIZE.x - COLORED_BAND_WIDTH / 2, COLORED_BAND_WIDTH / 2}
+    rl.DrawCircleV(tier_ball_loc, COLORED_BAND_WIDTH / 2, rl.DARKGRAY)
+    TIER_FONT_SIZE :: TITLE_FONT_SIZE * 0.8
+    if card.tier > 0 {
+        tier_strings := []cstring{"I", "II", "III"}
+        tier_string := tier_strings[card.tier - 1]
+
+        tier_dimensions := rl.MeasureTextEx(default_font, tier_string, TIER_FONT_SIZE, FONT_SPACING)
+        tier_text_location := tier_ball_loc - tier_dimensions / 2
+        rl.DrawTextEx(default_font, tier_string, tier_text_location, TIER_FONT_SIZE, FONT_SPACING, rl.WHITE)
+    }
+    
+
+    // Body text
+    text_cstring := strings.clone_to_cstring(card.text)
     text_dimensions := rl.MeasureTextEx(default_font, text_cstring, TEXT_FONT_SIZE, FONT_SPACING)
-
     rl.DrawTextEx(default_font, text_cstring, {TEXT_PADDING, CARD_TEXTURE_SIZE.y - text_dimensions.y - TEXT_PADDING}, TEXT_FONT_SIZE, FONT_SPACING, rl.BLACK)
 
+
+    // Primary & its value & sign
     primary_value := card.values[card.primary]
     switch card.primary {
     case .ATTACK, .DEFENSE, .MOVEMENT, .DEFENSE_SKILL:
@@ -183,9 +213,11 @@ create_texture_for_card :: proc(card: ^Card) {
     case .NONE:
     }
 
+
+    // Reach & sign
     if card.reach != nil {
         _, is_radius := card.reach.(Radius)
-        reach_string := fmt.ctprintf("%d%s", card.reach, "Rd" if is_radius else "Rn")
+        reach_string := fmt.ctprintf("%s%d%s", "Rd" if is_radius else "Rn", card.reach, card.reach_sign)
         reach_dimensions := rl.MeasureTextEx(default_font, reach_string, TITLE_FONT_SIZE, FONT_SPACING).x
         rl.DrawTextEx(default_font, reach_string, {CARD_TEXTURE_SIZE.x - reach_dimensions - TEXT_PADDING, CARD_TEXTURE_SIZE.y - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     }
@@ -195,6 +227,8 @@ create_texture_for_card :: proc(card: ^Card) {
     rl.EndTextureMode()
 
     card.texture = render_texture.texture
+
+    rl.SetTextureFilter(card.texture, rl.TextureFilter.TRILINEAR)
 }
 
 draw_card: UI_Render_Proc: proc(element: UI_Element) {
@@ -206,12 +240,20 @@ draw_card: UI_Render_Proc: proc(element: UI_Element) {
     amount_to_show := element.bounding_rect.height / element.bounding_rect.width * CARD_TEXTURE_SIZE.y
     rl.DrawRectangleRec(element.bounding_rect, card_color_values[card.color])
 
+    name_font_size := element.bounding_rect.width / 7
+    text_padding := element.bounding_rect.width / 80
+
+    name_size := rl.MeasureTextEx(default_font, card.name, name_font_size, FONT_SPACING)
+
+    remaining_width := element.bounding_rect.width - name_size.x
+    rl.DrawTextEx(default_font, card.name, {element.bounding_rect.x + remaining_width / 2, element.bounding_rect.y + text_padding}, name_font_size, FONT_SPACING, rl.BLACK)
+
     // Looks a little bunk but I should revisit this
     // rl.DrawTexturePro(card_element.card.texture, {0, CARD_TEXTURE_SIZE.y - amount_to_show, CARD_TEXTURE_SIZE.x, -amount_to_show}, element.bounding_rect, {}, 0, rl.WHITE)
 
     if card_element.hovered {
         rl.DrawTexturePro(card.texture, {0, 0, CARD_TEXTURE_SIZE.x, -CARD_TEXTURE_SIZE.y}, CARD_HOVER_POSITION_RECT, {}, 0, rl.WHITE)
-        rl.DrawRectangleLinesEx(element.bounding_rect, 10, rl.WHITE)
+        rl.DrawRectangleLinesEx(element.bounding_rect, 4, rl.WHITE)
         // rl.DrawRectangleLinesEx(CARD_HOVER_POSITION_RECT, 2, rl.RAYWHITE)
     }
 }
@@ -225,7 +267,7 @@ get_card_by_id :: proc(card_id: Card_ID) -> (^Card, bool) { // #optional_ok {
                 return &card, true
             }
             if card.tier == card_id.tier {
-                if card.alternate == card.alternate {
+                if card.alternate == card_id.alternate {
                     return &card, true
                 }
             }

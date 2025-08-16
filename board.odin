@@ -358,11 +358,18 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             // Make the highlight
             brightness_increase :: 50
             if .TERRAIN not_in space.flags {
-                new_color := rl.WHITE
-                for &val, idx in new_color do val = 255 if color[idx] + brightness_increase < color[idx] else color[idx] + brightness_increase
-                rl.DrawPoly(space.position, 6, 0.9 * VERTICAL_SPACING / math.sqrt_f32(3), 0, new_color)
+                lighter_color := rl.WHITE
+                for &val, idx in lighter_color do val = 255 if color[idx] + brightness_increase < color[idx] else color[idx] + brightness_increase
+                lighter_color.a = 255
+                rl.DrawPoly(space.position, 6, 0.9 * VERTICAL_SPACING / math.sqrt_f32(3), 0, lighter_color)
                 rl.DrawCircleV(space.position, 0.92 * VERTICAL_SPACING / 2, color)
+
+                darker_color := rl.BLACK
+                for val, idx in color.rgb do darker_color[idx] = 0 if val - 25 > val else val - 25
+                darker_color.a = 255
+                rl.DrawPolyLinesEx(space.position, 6, VERTICAL_SPACING / math.sqrt_f32(3), 0, 1, darker_color)
             }
+
 
             spawnpoint_flags := space.flags & SPAWNPOINT_FLAGS
             if spawnpoint_flags != {} {
@@ -390,7 +397,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
                 FONT_SIZE :: 0.8 * VERTICAL_SPACING
 
                 text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, FONT_SPACING)
-                rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.45, color)
+                rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.42, color)
                 rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, rl.BLACK)
 
             }
@@ -403,7 +410,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
                 FONT_SIZE :: 0.8 * VERTICAL_SPACING
 
                 text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, FONT_SPACING)
-                rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.45, color)
+                rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.42, color)
                 rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, rl.BLACK)
             }
         }

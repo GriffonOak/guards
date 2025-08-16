@@ -30,13 +30,16 @@ Game_Stage :: enum {
 Active_Effect_ID :: enum {
     NONE,
     XARGATHA_FREEZE,
+    XARGATHA_DEFEAT,
 }
+
+End_Of_Round :: struct {}
 
 Single_Turn :: Implicit_Quantity
 
 Effect_Duration :: union {
     // End_Of_Turn,
-    // End_Of_Round,
+    End_Of_Round,
     Single_Turn,
 }
 
@@ -100,7 +103,7 @@ spawn_minions :: proc(zone: Region_ID) {
             spawnpoint_type := get_first_set_bit(spawnpoint_flags).?
 
             minion_to_spawn := spawnpoint_to_minion[spawnpoint_type]
-            if minion_to_spawn == .RANGED_MINION && space.spawnpoint_team == .RED do continue
+            // if minion_to_spawn == .RANGED_MINION && space.spawnpoint_team == .RED do continue
             space.flags += {minion_to_spawn}
             if minion_to_spawn == .HEAVY_MINION {
                 space.flags += {.IMMUNE}
@@ -130,7 +133,7 @@ spawn_heroes_at_start :: proc() {
         spawnpoint.hero_id = player.hero.id
         spawnpoint.owner = player
 
-        player.hero.coins = 0
+        player.hero.coins = 1
         player.hero.level = 1
 
         player.hero.location = spawnpoint_marker.loc

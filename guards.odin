@@ -132,18 +132,23 @@ main :: proc() {
     board_render_texture = rl.LoadRenderTexture(i32(BOARD_TEXTURE_SIZE.x), i32(BOARD_TEXTURE_SIZE.y))
 
     window_texture := rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT))
+    rl.SetTextureFilter(window_texture.texture, .TRILINEAR)
 
     setup_board()
 
     for &card, index in hero_cards[.XARGATHA] {   
         create_texture_for_card(&card)
-        card.state = .IN_HAND
-        append(&ui_stack, UI_Element{
-            card_hand_position_rects[card.color],
-            UI_Card_Element{make_card_id(card, .XARGATHA), false},
-            card_input_proc,
-            draw_card,
-        })
+        if index < 5 {
+            card.state = .IN_HAND
+            append(&ui_stack, UI_Element{
+                card_hand_position_rects[card.color],
+                UI_Card_Element{make_card_id(card, .XARGATHA), false},
+                card_input_proc,
+                draw_card,
+            })
+        } else {
+            card.state = .NONEXISTENT
+        }
     }
 
     append(&game_state.players, &player)

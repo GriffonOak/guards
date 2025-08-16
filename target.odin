@@ -28,11 +28,17 @@ populate_targets :: proc(index: int = 0) {
         action.targets =  make_clear_targets()
     case Choose_Target_Action:
         action.targets =  make_arbitrary_targets(variant.criteria)
+        clear(&variant.result)
     case Choice_Action:
         for choice in variant.choices {
             populate_targets(choice.jump_index)
         }
     case Halt_Action, Attack_Action, Add_Active_Effect_Action, Minion_Removal_Action:
+
+    case Choose_Card_Action:
+        // todo ???
+
+    case Retrieve_Card_Action:
 
     }
 }
@@ -64,6 +70,11 @@ action_can_be_taken :: proc(index: int = 0) -> bool {
     case Choice_Action:
         // Not technically correct! Need to see if all child actions are takeable
         return true
+
+    case Choose_Card_Action:
+        // @todo!
+
+    case Retrieve_Card_Action:
     }
     return false
 }

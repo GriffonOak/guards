@@ -78,6 +78,10 @@ Halt_Action :: struct {}
 
 Minion_Removal_Action :: struct {}
 
+Choose_Card_Action :: struct {}
+
+Retrieve_Card_Action :: struct {}
+
 Action_Variant :: union {
     Movement_Action,
     Fast_Travel_Action,
@@ -88,6 +92,8 @@ Action_Variant :: union {
     Add_Active_Effect_Action,
     Halt_Action,
     Minion_Removal_Action,
+    Choose_Card_Action,
+    Retrieve_Card_Action,
 }
 
 Action :: struct {
@@ -100,6 +106,8 @@ Action :: struct {
 }
 
 player_movement_tooltip: cstring : "Choose a space to move to."
+
+error_tooltip: cstring : "You should never see this. Tell Griffon if you do!"
 
 first_choice_tooltip: cstring : "Choose an action to take with your played card."
 

@@ -22,6 +22,8 @@ Card_Value :: struct {
 
 Sum :: []Implicit_Quantity
 
+Product :: []Implicit_Quantity
+
 Count_Targets :: []Selection_Criterion
 
 // Current_Turn :: struct {}

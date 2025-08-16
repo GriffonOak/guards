@@ -57,7 +57,10 @@ End_Wave_Push_Event :: struct {}
 
 Retrieve_Cards_Event :: struct {}
 
+
 Begin_Upgrading_Event :: struct {}
+
+Begin_Next_Upgrade_Event :: struct {}
 
 End_Upgrading_Event :: struct {}
 
@@ -98,6 +101,7 @@ Event :: union {
     Retrieve_Cards_Event,
 
     Begin_Upgrading_Event,
+    Begin_Next_Upgrade_Event,
     End_Upgrading_Event,
 
     Game_Over_Event,
@@ -198,26 +202,108 @@ resolve_event :: proc(event: Event) {
         card, ok := get_card_by_id(card_element.card_id)
         log.assert(ok, "Card element clicked with no card associated!")
 
-        if player.stage != .SELECTING do return
-        #partial switch card.state {
-        case .IN_HAND:
-            other_element, other_card_elem := find_played_card_elements(panic = false)
-            if other_element != nil {
-                other_card, ok := get_card_by_id(other_card_elem.card_id)
-                if ok {
-                    other_element.bounding_rect = card_hand_position_rects[other_card.color]
-                    other_card.state = .IN_HAND
+        #partial switch player.stage {
+        case .SELECTING:
+            #partial switch card.state {
+            case .IN_HAND:
+                other_element, other_card_elem := find_played_card_elements(panic = false)
+                if other_element != nil {
+                    other_card, ok := get_card_by_id(other_card_elem.card_id)
+                    if ok {
+                        other_element.bounding_rect = card_hand_position_rects[other_card.color]
+                        other_card.state = .IN_HAND
+                    }
+                } else {
+                    add_side_button("Confirm card", Confirm_Event{})
                 }
-            } else {
-                add_side_button("Confirm card", Confirm_Event{})
+    
+                element.bounding_rect = CARD_PLAYED_POSITION_RECT
+                card.state = .PLAYED
+            case .PLAYED:
+                element.bounding_rect = card_hand_position_rects[card.color]
+                card.state = .IN_HAND
+                clear_side_buttons()
             }
 
-            element.bounding_rect = CARD_PLAYED_POSITION_RECT
-            card.state = .PLAYED
-        case .PLAYED:
-            element.bounding_rect = card_hand_position_rects[card.color]
-            card.state = .IN_HAND
-            clear_side_buttons()
+        case .UPGRADING:
+            #partial switch card.state {
+            case .IN_HAND:
+                if card.tier == 0 do break
+                // Ensure clicked card is able to be upgraded
+                lowest_tier: int = 1e6
+                for other_card in hero_cards[player.hero.id] {
+                    if other_card.state != .IN_HAND do continue
+                    // if card.color == .GOLD || card.color == .SILVER do continue
+                    if other_card.tier == 0 do continue
+                    lowest_tier = min(lowest_tier, other_card.tier)
+                }
+                if card.tier > lowest_tier || lowest_tier == 3 do break  // @cleanup This is not really correct, upgrade should not be possible if lowest tier is 3
+
+                upgrade_options: []Card
+                for other_card, index in hero_cards[player.hero.id] {
+                    if other_card.color == card.color && other_card.tier == card.tier + 1 {
+                        upgrade_options = hero_cards[player.hero.id][index:][:2]
+                        break
+                    }
+                }
+
+                // I shouldn't really be checking this through the ui stack like this tbh
+                top_element := ui_stack[len(ui_stack) - 1]
+                card_element, ok := top_element.variant.(UI_Card_Element)
+                if ok {
+                    card, ok2 := get_card_by_id(card_element.card_id)
+                    if card.state == .NONEXISTENT do break
+                }
+
+                // Display possible upgrades for clicked card
+                card_element_width := (SELECTION_BUTTON_SIZE.x - BUTTON_PADDING) / 2
+                card_element_height := card_element_width * 3.5 / 2.5
+
+                card_position_rect := rl.Rectangle {
+                    FIRST_SIDE_BUTTON_LOCATION.x,
+                    FIRST_SIDE_BUTTON_LOCATION.y - BUTTON_PADDING - card_element_height,
+                    card_element_width,
+                    card_element_height,
+                }
+
+                add_side_button("Cancel", Cancel_Event{})
+
+                for option in upgrade_options {
+                    append(&ui_stack, UI_Element {
+                        card_position_rect,
+                        UI_Card_Element{make_card_id(option, player.hero.id), false},
+                        card_input_proc,
+                        draw_card,
+                    })
+    
+                    card_position_rect.x += BUTTON_PADDING + card_element_width
+                }
+
+            case .NONEXISTENT:
+                // Clicked on a new card to upgrade an existing card
+                
+                // Find predecessor card
+                // There is probably a better way of doing this. maybe we can store the predecessor somewhere when it's clicked.
+                for &predecessor_element in ui_stack[1:][:5] {
+                    predecessor_card_element := assert_variant(&predecessor_element.variant, UI_Card_Element)
+                    predecessor_card, ok := get_card_by_id(predecessor_card_element.card_id)
+
+                    if card.color == predecessor_card.color {
+                        // swap over the card ID to the new card
+                        predecessor_card_element.card_id = make_card_id(card^, player.hero.id)
+                        predecessor_card.state = .NONEXISTENT
+                        card.state = .IN_HAND
+                        
+                        // Pop two card elements and a potential cancel button
+                        pop(&ui_stack)
+                        pop(&ui_stack)
+                        clear_side_buttons()
+
+                        append(&event_queue, Begin_Next_Upgrade_Event{})
+                        break
+                    }
+                }
+            }
         }
 
     case Confirm_Event:
@@ -266,6 +352,11 @@ resolve_event :: proc(event: Event) {
                 }
                 clear(&action_variant.result)
             }
+
+        case .UPGRADING:
+            pop(&ui_stack)
+            pop(&ui_stack)
+            clear_side_buttons()
         }
         
     case Begin_Card_Selection_Event:
@@ -309,7 +400,6 @@ resolve_event :: proc(event: Event) {
             }
 
         case Choose_Target_Action:
-            clear(&action_type.result)
             if len(action.targets) == 0 {
                 append(&event_queue, End_Resolution_Event{})
             } else if len(action.targets) == calculate_implicit_quantity(action_type.num_targets) && !action.optional {
@@ -506,14 +596,23 @@ resolve_event :: proc(event: Event) {
         if player.hero.coins < player.hero.level {
             player.hero.coins += 1
             log.infof("Pity coin collected. Current coin count: %v", player.hero.coins)
+            append(&event_queue, End_Upgrading_Event{})
         } else {
-            for player.hero.coins >= player.hero.level {
-                player.hero.coins -= player.hero.level
-                player.hero.level += 1
-                log.infof("Player levelled up! Current level: %v", player.hero.level)
-            }
+            append(&event_queue, Begin_Next_Upgrade_Event{})
         }
-        append(&event_queue, End_Upgrading_Event{})
+
+    case Begin_Next_Upgrade_Event:
+        player.stage = .UPGRADING
+        clear_side_buttons()
+        tooltip = "Choose a card to upgrade."
+        if player.hero.coins >= player.hero.level {
+            player.hero.coins -= player.hero.level
+            player.hero.level += 1
+            log.infof("Player levelled up! Current level: %v", player.hero.level)
+        } else {
+            append(&event_queue, End_Upgrading_Event{})
+        }
+        
 
     case End_Upgrading_Event:
         game_state.turn_counter = 0
