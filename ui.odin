@@ -213,5 +213,52 @@ clear_side_buttons :: proc() {
     side_button_manager.button_location = FIRST_SIDE_BUTTON_LOCATION
 }
 
+add_game_ui_elements :: proc() {
+    clear(&ui_stack)
 
-enter_lobby :: proc()
+    append(&ui_stack, UI_Element {
+        BOARD_POSITION_RECT,
+        UI_Board_Element{},
+        board_input_proc,
+        draw_board,
+    })
+
+    for player_id in 0..<len(game_state.players) {
+        player := get_player_by_id(player_id)
+
+        if player_id == my_player_id {
+            for card, card_color in player.hero.cards {
+                append(&ui_stack, UI_Element{
+                    card_hand_position_rects[card.color],
+                    UI_Card_Element{make_card_id(card, player_id), false},
+                    card_input_proc,
+                    draw_card,
+                })
+            }
+        } else {
+            for card, card_color in player.hero.cards {
+                append(&ui_stack, UI_Element {
+                    {},
+                    UI_Card_Element{make_card_id(card, player_id), false},
+                    card_input_proc,
+                    draw_card,
+                })
+            }
+        }
+    }
+
+    // for &card, index in hero_cards[.XARGATHA] {
+    //     create_texture_for_card(&card)
+    //     if index < 5 {
+    //         card.state = .IN_HAND
+    //         append(&ui_stack, UI_Element{
+    //             card_hand_position_rects[card.color],
+    //             UI_Card_Element{make_card_id(card, .XARGATHA), false},
+    //             card_input_proc,
+    //             draw_card,
+    //         })
+    //     } else {
+    //         card.state = .NONEXISTENT
+    //     }
+    // }
+}

@@ -29,6 +29,7 @@ Hero :: struct {
 
     current_action_index: int,
     action_list: []Action,
+    cards: [Card_Color]Card,  // soon, my love
     coins: int,
     level: int,
     // target_list: map[Target]Void,
@@ -41,7 +42,6 @@ Player_ID :: int
 Player :: struct {
     id: Player_ID,
     stage: Player_Stage,
-    // cards: [Card_Color]^Card,  // soon, my love
     hero: Hero,
     
     team: Team,

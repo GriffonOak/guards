@@ -13,6 +13,7 @@ import "core:mem"
 // Todo list
 // Finish implementing xargatha cards
 // Separate cards out of the ui stack
+// Need to change card access pattern from ui_stack -> card to card -> update ui element
 // Add dummy blue player that acts randomly
 // Snorri runes
 
@@ -41,7 +42,7 @@ FONT_SPACING :: 0
 
 
 
-window_size: Window_Size = .SMALL
+window_size: Window_Size = .BIG
 
 window_scale: f32 = 1 if window_size == .BIG else 2
 
@@ -106,7 +107,7 @@ main :: proc() {
 
     for color, index in Card_Color {
         // Add 100 to height here so the bounding rect goes offscreen
-        card_hand_position_rects[color] = {f32(index - 1) * CARD_HAND_WIDTH, CARD_HAND_Y_POSITION, CARD_HAND_WIDTH, CARD_HAND_HEIGHT + 100}
+        card_hand_position_rects[color] = {f32(index) * CARD_HAND_WIDTH, CARD_HAND_Y_POSITION, CARD_HAND_WIDTH, CARD_HAND_HEIGHT + 100}
     }
 
 

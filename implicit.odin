@@ -1,5 +1,7 @@
 package guards
 
+import "core:log"
+
 Card_Creating_Effect :: struct {
     effect: Active_Effect_ID
 }
@@ -150,7 +152,10 @@ calculate_implicit_condition :: proc(implicit_condition: Implicit_Condition) -> 
     switch condition in implicit_condition {
     case bool: return condition
     case Greater_Than: return calculate_implicit_quantity(condition.term_1) > calculate_implicit_quantity(condition.term_2)
-    case Primary_Is_Not: return find_played_card().primary != condition.kind
+    case Primary_Is_Not: 
+        played_card, ok := find_played_card()
+        log.assert(ok, "Could not find the played card when checking for its primary type!")
+        return played_card.primary != condition.kind
     case And:
         out := true
         for extra_condition in condition do out &&= calculate_implicit_condition(extra_condition)
@@ -168,5 +173,7 @@ calculate_implicit_card :: proc(implicit_card: Implicit_Card) -> ^Card {
         card_pointer, ok := get_card_by_id(game_state.ongoing_active_effects[card.effect].parent_card_id)
         return card_pointer
     }
-    return find_played_card()  // Default to returning the played card
+    played_card, ok := find_played_card()
+    log.assert(ok, "Could not find played card when calculating an implicit card")
+    return played_card  // Default to returning the played card
 }

@@ -146,6 +146,23 @@ spawn_heroes_at_start :: proc() {
     }
 }
 
+setup_hero_cards :: proc() {
+    for player_id in 0..<len(game_state.players) {
+        player := get_player_by_id(player_id)
+        hero_id := player.hero.id
+
+        for &card, index in hero_cards[hero_id] {
+            create_texture_for_card(&card)
+            if index < 5 {
+                player_card := &player.hero.cards[card.color]
+                player_card^ = card
+                player_card.state = .IN_HAND
+                player_card.owner = player_id
+            }
+        }
+    }
+}
+
 begin_game :: proc() {
     game_state.current_battle_zone = .CENTRE
     game_state.wave_counters = 5
@@ -153,6 +170,8 @@ begin_game :: proc() {
     spawn_minions(game_state.current_battle_zone)
 
     spawn_heroes_at_start()
+
+    setup_hero_cards()
 
     append(&event_queue, Begin_Card_Selection_Event{})
 }
@@ -222,30 +241,4 @@ add_choose_host_ui_elements :: proc () {
 
     add_generic_button(button_1_location, "Join Game", Join_Game_Chosen_Event{})
     add_generic_button(button_2_location, "Host Game", Host_Game_Chosen_Event{})
-}
-
-add_game_ui_elements :: proc() {
-    clear(&ui_stack)
-
-    append(&ui_stack, UI_Element {
-        BOARD_POSITION_RECT,
-        UI_Board_Element{},
-        board_input_proc,
-        draw_board,
-    })
-
-    for &card, index in hero_cards[.XARGATHA] {   
-        create_texture_for_card(&card)
-        if index < 5 {
-            card.state = .IN_HAND
-            append(&ui_stack, UI_Element{
-                card_hand_position_rects[card.color],
-                UI_Card_Element{make_card_id(card, .XARGATHA), false},
-                card_input_proc,
-                draw_card,
-            })
-        } else {
-            card.state = .NONEXISTENT
-        }
-    }
 }

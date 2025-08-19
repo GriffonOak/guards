@@ -51,7 +51,9 @@ action_can_be_taken :: proc(index: int = 0) -> bool {
         if calculate_implicit_quantity(freeze.duration.(Single_Turn)) == game_state.turn_counter {
             context.allocator = context.temp_allocator
             if get_my_player().hero.location in calculate_implicit_target_set(freeze.target_set) {
-                if index == BASIC_MOVEMENT_INDEX || (index == 0 && find_played_card().primary == .MOVEMENT) {
+                played_card, ok := find_played_card()
+                assert(ok, "Could not find played card when checking for Xargatha freeze")
+                if index == BASIC_MOVEMENT_INDEX || (index == 0 && played_card.primary == .MOVEMENT) {
                     // phew
                     return false
                 }

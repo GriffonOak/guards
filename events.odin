@@ -25,7 +25,7 @@ Space_Clicked_Event :: struct {
 }
 
 Card_Clicked_Event :: struct {
-    element: ^UI_Element
+    card_id: Card_ID
 }
 
 Confirm_Event :: struct {}
@@ -148,15 +148,11 @@ resolve_event :: proc(event: Event) {
             append(&event_queue, Enter_Lobby_Event{})
         }
 
-
     case Host_Game_Chosen_Event:
-        // clear(&ui_stack)
         if begin_hosting_local_game() {
             append(&event_queue, Enter_Lobby_Event{})
         }
 
-        // add_game_ui_elements()
-        // begin_game()
 
     case Enter_Lobby_Event:
         game_state.stage = .IN_LOBBY
@@ -173,8 +169,8 @@ resolve_event :: proc(event: Event) {
         if is_host {
             broadcast_network_event(Event(Begin_Game_Event{}))
         }
-        add_game_ui_elements()
         begin_game()
+        add_game_ui_elements()
 
     case Space_Clicked_Event:
         #partial switch get_my_player().stage {
@@ -230,32 +226,27 @@ resolve_event :: proc(event: Event) {
         }
 
     case Card_Clicked_Event:
-        element := var.element
-        card_element := assert_variant(&element.variant, UI_Card_Element)
-        card, ok := get_card_by_id(card_element.card_id)
+        card_id := var.card_id
+        card, ok := get_card_by_id(card_id)
         log.assert(ok, "Card element clicked with no card associated!")
 
         #partial switch get_my_player().stage {
         case .SELECTING:
             #partial switch card.state {
             case .IN_HAND:
-                other_element, other_card_elem := find_played_card_elements(panic = false)
-                if other_element != nil {
-                    other_card, ok := get_card_by_id(other_card_elem.card_id)
-                    if ok {
-                        other_element.bounding_rect = card_hand_position_rects[other_card.color]
-                        other_card.state = .IN_HAND
-                    }
+                played_card, ok := find_played_card()
+                if ok {
+                    retrieve_card(played_card)
                 } else {
                     add_side_button("Confirm card", Confirm_Event{})
                 }
-    
-                element.bounding_rect = CARD_PLAYED_POSITION_RECT
-                card.state = .PLAYED
+
+                play_card(card)
+
             case .PLAYED:
-                element.bounding_rect = card_hand_position_rects[card.color]
-                card.state = .IN_HAND
                 clear_side_buttons()
+
+                retrieve_card(card)
             }
 
         case .UPGRADING:
@@ -264,15 +255,14 @@ resolve_event :: proc(event: Event) {
                 if card.tier == 0 do break
                 // Ensure clicked card is able to be upgraded
                 lowest_tier: int = 1e6
-                for other_card in hero_cards[get_my_player().hero.id] {
-                    if other_card.state != .IN_HAND do continue
-                    // if card.color == .GOLD || card.color == .SILVER do continue
+                for other_card in get_my_player().hero.cards {
                     if other_card.tier == 0 do continue
                     lowest_tier = min(lowest_tier, other_card.tier)
                 }
                 if card.tier > lowest_tier || lowest_tier == 3 do break  // @cleanup This is not really correct, upgrade should not be possible if lowest tier is 3
 
                 upgrade_options: []Card
+                // Walk the hero cards to view upgrade options
                 for other_card, index in hero_cards[get_my_player().hero.id] {
                     if other_card.color == card.color && other_card.tier == card.tier + 1 {
                         upgrade_options = hero_cards[get_my_player().hero.id][index:][:2]
@@ -304,7 +294,7 @@ resolve_event :: proc(event: Event) {
                 for option in upgrade_options {
                     append(&ui_stack, UI_Element {
                         card_position_rect,
-                        UI_Card_Element{make_card_id(option, get_my_player().hero.id), false},
+                        UI_Card_Element{make_card_id(option, my_player_id), false},
                         card_input_proc,
                         draw_card,
                     })
@@ -317,13 +307,13 @@ resolve_event :: proc(event: Event) {
                 
                 // Find predecessor card
                 // There is probably a better way of doing this. maybe we can store the predecessor somewhere when it's clicked.
-                for &predecessor_element in ui_stack[1:][:5] {
+                for hand_card in {
                     predecessor_card_element := assert_variant(&predecessor_element.variant, UI_Card_Element)
                     predecessor_card, ok := get_card_by_id(predecessor_card_element.card_id)
 
                     if card.color == predecessor_card.color {
                         // swap over the card ID to the new card
-                        predecessor_card_element.card_id = make_card_id(card^, get_my_player().hero.id)
+                        predecessor_card_element.card_id = make_card_id(card^, my_player_id)
                         predecessor_card.state = .NONEXISTENT
                         card.state = .IN_HAND
                         
@@ -402,7 +392,8 @@ resolve_event :: proc(event: Event) {
         get_my_player().stage = .RESOLVING
 
         // Find the played card
-        card := find_played_card()
+        card, ok := find_played_card()
+        log.assert(ok, "No played card when player begins their resolution!")
         card.turn_played = game_state.turn_counter
 
         get_my_player().hero.action_list = card.primary_effect
@@ -475,7 +466,9 @@ resolve_event :: proc(event: Event) {
         case Add_Active_Effect_Action:
             effect := action_type.effect
             log.infof("Adding active effect: %v", effect.id)
-            effect.parent_card_id = find_played_card_id()
+            parent_card_id, ok := find_played_card_id()
+            log.assert(ok, "Could not resolve parent card when adding an active effect!")
+            effect.parent_card_id = parent_card_id
             game_state.ongoing_active_effects[effect.id] = effect
             append(&event_queue, Resolve_Current_Action_Event{})
 
@@ -498,12 +491,9 @@ resolve_event :: proc(event: Event) {
         get_my_player().stage = .RESOLVED
         game_state.resolved_players += 1
 
-        element, card_element := find_played_card_elements()
-        card, ok := get_card_by_id(card_element.card_id)
-        log.assert(ok)
-        card.state = .RESOLVED
-        element.bounding_rect = FIRST_CARD_RESOLVED_POSITION_RECT
-        element.bounding_rect.x += f32(game_state.turn_counter) * (FIRST_CARD_RESOLVED_POSITION_RECT.x + FIRST_CARD_RESOLVED_POSITION_RECT.width)
+        card, ok := find_played_card()
+        log.assert(ok, "No played card to resolve!")
+        resolve_card(card)
 
         if game_state.resolved_players == game_state.num_players {
             append(&event_queue, Resolutions_Completed_Event{})

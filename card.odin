@@ -9,7 +9,6 @@ import "core:log"
 
 
 Card_Color :: enum {
-    NONE,
     GOLD,
     SILVER,
     RED,
@@ -68,15 +67,18 @@ Card :: struct {
     reach_sign: cstring,
     item: Item_Kind,
     text: string,
+
+    // !!This cannot be sent over the network :(
     primary_effect: []Action,
 
-
+    owner: Player_ID,
     texture: rl.Texture2D,
     state: Card_State,
-    turn_played: int
+    turn_played: int,
 }
 
 Card_ID :: struct {
+    player_id: Player_ID,
     hero_id: Hero_ID,
     color: Card_Color,
     tier: int,
@@ -122,9 +124,8 @@ ability_initials := [Ability_Kind]string {
 card_hand_position_rects: [Card_Color]rl.Rectangle
 
 card_color_values := [Card_Color]rl.Color {
-    .NONE   = rl.MAGENTA,
-    .SILVER = rl.GRAY,
     .GOLD   = rl.GOLD,
+    .SILVER = rl.GRAY,
     .RED    = rl.RED,
     .GREEN  = rl.LIME,
     .BLUE   = rl.BLUE,
@@ -143,7 +144,7 @@ card_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element) 
 
     try_to_play: #partial switch var in input {
     case Mouse_Pressed_Event:
-        append(&event_queue, Card_Clicked_Event{element})
+        append(&event_queue, Card_Clicked_Event{card_element.card_id})
     }
 
 
@@ -258,30 +259,78 @@ draw_card: UI_Render_Proc: proc(element: UI_Element) {
     }
 }
 
-get_card_by_id :: proc(card_id: Card_ID) -> (^Card, bool) { // #optional_ok {
-    card_slice := hero_cards[card_id.hero_id]
+get_card_by_id :: proc(card_id: Card_ID) -> (card: ^Card, ok: bool) { // #optional_ok {
+    player := &game_state.players[card_id.player_id]
 
-    for &card in card_slice {
-        if card.color == card_id.color {
-            if card.color == .GOLD || card.color == .SILVER {
-                return &card, true
-            }
-            if card.tier == card_id.tier {
-                if card.alternate == card_id.alternate {
-                    return &card, true
+    // If a player is holding the card, return a pointer to that
+    if player.hero.id != card_id.hero_id do return
+    card = &player.hero.cards[card_id.color]
+
+
+    if card.tier != card_id.tier || card.alternate != card_id.alternate {
+        // Walk the card array
+        log.assert(false, "This should not be happening outside of upgrades")
+        for &hero_card in hero_cards[card_id.hero_id] {
+            if hero_card.color == card_id.color {
+                if hero_card.color == .GOLD || hero_card.color == .SILVER {
+                    return &hero_card, true
+                }
+                if hero_card.tier == hero_card.tier && hero_card.alternate == hero_card.alternate {
+                    return &hero_card, true
                 }
             }
         }
     }
 
-    return nil, false
+
+    return card, true
 }
 
-make_card_id :: proc(card: Card, hero_id: Hero_ID) -> Card_ID {
+make_card_id :: proc(card: Card, player_id: Player_ID) -> Card_ID {
     return Card_ID {
-        hero_id,
+        player_id,
+        get_player_by_id(player_id).hero.id,
         card.color,
         card.tier,
         card.alternate,
     }
+}
+
+find_element_for_card :: proc(card: Card) -> ^UI_Element {
+    ui_slice := ui_stack[1 + 5 * card.owner:][:5]
+
+    for &element in ui_slice {
+        card_element := assert_variant(&element.variant, UI_Card_Element)
+        if card_element.card_id.color == card.color {
+            return &element
+        }
+    }
+
+    return nil
+}
+
+play_card :: proc(card: ^Card) {
+
+    element := find_element_for_card(card^)
+    element.bounding_rect = CARD_PLAYED_POSITION_RECT
+
+    card.state = .PLAYED
+}
+
+retrieve_card :: proc(card: ^Card) {
+
+    element := find_element_for_card(card^)
+    element.bounding_rect = card_hand_position_rects[card.color]
+
+    card.state = .IN_HAND
+}
+
+resolve_card :: proc(card: ^Card) {
+    
+    element := find_element_for_card(card^)
+    
+    element.bounding_rect = FIRST_CARD_RESOLVED_POSITION_RECT
+    element.bounding_rect.x += f32(game_state.turn_counter) * (FIRST_CARD_RESOLVED_POSITION_RECT.x + FIRST_CARD_RESOLVED_POSITION_RECT.width)
+    
+    card.state = .RESOLVED
 }

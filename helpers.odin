@@ -20,40 +20,29 @@ assert_variant_rdonly :: proc(u: $U, $V: typeid, loc := #caller_location) -> V w
     return out
 }
 
-find_played_card_elements :: proc(panic := true, loc := #caller_location) -> (element: ^UI_Element, card_element: ^UI_Card_Element) {
-    for &ui_element in ui_stack[1:][:5] {
-        card_element = assert_variant(&ui_element.variant, UI_Card_Element)
-        card, ok := get_card_by_id(card_element.card_id)
-        log.assert(ok || !panic, "Card element had no assigned card!", loc = loc)
-        if ok && card.state == .PLAYED {
-            return &ui_element, card_element
+find_played_card_id :: proc(player_id: Player_ID = my_player_id, loc := #caller_location) -> (Card_ID, bool) {
+    card, ok := find_played_card(player_id)
+    if !ok do return {}, false
+    return make_card_id(card^, player_id), true
+}
+
+find_played_card :: proc(player_id: Player_ID = my_player_id, loc := #caller_location) -> (^Card, bool) {
+    player := get_player_by_id(player_id)
+    for &card in player.hero.cards {
+        if card.state == .PLAYED {
+            return &card, true
         }
     }
-    log.assert(!panic, "No played card!", loc = loc)
-    return nil, nil
-}
-
-find_played_card_id :: proc(loc := #caller_location) -> Card_ID {
-
-    _, card_elem := find_played_card_elements(loc = loc)
-    return card_elem.card_id
-}
-
-find_played_card :: proc(loc := #caller_location) -> ^Card{
-    card, ok := get_card_by_id(find_played_card_id())
-    return card
+    return nil, false
 }
 
 retrieve_cards :: proc() {
-    // @Cleanup this should be rewritten
 
-    for &ui_element in ui_stack[1:][:5] {
-        card_element := assert_variant(&ui_element.variant, UI_Card_Element)
-        card, ok := get_card_by_id(card_element.card_id)
-        log.assert(ok, "element with no card blah blah")
-        ui_element.bounding_rect = card_hand_position_rects[card.color]
-        card.state = .IN_HAND
-    }
+    player := get_my_player()
+
+    for &card in player.hero.cards {
+        retrieve_card(&card)
+    } 
 }
 
 lerp :: proc(a, b: $T, t: $T2) -> T {
