@@ -85,10 +85,7 @@ Card_ID :: struct {
     alternate: bool,
 }
 
-Card_Holder :: struct {
-    starter_cards: [Card_Color]Card,
-    upgrades: [Card_Color][2][2]Card,
-}
+
 
 CARD_TEXTURE_SIZE :: Vec2{500, 700}
 
@@ -266,10 +263,9 @@ get_card_by_id :: proc(card_id: Card_ID) -> (card: ^Card, ok: bool) { // #option
     if player.hero.id != card_id.hero_id do return
     card = &player.hero.cards[card_id.color]
 
-
     if card.tier != card_id.tier || card.alternate != card_id.alternate {
         // Walk the card array
-        log.assert(false, "This should not be happening outside of upgrades")
+        // log.assert(false, "This should not be happening outside of upgrades")
         for &hero_card in hero_cards[card_id.hero_id] {
             if hero_card.color == card_id.color {
                 if hero_card.color == .GOLD || hero_card.color == .SILVER {
@@ -284,6 +280,17 @@ get_card_by_id :: proc(card_id: Card_ID) -> (card: ^Card, ok: bool) { // #option
 
 
     return card, true
+}
+
+find_upgrade_options :: proc(card: Card) -> []Card {
+
+    // Walk the hero cards to view upgrade options
+    for other_card, index in hero_cards[get_player_by_id(card.owner).hero.id] {
+        if other_card.color == card.color && other_card.tier == card.tier + 1 {
+            return hero_cards[get_my_player().hero.id][index:][:2]
+        }
+    }
+    return {}
 }
 
 make_card_id :: proc(card: Card, player_id: Player_ID) -> Card_ID {

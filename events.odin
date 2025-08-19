@@ -261,16 +261,10 @@ resolve_event :: proc(event: Event) {
                 }
                 if card.tier > lowest_tier || lowest_tier == 3 do break  // @cleanup This is not really correct, upgrade should not be possible if lowest tier is 3
 
-                upgrade_options: []Card
-                // Walk the hero cards to view upgrade options
-                for other_card, index in hero_cards[get_my_player().hero.id] {
-                    if other_card.color == card.color && other_card.tier == card.tier + 1 {
-                        upgrade_options = hero_cards[get_my_player().hero.id][index:][:2]
-                        break
-                    }
-                }
+                upgrade_options := find_upgrade_options(card^)
 
                 // I shouldn't really be checking this through the ui stack like this tbh
+                // But I don't have a better way of seeing if an upgrade is happening. // @Cleanup?
                 top_element := ui_stack[len(ui_stack) - 1]
                 card_element, ok := top_element.variant.(UI_Card_Element)
                 if ok {
@@ -307,15 +301,16 @@ resolve_event :: proc(event: Event) {
                 
                 // Find predecessor card
                 // There is probably a better way of doing this. maybe we can store the predecessor somewhere when it's clicked.
-                for hand_card in {
-                    predecessor_card_element := assert_variant(&predecessor_element.variant, UI_Card_Element)
-                    predecessor_card, ok := get_card_by_id(predecessor_card_element.card_id)
+                for &hand_card in get_my_player().hero.cards {
 
-                    if card.color == predecessor_card.color {
+                    if card.color == hand_card.color {
                         // swap over the card ID to the new card
-                        predecessor_card_element.card_id = make_card_id(card^, my_player_id)
-                        predecessor_card.state = .NONEXISTENT
-                        card.state = .IN_HAND
+                        hand_card_element := &find_element_for_card(hand_card).variant.(UI_Card_Element)
+
+                        hand_card_element.card_id = make_card_id(card^, my_player_id)
+                        hand_card = card^
+                        hand_card.owner = my_player_id
+                        hand_card.state = .IN_HAND
                         
                         // Pop two card elements and a potential cancel button
                         pop(&ui_stack)
