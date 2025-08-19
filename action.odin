@@ -188,7 +188,7 @@ minion_removal_action := []Action {
 basic_actions: [5]Action
 
 get_current_action :: proc() -> ^Action {
-    return get_action_at_index(player.hero.current_action_index)
+    return get_action_at_index(get_my_player().hero.current_action_index)
 }
 
 get_action_at_index :: proc(index: int) -> ^Action {
@@ -198,8 +198,8 @@ get_action_at_index :: proc(index: int) -> ^Action {
     if index < 0 {
         return &basic_actions[-index]
     }
-    if index < len(player.hero.action_list) {
-        return &player.hero.action_list[index]
+    if index < len(get_my_player().hero.action_list) {
+        return &get_my_player().hero.action_list[index]
     }
     if index >= 100 {
         return &minion_removal_action[index - 100]

@@ -80,7 +80,7 @@ translocate_unit :: proc(src, dest: IVec2) {
 
     if .HERO in src_transient_flags {
         dest_space.owner = src_space.owner
-        dest_space.owner.hero.location = dest
+        get_player_by_id(dest_space.owner).hero.location = dest
 
     }
 }

@@ -21,6 +21,8 @@ Team :: enum {
 }
 
 Game_Stage :: enum {
+    PRE_LOBBY,
+    IN_LOBBY,
     SELECTION,
     RESOLUTION,
     MINION_BATTLE,
@@ -57,7 +59,7 @@ Active_Effect :: struct {
 
 Game_State :: struct {
     num_players: int,
-    players: [dynamic]^Player,
+    players: map[Player_ID]Player,
     minion_counts: [Team]int,
     confirmed_players: int,
     resolved_players,
@@ -117,26 +119,30 @@ spawn_minions :: proc(zone: Region_ID) {
 
 spawn_heroes_at_start :: proc() {
     num_spawns: [Team]int
-    for &player in game_state.players {
+    for player_id, &player in game_state.players {  // @Note: This becomes non-robust with >1 player / team due to map iteration
         team := player.team
         spawnpoint_marker := spawnpoints[num_spawns[team]]
         log.assert(spawnpoint_marker.spawnpoint_flag == .HERO_SPAWNPOINT)
-        spawnpoint: ^Space
+        spawnpoint_space: ^Space
         if team == .BLUE {
-            spawnpoint = get_symmetric_space(spawnpoint_marker.loc)
+            spawnpoint_space = get_symmetric_space(spawnpoint_marker.loc)
         } else {
-            spawnpoint = &board[spawnpoint_marker.loc.x][spawnpoint_marker.loc.y]
+            spawnpoint_space = &board[spawnpoint_marker.loc.x][spawnpoint_marker.loc.y]
         }
 
-        spawnpoint.flags += {.HERO}
-        spawnpoint.unit_team = team
-        spawnpoint.hero_id = player.hero.id
-        spawnpoint.owner = player
+        spawnpoint_space.flags += {.HERO}
+        spawnpoint_space.unit_team = team
+        spawnpoint_space.hero_id = player.hero.id
+        spawnpoint_space.owner = player_id
 
-        player.hero.coins = 1
+        player.hero.coins = 0
         player.hero.level = 1
 
-        player.hero.location = spawnpoint_marker.loc
+        if player.team == .RED {
+            player.hero.location = spawnpoint_marker.loc
+        } else {
+            player.hero.location = {GRID_WIDTH, GRID_HEIGHT} - spawnpoint_marker.loc - 1
+        }
     }
 }
 
@@ -159,9 +165,9 @@ defeat_minion :: proc(target: Target) -> (will_interrupt: bool){
 
     if .HEAVY_MINION in minion {
         log.assert(game_state.minion_counts[minion_team] == 1, "Heavy minion defeated with an invalid number of minions left!")
-        player.hero.coins += 4
+        get_my_player().hero.coins += 4
     } else {
-        player.hero.coins += 2
+        get_my_player().hero.coins += 2
     }
 
     return remove_minion(target)
@@ -193,6 +199,53 @@ remove_heavy_immunity :: proc(team: Team) {
         space := &board[target.x][target.y]
         if space.flags & {.HEAVY_MINION} != {} {
             space.flags -= {.IMMUNE}
+        }
+    }
+}
+
+
+add_choose_host_ui_elements :: proc () {
+    clear(&ui_stack)
+    button_1_location := rl.Rectangle {
+        (WIDTH - SELECTION_BUTTON_SIZE.x) / 2,
+        (HEIGHT - BUTTON_PADDING) / 2 - SELECTION_BUTTON_SIZE.y,
+        SELECTION_BUTTON_SIZE.x,
+        SELECTION_BUTTON_SIZE.y,
+    }
+
+    button_2_location := rl.Rectangle {
+        (WIDTH - SELECTION_BUTTON_SIZE.x) / 2,
+        (HEIGHT + BUTTON_PADDING) / 2,
+        SELECTION_BUTTON_SIZE.x,
+        SELECTION_BUTTON_SIZE.y,
+    }
+
+    add_generic_button(button_1_location, "Join Game", Join_Game_Chosen_Event{})
+    add_generic_button(button_2_location, "Host Game", Host_Game_Chosen_Event{})
+}
+
+add_game_ui_elements :: proc() {
+    clear(&ui_stack)
+
+    append(&ui_stack, UI_Element {
+        BOARD_POSITION_RECT,
+        UI_Board_Element{},
+        board_input_proc,
+        draw_board,
+    })
+
+    for &card, index in hero_cards[.XARGATHA] {   
+        create_texture_for_card(&card)
+        if index < 5 {
+            card.state = .IN_HAND
+            append(&ui_stack, UI_Element{
+                card_hand_position_rects[card.color],
+                UI_Card_Element{make_card_id(card, .XARGATHA), false},
+                card_input_proc,
+                draw_card,
+            })
+        } else {
+            card.state = .NONEXISTENT
         }
     }
 }

@@ -228,7 +228,7 @@ create_texture_for_card :: proc(card: ^Card) {
 
     card.texture = render_texture.texture
 
-    rl.SetTextureFilter(card.texture, rl.TextureFilter.TRILINEAR)
+    rl.SetTextureFilter(card.texture, .BILINEAR)
 }
 
 draw_card: UI_Render_Proc: proc(element: UI_Element) {

@@ -20,6 +20,10 @@ UI_Button_Element :: struct {
     hovered: bool,
 }
 
+// UI_Text_Input_Element :: struct {
+//     text: strings.builder //?
+// }
+
 UI_Variant :: union {
     UI_Board_Element,
     UI_Card_Element,
@@ -169,17 +173,29 @@ render_tooltip :: proc() {
     rl.DrawTextEx(default_font, tooltip_text, {offset, 0}, TOOLTIP_FONT_SIZE, FONT_SPACING, rl.WHITE)
 }
 
-add_side_button :: proc(text: cstring, event: Event) {
-    if len(side_button_manager.buttons) == 0 {
-        side_button_manager.first_button_index = len(ui_stack)
-    }
+
+add_generic_button :: proc(location: rl.Rectangle, text: cstring, event: Event) {
     append(&ui_stack, UI_Element {
-        side_button_manager.button_location, UI_Button_Element {
+        location, UI_Button_Element {
             event, text, false,
         },
         button_input_proc,
         draw_button,
     })
+}
+
+add_side_button :: proc(text: cstring, event: Event) {
+    if len(side_button_manager.buttons) == 0 {
+        side_button_manager.first_button_index = len(ui_stack)
+    }
+    // append(&ui_stack, UI_Element {
+    //     side_button_manager.button_location, UI_Button_Element {
+    //         event, text, false,
+    //     },
+    //     button_input_proc,
+    //     draw_button,
+    // })
+    add_generic_button(side_button_manager.button_location, text, event)
     side_button_manager.buttons = ui_stack[side_button_manager.first_button_index:][:len(side_button_manager.buttons) + 1]
     side_button_manager.button_location.y -= SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
 }
@@ -196,3 +212,6 @@ clear_side_buttons :: proc() {
     side_button_manager.buttons = {}
     side_button_manager.button_location = FIRST_SIDE_BUTTON_LOCATION
 }
+
+
+enter_lobby :: proc()

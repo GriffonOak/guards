@@ -51,7 +51,7 @@ Space :: struct {
     spawnpoint_team: Team,
     unit_team: Team,
     hero_id: Hero_ID,
-    owner: ^Player,
+    owner: Player_ID,
 }
 
 
@@ -313,7 +313,7 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
         }
 
 
-        #partial switch player.stage {
+        #partial switch get_my_player().stage {
         case .RESOLVING, .INTERRUPTING:
             action := get_current_action()
             #partial switch &action_variant in action.variant {
@@ -471,7 +471,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
                 phase = math.TAU * f64(region_id) / f64(len(Region_ID) - 1)
 
             // case Choose_Target_Action:
-            //     delta := target.position 
+            //     delta := target.position
             //     phase = math.atan2()
             }
 
@@ -491,13 +491,13 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
         }
     }
 
-    draw_hover_effect: #partial switch player.stage {
+    draw_hover_effect: #partial switch get_my_player().stage {
     case .RESOLVING, .INTERRUPTING:
         action := get_current_action()
         #partial switch variant in action.variant {
         case Fast_Travel_Action:
             if board_element.hovered_space in action.targets {
-                player_loc := player.hero.location
+                player_loc := get_my_player().hero.location
                 player_pos := board[player_loc.x][player_loc.y].position
                 rl.DrawLineEx(space_pos, player_pos, 4, rl.VIOLET)
             }
@@ -543,5 +543,5 @@ draw_board: UI_Render_Proc : proc(element: UI_Element) {
 
     rl.DrawTexturePro(board_render_texture.texture, {0, 0, BOARD_TEXTURE_SIZE.x, -BOARD_TEXTURE_SIZE.y}, element.bounding_rect, {0, 0}, 0, rl.WHITE)
 
-    rl.DrawRectangleLinesEx(BOARD_POSITION_RECT, 4, rl.WHITE)
+    // rl.DrawRectangleLinesEx(BOARD_POSITION_RECT, 4, rl.WHITE)
 }

@@ -12,8 +12,13 @@ import "core:log"
 
 Increase_Window_Size_Event :: struct {}  
 Decrease_Window_Size_Event :: struct {}  
-Toggle_Fullscreen_Event :: struct {}  
+Toggle_Fullscreen_Event :: struct {}
 
+Join_Game_Chosen_Event :: struct {}
+Host_Game_Chosen_Event :: struct {}
+
+Enter_Lobby_Event :: struct {}
+Begin_Game_Event :: struct {}
 
 Space_Clicked_Event :: struct {
     space: IVec2
@@ -24,50 +29,38 @@ Card_Clicked_Event :: struct {
 }
 
 Confirm_Event :: struct {}
-
 Cancel_Event :: struct {}
 
 Begin_Card_Selection_Event :: struct {}
-
 Begin_Resolution_Event :: struct {}
-
 Begin_Next_Action_Event :: struct {}
-
 Resolve_Current_Action_Event :: struct {
     jump_index: Maybe(int)
 }
-
 End_Resolution_Event :: struct {}
-
 Resolutions_Completed_Event :: struct {}
 
 Begin_Minion_Battle_Event :: struct {}
-
 Begin_Minion_Removal_Event :: struct {
     team: Team
 }
-
 End_Minion_Battle_Event :: struct {}
-
 Begin_Wave_Push_Event :: struct {
     pushing_team: Team
 }
 
 End_Wave_Push_Event :: struct {}
-
 Retrieve_Cards_Event :: struct {}
 
 
 Begin_Upgrading_Event :: struct {}
-
 Begin_Next_Upgrade_Event :: struct {}
-
 End_Upgrading_Event :: struct {}
-
 
 Game_Over_Event :: struct {
     winning_team: Team
 }
+
 
 
 Event :: union {
@@ -75,6 +68,12 @@ Event :: union {
     Increase_Window_Size_Event,
     Decrease_Window_Size_Event,
     Toggle_Fullscreen_Event,
+
+    Join_Game_Chosen_Event,
+    Host_Game_Chosen_Event,
+
+    Enter_Lobby_Event,
+    Begin_Game_Event,
 
     Space_Clicked_Event,
     Card_Clicked_Event,
@@ -143,8 +142,42 @@ resolve_event :: proc(event: Event) {
             window_scale = 2
         }
 
+
+    case Join_Game_Chosen_Event:
+        if join_local_game() {
+            append(&event_queue, Enter_Lobby_Event{})
+        }
+
+
+    case Host_Game_Chosen_Event:
+        // clear(&ui_stack)
+        if begin_hosting_local_game() {
+            append(&event_queue, Enter_Lobby_Event{})
+        }
+
+        // add_game_ui_elements()
+        // begin_game()
+
+    case Enter_Lobby_Event:
+        game_state.stage = .IN_LOBBY
+        clear(&ui_stack)
+        if is_host {
+            tooltip = "Wait for players to join, then begin the game."
+            button_loc := (Vec2{WIDTH, HEIGHT} - SELECTION_BUTTON_SIZE) / 2
+            add_generic_button({button_loc.x, button_loc.y, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}, "Begin Game", Begin_Game_Event{})
+        } else {
+            tooltip = "Wait for the host to begin the game."
+        }
+
+    case Begin_Game_Event:
+        if is_host {
+            broadcast_network_event(Event(Begin_Game_Event{}))
+        }
+        add_game_ui_elements()
+        begin_game()
+
     case Space_Clicked_Event:
-        #partial switch player.stage {
+        #partial switch get_my_player().stage {
         case .RESOLVING, .INTERRUPTING:
             action := get_current_action()
 
@@ -202,7 +235,7 @@ resolve_event :: proc(event: Event) {
         card, ok := get_card_by_id(card_element.card_id)
         log.assert(ok, "Card element clicked with no card associated!")
 
-        #partial switch player.stage {
+        #partial switch get_my_player().stage {
         case .SELECTING:
             #partial switch card.state {
             case .IN_HAND:
@@ -231,7 +264,7 @@ resolve_event :: proc(event: Event) {
                 if card.tier == 0 do break
                 // Ensure clicked card is able to be upgraded
                 lowest_tier: int = 1e6
-                for other_card in hero_cards[player.hero.id] {
+                for other_card in hero_cards[get_my_player().hero.id] {
                     if other_card.state != .IN_HAND do continue
                     // if card.color == .GOLD || card.color == .SILVER do continue
                     if other_card.tier == 0 do continue
@@ -240,9 +273,9 @@ resolve_event :: proc(event: Event) {
                 if card.tier > lowest_tier || lowest_tier == 3 do break  // @cleanup This is not really correct, upgrade should not be possible if lowest tier is 3
 
                 upgrade_options: []Card
-                for other_card, index in hero_cards[player.hero.id] {
+                for other_card, index in hero_cards[get_my_player().hero.id] {
                     if other_card.color == card.color && other_card.tier == card.tier + 1 {
-                        upgrade_options = hero_cards[player.hero.id][index:][:2]
+                        upgrade_options = hero_cards[get_my_player().hero.id][index:][:2]
                         break
                     }
                 }
@@ -271,7 +304,7 @@ resolve_event :: proc(event: Event) {
                 for option in upgrade_options {
                     append(&ui_stack, UI_Element {
                         card_position_rect,
-                        UI_Card_Element{make_card_id(option, player.hero.id), false},
+                        UI_Card_Element{make_card_id(option, get_my_player().hero.id), false},
                         card_input_proc,
                         draw_card,
                     })
@@ -290,7 +323,7 @@ resolve_event :: proc(event: Event) {
 
                     if card.color == predecessor_card.color {
                         // swap over the card ID to the new card
-                        predecessor_card_element.card_id = make_card_id(card^, player.hero.id)
+                        predecessor_card_element.card_id = make_card_id(card^, get_my_player().hero.id)
                         predecessor_card.state = .NONEXISTENT
                         card.state = .IN_HAND
                         
@@ -307,9 +340,9 @@ resolve_event :: proc(event: Event) {
         }
 
     case Confirm_Event:
-        #partial switch player.stage {
+        #partial switch get_my_player().stage {
         case .SELECTING:
-            player.stage = .CONFIRMED
+            get_my_player().stage = .CONFIRMED
             clear_side_buttons()
             game_state.confirmed_players += 1
             if game_state.confirmed_players == game_state.num_players {
@@ -324,7 +357,7 @@ resolve_event :: proc(event: Event) {
         }
 
     case Cancel_Event:
-        #partial switch player.stage {
+        #partial switch get_my_player().stage {
         case .RESOLVING, .INTERRUPTING:
             action := get_current_action()
             #partial switch &action_variant in action.variant {
@@ -360,21 +393,21 @@ resolve_event :: proc(event: Event) {
         }
         
     case Begin_Card_Selection_Event:
-        player.stage = .SELECTING
+        get_my_player().stage = .SELECTING
         game_state.stage = .SELECTION
         game_state.confirmed_players = 0
         tooltip = "Choose a card to play and then confirm it."
 
     case Begin_Resolution_Event:
-        player.stage = .RESOLVING
+        get_my_player().stage = .RESOLVING
 
         // Find the played card
         card := find_played_card()
         card.turn_played = game_state.turn_counter
 
-        player.hero.action_list = card.primary_effect
+        get_my_player().hero.action_list = card.primary_effect
 
-        player.hero.current_action_index = -1
+        get_my_player().hero.current_action_index = -1
 
         append(&event_queue, Begin_Next_Action_Event{})
 
@@ -384,7 +417,7 @@ resolve_event :: proc(event: Event) {
         tooltip = action.tooltip
         log.infof("ACTION: %v", reflect.union_variant_typeid(action.variant))
         if len(action.targets) == 0 {
-            populate_targets(index = player.hero.current_action_index)
+            populate_targets(index = get_my_player().hero.current_action_index)
         }
 
         if action.optional {
@@ -450,19 +483,19 @@ resolve_event :: proc(event: Event) {
             append(&event_queue, End_Resolution_Event{})
 
         case Minion_Removal_Action:
-            log.assert(player.is_team_captain && player.stage == .INTERRUPTING && game_state.stage == .MINION_BATTLE)
+            log.assert(get_my_player().is_team_captain && get_my_player().stage == .INTERRUPTING && game_state.stage == .MINION_BATTLE)
             minions_to_remove := minion_removal_action[0].variant.(Choose_Target_Action).result
             for minion in minions_to_remove {
                 log.assert(!remove_minion(minion), "Minion removal during battle caused wave push!")
             }
             append(&event_queue, End_Minion_Battle_Event{})
-            player.stage = .RESOLVED
+            get_my_player().stage = .RESOLVED
         }
 
     case End_Resolution_Event:
-        log.assert(player.stage == .RESOLVING, "Player is not resolving!")
+        log.assert(get_my_player().stage == .RESOLVING, "Player is not resolving!")
         clear_side_buttons()
-        player.stage = .RESOLVED
+        get_my_player().stage = .RESOLVED
         game_state.resolved_players += 1
 
         element, card_element := find_played_card_elements()
@@ -519,9 +552,9 @@ resolve_event :: proc(event: Event) {
         }
 
     case Begin_Minion_Removal_Event:
-        if player.team == var.team && player.is_team_captain {
-            player.hero.current_action_index = 100
-            player.stage = .INTERRUPTING
+        if get_my_player().team == var.team && get_my_player().is_team_captain {
+            get_my_player().hero.current_action_index = 100
+            get_my_player().stage = .INTERRUPTING
             append(&event_queue, Begin_Next_Action_Event{}) 
             break
         }
@@ -581,7 +614,7 @@ resolve_event :: proc(event: Event) {
             append(&event_queue, Retrieve_Cards_Event{})
         case .RESOLUTION:
             append(&event_queue, Resolve_Current_Action_Event{})
-        case .SELECTION, .UPGRADES:
+        case .PRE_LOBBY, .IN_LOBBY, .SELECTION, .UPGRADES:
             log.assertf(false, "Invalid state at end of wave push: %v", game_state.stage)
         }
 
@@ -593,22 +626,22 @@ resolve_event :: proc(event: Event) {
     case Begin_Upgrading_Event:
         // append(&event_queue, End_Upgrading_Event{})
 
-        if player.hero.coins < player.hero.level {
-            player.hero.coins += 1
-            log.infof("Pity coin collected. Current coin count: %v", player.hero.coins)
+        if get_my_player().hero.coins < get_my_player().hero.level {
+            get_my_player().hero.coins += 1
+            log.infof("Pity coin collected. Current coin count: %v", get_my_player().hero.coins)
             append(&event_queue, End_Upgrading_Event{})
         } else {
             append(&event_queue, Begin_Next_Upgrade_Event{})
         }
 
     case Begin_Next_Upgrade_Event:
-        player.stage = .UPGRADING
+        get_my_player().stage = .UPGRADING
         clear_side_buttons()
         tooltip = "Choose a card to upgrade."
-        if player.hero.coins >= player.hero.level {
-            player.hero.coins -= player.hero.level
-            player.hero.level += 1
-            log.infof("Player levelled up! Current level: %v", player.hero.level)
+        if get_my_player().hero.coins >= get_my_player().hero.level {
+            get_my_player().hero.coins -= get_my_player().hero.level
+            get_my_player().hero.level += 1
+            log.infof("Player levelled up! Current level: %v", get_my_player().hero.level)
         } else {
             append(&event_queue, End_Upgrading_Event{})
         }
@@ -625,7 +658,7 @@ resolve_event :: proc(event: Event) {
 
         #partial switch &variant in action.variant {
         case Fast_Travel_Action:
-            translocate_unit(player.hero.location, variant.result)
+            translocate_unit(get_my_player().hero.location, variant.result)
         case Movement_Action:
             if len(variant.path.spaces) == 0 do break
             defer {
@@ -656,14 +689,14 @@ resolve_event :: proc(event: Event) {
                 append(&event_queue, End_Resolution_Event{})
                 return
             }
-            player.hero.current_action_index = index
+            get_my_player().hero.current_action_index = index
         } else {
-            player.hero.current_action_index += 1
-            if player.hero.current_action_index >= 100 {
+            get_my_player().hero.current_action_index += 1
+            if get_my_player().hero.current_action_index >= 100 {
                 append(&event_queue, Begin_Next_Action_Event{})
                 return
             }
-            if player.hero.current_action_index >= len(player.hero.action_list) || player.hero.current_action_index < 0 {
+            if get_my_player().hero.current_action_index >= len(get_my_player().hero.action_list) || get_my_player().hero.current_action_index < 0 {
                 append(&event_queue, End_Resolution_Event{})
                 return
             }

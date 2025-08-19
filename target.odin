@@ -50,7 +50,7 @@ action_can_be_taken :: proc(index: int = 0) -> bool {
     if freeze, ok := game_state.ongoing_active_effects[.XARGATHA_FREEZE]; ok {
         if calculate_implicit_quantity(freeze.duration.(Single_Turn)) == game_state.turn_counter {
             context.allocator = context.temp_allocator
-            if player.hero.location in calculate_implicit_target_set(freeze.target_set) {
+            if get_my_player().hero.location in calculate_implicit_target_set(freeze.target_set) {
                 if index == BASIC_MOVEMENT_INDEX || (index == 0 && find_played_card().primary == .MOVEMENT) {
                     // phew
                     return false
@@ -114,9 +114,10 @@ make_movement_targets :: proc(distance: Implicit_Quantity, origin: Implicit_Targ
             if next_loc.x < 0 || next_loc.x >= GRID_WIDTH || next_loc.y < 0 || next_loc.y >= GRID_HEIGHT do continue
             if OBSTACLE_FLAGS & board[next_loc.x][next_loc.y].flags != {} do continue
             if next_loc in visited_set do continue
-            if player.stage == .RESOLVING {
+            if get_my_player().stage == .RESOLVING {
                 #partial switch &action in get_current_action().variant {
                 case Movement_Action:
+                    // Can't path to places we have already stepped on
                     for traversed_loc in action.path.spaces do if traversed_loc == next_loc do continue directions
                 }
             }
@@ -160,12 +161,12 @@ make_movement_targets :: proc(distance: Implicit_Quantity, origin: Implicit_Targ
 }
 
 make_fast_travel_targets :: proc() -> (out: Target_Set) {
-    hero_loc := player.hero.location
+    hero_loc := get_my_player().hero.location
     region := board[hero_loc.x][hero_loc.y].region_id
 
     for loc in zone_indices[region] {
         space := board[loc.x][loc.y]
-        if UNIT_FLAGS & space.flags != {} && space.unit_team != player.team {
+        if UNIT_FLAGS & space.flags != {} && space.unit_team != get_my_player().team {
             return
         }
     }
@@ -179,7 +180,7 @@ make_fast_travel_targets :: proc() -> (out: Target_Set) {
         if other_region not_in fast_travel_adjacencies[region] do continue
         for loc in zone_indices[other_region] {
             space := board[loc.x][loc.y]
-            if UNIT_FLAGS & space.flags != {} && space.unit_team != player.team {
+            if UNIT_FLAGS & space.flags != {} && space.unit_team != get_my_player().team {
                 continue outer
             }
         }
@@ -192,7 +193,7 @@ make_fast_travel_targets :: proc() -> (out: Target_Set) {
 }
 
 make_clear_targets :: proc() -> (out: Target_Set) {
-    hero_loc := player.hero.location
+    hero_loc := get_my_player().hero.location
 
     for vector in direction_vectors {
         other_loc := hero_loc + vector
@@ -223,13 +224,13 @@ target_fulfills_criterion :: proc(target: Target, criterion: Selection_Criterion
 
     case Is_Enemy_Unit:
 
-        if player.team != .NONE && space.unit_team != .NONE && player.team != space.unit_team {
+        if get_my_player().team != .NONE && space.unit_team != .NONE && get_my_player().team != space.unit_team {
             return true
         }
         return false
 
     case Is_Friendly_Unit:
-        if player.team != .NONE && space.unit_team != .NONE && player.team == space.unit_team {
+        if get_my_player().team != .NONE && space.unit_team != .NONE && get_my_player().team == space.unit_team {
             return true
         }
         return false

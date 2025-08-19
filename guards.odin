@@ -11,8 +11,7 @@ import "core:mem"
 
 
 // Todo list
-// Minion battles
-// Heavy immunity / immunity in general
+// Finish implementing xargatha cards
 // Separate cards out of the ui stack
 // Add dummy blue player that acts randomly
 // Snorri runes
@@ -59,9 +58,6 @@ main :: proc() {
         basic_fast_travel_action,
         basic_clear_action,
     }
-
-    fmt.println(basic_actions)
-
 
     when ODIN_DEBUG {
         default_allocator := context.allocator
@@ -113,16 +109,11 @@ main :: proc() {
         card_hand_position_rects[color] = {f32(index - 1) * CARD_HAND_WIDTH, CARD_HAND_Y_POSITION, CARD_HAND_WIDTH, CARD_HAND_HEIGHT + 100}
     }
 
-    append(&ui_stack, UI_Element {
-        BOARD_POSITION_RECT,
-        UI_Board_Element{},
-        board_input_proc,
-        draw_board,
-    })
+
 
     // window_scale: i32 = 2 if window_size == .SMALL else 1
 
-    rl.SetConfigFlags({.MSAA_4X_HINT})
+    rl.SetConfigFlags({.MSAA_4X_HINT, .WINDOW_TOPMOST})
     rl.InitWindow(i32(WIDTH / window_scale), i32(HEIGHT / window_scale), "guards")
     defer rl.CloseWindow()
 
@@ -132,28 +123,16 @@ main :: proc() {
     board_render_texture = rl.LoadRenderTexture(i32(BOARD_TEXTURE_SIZE.x), i32(BOARD_TEXTURE_SIZE.y))
 
     window_texture := rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT))
-    rl.SetTextureFilter(window_texture.texture, .TRILINEAR)
+    rl.SetTextureFilter(window_texture.texture, .BILINEAR)
 
     setup_board()
 
-    for &card, index in hero_cards[.XARGATHA] {   
-        create_texture_for_card(&card)
-        if index < 5 {
-            card.state = .IN_HAND
-            append(&ui_stack, UI_Element{
-                card_hand_position_rects[card.color],
-                UI_Card_Element{make_card_id(card, .XARGATHA), false},
-                card_input_proc,
-                draw_card,
-            })
-        } else {
-            card.state = .NONEXISTENT
-        }
-    }
+    game_state.stage = .PRE_LOBBY
+    tooltip = "Choose to host a game or join a game."
+    add_choose_host_ui_elements()
 
-    append(&game_state.players, &player)
-    append(&event_queue, Toggle_Fullscreen_Event{})
-    begin_game()
+    // append(&event_queue, Toggle_Fullscreen_Event{})
+    // begin_game()
 
     for !rl.WindowShouldClose() {
 
@@ -185,6 +164,8 @@ main :: proc() {
         }
         clear(&input_queue)
 
+        process_network_packets()
+
         // Handle events
         for event in event_queue {
             resolve_event(event)
@@ -194,7 +175,9 @@ main :: proc() {
 
         rl.BeginDrawing()
 
-        render_board_to_texture(ui_stack[0].variant.(UI_Board_Element))
+        if game_state.stage != .PRE_LOBBY && game_state.stage != .IN_LOBBY {
+            render_board_to_texture(ui_stack[0].variant.(UI_Board_Element))
+        }
 
         rl.BeginTextureMode(window_texture)
 
@@ -204,8 +187,17 @@ main :: proc() {
             element.render(element)
         }
 
-        render_player_info()
+        if game_state.stage == .IN_LOBBY {
+            pos := Vec2{10, 10}
+            for player_id in game_state.players {
+                render_player_info_at_position(player_id, pos)
+                pos.y += 200
+            }
+        }
 
+        if game_state.stage != .PRE_LOBBY && game_state.stage != .IN_LOBBY {
+            render_player_info(my_player_id)
+        }
         render_tooltip()
 
         rl.EndTextureMode()
