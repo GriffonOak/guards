@@ -37,7 +37,7 @@ hero_cards: [Hero_ID][]Card = #partial {
                 Action {
                     tooltip = "May repeat once on a different enemy hero.",
                     optional = true,
-                    skip_index = HALT_INDEX,
+                    skip_index = {sequence=.HALT},
                     variant = Choose_Target_Action {
                         num_targets = 1,
                         criteria = {
@@ -162,8 +162,8 @@ hero_cards: [Hero_ID][]Card = #partial {
                     tooltip = "You may either move yourself or a ranged minion.",
                     variant = Choice_Action {
                         choices = {
-                            {"Move self", 1},
-                            {"Move minion", 5},
+                            {"Move self", {index=1}},
+                            {"Move minion", {index=5}},
                         },
                     }
                 },
@@ -176,7 +176,7 @@ hero_cards: [Hero_ID][]Card = #partial {
                 },
                 Action {  // 2
                     optional = true,
-                    skip_index = HALT_INDEX,
+                    skip_index = {sequence=.HALT},
                     tooltip = "You may choose a ranged minion to move, or you may skip.",
                     variant = Choose_Target_Action {
                         num_targets = 1,
@@ -370,8 +370,8 @@ hero_cards: [Hero_ID][]Card = #partial {
                     tooltip = "You may either move yourself or a ranged or melee minion.",
                     variant = Choice_Action {
                         choices = {
-                            {"Move self", 1},
-                            {"Move minion", 5},
+                            {"Move self", {index=1}},
+                            {"Move minion", {index=5}},
                         },
                     }
                 },
@@ -384,7 +384,7 @@ hero_cards: [Hero_ID][]Card = #partial {
                 },
                 Action {  // 2
                     optional = true,
-                    skip_index = HALT_INDEX,
+                    skip_index = {sequence=.HALT},
                     tooltip = "You may choose a ranged or melee minion to move, or you may skip.",
                     variant = Choose_Target_Action {
                         num_targets = 1,
@@ -661,8 +661,8 @@ hero_cards: [Hero_ID][]Card = #partial {
                     tooltip = "You may either move yourself or a minion.",
                     variant = Choice_Action {
                         choices = {
-                            {"Move self", 1},
-                            {"Move minion", 5},
+                            {"Move self", {index=1}},
+                            {"Move minion", {index=5}},
                         },
                     }
                 },
@@ -675,7 +675,7 @@ hero_cards: [Hero_ID][]Card = #partial {
                 },
                 Action {  // 2
                     optional = true,
-                    skip_index = HALT_INDEX,
+                    skip_index = {sequence=.HALT},
                     tooltip = "You may choose a minion to move, or you may skip.",
                     variant = Choose_Target_Action {
                         num_targets = 1,

@@ -42,7 +42,7 @@ FONT_SPACING :: 0
 
 
 
-window_size: Window_Size = .BIG
+window_size: Window_Size = .SMALL
 
 window_scale: f32 = 1 if window_size == .BIG else 2
 
@@ -51,14 +51,6 @@ default_font: rl.Font
 
 
 main :: proc() {
-
-    basic_actions = {
-        {},
-        first_choice_action,
-        basic_movement_action,
-        basic_fast_travel_action,
-        basic_clear_action,
-    }
 
     when ODIN_DEBUG {
         default_allocator := context.allocator
@@ -114,7 +106,8 @@ main :: proc() {
 
     // window_scale: i32 = 2 if window_size == .SMALL else 1
 
-    rl.SetConfigFlags({.MSAA_4X_HINT, .WINDOW_TOPMOST})
+    // rl.SetConfigFlags({.WINDOW_TOPMOST})
+    rl.SetConfigFlags({.MSAA_4X_HINT})
     rl.InitWindow(i32(WIDTH / window_scale), i32(HEIGHT / window_scale), "guards")
     defer rl.CloseWindow()
 

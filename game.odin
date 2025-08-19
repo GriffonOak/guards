@@ -135,7 +135,7 @@ spawn_heroes_at_start :: proc() {
         spawnpoint_space.hero_id = player.hero.id
         spawnpoint_space.owner = player_id
 
-        player.hero.coins = 0
+        player.hero.coins = 1
         player.hero.level = 1
 
         if player.team == .RED {

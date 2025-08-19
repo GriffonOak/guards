@@ -35,7 +35,7 @@ Begin_Card_Selection_Event :: struct {}
 Begin_Resolution_Event :: struct {}
 Begin_Next_Action_Event :: struct {}
 Resolve_Current_Action_Event :: struct {
-    jump_index: Maybe(int)
+    jump_index: Maybe(Action_Index)
 }
 End_Resolution_Event :: struct {}
 Resolutions_Completed_Event :: struct {}
@@ -261,8 +261,6 @@ resolve_event :: proc(event: Event) {
                 }
                 if card.tier > lowest_tier || lowest_tier == 3 do break  // @cleanup This is not really correct, upgrade should not be possible if lowest tier is 3
 
-                upgrade_options := find_upgrade_options(card^)
-
                 // I shouldn't really be checking this through the ui stack like this tbh
                 // But I don't have a better way of seeing if an upgrade is happening. // @Cleanup?
                 top_element := ui_stack[len(ui_stack) - 1]
@@ -285,13 +283,19 @@ resolve_event :: proc(event: Event) {
 
                 add_side_button("Cancel", Cancel_Event{})
 
+                upgrade_options := find_upgrade_options(card^)
+
+                // fmt.printf("%#v\n", upgrade_options)
+
                 for option in upgrade_options {
+                    option_card_id := make_card_id(option, my_player_id)
+                    fmt.println(option_card_id)
                     append(&ui_stack, UI_Element {
                         card_position_rect,
-                        UI_Card_Element{make_card_id(option, my_player_id), false},
+                        UI_Card_Element{option_card_id, false},
                         card_input_proc,
                         draw_card,
-                    })
+                    }) 
     
                     card_position_rect.x += BUTTON_PADDING + card_element_width
                 }
@@ -393,7 +397,7 @@ resolve_event :: proc(event: Event) {
 
         get_my_player().hero.action_list = card.primary_effect
 
-        get_my_player().hero.current_action_index = -1
+        get_my_player().hero.current_action_index = {sequence=.FIRST_CHOICE}
 
         append(&event_queue, Begin_Next_Action_Event{})
 
@@ -403,7 +407,7 @@ resolve_event :: proc(event: Event) {
         tooltip = action.tooltip
         log.infof("ACTION: %v", reflect.union_variant_typeid(action.variant))
         if len(action.targets) == 0 {
-            populate_targets(index = get_my_player().hero.current_action_index)
+            populate_targets(get_my_player().hero.current_action_index)
         }
 
         if action.optional {
@@ -430,7 +434,7 @@ resolve_event :: proc(event: Event) {
 
         case Choice_Action:
             choices_added: int
-            most_recent_choice: int
+            most_recent_choice: Action_Index
             for choice in action_type.choices {
                 populate_targets(choice.jump_index)
                 if action_can_be_taken(choice.jump_index) {
@@ -538,7 +542,7 @@ resolve_event :: proc(event: Event) {
 
     case Begin_Minion_Removal_Event:
         if get_my_player().team == var.team && get_my_player().is_team_captain {
-            get_my_player().hero.current_action_index = 100
+            get_my_player().hero.current_action_index = {sequence=.MINION_REMOVAL}
             get_my_player().stage = .INTERRUPTING
             append(&event_queue, Begin_Next_Action_Event{}) 
             break
@@ -669,23 +673,18 @@ resolve_event :: proc(event: Event) {
         // Here would be where we need to handle minions outside the zone or wave pushes mid-turn
 
         // Determine next action
+        next_index := get_my_player().hero.current_action_index
         if index, ok := var.jump_index.?; ok {
-            if index == HALT_INDEX {
-                append(&event_queue, End_Resolution_Event{})
-                return
-            }
-            get_my_player().hero.current_action_index = index
+            next_index = index
         } else {
-            get_my_player().hero.current_action_index += 1
-            if get_my_player().hero.current_action_index >= 100 {
-                append(&event_queue, Begin_Next_Action_Event{})
-                return
-            }
-            if get_my_player().hero.current_action_index >= len(get_my_player().hero.action_list) || get_my_player().hero.current_action_index < 0 {
-                append(&event_queue, End_Resolution_Event{})
-                return
-            }
+            next_index.index += 1
         }
+        if next_index.sequence == .HALT || get_action_at_index(next_index) == nil {
+            append(&event_queue, End_Resolution_Event{})
+            return
+        }
+
+        get_my_player().hero.current_action_index = next_index
         append(&event_queue, Begin_Next_Action_Event{})
 
     case Game_Over_Event:

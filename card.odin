@@ -233,6 +233,7 @@ draw_card: UI_Render_Proc: proc(element: UI_Element) {
     card_element := assert_variant_rdonly(element.variant, UI_Card_Element)
 
     card, ok := get_card_by_id(card_element.card_id)
+
     log.assert(ok, "Tried to draw card element with no assigned card!")
 
     amount_to_show := element.bounding_rect.height / element.bounding_rect.width * CARD_TEXTURE_SIZE.y
@@ -261,25 +262,25 @@ get_card_by_id :: proc(card_id: Card_ID) -> (card: ^Card, ok: bool) { // #option
 
     // If a player is holding the card, return a pointer to that
     if player.hero.id != card_id.hero_id do return
-    card = &player.hero.cards[card_id.color]
+    player_card := &player.hero.cards[card_id.color]
 
-    if card.tier != card_id.tier || card.alternate != card_id.alternate {
+    if player_card.tier != card_id.tier || player_card.alternate != card_id.alternate {
         // Walk the card array
-        // log.assert(false, "This should not be happening outside of upgrades")
+        // log.info("This should not be happening outside of upgrades")
         for &hero_card in hero_cards[card_id.hero_id] {
             if hero_card.color == card_id.color {
                 if hero_card.color == .GOLD || hero_card.color == .SILVER {
                     return &hero_card, true
                 }
-                if hero_card.tier == hero_card.tier && hero_card.alternate == hero_card.alternate {
+                if hero_card.tier == card_id.tier && hero_card.alternate == card_id.alternate {
                     return &hero_card, true
                 }
             }
         }
     }
 
-
-    return card, true
+    // log.info("default return")
+    return player_card, true
 }
 
 find_upgrade_options :: proc(card: Card) -> []Card {

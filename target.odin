@@ -15,7 +15,7 @@ Target_Set :: map[Target]Target_Info
 
 
 
-populate_targets :: proc(index: int = 0) {
+populate_targets :: proc(index: Action_Index) {
     action := get_action_at_index(index)
     if action == nil do return 
 
@@ -43,8 +43,8 @@ populate_targets :: proc(index: int = 0) {
     }
 }
 
-action_can_be_taken :: proc(index: int = 0) -> bool {
-    if index == HALT_INDEX do return true
+action_can_be_taken :: proc(index: Action_Index = {sequence=.PRIMARY}) -> bool {
+    if index.sequence == .HALT do return true
 
     // Disable movement on xargatha freeze
     if freeze, ok := game_state.ongoing_active_effects[.XARGATHA_FREEZE]; ok {
@@ -53,7 +53,7 @@ action_can_be_taken :: proc(index: int = 0) -> bool {
             if get_my_player().hero.location in calculate_implicit_target_set(freeze.target_set) {
                 played_card, ok := find_played_card()
                 assert(ok, "Could not find played card when checking for Xargatha freeze")
-                if index == BASIC_MOVEMENT_INDEX || (index == 0 && played_card.primary == .MOVEMENT) {
+                if index.sequence == .BASIC_MOVEMENT || (index.index == 0 && played_card.primary == .MOVEMENT) {
                     // phew
                     return false
                 }
