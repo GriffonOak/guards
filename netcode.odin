@@ -47,6 +47,13 @@ net_queue_mutex: sync.Mutex
 network_queue: [dynamic]Network_Packet
 
 
+add_global_game_event :: proc(event: Event) {
+
+    broadcast_network_event(event)
+    append(&event_queue, event)
+
+}
+
 broadcast_network_event :: proc(net_event: Network_Event) {
     packet := Network_Packet {
         my_player_id,
@@ -54,7 +61,7 @@ broadcast_network_event :: proc(net_event: Network_Event) {
     }
 
     if is_host {
-        for player_id, player in game_state.players {
+        for player, player_id in game_state.players {
             if player_id != 0 {
                 send_network_packet_socket(player.socket, packet)
             }
@@ -114,13 +121,14 @@ begin_hosting_local_game :: proc() -> bool {
 
     my_player_id = 0
     clear(&game_state.players)
-    game_state.players[my_player_id] = Player {
+    add_or_update_player( Player {
+        id = 0,
         hero = Hero {
             id = .XARGATHA
         },
         team = .RED,
         is_team_captain = true,
-    }
+    })
 
     thread.create_and_start_with_poly_data(sock, _thread_host_wait_for_clients)
     return true
@@ -152,10 +160,16 @@ _thread_host_wait_for_clients :: proc(sock: net.TCP_Socket) {
                 is_team_captain = true,
                 socket = client,
             }
-            game_state.players[client_player_id] = client_player
+            add_or_update_player(client_player)
 
-            send_network_packet_socket(client, {0, Update_Player_Data{client_player}})
-            send_network_packet_socket(client, {0, Update_Player_Data{game_state.players[0]}})
+            for player, player_id in game_state.players {
+                if player_id != 0 {
+                    send_network_packet_socket(player.socket, {0, Update_Player_Data{client_player}})
+                }
+                send_network_packet_socket(client, {0, Update_Player_Data{player}})
+            }
+            // send_network_packet_socket(client, {0, Update_Player_Data{client_player}})
+            // send_network_packet_socket(client, {0, Update_Player_Data{game_state.players[0]}})
             send_network_packet_socket(client, {0, Set_Client_Player_ID{client_player_id}})
 
             for player in game_state.players {
@@ -198,8 +212,9 @@ process_network_packets :: proc() {
     for packet in network_queue {
         log.infof("NET: %v", reflect.union_variant_typeid(packet.event))
 
+        // broadcast packet to everyone
         if is_host && packet.sender != 0 {
-            for player_id, player in game_state.players {
+            for player, player_id in game_state.players {
                 if player_id != 0 && player_id != packet.sender {
                     send_network_packet_socket(player.socket, packet)
                 }
@@ -211,8 +226,10 @@ process_network_packets :: proc() {
             if !is_host {
                 my_player_id = event.player_id
             }
+
         case Update_Player_Data:
-            game_state.players[event.player.id] = event.player
+            add_or_update_player(event.player)
+
         case Event:
             append(&event_queue, event)
         }

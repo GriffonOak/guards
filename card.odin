@@ -100,9 +100,12 @@ CARD_HAND_Y_POSITION :: HEIGHT - CARD_HAND_HEIGHT
 
 BOARD_HAND_SPACE :: CARD_HAND_Y_POSITION - BOARD_TEXTURE_SIZE.y
 RESOLVED_CARD_HEIGHT :: BOARD_HAND_SPACE * 0.8
+RESOLVED_CARD_WIDTH :: RESOLVED_CARD_HEIGHT / 1.5
 RESOLVED_CARD_PADDING :: (BOARD_HAND_SPACE - RESOLVED_CARD_HEIGHT) / 2
 
-FIRST_CARD_RESOLVED_POSITION_RECT :: rl.Rectangle{RESOLVED_CARD_PADDING, BOARD_POSITION_RECT.height + RESOLVED_CARD_PADDING, RESOLVED_CARD_HEIGHT / 1.5, RESOLVED_CARD_HEIGHT}
+OTHER_PLAYER_PLAYED_CARD_POSITION_RECT :: rl.Rectangle{BOARD_TEXTURE_SIZE.x - RESOLVED_CARD_WIDTH / 2, TOOLTIP_FONT_SIZE + BOARD_HAND_SPACE * 0.1, RESOLVED_CARD_WIDTH, RESOLVED_CARD_HEIGHT}
+
+FIRST_CARD_RESOLVED_POSITION_RECT :: rl.Rectangle{RESOLVED_CARD_PADDING, BOARD_POSITION_RECT.height + RESOLVED_CARD_PADDING, RESOLVED_CARD_WIDTH, RESOLVED_CARD_HEIGHT}
 
 CARD_PLAYED_POSITION_RECT :: rl.Rectangle{BOARD_POSITION_RECT.width * 0.8 - PLAYED_CARD_SIZE.x / 2, BOARD_POSITION_RECT.height - PLAYED_CARD_SIZE.y / 4, PLAYED_CARD_SIZE.x, PLAYED_CARD_SIZE.y}
 
@@ -141,7 +144,7 @@ card_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element) 
 
     try_to_play: #partial switch var in input {
     case Mouse_Pressed_Event:
-        append(&event_queue, Card_Clicked_Event{card_element.card_id})
+        append(&event_queue, Card_Clicked_Event{card_element})
     }
 
 
@@ -237,20 +240,27 @@ draw_card: UI_Render_Proc: proc(element: UI_Element) {
     log.assert(ok, "Tried to draw card element with no assigned card!")
 
     amount_to_show := element.bounding_rect.height / element.bounding_rect.width * CARD_TEXTURE_SIZE.y
-    rl.DrawRectangleRec(element.bounding_rect, card_color_values[card.color])
+    if card_element.hidden {
+        rl.DrawRectangleRec(element.bounding_rect, rl.RAYWHITE)
+        rl.DrawRectangleLinesEx(element.bounding_rect, 4, rl.DARKGRAY)
+    } else {
+        rl.DrawRectangleRec(element.bounding_rect, card_color_values[card.color])
+    
+        name_font_size := element.bounding_rect.width / 7
+        text_padding := element.bounding_rect.width / 80
 
-    name_font_size := element.bounding_rect.width / 7
-    text_padding := element.bounding_rect.width / 80
+        name_size := rl.MeasureTextEx(default_font, card.name, name_font_size, FONT_SPACING)
 
-    name_size := rl.MeasureTextEx(default_font, card.name, name_font_size, FONT_SPACING)
-
-    remaining_width := element.bounding_rect.width - name_size.x
-    rl.DrawTextEx(default_font, card.name, {element.bounding_rect.x + remaining_width / 2, element.bounding_rect.y + text_padding}, name_font_size, FONT_SPACING, rl.BLACK)
-
+        remaining_width := element.bounding_rect.width - name_size.x
+        rl.DrawTextEx(default_font, card.name, {element.bounding_rect.x + remaining_width / 2, element.bounding_rect.y + text_padding}, name_font_size, FONT_SPACING, rl.BLACK)
+    }
     // Looks a little bunk but I should revisit this
     // rl.DrawTexturePro(card_element.card.texture, {0, CARD_TEXTURE_SIZE.y - amount_to_show, CARD_TEXTURE_SIZE.x, -amount_to_show}, element.bounding_rect, {}, 0, rl.WHITE)
 
-    if card_element.hovered {
+    if card_element.selected {
+        rl.DrawRectangleLinesEx(element.bounding_rect, 8, rl.PURPLE)
+    }
+    if card_element.hovered && !card_element.hidden {
         rl.DrawTexturePro(card.texture, {0, 0, CARD_TEXTURE_SIZE.x, -CARD_TEXTURE_SIZE.y}, CARD_HOVER_POSITION_RECT, {}, 0, rl.WHITE)
         rl.DrawRectangleLinesEx(element.bounding_rect, 4, rl.WHITE)
         // rl.DrawRectangleLinesEx(CARD_HOVER_POSITION_RECT, 2, rl.RAYWHITE)
@@ -317,11 +327,34 @@ find_element_for_card :: proc(card: Card) -> ^UI_Element {
     return nil
 }
 
+find_selected_card_element :: proc() -> (^UI_Element, bool) {
+    ui_slice := ui_stack[1 + 5 * my_player_id:][:5]
+    for &element in ui_slice {
+        card_element := assert_variant(&element.variant, UI_Card_Element)
+        if card_element.selected {
+            return &element, true
+        }
+    }
+    return nil, false
+}
+
 play_card :: proc(card: ^Card) {
 
     element := find_element_for_card(card^)
-    element.bounding_rect = CARD_PLAYED_POSITION_RECT
+    card_element := &element.variant.(UI_Card_Element)
+    card_element.selected = false
 
+    if card.owner == my_player_id {
+        element.bounding_rect = CARD_PLAYED_POSITION_RECT
+    } else {
+        card_element.hidden = true
+
+        rect := OTHER_PLAYER_PLAYED_CARD_POSITION_RECT
+        rect.y += f32(player_offset(card.owner)) * BOARD_HAND_SPACE
+        element.bounding_rect = rect
+    }
+
+    card.turn_played = game_state.turn_counter
     card.state = .PLAYED
 }
 

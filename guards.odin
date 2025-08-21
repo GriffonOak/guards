@@ -183,7 +183,7 @@ main :: proc() {
 
         if game_state.stage == .IN_LOBBY {
             pos := Vec2{10, 10}
-            for player_id in game_state.players {
+            for player_id in 0..<len(game_state.players) {
                 render_player_info_at_position(player_id, pos)
                 pos.y += 200
             }
@@ -191,6 +191,7 @@ main :: proc() {
 
         if game_state.stage != .PRE_LOBBY && game_state.stage != .IN_LOBBY {
             render_player_info(my_player_id)
+            render_other_player_info()
         }
         render_tooltip()
 

@@ -58,8 +58,7 @@ Active_Effect :: struct {
 
 
 Game_State :: struct {
-    num_players: int,
-    players: map[Player_ID]Player,
+    players: [dynamic]Player,
     minion_counts: [Team]int,
     confirmed_players: int,
     resolved_players,
@@ -74,7 +73,6 @@ Game_State :: struct {
 
 
 game_state: Game_State = {
-    num_players = 1, 
     confirmed_players = 0,
     stage = .SELECTION,
     current_battle_zone = .CENTRE,
@@ -119,11 +117,13 @@ spawn_minions :: proc(zone: Region_ID) {
 
 spawn_heroes_at_start :: proc() {
     num_spawns: [Team]int
-    for player_id, &player in game_state.players {  // @Note: This becomes non-robust with >1 player / team due to map iteration
+    for &player, player_id in game_state.players {
         team := player.team
         spawnpoint_marker := spawnpoints[num_spawns[team]]
+        num_spawns[team] += 1
         log.assert(spawnpoint_marker.spawnpoint_flag == .HERO_SPAWNPOINT)
         spawnpoint_space: ^Space
+
         if team == .BLUE {
             spawnpoint_space = get_symmetric_space(spawnpoint_marker.loc)
         } else {

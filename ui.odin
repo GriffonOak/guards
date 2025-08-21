@@ -11,13 +11,16 @@ UI_Board_Element :: struct {
 
 UI_Card_Element :: struct {
     card_id: Card_ID,
-    hovered: bool,
+    hovered: bool,  // @cleanup bit_set these??
+    hidden: bool,
+    selected: bool,
 }
 
 UI_Button_Element :: struct {
     event: Event,
     text: cstring,
     hovered: bool,
+    global: bool,
 }
 
 // UI_Text_Input_Element :: struct {
@@ -117,7 +120,11 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
 
     #partial switch var in input {
     case Mouse_Pressed_Event:
-        append(&event_queue, button_element.event)
+        if button_element.global {
+            add_global_game_event(button_element.event)
+        } else {
+            append(&event_queue, button_element.event)
+        }
     }
 
     button_element.hovered = true
@@ -174,28 +181,22 @@ render_tooltip :: proc() {
 }
 
 
-add_generic_button :: proc(location: rl.Rectangle, text: cstring, event: Event) {
+add_generic_button :: proc(location: rl.Rectangle, text: cstring, event: Event, global: bool = false) {
     append(&ui_stack, UI_Element {
         location, UI_Button_Element {
-            event, text, false,
+            event, text, false, global,
         },
         button_input_proc,
         draw_button,
     })
 }
 
-add_side_button :: proc(text: cstring, event: Event) {
+add_side_button :: proc(text: cstring, event: Event, global: bool = false) {
     if len(side_button_manager.buttons) == 0 {
         side_button_manager.first_button_index = len(ui_stack)
     }
-    // append(&ui_stack, UI_Element {
-    //     side_button_manager.button_location, UI_Button_Element {
-    //         event, text, false,
-    //     },
-    //     button_input_proc,
-    //     draw_button,
-    // })
-    add_generic_button(side_button_manager.button_location, text, event)
+
+    add_generic_button(side_button_manager.button_location, text, event, global)
     side_button_manager.buttons = ui_stack[side_button_manager.first_button_index:][:len(side_button_manager.buttons) + 1]
     side_button_manager.button_location.y -= SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
 }
@@ -230,7 +231,7 @@ add_game_ui_elements :: proc() {
             for card, card_color in player.hero.cards {
                 append(&ui_stack, UI_Element{
                     card_hand_position_rects[card.color],
-                    UI_Card_Element{make_card_id(card, player_id), false},
+                    UI_Card_Element{card_id = make_card_id(card, player_id)},
                     card_input_proc,
                     draw_card,
                 })
@@ -239,26 +240,11 @@ add_game_ui_elements :: proc() {
             for card, card_color in player.hero.cards {
                 append(&ui_stack, UI_Element {
                     {},
-                    UI_Card_Element{make_card_id(card, player_id), false},
+                    UI_Card_Element{card_id = make_card_id(card, player_id)},
                     card_input_proc,
                     draw_card,
                 })
             }
         }
     }
-
-    // for &card, index in hero_cards[.XARGATHA] {
-    //     create_texture_for_card(&card)
-    //     if index < 5 {
-    //         card.state = .IN_HAND
-    //         append(&ui_stack, UI_Element{
-    //             card_hand_position_rects[card.color],
-    //             UI_Card_Element{make_card_id(card, .XARGATHA), false},
-    //             card_input_proc,
-    //             draw_card,
-    //         })
-    //     } else {
-    //         card.state = .NONEXISTENT
-    //     }
-    // }
 }

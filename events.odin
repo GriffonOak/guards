@@ -25,13 +25,18 @@ Space_Clicked_Event :: struct {
 }
 
 Card_Clicked_Event :: struct {
-    card_id: Card_ID
+    card_element: ^UI_Card_Element
 }
 
-Confirm_Event :: struct {}
+// Confirm_Event :: struct {}
 Cancel_Event :: struct {}
 
 Begin_Card_Selection_Event :: struct {}
+Card_Confirmed_Event :: struct {
+    player_id: Player_ID,
+    card_id: Card_ID,
+}
+
 Begin_Resolution_Event :: struct {}
 Begin_Next_Action_Event :: struct {}
 Resolve_Current_Action_Event :: struct {
@@ -77,10 +82,11 @@ Event :: union {
 
     Space_Clicked_Event,
     Card_Clicked_Event,
-    Confirm_Event,
+    // Confirm_Event,
     Cancel_Event,
 
     Begin_Card_Selection_Event,
+    Card_Confirmed_Event,
 
     Begin_Resolution_Event,
     Begin_Next_Action_Event,
@@ -109,7 +115,6 @@ Event :: union {
 
 
 event_queue: [dynamic]Event
-
 
 
 resolve_event :: proc(event: Event) {
@@ -160,15 +165,12 @@ resolve_event :: proc(event: Event) {
         if is_host {
             tooltip = "Wait for players to join, then begin the game."
             button_loc := (Vec2{WIDTH, HEIGHT} - SELECTION_BUTTON_SIZE) / 2
-            add_generic_button({button_loc.x, button_loc.y, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}, "Begin Game", Begin_Game_Event{})
+            add_generic_button({button_loc.x, button_loc.y, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}, "Begin Game", Begin_Game_Event{}, global = true)
         } else {
             tooltip = "Wait for the host to begin the game."
         }
 
     case Begin_Game_Event:
-        if is_host {
-            broadcast_network_event(Event(Begin_Game_Event{}))
-        }
         begin_game()
         add_game_ui_elements()
 
@@ -226,7 +228,7 @@ resolve_event :: proc(event: Event) {
         }
 
     case Card_Clicked_Event:
-        card_id := var.card_id
+        card_id := var.card_element.card_id
         card, ok := get_card_by_id(card_id)
         log.assert(ok, "Card element clicked with no card associated!")
 
@@ -234,19 +236,16 @@ resolve_event :: proc(event: Event) {
         case .SELECTING:
             #partial switch card.state {
             case .IN_HAND:
-                played_card, ok := find_played_card()
+                selected_element, ok := find_selected_card_element()
+
                 if ok {
-                    retrieve_card(played_card)
-                } else {
-                    add_side_button("Confirm card", Confirm_Event{})
+                    selected_card_element := &selected_element.variant.(UI_Card_Element)
+                    selected_card_element.selected = false
+                    clear_side_buttons()
                 }
 
-                play_card(card)
-
-            case .PLAYED:
-                clear_side_buttons()
-
-                retrieve_card(card)
+                var.card_element.selected = true
+                add_side_button("Confirm card", Card_Confirmed_Event{my_player_id, card_id}, global=true)
             }
 
         case .UPGRADING:
@@ -292,7 +291,7 @@ resolve_event :: proc(event: Event) {
                     fmt.println(option_card_id)
                     append(&ui_stack, UI_Element {
                         card_position_rect,
-                        UI_Card_Element{option_card_id, false},
+                        UI_Card_Element{card_id = option_card_id},
                         card_input_proc,
                         draw_card,
                     }) 
@@ -328,21 +327,27 @@ resolve_event :: proc(event: Event) {
             }
         }
 
-    case Confirm_Event:
-        #partial switch get_my_player().stage {
-        case .SELECTING:
-            get_my_player().stage = .CONFIRMED
+    case Card_Confirmed_Event:
+        player := get_player_by_id(var.player_id)
+        card, ok := get_card_by_id(var.card_id)
+        player.stage = .CONFIRMED
+        game_state.confirmed_players += 1
+
+       
+        assert(ok, "Invalid card ID in card confirmation event!")
+
+        if var.player_id == my_player_id {
             clear_side_buttons()
-            game_state.confirmed_players += 1
-            if game_state.confirmed_players == game_state.num_players {
-                game_state.stage = .RESOLUTION
-                game_state.resolved_players = 0
-    
-                // @Todo figure out resolution order
-                append(&event_queue, Begin_Resolution_Event{})
-            }
-        case .RESOLVING:
-            log.errorf("Unreachable")
+        } 
+
+        play_card(card)
+
+        if game_state.confirmed_players == len(game_state.players) {
+            game_state.stage = .RESOLUTION
+            game_state.resolved_players = 0
+
+            // @Todo figure out resolution order
+            append(&event_queue, Begin_Resolution_Event{})
         }
 
     case Cancel_Event:
@@ -393,7 +398,6 @@ resolve_event :: proc(event: Event) {
         // Find the played card
         card, ok := find_played_card()
         log.assert(ok, "No played card when player begins their resolution!")
-        card.turn_played = game_state.turn_counter
 
         get_my_player().hero.action_list = card.primary_effect
 
@@ -494,7 +498,7 @@ resolve_event :: proc(event: Event) {
         log.assert(ok, "No played card to resolve!")
         resolve_card(card)
 
-        if game_state.resolved_players == game_state.num_players {
+        if game_state.resolved_players == len(game_state.players) {
             append(&event_queue, Resolutions_Completed_Event{})
         }
         
