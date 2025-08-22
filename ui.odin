@@ -121,7 +121,7 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
     #partial switch var in input {
     case Mouse_Pressed_Event:
         if button_element.global {
-            add_global_game_event(button_element.event)
+            broadcast_game_event(button_element.event)
         } else {
             append(&event_queue, button_element.event)
         }

@@ -91,7 +91,13 @@ CARD_TEXTURE_SIZE :: Vec2{500, 700}
 
 CARD_SCALING_FACTOR :: 1
 
-CARD_HOVER_POSITION_RECT :: rl.Rectangle{WIDTH - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x, HEIGHT - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y, CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x, CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y}
+CARD_HOVER_POSITION_RECT :: rl.Rectangle {
+    WIDTH - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x,
+    HEIGHT - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y,
+    CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x,
+    CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y
+}
+
 PLAYED_CARD_SIZE :: Vec2{150, 210}
 
 CARD_HAND_WIDTH :: BOARD_POSITION_RECT.width / 5
@@ -103,9 +109,27 @@ RESOLVED_CARD_HEIGHT :: BOARD_HAND_SPACE * 0.8
 RESOLVED_CARD_WIDTH :: RESOLVED_CARD_HEIGHT / 1.5
 RESOLVED_CARD_PADDING :: (BOARD_HAND_SPACE - RESOLVED_CARD_HEIGHT) / 2
 
-OTHER_PLAYER_PLAYED_CARD_POSITION_RECT :: rl.Rectangle{BOARD_TEXTURE_SIZE.x - RESOLVED_CARD_WIDTH / 2, TOOLTIP_FONT_SIZE + BOARD_HAND_SPACE * 0.1, RESOLVED_CARD_WIDTH, RESOLVED_CARD_HEIGHT}
+OTHER_PLAYER_PLAYED_CARD_POSITION_RECT :: rl.Rectangle {
+    BOARD_TEXTURE_SIZE.x - RESOLVED_CARD_WIDTH / 2,
+    TOOLTIP_FONT_SIZE + BOARD_HAND_SPACE * 0.1,
+    RESOLVED_CARD_WIDTH,
+    RESOLVED_CARD_HEIGHT
+}
+// Copy and paste of above but with +constant on x
+OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT :: rl.Rectangle {
+    BOARD_TEXTURE_SIZE.x - RESOLVED_CARD_WIDTH / 2 + 300,
+    TOOLTIP_FONT_SIZE + BOARD_HAND_SPACE * 0.1,
+    RESOLVED_CARD_WIDTH,
+    RESOLVED_CARD_HEIGHT
+}
 
-FIRST_CARD_RESOLVED_POSITION_RECT :: rl.Rectangle{RESOLVED_CARD_PADDING, BOARD_POSITION_RECT.height + RESOLVED_CARD_PADDING, RESOLVED_CARD_WIDTH, RESOLVED_CARD_HEIGHT}
+
+FIRST_CARD_RESOLVED_POSITION_RECT :: rl.Rectangle {
+    RESOLVED_CARD_PADDING,
+    BOARD_POSITION_RECT.height + RESOLVED_CARD_PADDING,
+    RESOLVED_CARD_WIDTH,
+    RESOLVED_CARD_HEIGHT
+}
 
 CARD_PLAYED_POSITION_RECT :: rl.Rectangle{BOARD_POSITION_RECT.width * 0.8 - PLAYED_CARD_SIZE.x / 2, BOARD_POSITION_RECT.height - PLAYED_CARD_SIZE.y / 4, PLAYED_CARD_SIZE.x, PLAYED_CARD_SIZE.y}
 
@@ -146,7 +170,6 @@ card_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element) 
     case Mouse_Pressed_Event:
         append(&event_queue, Card_Clicked_Event{card_element})
     }
-
 
     card_element.hovered = true
     return true
@@ -242,7 +265,7 @@ draw_card: UI_Render_Proc: proc(element: UI_Element) {
     amount_to_show := element.bounding_rect.height / element.bounding_rect.width * CARD_TEXTURE_SIZE.y
     if card_element.hidden {
         rl.DrawRectangleRec(element.bounding_rect, rl.RAYWHITE)
-        rl.DrawRectangleLinesEx(element.bounding_rect, 4, rl.DARKGRAY)
+        rl.DrawRectangleLinesEx(element.bounding_rect, 4, rl.LIGHTGRAY)
     } else {
         rl.DrawRectangleRec(element.bounding_rect, card_color_values[card.color])
     
@@ -349,9 +372,8 @@ play_card :: proc(card: ^Card) {
     } else {
         card_element.hidden = true
 
-        rect := OTHER_PLAYER_PLAYED_CARD_POSITION_RECT
-        rect.y += f32(player_offset(card.owner)) * BOARD_HAND_SPACE
-        element.bounding_rect = rect
+        element.bounding_rect = OTHER_PLAYER_PLAYED_CARD_POSITION_RECT
+        element.bounding_rect.y += f32(player_offset(card.owner)) * BOARD_HAND_SPACE
     }
 
     card.turn_played = game_state.turn_counter
@@ -370,7 +392,12 @@ resolve_card :: proc(card: ^Card) {
     
     element := find_element_for_card(card^)
     
-    element.bounding_rect = FIRST_CARD_RESOLVED_POSITION_RECT
+    if card.owner == my_player_id {
+        element.bounding_rect = FIRST_CARD_RESOLVED_POSITION_RECT
+    } else {
+        element.bounding_rect = OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT
+        element.bounding_rect.y += f32(player_offset(card.owner)) * BOARD_HAND_SPACE
+    }
     element.bounding_rect.x += f32(game_state.turn_counter) * (FIRST_CARD_RESOLVED_POSITION_RECT.x + FIRST_CARD_RESOLVED_POSITION_RECT.width)
     
     card.state = .RESOLVED

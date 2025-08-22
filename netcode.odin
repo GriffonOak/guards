@@ -47,7 +47,7 @@ net_queue_mutex: sync.Mutex
 network_queue: [dynamic]Network_Packet
 
 
-add_global_game_event :: proc(event: Event) {
+broadcast_game_event :: proc(event: Event) {
 
     broadcast_network_event(event)
     append(&event_queue, event)

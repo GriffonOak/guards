@@ -11,10 +11,13 @@ import "core:mem"
 
 
 // Todo list
+// Sync upgrade step
+// BASIC INTERRUPTS:
+//   Attack / defense
+//   Minion battle remove action
+// Once those are figured out, do xargatha minion defeat greens
 // Finish implementing xargatha cards
-// Separate cards out of the ui stack
-// Need to change card access pattern from ui_stack -> card to card -> update ui element
-// Add dummy blue player that acts randomly
+// Other heroes / hero picker
 // Snorri runes
 
 

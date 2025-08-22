@@ -2,7 +2,7 @@ package guards
 
 import "core:fmt"
 import rl "vendor:raylib"
-
+import "core:math/rand"
 import "core:log"
 
 Direction :: enum {
@@ -15,7 +15,6 @@ Direction :: enum {
 }
 
 Team :: enum {
-    NONE,
     RED,
     BLUE,
 }
@@ -64,6 +63,7 @@ Game_State :: struct {
     resolved_players,
     turn_counter: int,
     wave_counters: int,
+    tiebreaker_coin: Team,
     ongoing_active_effects: map[Active_Effect_ID]Active_Effect,
     stage: Game_Stage,
     current_battle_zone: Region_ID,
@@ -71,7 +71,7 @@ Game_State :: struct {
 }
 
 
-
+initiative_tied: bool
 game_state: Game_State = {
     confirmed_players = 0,
     stage = .SELECTION,
@@ -79,7 +79,6 @@ game_state: Game_State = {
 }
 
 team_colors := [Team]rl.Color{
-    .NONE = rl.MAGENTA,
     .RED  = {237, 92, 2, 255},
     .BLUE = {22, 147, 255, 255},
 }
@@ -172,6 +171,11 @@ begin_game :: proc() {
     spawn_heroes_at_start()
 
     setup_hero_cards()
+
+    if is_host {
+        tiebreaker: Team = .RED if rand.int31_max(2) == 0 else .BLUE
+        broadcast_game_event(Update_Tiebreaker_Event{tiebreaker})
+    }
 
     append(&event_queue, Begin_Card_Selection_Event{})
 }

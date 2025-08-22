@@ -224,18 +224,10 @@ target_fulfills_criterion :: proc(target: Target, criterion: Selection_Criterion
         intersection := space.flags & selector
         return intersection != {}
 
-    case Is_Enemy_Unit:
 
-        if get_my_player().team != .NONE && space.unit_team != .NONE && get_my_player().team != space.unit_team {
-            return true
-        }
-        return false
-
-    case Is_Friendly_Unit:
-        if get_my_player().team != .NONE && space.unit_team != .NONE && get_my_player().team == space.unit_team {
-            return true
-        }
-        return false
+    // @Note these don't actually test whether a unit is present in the space, only that the teams are the same / doifferemt
+    case Is_Enemy_Unit:    return get_my_player().team != space.unit_team 
+    case Is_Friendly_Unit: return get_my_player().team == space.unit_team
 
     case Ignoring_Immunity, Not_Previously_Targeted:
     }

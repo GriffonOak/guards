@@ -28,8 +28,18 @@ Card_Clicked_Event :: struct {
     card_element: ^UI_Card_Element
 }
 
+
+
 // Confirm_Event :: struct {}
 Cancel_Event :: struct {}
+
+Unit_Translocation_Event :: struct {
+    src, dest: Target
+}
+
+Update_Tiebreaker_Event :: struct {
+    tiebreaker: Team
+}
 
 Begin_Card_Selection_Event :: struct {}
 Card_Confirmed_Event :: struct {
@@ -37,12 +47,17 @@ Card_Confirmed_Event :: struct {
     card_id: Card_ID,
 }
 
-Begin_Resolution_Event :: struct {}
+Begin_Resolution_Stage_Event :: struct{}
+Begin_Player_Resolution_Event :: struct {
+    player_id: Player_ID
+}
 Begin_Next_Action_Event :: struct {}
 Resolve_Current_Action_Event :: struct {
     jump_index: Maybe(Action_Index)
 }
-End_Resolution_Event :: struct {}
+End_Resolution_Event :: struct {
+    player_id: Player_ID
+}
 Resolutions_Completed_Event :: struct {}
 
 Begin_Minion_Battle_Event :: struct {}
@@ -85,10 +100,15 @@ Event :: union {
     // Confirm_Event,
     Cancel_Event,
 
+    Unit_Translocation_Event,
+
+    Update_Tiebreaker_Event,
+
     Begin_Card_Selection_Event,
     Card_Confirmed_Event,
 
-    Begin_Resolution_Event,
+    Begin_Resolution_Stage_Event,
+    Begin_Player_Resolution_Event,
     Begin_Next_Action_Event,
     Resolve_Current_Action_Event,
     End_Resolution_Event,
@@ -342,12 +362,10 @@ resolve_event :: proc(event: Event) {
 
         play_card(card)
 
-        if game_state.confirmed_players == len(game_state.players) {
-            game_state.stage = .RESOLUTION
-            game_state.resolved_players = 0
+        tooltip = "Waiting for other players to confirm their cards."
 
-            // @Todo figure out resolution order
-            append(&event_queue, Begin_Resolution_Event{})
+        if is_host && game_state.confirmed_players == len(game_state.players) {
+            broadcast_game_event(Begin_Resolution_Stage_Event{})
         }
 
     case Cancel_Event:
@@ -385,6 +403,12 @@ resolve_event :: proc(event: Event) {
             pop(&ui_stack)
             clear_side_buttons()
         }
+
+    case Unit_Translocation_Event:
+        translocate_unit(var.src, var.dest)
+
+    case Update_Tiebreaker_Event:
+        game_state.tiebreaker_coin = var.tiebreaker
         
     case Begin_Card_Selection_Event:
         get_my_player().stage = .SELECTING
@@ -392,8 +416,28 @@ resolve_event :: proc(event: Event) {
         game_state.confirmed_players = 0
         tooltip = "Choose a card to play and then confirm it."
 
-    case Begin_Resolution_Event:
-        get_my_player().stage = .RESOLVING
+    case Begin_Resolution_Stage_Event:
+        game_state.stage = .RESOLUTION
+        game_state.resolved_players = 0
+
+        tooltip = "Waiting for other players to resolve their cards."
+
+        // Unhide hidden cards
+        for player, player_id in game_state.players {
+            player_card, ok := find_played_card(player_id)
+            log.assertf(ok, "Player %v had no played card at the start of the resolution stage!")
+            element := find_element_for_card(player_card^)
+            card_element := &element.variant.(UI_Card_Element)
+            card_element.hidden = false
+        }
+
+        if !is_host do break
+
+        begin_next_player_turn()
+
+    case Begin_Player_Resolution_Event:
+        game_state.players[var.player_id].stage = .RESOLVING
+        if var.player_id != my_player_id do break
 
         // Find the played card
         card, ok := find_played_card()
@@ -428,7 +472,7 @@ resolve_event :: proc(event: Event) {
 
         case Choose_Target_Action:
             if len(action.targets) == 0 {
-                append(&event_queue, End_Resolution_Event{})
+                end_current_action_sequence()
             } else if len(action.targets) == calculate_implicit_quantity(action_type.num_targets) && !action.optional {
                 for space in action.targets {
                     append(&action_type.result, space)
@@ -448,7 +492,7 @@ resolve_event :: proc(event: Event) {
                 }
             }
             if choices_added == 0 {
-                append(&event_queue, End_Resolution_Event{})
+                end_current_action_sequence()
             } if choices_added == 1 {
                 append(&event_queue, Resolve_Current_Action_Event{most_recent_choice})
             }
@@ -476,7 +520,7 @@ resolve_event :: proc(event: Event) {
             append(&event_queue, Resolve_Current_Action_Event{})
 
         case Halt_Action: 
-            append(&event_queue, End_Resolution_Event{})
+            end_current_action_sequence()
 
         case Minion_Removal_Action:
             log.assert(get_my_player().is_team_captain && get_my_player().stage == .INTERRUPTING && game_state.stage == .MINION_BATTLE)
@@ -488,19 +532,78 @@ resolve_event :: proc(event: Event) {
             get_my_player().stage = .RESOLVED
         }
 
-    case End_Resolution_Event:
-        log.assert(get_my_player().stage == .RESOLVING, "Player is not resolving!")
+    case Resolve_Current_Action_Event:
         clear_side_buttons()
-        get_my_player().stage = .RESOLVED
-        game_state.resolved_players += 1
 
-        card, ok := find_played_card()
+        action := get_current_action()
+
+        #partial switch &variant in action.variant {
+        case Fast_Travel_Action:
+            broadcast_game_event(Unit_Translocation_Event{get_my_player().hero.location, variant.result})
+        case Movement_Action:
+            if len(variant.path.spaces) == 0 do break
+            defer {
+                delete(variant.path.spaces)
+                variant.path.spaces = nil
+                variant.path.num_locked_spaces = 0
+            }
+            if _, ok := var.jump_index.?; ok do break  // Movement Skipped
+            for space in variant.path.spaces {
+                // Stuff that happens on move through goes here
+                log.debugf("Traversed_space: %v", space)
+            }
+            broadcast_game_event(Unit_Translocation_Event{calculate_implicit_target(variant.target), variant.path.spaces[len(variant.path.spaces) - 1]})
+        case Choice_Action:
+            variant.result = var.jump_index.?
+        }
+
+        delete(action.targets)
+        action.targets = nil
+        
+        tooltip = nil
+
+        // Here would be where we need to handle minions outside the zone or wave pushes mid-turn
+
+        // Determine next action
+        next_index := get_my_player().hero.current_action_index
+        if index, ok := var.jump_index.?; ok {
+            next_index = index
+        } else {
+            next_index.index += 1
+        }
+        if next_index.sequence == .HALT || get_action_at_index(next_index) == nil {
+            end_current_action_sequence()
+            return
+        }
+
+        get_my_player().hero.current_action_index = next_index
+        append(&event_queue, Begin_Next_Action_Event{})
+
+    case End_Resolution_Event:
+
+        // @Note: Don't actually want to do this here as we want this to trigger on interrupts as well I think
+        log.assert(game_state.players[var.player_id].stage == .RESOLVING, "Player is not resolving!")
+        clear_side_buttons()
+        game_state.resolved_players += 1
+        game_state.players[var.player_id].stage = .RESOLVED
+        card, ok := find_played_card(var.player_id)
+
         log.assert(ok, "No played card to resolve!")
         resolve_card(card)
 
-        if game_state.resolved_players == len(game_state.players) {
-            append(&event_queue, Resolutions_Completed_Event{})
+        if is_host {
+            if initiative_tied {
+                broadcast_game_event(Update_Tiebreaker_Event{.RED if game_state.tiebreaker_coin == .BLUE else .BLUE})
+            }
+            initiative_tied = false
+
+            if game_state.resolved_players == len(game_state.players) {
+                broadcast_game_event(Resolutions_Completed_Event{})
+            } else {
+                begin_next_player_turn()
+            }
         }
+
         
     case Resolutions_Completed_Event:
         // Check for end of turn effects and stuff here
@@ -643,53 +746,6 @@ resolve_event :: proc(event: Event) {
     case End_Upgrading_Event:
         game_state.turn_counter = 0
         append(&event_queue, Begin_Card_Selection_Event{})
-
-    case Resolve_Current_Action_Event:
-        clear_side_buttons()
-
-        action := get_current_action()
-
-        #partial switch &variant in action.variant {
-        case Fast_Travel_Action:
-            translocate_unit(get_my_player().hero.location, variant.result)
-        case Movement_Action:
-            if len(variant.path.spaces) == 0 do break
-            defer {
-                delete(variant.path.spaces)
-                variant.path.spaces = nil
-                variant.path.num_locked_spaces = 0
-            }
-            if _, ok := var.jump_index.?; ok do break  // Movement Skipped
-            for space in variant.path.spaces {
-                // Stuff that happens on move through goes here
-                log.debugf("Traversed_space: %v", space)
-            }
-            translocate_unit(calculate_implicit_target(variant.target), variant.path.spaces[len(variant.path.spaces) - 1])
-        case Choice_Action:
-            variant.result = var.jump_index.?
-        }
-
-        delete(action.targets)
-        action.targets = nil
-        
-        tooltip = nil
-
-        // Here would be where we need to handle minions outside the zone or wave pushes mid-turn
-
-        // Determine next action
-        next_index := get_my_player().hero.current_action_index
-        if index, ok := var.jump_index.?; ok {
-            next_index = index
-        } else {
-            next_index.index += 1
-        }
-        if next_index.sequence == .HALT || get_action_at_index(next_index) == nil {
-            append(&event_queue, End_Resolution_Event{})
-            return
-        }
-
-        get_my_player().hero.current_action_index = next_index
-        append(&event_queue, Begin_Next_Action_Event{})
 
     case Game_Over_Event:
         // not too much fanfare here

@@ -56,7 +56,7 @@ color_lerp :: proc(a, b: rl.Color, t: $T) -> (out: rl.Color) {
     return out
 }
 
-translocate_unit :: proc(src, dest: IVec2) {
+translocate_unit :: proc(src, dest: Target) {
     src_space := &board[src.x][src.y]
     dest_space := &board[dest.x][dest.y]
 
@@ -91,7 +91,41 @@ get_first_set_bit :: proc(bs: bit_set[$T]) -> Maybe(T) where intrinsics.type_is_
 }
 
 get_enemy_team :: proc(team: Team) -> Team {
-    if team == .NONE do return .NONE
 
     return .BLUE if team == .RED else .RED
+}
+
+end_current_action_sequence :: proc() {
+    broadcast_game_event(End_Resolution_Event{my_player_id})
+}
+
+begin_next_player_turn :: proc() {
+    
+    highest_initiative: int = -1
+    highest_player: Player
+
+    initiative_tied = false
+
+    for player, player_id in game_state.players {
+        player_card, ok := find_played_card(player_id)
+        if !ok do continue
+
+        // effective_initiative := player_card.initiative * 2 + (1 if player.team == game_state.tiebreaker_coin else 0)
+    
+        if player_card.initiative > highest_initiative { // @Item
+            highest_initiative = player_card.initiative
+            highest_player = player  // @Note: need to consider ties between players on the same team
+        } else if player_card.initiative == highest_initiative {
+            if player.team != highest_player.team {
+                initiative_tied = true
+                if player.team == game_state.tiebreaker_coin {
+                    highest_initiative = player_card.initiative
+                    highest_player = player  // @Note: need to consider ties between players on the same team
+                }
+            }
+        }
+    }
+    if highest_initiative == -1 do return
+    broadcast_game_event(Begin_Player_Resolution_Event{highest_player.id})
+
 }

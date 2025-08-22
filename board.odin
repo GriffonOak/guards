@@ -253,7 +253,6 @@ setup_regions :: proc() {
 setup_spawnpoints :: proc() {
     for marker in spawnpoints {
         log.assert(marker.spawnpoint_flag in SPAWNPOINT_FLAGS, "Provided spawnpoint has no spawnpoint marker")
-        log.assert(marker.team != .NONE, "Provided spawnpoint has no team")
         space := &board[marker.loc.x][marker.loc.y]
         symmetric_space := get_symmetric_space(marker.loc)
         space.flags += {marker.spawnpoint_flag}
@@ -524,6 +523,10 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             highlight_action_targets(action^)
         }
     }
+
+    // Draw Tiebreaker Coin
+    rl.DrawCircleV({100, 100}, 75, team_colors[game_state.tiebreaker_coin])
+    rl.DrawRing({100, 100}, 70, 75, 0, 360, 100, rl.RAYWHITE)
 
     when ODIN_DEBUG {
         for x in 0..<GRID_WIDTH {
