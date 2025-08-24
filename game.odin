@@ -56,7 +56,8 @@ Wave_Push_Interrupt :: struct {
 }
 
 Attack_Interrupt :: struct {
-    strength: int
+    strength: int,
+    minion_modifiers: int,
 }
 
 Interrupt_Variant :: union {

@@ -139,5 +139,24 @@ begin_next_player_turn :: proc() {
     }
     if highest_initiative == -1 do return
     broadcast_game_event(Begin_Player_Resolution_Event{highest_player.id})
+}
+
+calculate_minion_modifiers :: proc() -> int {
+    minion_modifiers := 0
+    player := get_my_player()
+    context.allocator := context.temp_allocator
+    for adjacent in make_arbitrary_targets({Within_Distance{Self{}, 1, 1}}) {
+        space := board[adjacent.x][adjacent.y]
+        if space.flags & {.MELEE_MINION, .HEAVY_MINION} != {} {
+            minion_modifiers += 1 if space.unit_team == player.team else -1
+        }
+    }
+
+    for adjacent in make_arbitrary_targets({Within_Distance{Self{}, 1, 2}}) {
+        space := board[adjacent.x][adjacent.y]
+        if .RANGED_MINION in space.flags && space.unit_team != player.team {
+            minion_modifiers -= 1
+        }
+    }
 
 }

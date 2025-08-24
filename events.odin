@@ -473,13 +473,14 @@ resolve_event :: proc(event: Event) {
         if interrupt.interrupting_player == my_player_id {
             get_my_player().stage = .INTERRUPTING
 
-            switch interrupt_variant in interrupt.variant {
+            switch &interrupt_variant in game_state.interrupt_stack[len(game_state.interrupt_stack) - 1].interrupt.variant {
             case Action_Index:
                 get_my_player().hero.current_action_index = interrupt_variant
                 append(&event_queue, Begin_Next_Action_Event{})
             case Wave_Push_Interrupt:
                 broadcast_game_event(Begin_Wave_Push_Event{interrupt_variant.pushing_team})
             case Attack_Interrupt:
+                interrupt_variant.minion_modifiers = calculate_minion_modifiers()
                 // @Todo need to do attacks now
             }
         } else {

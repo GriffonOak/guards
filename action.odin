@@ -91,7 +91,17 @@ Minion_Spawn_Action :: struct {
     location, spawnpoint: Implicit_Target,
 }
 
-Choose_Card_Action :: struct {}
+
+Card_Selection_Criterion :: union {
+    Can_Defend,
+    Card_State,
+}
+
+Choose_Card_Action :: struct {
+    criteria: []Card_Selection_Criterion,
+    card_targets: [dynamic]Card_ID,
+    result: Card_ID,
+}
 
 Retrieve_Card_Action :: struct {}
 
@@ -121,6 +131,7 @@ Action :: struct {
     optional: bool,
     condition: Implicit_Condition,
     skip_index: Action_Index,
+    skip_name: cstring,
     variant: Action_Variant,
     targets: Target_Set,
 }
@@ -194,7 +205,24 @@ basic_clear_action := []Action {
 }
 
 basic_defense_action := []Action {
-    
+    Action {
+        tooltip = "Choose a card to defend with. You may also choose to die.",
+        optional = true,
+        skip_index = {sequence = .HALT},  // Needs to be defeated
+        skip_name = "Die",
+        variant = Choose_Card_Action {
+            criteria = {
+                Card_State.IN_HAND,
+                Can_Defend{},
+            }
+        }
+    },
+    Action {
+        tooltip = error_tooltip,
+        variant = Discard_Card_Action {
+            Previous_Card{}
+        }
+    }
 }
 
 minion_removal_action := []Action {

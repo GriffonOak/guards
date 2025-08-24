@@ -302,3 +302,38 @@ make_arbitrary_targets :: proc(criteria: []Selection_Criterion, allocator := con
 
     return out
 }
+
+
+card_fulfills_criterion :: proc(card: Card, criterion: Card_Selection_Criterion, allocator := context.allocator) -> bool {
+    switch variant in criterion.variant {
+    case Card_State: return card.state == variant
+    case Can_Defend:
+        // Phew
+        // Find the attack first
+        attack_strength := -1e6
+        minion_modifiers := -1e6
+        #reverse for expanded_interrupt in game_state.interrupt_stack {
+            #partial switch interrupt_variant in expanded_interrupt.interrupt.variant {
+            case Attack_Interrupt:
+                attack_strength = interrupt_variant.strength
+                minion_modifiers = interrupt.
+            }
+        }
+        log.assert(attack_strength != -1e6, "No attack found in interrupt stack!!!!!" )
+
+        minion_modifiers := 0
+        context.allocator := context.temp_allocator
+        for adjacent in make_arbitrary_targets({Within_Distance{Self{}, 1, 1}}) {
+            space := board[adjacent.x][adjacent.y]
+        }
+
+    }
+}
+
+make_card_targets :: proc(criteria: []Card_Selection_Criterion) -> (out: [dynamic]Card_ID) {
+    for card in get_my_player().hero.cards {
+        if card_fulfills_criterion(card, criteria[0]) {
+            append(&out, make_card_id(card))
+        }
+    }
+}
