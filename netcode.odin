@@ -13,7 +13,7 @@ import "core:thread"
 import "core:sync"
 
 LOOPBACK_ADDRESS :: "127.0.0.1"
-MY_ADDRESS :: "192.168.137.1"
+MY_ADDRESS :: "25.2.114.107"
 
 GUARDS_PORT :: 8081
 
@@ -103,7 +103,7 @@ join_local_game :: proc() -> bool {
 begin_hosting_local_game :: proc() -> bool {
 
     is_host = true
-    local_addr, ok := net.parse_ip4_address(MY_ADDRESS)
+    local_addr, ok := net.parse_ip4_address("0.0.0.0")
 
 	if !ok {
 		log.error("Failed to parse IP address")

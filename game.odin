@@ -51,7 +51,9 @@ Active_Effect :: struct {
     parent_card_id: Card_ID,
 }
 
-Wave_Push_Interrupt :: struct {}
+Wave_Push_Interrupt :: struct {
+    pushing_team: Team,
+}
 
 Interrupt_Variant :: union {
     Action_Index,
@@ -87,7 +89,8 @@ Game_State :: struct {
     team_captains: [Team]Player_ID,
     minion_counts: [Team]int,
     confirmed_players: int,
-    resolved_players,
+    resolved_players: int,
+    upgraded_players: int,
     turn_counter: int,
     wave_counters: int,
     tiebreaker_coin: Team,
@@ -97,8 +100,10 @@ Game_State :: struct {
     interrupt_stack: [dynamic]Expanded_Interrupt
 }
 
-
+// Secret host global vars
 initiative_tied: bool
+blocked_spawns: [Team][dynamic]Target
+
 game_state: Game_State = {
     confirmed_players = 0,
     stage = .SELECTION,
@@ -129,16 +134,16 @@ spawn_minions :: proc(zone: Region_ID) {
             spawnpoint_type := get_first_set_bit(spawnpoint_flags).?
 
             minion_to_spawn := spawnpoint_to_minion[spawnpoint_type]
-            // if minion_to_spawn == .RANGED_MINION && space.spawnpoint_team == .RED do continue
-            space.flags += {minion_to_spawn}
-            if minion_to_spawn == .HEAVY_MINION {
-                space.flags += {.IMMUNE}
-            }
-            space.unit_team = space.spawnpoint_team
-            game_state.minion_counts[space.spawnpoint_team] += 1
-        }
+            if minion_to_spawn == .MELEE_MINION && space.spawnpoint_team == .RED do continue
 
+            if (space.flags - {.TOKEN}) & OBSTACLE_FLAGS != {} {
+                broadcast_game_event(Minion_Blocked_Event{index})
+                continue
+            }
+            broadcast_game_event(Minion_Spawn_Event{index, minion_to_spawn, space.spawnpoint_team})
+        }
     }
+    return
 }
 
 spawn_heroes_at_start :: proc() {
@@ -163,7 +168,7 @@ spawn_heroes_at_start :: proc() {
         spawnpoint_space.hero_id = player.hero.id
         spawnpoint_space.owner = player_id
 
-        player.hero.coins = 1
+        player.hero.coins = 0
         player.hero.level = 1
 
     }
@@ -190,8 +195,6 @@ begin_game :: proc() {
     game_state.current_battle_zone = .CENTRE
     game_state.wave_counters = 5
 
-    spawn_minions(game_state.current_battle_zone)
-
     spawn_heroes_at_start()
 
     setup_hero_cards()
@@ -199,23 +202,13 @@ begin_game :: proc() {
     if is_host {
         tiebreaker: Team = .RED if rand.int31_max(2) == 0 else .BLUE
         broadcast_game_event(Update_Tiebreaker_Event{tiebreaker})
+        spawn_minions(game_state.current_battle_zone)
     }
 
     append(&event_queue, Begin_Card_Selection_Event{})
 }
 
 defeat_minion :: proc(target: Target) -> (will_interrupt: bool) {
-    // space := &board[target.x][target.y]
-    // minion := space.flags & MINION_FLAGS
-    // log.assert(space.flags & MINION_FLAGS != {}, "Tried to defeat a minion in a space with no minions!")
-    // minion_team := space.unit_team
-
-    // if .HEAVY_MINION in minion {
-    //     log.assert(game_state.minion_counts[minion_team] == 1, "Heavy minion defeated with an invalid number of minions left!")
-    //     get_my_player().hero.coins += 4
-    // } else {
-    //     get_my_player().hero.coins += 2
-    // }
 
     broadcast_game_event(Minion_Defeat_Event{target, my_player_id})
 
@@ -227,17 +220,6 @@ remove_minion :: proc(target: Target) -> (will_interrupt: bool) {
     log.assert(space.flags & MINION_FLAGS != {}, "Tried to remove a minion from a space with no minions!")
     minion_team := space.unit_team
     log.assert(game_state.minion_counts[minion_team] > 0, "Removing a minion but the game state claims there are 0 minions")
-
-    // game_state.minion_counts[minion_team] -= 1
-
-    // log.infof("Minion removed, new counts: %v", game_state.minion_counts)
-
-    // if game_state.minion_counts[minion_team] == 0 {
-    //     append(&event_queue, Begin_Wave_Push_Event{get_enemy_team(minion_team)})
-    //     return true
-    // } else if game_state.minion_counts[minion_team] == 1 {
-    //     remove_heavy_immunity(minion_team)
-    // }
 
     broadcast_game_event(Minion_Removal_Event{target, my_player_id})
 

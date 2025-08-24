@@ -60,10 +60,13 @@ Self :: struct {}
 
 Previous_Choice :: struct {}
 
+Top_Blocked_Spawnpoint :: struct {}
+
 Implicit_Target :: union {
     Target,
     Self,
     Previous_Choice,
+    Top_Blocked_Spawnpoint,
 }
 
 
@@ -78,11 +81,14 @@ Primary_Is_Not :: struct {
     kind: Ability_Kind
 }
 
+Blocked_Spawnpoints_Remain :: struct {}
+
 Implicit_Condition :: union {
     bool,
     Greater_Than,
     Primary_Is_Not,
     And,
+    Blocked_Spawnpoints_Remain
 }
 
 
@@ -130,12 +136,20 @@ calculate_implicit_target :: proc(implicit_target: Implicit_Target) -> (out: Tar
     case Target: out = target
     case Self: out = get_my_player().hero.location
     case Previous_Choice:
-        #reverse for action in get_my_player().hero.action_list[:get_my_player().hero.current_action_index.index] {
+        index := get_my_player().hero.current_action_index
+        index.index -= 1
+        for ; true; index.index -= 1 {
+            action := get_action_at_index(index)
             if variant, ok := action.variant.(Choose_Target_Action); ok {
                 out = variant.result[0]
                 return
             }
         }
+    case Top_Blocked_Spawnpoint:
+        my_team := get_my_player().team
+        num_blocked_spawns := len(blocked_spawns[my_team])
+        log.assert(num_blocked_spawns > 0, "No blocked spawns!!!!!")
+        return blocked_spawns[my_team][num_blocked_spawns - 1]
     }
     return
 }
@@ -160,6 +174,9 @@ calculate_implicit_condition :: proc(implicit_condition: Implicit_Condition) -> 
         out := true
         for extra_condition in condition do out &&= calculate_implicit_condition(extra_condition)
         return out
+    case Blocked_Spawnpoints_Remain:
+        my_team := get_my_player().team
+        return len(blocked_spawns[my_team]) > 0
     }
     return false
 }

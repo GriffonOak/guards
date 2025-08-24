@@ -162,8 +162,8 @@ hero_cards: [Hero_ID][]Card = #partial {
                     tooltip = "You may either move yourself or a ranged minion.",
                     variant = Choice_Action {
                         choices = {
-                            {"Move self", {index=1}},
-                            {"Move minion", {index=5}},
+                            {name = "Move self",    jump_index = {index=1}},
+                            {name = "Move minion",  jump_index = {index=5}},
                         },
                     }
                 },
@@ -370,8 +370,8 @@ hero_cards: [Hero_ID][]Card = #partial {
                     tooltip = "You may either move yourself or a ranged or melee minion.",
                     variant = Choice_Action {
                         choices = {
-                            {"Move self", {index=1}},
-                            {"Move minion", {index=5}},
+                            {name = "Move self",    jump_index = {index=1}},
+                            {name = "Move minion",  jump_index = {index=5}},
                         },
                     }
                 },
@@ -661,8 +661,8 @@ hero_cards: [Hero_ID][]Card = #partial {
                     tooltip = "You may either move yourself or a minion.",
                     variant = Choice_Action {
                         choices = {
-                            {"Move self", {index=1}},
-                            {"Move minion", {index=5}},
+                            {name = "Move self",    jump_index = {index=1}},
+                            {name = "Move minion",  jump_index = {index=5}},
                         },
                     }
                 },

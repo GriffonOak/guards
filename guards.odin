@@ -11,12 +11,11 @@ import "core:mem"
 
 
 // Todo list
-// Sync upgrade step
 // BASIC INTERRUPTS:
-//   Minion battle remove action
-//   Wave push respawn action
 //   Attack / defense
+//   Minions outside the battle zone
 // Once those are figured out, do xargatha minion defeat greens
+// Items ??
 // Finish implementing xargatha cards
 // Lobby that isn't ass
 // Other heroes / hero picker

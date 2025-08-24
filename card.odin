@@ -383,7 +383,11 @@ play_card :: proc(card: ^Card) {
 retrieve_card :: proc(card: ^Card) {
 
     element := find_element_for_card(card^)
-    element.bounding_rect = card_hand_position_rects[card.color]
+    if card.owner == my_player_id {
+        element.bounding_rect = card_hand_position_rects[card.color]
+    } else {
+        element.bounding_rect = {0, 0, 0, 0}
+    }
 
     card.state = .IN_HAND
 }

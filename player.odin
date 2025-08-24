@@ -29,8 +29,7 @@ Hero :: struct {
     location: IVec2,
 
     current_action_index: Action_Index,
-    action_list: []Action,
-    cards: [Card_Color]Card,  // soon, my love
+    cards: [Card_Color]Card,
     coins: int,
     level: int,
     // target_list: map[Target]Void,

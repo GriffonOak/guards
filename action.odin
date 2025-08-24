@@ -8,6 +8,10 @@ Within_Distance :: struct {
     max: Implicit_Quantity,
 }
 
+Closest_Spaces :: struct {
+    origin: Implicit_Target,
+}
+
 Contains_Any :: Space_Flags
 Contains_All :: Space_Flags
 
@@ -16,15 +20,20 @@ Is_Friendly_Unit :: struct {}
 Not_Previously_Targeted :: struct {}
 
 Ignoring_Immunity :: struct {}
+In_Battle_Zone :: struct {}
+Empty :: struct {}
 
 Selection_Criterion :: union {
     Within_Distance,
+    Closest_Spaces,  // Important to list this one last in any list of criteria
     Contains_Any,
     // Contains_All,
     Is_Enemy_Unit,
     Is_Friendly_Unit,
     Not_Previously_Targeted,
     Ignoring_Immunity,
+    In_Battle_Zone,
+    Empty,
 }
 
 
@@ -57,6 +66,7 @@ Choose_Target_Action :: struct {
 
 Choice :: struct {
     name: cstring,
+    valid: bool,
     jump_index: Action_Index,
 }
 
@@ -77,10 +87,17 @@ Add_Active_Effect_Action :: struct {
 Halt_Action :: struct {}
 
 Minion_Removal_Action :: struct {}
+Minion_Spawn_Action :: struct {
+    location, spawnpoint: Implicit_Target,
+}
 
 Choose_Card_Action :: struct {}
 
 Retrieve_Card_Action :: struct {}
+
+Jump_Action :: struct {
+    jump_index: Action_Index
+}
 
 Action_Variant :: union {
     Movement_Action,
@@ -91,9 +108,12 @@ Action_Variant :: union {
     Choice_Action,
     Add_Active_Effect_Action,
     Halt_Action,
-    Minion_Removal_Action,
     Choose_Card_Action,
     Retrieve_Card_Action,
+    Jump_Action,
+
+    Minion_Removal_Action,
+    Minion_Spawn_Action,
 }
 
 Action :: struct {
@@ -114,6 +134,7 @@ Action_Sequence_ID :: enum {
     BASIC_CLEAR,
 
     MINION_REMOVAL,
+    MINION_SPAWN,
 }
 
 Action_Index :: struct {
@@ -136,11 +157,11 @@ first_choice_action := []Action {
         tooltip = first_choice_tooltip,
         variant = Choice_Action {
             choices = []Choice {
-                {"Primary", {sequence=.PRIMARY}},
-                {"Movement", {sequence=.BASIC_MOVEMENT}},
-                {"Fast Travel", {sequence=.BASIC_FAST_TRAVEL}},
-                {"Clear", {sequence=.BASIC_CLEAR}},
-                {"Hold", {sequence=.HALT}},
+                {name = "Primary",      jump_index = {sequence=.PRIMARY}},
+                {name = "Movement",     jump_index = {sequence=.BASIC_MOVEMENT}},
+                {name = "Fast Travel",  jump_index = {sequence=.BASIC_FAST_TRAVEL}},
+                {name = "Clear",        jump_index = {sequence=.BASIC_CLEAR}},
+                {name = "Hold",         jump_index = {sequence=.HALT}},
             }
         }
     }
@@ -173,7 +194,7 @@ basic_clear_action := []Action {
 }
 
 minion_removal_action := []Action {
-    {
+    Action {
         tooltip = Formatted_String{
             format = "Choose %v minion%v to remove.",
             arguments = {
@@ -193,8 +214,36 @@ minion_removal_action := []Action {
             }
         }
     },
-    {
+    Action {
         variant = Minion_Removal_Action {}
+    }
+}
+
+minion_spawn_action := []Action {
+    Action {
+        tooltip = "Choose a space to spawn the blocked minion in.",
+        condition = Blocked_Spawnpoints_Remain{},
+        variant = Choose_Target_Action {
+            num_targets = 1,
+            criteria = {
+                In_Battle_Zone{},
+                Empty{},
+                Closest_Spaces {
+                    origin = Top_Blocked_Spawnpoint{}
+                },
+            }
+        }
+    },
+    Action {
+        variant = Minion_Spawn_Action {
+            location = Previous_Choice{},
+            spawnpoint = Top_Blocked_Spawnpoint{},
+        }
+    },
+    Action {
+        variant = Jump_Action {
+            jump_index = {.MINION_SPAWN, 0}
+        }
     }
 }
 
@@ -209,13 +258,17 @@ get_action_at_index :: proc(index: Action_Index) -> ^Action {
     action_sequence: []Action
 
     switch index.sequence {
-    case .PRIMARY:           action_sequence = get_my_player().hero.action_list
+    case .PRIMARY:
+        card, ok := find_played_card()
+        log.assert(ok, "no played card!!?!?!?!?!")
+        action_sequence = card.primary_effect
     case .HALT:              return nil
     case .FIRST_CHOICE:      action_sequence = first_choice_action
     case .BASIC_MOVEMENT:    action_sequence = basic_movement_action
     case .BASIC_FAST_TRAVEL: action_sequence = basic_fast_travel_action
     case .BASIC_CLEAR:       action_sequence = basic_clear_action
     case .MINION_REMOVAL:    action_sequence = minion_removal_action
+    case .MINION_SPAWN:      action_sequence = minion_spawn_action
     }
 
     if index.index < len(action_sequence) {

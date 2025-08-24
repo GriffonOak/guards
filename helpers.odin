@@ -36,13 +36,21 @@ find_played_card :: proc(player_id: Player_ID = my_player_id, loc := #caller_loc
     return nil, false
 }
 
-retrieve_cards :: proc() {
+retrieve_my_cards :: proc() {
 
     player := get_my_player()
 
     for &card in player.hero.cards {
         retrieve_card(&card)
-    } 
+    }
+}
+
+retrieve_all_cards :: proc() {
+    for &player in game_state.players {
+        for &card in player.hero.cards {
+            retrieve_card(&card)
+        }
+    }
 }
 
 lerp :: proc(a, b: $T, t: $T2) -> T {
@@ -99,7 +107,7 @@ end_current_action_sequence :: proc() {
     case .RESOLVING:
         broadcast_game_event(End_Resolution_Event{my_player_id})
     case .INTERRUPTING:
-        // broadcast_game_event(Resolve_Interrupt_Event)
+        broadcast_game_event(Resolve_Interrupt_Event{})
     }
 }
 

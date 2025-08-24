@@ -14,36 +14,7 @@ Target_Info :: struct {
 Target_Set :: map[Target]Target_Info
 
 
-
-populate_targets :: proc(index: Action_Index) {
-    action := get_action_at_index(index)
-    if action == nil do return 
-
-    switch &variant in action.variant {
-    case Movement_Action:
-        action.targets =  make_movement_targets(variant.distance, variant.target, variant.valid_destinations)
-    case Fast_Travel_Action:
-        action.targets =  make_fast_travel_targets()
-    case Clear_Action:
-        action.targets =  make_clear_targets()
-    case Choose_Target_Action:
-        action.targets =  make_arbitrary_targets(variant.criteria)
-        clear(&variant.result)
-    case Choice_Action:
-        for choice in variant.choices {
-            populate_targets(choice.jump_index)
-        }
-    case Halt_Action, Attack_Action, Add_Active_Effect_Action, Minion_Removal_Action:
-
-    case Choose_Card_Action:
-        // todo ???
-
-    case Retrieve_Card_Action:
-
-    }
-}
-
-action_can_be_taken :: proc(index: Action_Index = {sequence=.PRIMARY}) -> bool {
+validate_action :: proc(index: Action_Index) -> bool {
     if index.sequence == .HALT do return true
 
     // Disable movement on xargatha freeze
@@ -64,19 +35,39 @@ action_can_be_taken :: proc(index: Action_Index = {sequence=.PRIMARY}) -> bool {
     action := get_action_at_index(index)
     if action.condition != nil && !calculate_implicit_condition(action.condition) do return false
 
-    switch variant in action.variant {
-    case Movement_Action, Fast_Travel_Action, Clear_Action, Choose_Target_Action:
+    switch &variant in action.variant {
+    case Movement_Action:
+        action.targets =  make_movement_targets(variant.distance, variant.target, variant.valid_destinations)
         return len(action.targets) > 0
-    case Halt_Action, Attack_Action, Add_Active_Effect_Action, Minion_Removal_Action:
-        return true
+
+    case Fast_Travel_Action:
+        action.targets =  make_fast_travel_targets()
+        return len(action.targets) > 0
+
+    case Clear_Action:
+        action.targets =  make_clear_targets()
+        return len(action.targets) > 0
+
+    case Choose_Target_Action:
+        action.targets =  make_arbitrary_targets(variant.criteria)
+        return len(action.targets) > 0
+
     case Choice_Action:
-        // Not technically correct! Need to see if all child actions are takeable
+        out := false
+        for &choice in &variant.choices {
+            choice.valid = validate_action(choice.jump_index)
+            out ||= choice.valid
+        }
+        return out
+
+    case Halt_Action, Attack_Action, Add_Active_Effect_Action, Minion_Removal_Action, Jump_Action, Minion_Spawn_Action:
         return true
 
     case Choose_Card_Action:
         // @todo!
 
     case Retrieve_Card_Action:
+
     }
     return false
 }
@@ -225,11 +216,14 @@ target_fulfills_criterion :: proc(target: Target, criterion: Selection_Criterion
         return intersection != {}
 
 
-    // @Note these don't actually test whether a unit is present in the space, only that the teams are the same / doifferemt
-    case Is_Enemy_Unit:    return get_my_player().team != space.unit_team 
+    // @Note these don't actually test whether a unit is present in the space, only that the teams are the same / different
+    case Is_Enemy_Unit:    return get_my_player().team != space.unit_team
     case Is_Friendly_Unit: return get_my_player().team == space.unit_team
 
-    case Ignoring_Immunity, Not_Previously_Targeted:
+    case In_Battle_Zone:   return space.region_id == game_state.current_battle_zone
+    case Empty:            return space.flags & OBSTACLE_FLAGS == {}
+
+    case Ignoring_Immunity, Not_Previously_Targeted, Closest_Spaces:
     }
     return true
 }
@@ -253,7 +247,7 @@ make_arbitrary_targets :: proc(criteria: []Selection_Criterion, allocator := con
 
     for criterion in criteria[1:] {
         switch variant in criterion {
-        case Within_Distance, Contains_Any, Is_Enemy_Unit, Is_Friendly_Unit:
+        case Within_Distance, Contains_Any, Is_Enemy_Unit, Is_Friendly_Unit, In_Battle_Zone, Empty:
             for target, info in out {
                 if !target_fulfills_criterion(target, criterion) {
                     delete_key(&out, target)
@@ -266,6 +260,32 @@ make_arbitrary_targets :: proc(criteria: []Selection_Criterion, allocator := con
 
         case Ignoring_Immunity:
             ignore_immunity = true
+
+        case Closest_Spaces:
+            context.allocator = context.temp_allocator
+            for dist := 1 ; true ; dist += 1 {
+                dist_targets := make_arbitrary_targets(
+                    {
+                        Within_Distance {
+                            origin = variant.origin,
+                            min = dist,
+                            max = dist,
+                        },
+                    },
+                )
+                overlap := false
+                for dist_target in dist_targets {
+                    if dist_target in out {
+                        overlap = true
+                        break
+                    }
+                }
+                if !overlap do continue
+                for target in out {
+                    if target not_in dist_targets do delete_key(&out, target)
+                }
+                break
+            }
 
         }
     }
