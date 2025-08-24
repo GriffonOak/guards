@@ -37,6 +37,22 @@ Unit_Translocation_Event :: struct {
     src, dest: Target
 }
 
+Minion_Defeat_Event :: struct {
+    target: Target,
+    defeating_player: Player_ID,
+}
+
+Minion_Removal_Event :: struct {
+    target: Target,
+    removing_player: Player_ID,
+}
+
+
+Begin_Interrupt_Event :: struct {
+    interrupt: Interrupt
+}
+// Resolve_Interrupt_Event :: struct {}
+
 Update_Tiebreaker_Event :: struct {
     tiebreaker: Team
 }
@@ -65,8 +81,11 @@ Begin_Minion_Removal_Event :: struct {
     team: Team
 }
 End_Minion_Battle_Event :: struct {}
+
+
 Begin_Wave_Push_Event :: struct {
-    pushing_team: Team
+    pushing_team: Team,
+    generating_player: Player_ID,
 }
 
 End_Wave_Push_Event :: struct {}
@@ -101,6 +120,11 @@ Event :: union {
     Cancel_Event,
 
     Unit_Translocation_Event,
+    Minion_Defeat_Event,
+    Minion_Removal_Event,
+
+    Begin_Interrupt_Event,
+    // Resolve_Interrupt_Event,
 
     Update_Tiebreaker_Event,
 
@@ -407,6 +431,61 @@ resolve_event :: proc(event: Event) {
     case Unit_Translocation_Event:
         translocate_unit(var.src, var.dest)
 
+    case Minion_Defeat_Event:
+        space := &board[var.target.x][var.target.y]
+        minion := space.flags & MINION_FLAGS
+        log.assert(space.flags & MINION_FLAGS != {}, "Tried to defeat a minion in a space with no minions!")
+        minion_team := space.unit_team
+
+        if .HEAVY_MINION in minion {
+            log.assert(game_state.minion_counts[minion_team] == 1, "Heavy minion defeated with an invalid number of minions left!")
+            get_player_by_id(var.defeating_player).hero.coins += 4
+        } else {
+            get_player_by_id(var.defeating_player).hero.coins += 2
+        }
+
+        if var.defeating_player == my_player_id {
+            // Check if minion can be removed here
+            broadcast_game_event(Minion_Removal_Event{var.target, var.defeating_player})
+        }
+
+    case Minion_Removal_Event:
+        space := &board[var.target.x][var.target.y]
+        log.assert(space.flags & MINION_FLAGS != {}, "Tried to remove a minion from a space with no minions!")
+        minion_team := space.unit_team
+        log.assert(game_state.minion_counts[minion_team] > 0, "Removing a minion but the game state claims there are 0 minions")
+        space.flags -= MINION_FLAGS
+
+        game_state.minion_counts[minion_team] -= 1
+
+        log.infof("Minion removed, new counts: %v", game_state.minion_counts)
+
+        if game_state.minion_counts[minion_team] == 1 {
+            remove_heavy_immunity(minion_team)
+        }
+        if game_state.minion_counts[minion_team] == 0 && var.removing_player == my_player_id {
+            broadcast_game_event(Begin_Wave_Push_Event{get_enemy_team(minion_team), my_player_id})
+        }
+
+    case Begin_Interrupt_Event:
+        interrupt := var.interrupt
+        if interrupt.interrupted_player != my_player_id {  // The interruptee should already have added to their own interrupt stack in become_interrupted
+            previous_stage := get_my_player().stage
+            expanded_interrupt := Expanded_Interrupt {
+                interrupt = interrupt,
+                previous_stage = previous_stage
+            }
+            append(&game_state.interrupt_stack, expanded_interrupt)
+        }
+
+        if interrupt.interrupting_player == my_player_id {
+            get_my_player().stage = .INTERRUPTING
+            get_my_player().hero.current_action_index = interrupt.interrupt_index
+            append(&event_queue, Begin_Next_Action_Event{})
+        } else {
+            get_my_player().stage = .INTERRUPTED
+        }
+
     case Update_Tiebreaker_Event:
         game_state.tiebreaker_coin = var.tiebreaker
         
@@ -431,9 +510,10 @@ resolve_event :: proc(event: Event) {
             card_element.hidden = false
         }
 
-        if !is_host do break
+        if is_host {
+            begin_next_player_turn()
+        }
 
-        begin_next_player_turn()
 
     case Begin_Player_Resolution_Event:
         game_state.players[var.player_id].stage = .RESOLVING
@@ -471,7 +551,7 @@ resolve_event :: proc(event: Event) {
             }
 
         case Choose_Target_Action:
-            if len(action.targets) == 0 {
+            if len(action.targets) == 0 && !action.optional {
                 end_current_action_sequence()
             } else if len(action.targets) == calculate_implicit_quantity(action_type.num_targets) && !action.optional {
                 for space in action.targets {
@@ -503,11 +583,9 @@ resolve_event :: proc(event: Event) {
             log.debugf("Attack strength: %v", calculate_implicit_quantity(action_type.strength))
             // Here we assume the target must be an enemy. Enemy should always be in the selection flags for attacks.
             if MINION_FLAGS & space.flags != {} {
-                if !defeat_minion(target) {
-                    append(&event_queue, Resolve_Current_Action_Event{})
-                } else {
-                    // get interrupted lol
-                }
+                broadcast_game_event(Minion_Defeat_Event{target, my_player_id})
+                
+                append(&event_queue, Resolve_Current_Action_Event{})
             }
         
         case Add_Active_Effect_Action:
@@ -519,7 +597,7 @@ resolve_event :: proc(event: Event) {
             game_state.ongoing_active_effects[effect.id] = effect
             append(&event_queue, Resolve_Current_Action_Event{})
 
-        case Halt_Action: 
+        case Halt_Action:
             end_current_action_sequence()
 
         case Minion_Removal_Action:
@@ -528,8 +606,7 @@ resolve_event :: proc(event: Event) {
             for minion in minions_to_remove {
                 log.assert(!remove_minion(minion), "Minion removal during battle caused wave push!")
             }
-            append(&event_queue, End_Minion_Battle_Event{})
-            get_my_player().stage = .RESOLVED
+            append(&event_queue, Resolve_Current_Action_Event{})
         }
 
     case Resolve_Current_Action_Event:
@@ -581,26 +658,35 @@ resolve_event :: proc(event: Event) {
 
     case End_Resolution_Event:
 
-        // @Note: Don't actually want to do this here as we want this to trigger on interrupts as well I think
-        log.assert(game_state.players[var.player_id].stage == .RESOLVING, "Player is not resolving!")
-        clear_side_buttons()
-        game_state.resolved_players += 1
-        game_state.players[var.player_id].stage = .RESOLVED
-        card, ok := find_played_card(var.player_id)
-
-        log.assert(ok, "No played card to resolve!")
-        resolve_card(card)
-
-        if is_host {
-            if initiative_tied {
-                broadcast_game_event(Update_Tiebreaker_Event{.RED if game_state.tiebreaker_coin == .BLUE else .BLUE})
+        #partial switch get_my_player().stage {
+        case .CONFIRMED, .RESOLVING, .RESOLVED:
+            clear_side_buttons()
+            game_state.resolved_players += 1
+            game_state.players[var.player_id].stage = .RESOLVED
+            card, ok := find_played_card(var.player_id)
+    
+            log.assert(ok, "No played card to resolve!")
+            resolve_card(card)
+    
+            if is_host {
+                if initiative_tied {
+                    broadcast_game_event(Update_Tiebreaker_Event{get_enemy_team(game_state.tiebreaker_coin)})
+                }
+                initiative_tied = false
+    
+                if game_state.resolved_players == len(game_state.players) {
+                    broadcast_game_event(Resolutions_Completed_Event{})
+                } else {
+                    begin_next_player_turn()
+                }
             }
-            initiative_tied = false
-
-            if game_state.resolved_players == len(game_state.players) {
-                broadcast_game_event(Resolutions_Completed_Event{})
-            } else {
-                begin_next_player_turn()
+        case .INTERRUPTING, .INTERRUPTED:
+            log.assert(len(game_state.interrupt_stack) > 0, "Interrupt resolved with no interrupt on the stack!")
+            most_recent_interrupt := pop(&game_state.interrupt_stack)
+            log.assert(most_recent_interrupt.interrupt.interrupting_player == var.player_id, "popped interrupt does not match resolved player's ID")
+            get_my_player().stage = most_recent_interrupt.previous_stage
+            if most_recent_interrupt.interrupt.interrupted_player == my_player_id {
+                append(&event_queue, most_recent_interrupt.on_resolution)
             }
         }
 
@@ -615,11 +701,13 @@ resolve_event :: proc(event: Event) {
         }
 
         game_state.turn_counter += 1
-        if game_state.turn_counter >= 4 {
-            // End of round stuffs
-            append(&event_queue, Begin_Minion_Battle_Event{})
-        } else {
-            append(&event_queue, Begin_Card_Selection_Event{})
+        if is_host {
+            if game_state.turn_counter >= 4 {
+                // End of round stuffs
+                broadcast_game_event(Begin_Minion_Battle_Event{})
+            } else {
+                broadcast_game_event(Begin_Card_Selection_Event{})
+            }
         }
 
 
@@ -628,50 +716,48 @@ resolve_event :: proc(event: Event) {
         // Let the team captain choose which minions to delete
         // append(&event_queue, End_Minion_Battle_Event{})
 
+        if !is_host do break
+
         minion_difference := game_state.minion_counts[.RED] - game_state.minion_counts[.BLUE]
         // pushing_team := .RED if minion_difference > 0 else .BLUE
         // pushed_team := get_enemy_team(pushing_team)
-        if minion_difference > 0 {
-            if minion_difference >= game_state.minion_counts[.BLUE] {
-                append(&event_queue, Begin_Wave_Push_Event{.RED})
+        if abs(minion_difference) > 0 {
+            pushing_team: Team = .RED if minion_difference > 0 else .BLUE
+            pushed_team: Team = .BLUE if minion_difference > 0 else .RED
+            if abs(minion_difference) >= game_state.minion_counts[pushed_team] {
+                broadcast_game_event(Begin_Wave_Push_Event{pushing_team, my_player_id})
             } else {
-                append(&event_queue, Begin_Minion_Removal_Event{.BLUE})
-            }
-        } else if minion_difference < 0 {
-            if -minion_difference >= game_state.minion_counts[.RED] {
-                append(&event_queue, Begin_Wave_Push_Event{.BLUE})
-            } else {
-                append(&event_queue, Begin_Minion_Removal_Event{.RED})
+                // 
+                // append(&event_queue, Begin_Minion_Removal_Event{pushed_team})
+                become_interrupted (
+                    Interrupt {
+                        my_player_id, game_state.team_captains[pushed_team],
+                        {.MINION_REMOVAL, 0}
+                    },
+                    End_Minion_Battle_Event{},
+                )
             }
         } else {
             append(&event_queue, End_Minion_Battle_Event{})
         }
 
     case Begin_Minion_Removal_Event:
-        if get_my_player().team == var.team && get_my_player().is_team_captain {
-            get_my_player().hero.current_action_index = {sequence=.MINION_REMOVAL}
-            get_my_player().stage = .INTERRUPTING
-            append(&event_queue, Begin_Next_Action_Event{}) 
-            break
-        }
+        // if get_my_player().team == var.team && get_my_player().is_team_captain {
+        //     get_my_player().hero.current_action_index = {sequence=.MINION_REMOVAL}
+        //     get_my_player().stage = .INTERRUPTING
+        //     append(&event_queue, Begin_Next_Action_Event{}) 
+        //     break
+        // }
 
-        minion_difference := abs(game_state.minion_counts[.RED] - game_state.minion_counts[.BLUE])
-
-        for target in zone_indices[game_state.current_battle_zone] {
-            space := &board[target.x][target.y]
-            if space.flags & {.RANGED_MINION, .MELEE_MINION} != {} && space.unit_team == var.team {
-                log.assert(!remove_minion(target), "Minion removal during battle caused wave push!")
-                minion_difference -= 1
-                if minion_difference == 0 do break
-            }
-        }
-
-        append(&event_queue, End_Minion_Battle_Event{})
+        // append(&event_queue, End_Minion_Battle_Event{})
 
 
     case End_Minion_Battle_Event:
 
-        append(&event_queue, Retrieve_Cards_Event{})
+        log.assert(!is_host, "Client should never reach here!!!!!")
+
+        // Host only
+        broadcast_game_event(Retrieve_Cards_Event{})
 
     case Begin_Wave_Push_Event:
         // Check if game over

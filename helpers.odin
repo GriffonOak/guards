@@ -70,7 +70,6 @@ translocate_unit :: proc(src, dest: Target) {
     if .HERO in src_transient_flags {
         dest_space.owner = src_space.owner
         get_player_by_id(dest_space.owner).hero.location = dest
-
     }
 }
 

@@ -16,6 +16,7 @@ Player_Stage :: enum {
     UPGRADING,
 
     INTERRUPTING,
+    INTERRUPTED,
 }
 
 Hero_ID :: enum {
@@ -89,7 +90,7 @@ render_player_info_at_position :: proc(player_id: Player_ID, pos: Vec2) {
     context.allocator = context.temp_allocator
     name, ok := reflect.enum_name_from_value(player.hero.id)
     // hero_name := strings.clone_to_cstring(strings.to_ada_case(name))
-    hero_name := fmt.ctprintf("[%v] %v", player_id, strings.to_ada_case(name))
+    hero_name := fmt.ctprintf("[%v%v] %v", player_id, "!" if player.is_team_captain else "", strings.to_ada_case(name))
     
     rl.DrawTextEx(default_font, hero_name, pos, INFO_FONT_SIZE, FONT_SPACING, team_colors[player.team])
     pos.y += INFO_FONT_SIZE + TEXT_PADDING
@@ -107,6 +108,9 @@ add_or_update_player :: proc(player: Player) {
         resize(&game_state.players, player.id + 1)
     }
     game_state.players[player.id] = player
+    if player.is_team_captain {
+        game_state.team_captains[player.team] = player.id
+    }
 }
 
 get_player_by_id :: proc(player_id: Player_ID) -> ^Player {

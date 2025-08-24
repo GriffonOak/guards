@@ -55,7 +55,6 @@ Space :: struct {
 }
 
 
-
 VERTICAL_SPACING :: 67
 
 // sqrt 3
@@ -259,7 +258,7 @@ setup_spawnpoints :: proc() {
         symmetric_space.flags += {marker.spawnpoint_flag}
 
         space.spawnpoint_team = marker.team
-        symmetric_space.spawnpoint_team = .BLUE if marker.team == .RED else .RED
+        symmetric_space.spawnpoint_team = get_enemy_team(marker.team)
     }
 }
 

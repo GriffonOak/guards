@@ -157,19 +157,20 @@ _thread_host_wait_for_clients :: proc(sock: net.TCP_Socket) {
                     id = .XARGATHA
                 },
                 team = .BLUE,
-                is_team_captain = true,
+                is_team_captain = client_player_id == 1,
                 socket = client,
             }
             add_or_update_player(client_player)
 
             for player, player_id in game_state.players {
                 if player_id != 0 {
+                    // Update existing player that new player has joined
                     send_network_packet_socket(player.socket, {0, Update_Player_Data{client_player}})
                 }
+                // Inform joining player of existing player
                 send_network_packet_socket(client, {0, Update_Player_Data{player}})
             }
-            // send_network_packet_socket(client, {0, Update_Player_Data{client_player}})
-            // send_network_packet_socket(client, {0, Update_Player_Data{game_state.players[0]}})
+
             send_network_packet_socket(client, {0, Set_Client_Player_ID{client_player_id}})
 
             for player in game_state.players {
