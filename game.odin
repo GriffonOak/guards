@@ -51,9 +51,16 @@ Active_Effect :: struct {
     parent_card_id: Card_ID,
 }
 
+Wave_Push_Interrupt :: struct {}
+
+Interrupt_Variant :: union {
+    Action_Index,
+    Wave_Push_Interrupt,
+}
+
 Interrupt :: struct {
     interrupted_player, interrupting_player: Player_ID,
-    interrupt_index: Action_Index,
+    variant: Interrupt_Variant,
     // on_resolution: Event,
 }
 
@@ -197,41 +204,45 @@ begin_game :: proc() {
     append(&event_queue, Begin_Card_Selection_Event{})
 }
 
-// defeat_minion :: proc(target: Target) -> (will_interrupt: bool) {
-//     space := &board[target.x][target.y]
-//     minion := space.flags & MINION_FLAGS
-//     log.assert(space.flags & MINION_FLAGS != {}, "Tried to defeat a minion in a space with no minions!")
-//     minion_team := space.unit_team
+defeat_minion :: proc(target: Target) -> (will_interrupt: bool) {
+    // space := &board[target.x][target.y]
+    // minion := space.flags & MINION_FLAGS
+    // log.assert(space.flags & MINION_FLAGS != {}, "Tried to defeat a minion in a space with no minions!")
+    // minion_team := space.unit_team
 
-//     if .HEAVY_MINION in minion {
-//         log.assert(game_state.minion_counts[minion_team] == 1, "Heavy minion defeated with an invalid number of minions left!")
-//         get_my_player().hero.coins += 4
-//     } else {
-//         get_my_player().hero.coins += 2
-//     }
+    // if .HEAVY_MINION in minion {
+    //     log.assert(game_state.minion_counts[minion_team] == 1, "Heavy minion defeated with an invalid number of minions left!")
+    //     get_my_player().hero.coins += 4
+    // } else {
+    //     get_my_player().hero.coins += 2
+    // }
 
-//     return remove_minion(target)
-// }
+    broadcast_game_event(Minion_Defeat_Event{target, my_player_id})
 
-// remove_minion :: proc(target: Target) -> (will_interrupt: bool) {
-//     space := &board[target.x][target.y]
-//     log.assert(space.flags & MINION_FLAGS != {}, "Tried to remove a minion from a space with no minions!")
-//     minion_team := space.unit_team
-//     log.assert(game_state.minion_counts[minion_team] > 0, "Removing a minion but the game state claims there are 0 minions")
-//     space.flags -= MINION_FLAGS
+    return remove_minion(target)
+}
 
-//     game_state.minion_counts[minion_team] -= 1
+remove_minion :: proc(target: Target) -> (will_interrupt: bool) {
+    space := &board[target.x][target.y]
+    log.assert(space.flags & MINION_FLAGS != {}, "Tried to remove a minion from a space with no minions!")
+    minion_team := space.unit_team
+    log.assert(game_state.minion_counts[minion_team] > 0, "Removing a minion but the game state claims there are 0 minions")
 
-//     log.infof("Minion removed, new counts: %v", game_state.minion_counts)
+    // game_state.minion_counts[minion_team] -= 1
 
-//     if game_state.minion_counts[minion_team] == 0 {
-//         append(&event_queue, Begin_Wave_Push_Event{get_enemy_team(minion_team)})
-//         return true
-//     } else if game_state.minion_counts[minion_team] == 1 {
-//         remove_heavy_immunity(minion_team)
-//     }
-//     return false
-// }
+    // log.infof("Minion removed, new counts: %v", game_state.minion_counts)
+
+    // if game_state.minion_counts[minion_team] == 0 {
+    //     append(&event_queue, Begin_Wave_Push_Event{get_enemy_team(minion_team)})
+    //     return true
+    // } else if game_state.minion_counts[minion_team] == 1 {
+    //     remove_heavy_immunity(minion_team)
+    // }
+
+    broadcast_game_event(Minion_Removal_Event{target, my_player_id})
+
+    return game_state.minion_counts[minion_team] <= 1
+}
 
 remove_heavy_immunity :: proc(team: Team) {
     zone := zone_indices[game_state.current_battle_zone]

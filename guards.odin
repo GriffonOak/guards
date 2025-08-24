@@ -13,10 +13,12 @@ import "core:mem"
 // Todo list
 // Sync upgrade step
 // BASIC INTERRUPTS:
-//   Attack / defense
 //   Minion battle remove action
+//   Wave push respawn action
+//   Attack / defense
 // Once those are figured out, do xargatha minion defeat greens
 // Finish implementing xargatha cards
+// Lobby that isn't ass
 // Other heroes / hero picker
 // Snorri runes
 
@@ -26,6 +28,8 @@ import "core:mem"
 // Might also be overkill :)
 // Refactor skip_index in actions as next_index and use that to skip to the halt sequence instead of having a literal halt action
 // Always send team captain the minion removal event and just skip the choose step if there are more minions to remove than exist
+// Model wave push as an action sequence to obviate the need for interrupt_variant
+
 
 Window_Size :: enum {
     SMALL,

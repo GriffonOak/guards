@@ -13,6 +13,7 @@ import "core:thread"
 import "core:sync"
 
 LOOPBACK_ADDRESS :: "127.0.0.1"
+MY_ADDRESS :: "192.168.137.1"
 
 GUARDS_PORT :: 8081
 
@@ -84,7 +85,7 @@ send_network_packet_socket :: proc(socket: net.TCP_Socket, net_event: Network_Pa
 join_local_game :: proc() -> bool {
 
     is_host = false
-    local_address, ok := net.parse_ip4_address(LOOPBACK_ADDRESS)
+    local_address, ok := net.parse_ip4_address(MY_ADDRESS)
 
 	socket, err := net.dial_tcp_from_address_and_port(local_address, GUARDS_PORT)
 	if err != nil {
@@ -102,7 +103,7 @@ join_local_game :: proc() -> bool {
 begin_hosting_local_game :: proc() -> bool {
 
     is_host = true
-    local_addr, ok := net.parse_ip4_address(LOOPBACK_ADDRESS)
+    local_addr, ok := net.parse_ip4_address(MY_ADDRESS)
 
 	if !ok {
 		log.error("Failed to parse IP address")

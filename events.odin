@@ -77,9 +77,7 @@ End_Resolution_Event :: struct {
 Resolutions_Completed_Event :: struct {}
 
 Begin_Minion_Battle_Event :: struct {}
-Begin_Minion_Removal_Event :: struct {
-    team: Team
-}
+
 End_Minion_Battle_Event :: struct {}
 
 
@@ -89,7 +87,6 @@ Begin_Wave_Push_Event :: struct {
 }
 
 End_Wave_Push_Event :: struct {}
-Retrieve_Cards_Event :: struct {}
 
 
 Begin_Upgrading_Event :: struct {}
@@ -140,14 +137,11 @@ Event :: union {
     Resolutions_Completed_Event,
 
     Begin_Minion_Battle_Event,
-    Begin_Minion_Removal_Event,
     
     Begin_Wave_Push_Event,
     End_Wave_Push_Event,
     
     End_Minion_Battle_Event,
-    
-    Retrieve_Cards_Event,
 
     Begin_Upgrading_Event,
     Begin_Next_Upgrade_Event,
@@ -444,11 +438,6 @@ resolve_event :: proc(event: Event) {
             get_player_by_id(var.defeating_player).hero.coins += 2
         }
 
-        if var.defeating_player == my_player_id {
-            // Check if minion can be removed here
-            broadcast_game_event(Minion_Removal_Event{var.target, var.defeating_player})
-        }
-
     case Minion_Removal_Event:
         space := &board[var.target.x][var.target.y]
         log.assert(space.flags & MINION_FLAGS != {}, "Tried to remove a minion from a space with no minions!")
@@ -462,9 +451,6 @@ resolve_event :: proc(event: Event) {
 
         if game_state.minion_counts[minion_team] == 1 {
             remove_heavy_immunity(minion_team)
-        }
-        if game_state.minion_counts[minion_team] == 0 && var.removing_player == my_player_id {
-            broadcast_game_event(Begin_Wave_Push_Event{get_enemy_team(minion_team), my_player_id})
         }
 
     case Begin_Interrupt_Event:
@@ -480,8 +466,14 @@ resolve_event :: proc(event: Event) {
 
         if interrupt.interrupting_player == my_player_id {
             get_my_player().stage = .INTERRUPTING
-            get_my_player().hero.current_action_index = interrupt.interrupt_index
-            append(&event_queue, Begin_Next_Action_Event{})
+
+            switch interrupt_variant in interrupt.variant {
+            case Action_Index:
+                get_my_player().hero.current_action_index = interrupt_variant
+                append(&event_queue, Begin_Next_Action_Event{})
+            case Wave_Push_Interrupt:
+                append(&event_queue, Begin_Wave_Push_Event{})
+            }
         } else {
             get_my_player().stage = .INTERRUPTED
         }
@@ -583,9 +575,17 @@ resolve_event :: proc(event: Event) {
             log.debugf("Attack strength: %v", calculate_implicit_quantity(action_type.strength))
             // Here we assume the target must be an enemy. Enemy should always be in the selection flags for attacks.
             if MINION_FLAGS & space.flags != {} {
-                broadcast_game_event(Minion_Defeat_Event{target, my_player_id})
-                
-                append(&event_queue, Resolve_Current_Action_Event{})
+                if defeat_minion(target) {  // Add a wave push interrupt if the minion defeated was the last one
+                    become_interrupted (
+                        Interrupt {
+                            my_player_id, 0,
+                            Wave_Push_Interrupt{}
+                        },
+                        Resolve_Current_Action_Event{}
+                    )
+                } else {
+                    append(&event_queue, Resolve_Current_Action_Event{})
+                }
             }
         
         case Add_Active_Effect_Action:
@@ -648,6 +648,7 @@ resolve_event :: proc(event: Event) {
         } else {
             next_index.index += 1
         }
+
         if next_index.sequence == .HALT || get_action_at_index(next_index) == nil {
             end_current_action_sequence()
             return
@@ -725,14 +726,18 @@ resolve_event :: proc(event: Event) {
             pushing_team: Team = .RED if minion_difference > 0 else .BLUE
             pushed_team: Team = .BLUE if minion_difference > 0 else .RED
             if abs(minion_difference) >= game_state.minion_counts[pushed_team] {
-                broadcast_game_event(Begin_Wave_Push_Event{pushing_team, my_player_id})
+                become_interrupted (
+                    Interrupt {
+                        my_player_id, my_player_id,
+                        Wave_Push_Interrupt {},
+                    },
+                    End_Minion_Battle_Event {},
+                )
             } else {
-                // 
-                // append(&event_queue, Begin_Minion_Removal_Event{pushed_team})
                 become_interrupted (
                     Interrupt {
                         my_player_id, game_state.team_captains[pushed_team],
-                        {.MINION_REMOVAL, 0}
+                        Action_Index{.MINION_REMOVAL, 0}
                     },
                     End_Minion_Battle_Event{},
                 )
@@ -741,26 +746,17 @@ resolve_event :: proc(event: Event) {
             append(&event_queue, End_Minion_Battle_Event{})
         }
 
-    case Begin_Minion_Removal_Event:
-        // if get_my_player().team == var.team && get_my_player().is_team_captain {
-        //     get_my_player().hero.current_action_index = {sequence=.MINION_REMOVAL}
-        //     get_my_player().stage = .INTERRUPTING
-        //     append(&event_queue, Begin_Next_Action_Event{}) 
-        //     break
-        // }
-
-        // append(&event_queue, End_Minion_Battle_Event{})
-
-
     case End_Minion_Battle_Event:
 
-        log.assert(!is_host, "Client should never reach here!!!!!")
+        log.assert(is_host, "Client should never reach here!!!!!")
 
         // Host only
-        broadcast_game_event(Retrieve_Cards_Event{})
+        broadcast_game_event(Begin_Upgrading_Event{})
 
     case Begin_Wave_Push_Event:
         // Check if game over
+
+        log.assert(is_host, "Client should never reach here!!!")
 
         game_state.wave_counters -= 1
 
@@ -793,19 +789,15 @@ resolve_event :: proc(event: Event) {
     case End_Wave_Push_Event:
         switch game_state.stage {
         case .MINION_BATTLE:
-            append(&event_queue, Retrieve_Cards_Event{})
+            append(&event_queue, Begin_Upgrading_Event{})
         case .RESOLUTION:
             append(&event_queue, Resolve_Current_Action_Event{})
         case .PRE_LOBBY, .IN_LOBBY, .SELECTION, .UPGRADES:
             log.assertf(false, "Invalid state at end of wave push: %v", game_state.stage)
         }
-
-    case Retrieve_Cards_Event:
-        // need to retrieve cards here :D
-        retrieve_cards()
-        append(&event_queue, Begin_Upgrading_Event{})
-
+        
     case Begin_Upgrading_Event:
+        retrieve_cards()
         // append(&event_queue, End_Upgrading_Event{})
 
         if get_my_player().hero.coins < get_my_player().hero.level {

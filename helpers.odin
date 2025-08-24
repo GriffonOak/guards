@@ -95,7 +95,12 @@ get_enemy_team :: proc(team: Team) -> Team {
 }
 
 end_current_action_sequence :: proc() {
-    broadcast_game_event(End_Resolution_Event{my_player_id})
+    #partial switch get_my_player().stage {
+    case .RESOLVING:
+        broadcast_game_event(End_Resolution_Event{my_player_id})
+    case .INTERRUPTING:
+        // broadcast_game_event(Resolve_Interrupt_Event)
+    }
 }
 
 begin_next_player_turn :: proc() {
