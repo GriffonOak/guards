@@ -193,6 +193,10 @@ basic_clear_action := []Action {
     }
 }
 
+basic_defense_action := []Action {
+    
+}
+
 minion_removal_action := []Action {
     Action {
         tooltip = Formatted_String{

@@ -55,9 +55,14 @@ Wave_Push_Interrupt :: struct {
     pushing_team: Team,
 }
 
+Attack_Interrupt :: struct {
+    strength: int
+}
+
 Interrupt_Variant :: union {
     Action_Index,
     Wave_Push_Interrupt,
+    Attack_Interrupt,
 }
 
 Interrupt :: struct {

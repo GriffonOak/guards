@@ -479,6 +479,8 @@ resolve_event :: proc(event: Event) {
                 append(&event_queue, Begin_Next_Action_Event{})
             case Wave_Push_Interrupt:
                 broadcast_game_event(Begin_Wave_Push_Event{interrupt_variant.pushing_team})
+            case Attack_Interrupt:
+                // @Todo need to do attacks now
             }
         } else {
             get_my_player().stage = .INTERRUPTED
@@ -508,7 +510,7 @@ resolve_event :: proc(event: Event) {
         game_state.confirmed_players += 1
 
        
-        assert(ok, "Invalid card ID in card confirmation event!")
+        log.assert(ok, "Invalid card ID in card confirmation event!")
 
         if var.player_id == my_player_id {
             clear_side_buttons()
@@ -606,7 +608,8 @@ resolve_event :: proc(event: Event) {
         case Attack_Action:
             target := calculate_implicit_target(action_type.target)
             space := &board[target.x][target.y]
-            log.debugf("Attack strength: %v", calculate_implicit_quantity(action_type.strength))
+            attack_strength := calculate_implicit_quantity(action_type.strength)
+            log.debugf("Attack strength: %v", attack_strength)
             // Here we assume the target must be an enemy. Enemy should always be in the selection flags for attacks.
             if MINION_FLAGS & space.flags != {} {
                 if defeat_minion(target) {  // Add a wave push interrupt if the minion defeated was the last one
@@ -618,7 +621,17 @@ resolve_event :: proc(event: Event) {
                         Resolve_Current_Action_Event{}
                     )
                 } else {
-                    append(&event_queue, Resolve_Current_Action_Event{})
+                    owner := space.owner
+                    become_interrupted (
+                        Interrupt {
+                            my_player_id, owner,
+                            Attack_Interrupt {
+                                attack_strength, 
+                            }
+                        },
+                        Resolve_Current_Action_Event{}
+                    )
+                    // append(&event_queue, Resolve_Current_Action_Event{})
                 }
             }
         

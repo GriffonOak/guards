@@ -17,8 +17,9 @@ import "core:mem"
 // Once those are figured out, do xargatha minion defeat greens
 // Items ??
 // Finish implementing xargatha cards
-// Lobby that isn't ass
+// Xargatha ult
 // Other heroes / hero picker
+// Lobby that isn't ass
 // Snorri runes
 
 
