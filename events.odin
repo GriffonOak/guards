@@ -6,7 +6,6 @@ import rl "vendor:raylib"
 
 import "core:fmt"
 import "core:reflect"
-import "core:strings"
 import "core:log"
 
 
@@ -21,11 +20,11 @@ Enter_Lobby_Event :: struct {}
 Begin_Game_Event :: struct {}
 
 Space_Clicked_Event :: struct {
-    space: IVec2
+    space: IVec2,
 }
 
 Card_Clicked_Event :: struct {
-    card_element: ^UI_Card_Element
+    card_element: ^UI_Card_Element,
 }
 
 
@@ -34,7 +33,7 @@ Card_Clicked_Event :: struct {
 Cancel_Event :: struct {}
 
 Unit_Translocation_Event :: struct {
-    src, dest: Target
+    src, dest: Target,
 }
 Minion_Defeat_Event :: struct {
     target: Target,
@@ -55,30 +54,33 @@ Minion_Blocked_Event :: struct {
 }
 
 Begin_Interrupt_Event :: struct {
-    interrupt: Interrupt
+    interrupt: Interrupt,
 }
 Resolve_Interrupt_Event :: struct {}
 
 Update_Tiebreaker_Event :: struct {
-    tiebreaker: Team
+    tiebreaker: Team,
 }
 
 Begin_Card_Selection_Event :: struct {}
 Card_Confirmed_Event :: struct {
-    player_id: Player_ID,
+    card_id: Card_ID,
+}
+
+Card_Discarded_Event :: struct {
     card_id: Card_ID,
 }
 
 Begin_Resolution_Stage_Event :: struct{}
 Begin_Player_Resolution_Event :: struct {
-    player_id: Player_ID
+    player_id: Player_ID,
 }
 Begin_Next_Action_Event :: struct {}
 Resolve_Current_Action_Event :: struct {
-    jump_index: Maybe(Action_Index)
+    jump_index: Maybe(Action_Index),
 }
 End_Resolution_Event :: struct {
-    player_id: Player_ID
+    player_id: Player_ID,
 }
 Resolutions_Completed_Event :: struct {}
 
@@ -87,11 +89,20 @@ Begin_Minion_Battle_Event :: struct {}
 End_Minion_Battle_Event :: struct {}
 
 
+Hero_Defeated_Event :: struct {
+    defeated, defeater: Player_ID,
+}
+
+Hero_Respawn_Event :: struct {
+    respawner: Player_ID,
+    location: Target,
+}
+
 Begin_Wave_Push_Event :: struct {
     pushing_team: Team,
 }
 Resolve_Blocked_Minions_Event :: struct {
-    team: Team
+    team: Team,
 }
 End_Wave_Push_Event :: struct{}
 
@@ -102,7 +113,7 @@ End_Upgrading_Event :: struct {
 }
 
 Game_Over_Event :: struct {
-    winning_team: Team
+    winning_team: Team,
 }
 
 
@@ -129,6 +140,9 @@ Event :: union {
     Minion_Removal_Event,
     Minion_Spawn_Event,
     Minion_Blocked_Event,
+    Card_Discarded_Event,
+    Hero_Defeated_Event,
+    Hero_Respawn_Event,
 
     Begin_Interrupt_Event,
     Resolve_Interrupt_Event,
@@ -260,7 +274,7 @@ resolve_event :: proc(event: Event) {
 
                 if _, ok := top_button.event.(Cancel_Event); ok && target_valid {
                     add_side_button("Confirm move", Resolve_Current_Action_Event{})
-                } else if _, ok := top_button.event.(Resolve_Current_Action_Event); ok && !target_valid {
+                } else if _, ok2 := top_button.event.(Resolve_Current_Action_Event); ok2 && !target_valid {
                     pop_side_button()
                 }
 
@@ -285,16 +299,16 @@ resolve_event :: proc(event: Event) {
         case .SELECTING:
             #partial switch card.state {
             case .IN_HAND:
-                selected_element, ok := find_selected_card_element()
+                selected_element, ok2 := find_selected_card_element()
 
-                if ok {
+                if ok2 {
                     selected_card_element := &selected_element.variant.(UI_Card_Element)
                     selected_card_element.selected = false
                     clear_side_buttons()
                 }
 
                 var.card_element.selected = true
-                add_side_button("Confirm card", Card_Confirmed_Event{my_player_id, card_id}, global=true)
+                add_side_button("Confirm card", Card_Confirmed_Event{card_id}, global=true)
             }
 
         case .UPGRADING:
@@ -312,10 +326,10 @@ resolve_event :: proc(event: Event) {
                 // I shouldn't really be checking this through the ui stack like this tbh
                 // But I don't have a better way of seeing if an upgrade is happening. // @Cleanup?
                 top_element := ui_stack[len(ui_stack) - 1]
-                card_element, ok := top_element.variant.(UI_Card_Element)
-                if ok {
-                    card, ok2 := get_card_by_id(card_element.card_id)
-                    if card.state == .NONEXISTENT do break
+                card_element, ok2 := top_element.variant.(UI_Card_Element)
+                if ok2 {
+                    top_card, ok3 := get_card_by_id(card_element.card_id)
+                    if ok3 && top_card.state == .NONEXISTENT do break
                 }
 
                 // Display possible upgrades for clicked card
@@ -357,7 +371,8 @@ resolve_event :: proc(event: Event) {
 
                     if card.color == hand_card.color {
                         // swap over the card ID to the new card
-                        hand_card_element := &find_element_for_card(hand_card).variant.(UI_Card_Element)
+                        ui_element, _  := find_element_for_card(hand_card)
+                        hand_card_element := &ui_element.variant.(UI_Card_Element)
 
                         hand_card_element.card_id = make_card_id(card^, my_player_id)
                         hand_card = card^
@@ -455,9 +470,47 @@ resolve_event :: proc(event: Event) {
 
     case Minion_Blocked_Event:
         space := &board[var.target.x][var.target.y]
-        assert(space.flags & (SPAWNPOINT_FLAGS - {.HERO_SPAWNPOINT}) != {}, "Minion spawn blocked at non-spawnpoint!")
+        log.assert(space.flags & (SPAWNPOINT_FLAGS - {.HERO_SPAWNPOINT}) != {}, "Minion spawn blocked at non-spawnpoint!")
         append(&blocked_spawns[space.spawnpoint_team], var.target)
 
+    case Hero_Defeated_Event:
+        defeated := get_player_by_id(var.defeated)
+        defeated_hero := &defeated.hero
+        defeated_hero.dead = true
+        defeater := get_player_by_id(var.defeater)
+
+        if var.defeated == my_player_id && len(game_state.interrupt_stack) > 0 {
+            game_state.interrupt_stack[0].previous_stage = .RESOLVED
+        } else { 
+            defeated.stage = .RESOLVED
+        }
+        card, ok := find_played_card(var.defeated)
+        if ok do resolve_card(card)
+
+        board[defeated_hero.location.x][defeated_hero.location.y].flags -= {.HERO}
+
+        for &player in game_state.players {
+            if player.team == defeater.team {
+                if player.id == var.defeater {
+                    player.hero.coins += defeated_hero.level
+                } else {
+                    player.hero.coins += num_life_counters[defeated_hero.level]
+                }
+            }
+        }
+
+        game_state.life_counters[defeated.team] -= num_life_counters[defeated_hero.level]
+        if game_state.life_counters[defeated.team] <= 0 {
+            append(&event_queue, Game_Over_Event{defeater.team})
+        }
+
+    case Hero_Respawn_Event:
+        player := get_player_by_id(var.respawner)
+        get_player_by_id(var.respawner).hero.location = var.location
+        board[var.location.x][var.location.y].flags += {.HERO}
+        board[var.location.x][var.location.y].hero_id = player.hero.id
+        board[var.location.x][var.location.y].unit_team = player.team
+        board[var.location.x][var.location.y].owner = var.respawner
 
     case Begin_Interrupt_Event:
         interrupt := var.interrupt
@@ -465,7 +518,8 @@ resolve_event :: proc(event: Event) {
             previous_stage := get_my_player().stage        // Therefore we only add an interrupt to the stack if we are not the interuuptee
             expanded_interrupt := Expanded_Interrupt {
                 interrupt = interrupt,
-                previous_stage = previous_stage
+                previous_stage = previous_stage,
+                previous_action_index = get_my_player().hero.current_action_index,
             }
             append(&game_state.interrupt_stack, expanded_interrupt)
         }
@@ -482,6 +536,8 @@ resolve_event :: proc(event: Event) {
             case Attack_Interrupt:
                 interrupt_variant.minion_modifiers = calculate_minion_modifiers()
                 // @Todo need to do attacks now
+                get_my_player().hero.current_action_index = {.BASIC_DEFENSE, 0}
+                append(&event_queue, Begin_Next_Action_Event{})
             }
         } else {
             get_my_player().stage = .INTERRUPTED
@@ -491,6 +547,7 @@ resolve_event :: proc(event: Event) {
         log.assert(len(game_state.interrupt_stack) > 0, "Interrupt resolved with no interrupt on the stack!")
         most_recent_interrupt := pop(&game_state.interrupt_stack)
         get_my_player().stage = most_recent_interrupt.previous_stage
+        get_my_player().hero.current_action_index = most_recent_interrupt.previous_action_index
         if most_recent_interrupt.interrupt.interrupted_player == my_player_id {
             append(&event_queue, most_recent_interrupt.on_resolution)
         }
@@ -505,7 +562,7 @@ resolve_event :: proc(event: Event) {
         tooltip = "Choose a card to play and then confirm it."
 
     case Card_Confirmed_Event:
-        player := get_player_by_id(var.player_id)
+        player := get_player_by_id(var.card_id.player_id)
         card, ok := get_card_by_id(var.card_id)
         player.stage = .CONFIRMED
         game_state.confirmed_players += 1
@@ -513,7 +570,7 @@ resolve_event :: proc(event: Event) {
        
         log.assert(ok, "Invalid card ID in card confirmation event!")
 
-        if var.player_id == my_player_id {
+        if var.card_id.player_id == my_player_id {
             clear_side_buttons()
             tooltip = "Waiting for other players to confirm their cards."
         } 
@@ -524,6 +581,9 @@ resolve_event :: proc(event: Event) {
             broadcast_game_event(Begin_Resolution_Stage_Event{})
         }
 
+    case Card_Discarded_Event:
+        // card, ok := get_card_by_id(var.card_id)
+
     case Begin_Resolution_Stage_Event: 
         game_state.stage = .RESOLUTION
         game_state.resolved_players = 0
@@ -531,10 +591,10 @@ resolve_event :: proc(event: Event) {
         tooltip = "Waiting for other players to resolve their cards."
 
         // Unhide hidden cards
-        for player, player_id in game_state.players {
+        for _, player_id in game_state.players {
             player_card, ok := find_played_card(player_id)
             log.assertf(ok, "Player %v had no played card at the start of the resolution stage!")
-            element := find_element_for_card(player_card^)
+            element, _ := find_element_for_card(player_card^)
             card_element := &element.variant.(UI_Card_Element)
             card_element.hidden = false
         }
@@ -549,10 +609,21 @@ resolve_event :: proc(event: Event) {
         if var.player_id != my_player_id do break
 
         // Find the played card
-        card, ok := find_played_card()
+        _, ok := find_played_card()
         log.assert(ok, "No played card when player begins their resolution!")
 
         get_my_player().hero.current_action_index = {sequence=.FIRST_CHOICE}
+
+        if get_my_player().hero.dead {
+            become_interrupted (
+                Interrupt {
+                    interrupted_player = my_player_id, interrupting_player = my_player_id,
+                    variant = Action_Index{.RESPAWN, 0},
+                },
+                Begin_Next_Action_Event{},
+            )
+            return
+        }
 
         append(&event_queue, Begin_Next_Action_Event{})
 
@@ -571,7 +642,7 @@ resolve_event :: proc(event: Event) {
         }
 
         if action.optional {
-            add_side_button("Skip", Resolve_Current_Action_Event{action.skip_index})
+            add_side_button("Skip" if action.skip_name == nil else action.skip_name, Resolve_Current_Action_Event{action.skip_index})
         }
 
         switch &action_type in action.variant {
@@ -609,7 +680,7 @@ resolve_event :: proc(event: Event) {
         case Attack_Action:
             target := calculate_implicit_target(action_type.target)
             space := &board[target.x][target.y]
-            attack_strength := calculate_implicit_quantity(action_type.strength)
+            attack_strength := calculate_implicit_quantity(action_type.strength)  // @Item
             log.debugf("Attack strength: %v", attack_strength)
             // Here we assume the target must be an enemy. Enemy should always be in the selection flags for attacks.
             if MINION_FLAGS & space.flags != {} {
@@ -617,23 +688,24 @@ resolve_event :: proc(event: Event) {
                     become_interrupted (
                         Interrupt {
                             my_player_id, 0,
-                            Wave_Push_Interrupt{get_my_player().team}
+                            Wave_Push_Interrupt{get_my_player().team},
                         },
-                        Resolve_Current_Action_Event{}
+                        Resolve_Current_Action_Event{},
                     )
                 } else {
-                    owner := space.owner
-                    become_interrupted (
-                        Interrupt {
-                            my_player_id, owner,
-                            Attack_Interrupt {
-                                attack_strength, 
-                            }
-                        },
-                        Resolve_Current_Action_Event{}
-                    )
-                    // append(&event_queue, Resolve_Current_Action_Event{})
+                    append(&event_queue, Resolve_Current_Action_Event{})
                 }
+            } else {
+                owner := space.owner
+                become_interrupted (
+                    Interrupt {
+                        my_player_id, owner,
+                        Attack_Interrupt {
+                            strength = attack_strength,
+                        },
+                    },
+                    Resolve_Current_Action_Event{},
+                )
             }
         
         case Add_Active_Effect_Action:
@@ -677,7 +749,26 @@ resolve_event :: proc(event: Event) {
             broadcast_game_event(Minion_Spawn_Event{target, minion_type, minion_team})
             append(&event_queue, Resolve_Current_Action_Event{})
             
-            // spawn minions ???
+        case Discard_Card_Action:
+            card := calculate_implicit_card(action_type.card)
+            id := make_card_id(card^, my_player_id)
+            broadcast_game_event(Card_Discarded_Event{id})
+            append(&event_queue, Resolve_Current_Action_Event{})
+
+        case Get_Defeated_Action:
+            // Here we assume the player who added the last interrupt is the one who kills us. This may not be correct always...
+            // Would be nice to somehow store the defeater in the action itself
+            top_interrupt := game_state.interrupt_stack[len(game_state.interrupt_stack) - 1].interrupt
+
+            broadcast_game_event(Hero_Defeated_Event{my_player_id, top_interrupt.interrupted_player})
+
+            // @Todo: cancel active effects & recall markers
+            append(&event_queue, Resolve_Current_Action_Event{})
+
+        case Respawn_Action:
+            broadcast_game_event(Hero_Respawn_Event{my_player_id, calculate_implicit_target(action_type.location)})
+            append(&event_queue, Resolve_Current_Action_Event{})
+
         case Fast_Travel_Action, Clear_Action, Choose_Card_Action, Retrieve_Card_Action:
             // nuffink
         }
@@ -687,7 +778,7 @@ resolve_event :: proc(event: Event) {
 
         action := get_current_action()
 
-        switch &variant in action.variant {
+        #partial switch &variant in action.variant {
         case Fast_Travel_Action:
             broadcast_game_event(Unit_Translocation_Event{get_my_player().hero.location, variant.result})
         case Movement_Action:
@@ -705,7 +796,6 @@ resolve_event :: proc(event: Event) {
             broadcast_game_event(Unit_Translocation_Event{calculate_implicit_target(variant.target), variant.path.spaces[len(variant.path.spaces) - 1]})
         case Choice_Action:
             variant.result = var.jump_index.?
-        case Attack_Action, Clear_Action, Choose_Target_Action, Add_Active_Effect_Action, Halt_Action, Choose_Card_Action, Retrieve_Card_Action, Jump_Action, Minion_Removal_Action, Minion_Spawn_Action:
         }
 
         delete(action.targets)
@@ -734,7 +824,11 @@ resolve_event :: proc(event: Event) {
     case End_Resolution_Event:
         clear_side_buttons()
         game_state.resolved_players += 1
+
+        // This is to ensure that if a player's state changes mid-interrupt, only the underlying "base state" changes, rather than all the froth on top.
         game_state.players[var.player_id].stage = .RESOLVED
+
+
         card, ok := find_played_card(var.player_id)
         
         log.assert(ok, "No played card to resolve!")
@@ -795,13 +889,13 @@ resolve_event :: proc(event: Event) {
                         my_player_id, my_player_id,
                         Wave_Push_Interrupt{pushing_team},
                     },
-                    End_Minion_Battle_Event {},
+                    End_Minion_Battle_Event{},
                 )
             } else {
                 become_interrupted (
                     Interrupt {
                         my_player_id, game_state.team_captains[pushed_team],
-                        Action_Index{.MINION_REMOVAL, 0}
+                        Action_Index{.MINION_REMOVAL, 0},
                     },
                     End_Minion_Battle_Event{},
                 )
@@ -859,9 +953,9 @@ resolve_event :: proc(event: Event) {
             become_interrupted (
                 Interrupt {
                     my_player_id, game_state.team_captains[var.team],
-                    Action_Index{.MINION_SPAWN, 0}
+                    Action_Index{.MINION_SPAWN, 0},
                 },
-                next_event
+                next_event,
             )
         } else {
             append(&event_queue, next_event)

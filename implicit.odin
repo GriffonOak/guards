@@ -3,12 +3,15 @@ package guards
 import "core:log"
 
 Card_Creating_Effect :: struct {
-    effect: Active_Effect_ID
+    effect: Active_Effect_ID,
 }
+
+Previous_Card_Choice :: struct {}
 
 Implicit_Card :: union {
     Card_ID,
     Card_Creating_Effect,
+    Previous_Card_Choice,
 }
 
 
@@ -31,7 +34,7 @@ Count_Targets :: []Selection_Criterion
 // Current_Turn :: struct {}
 
 Turn_Played :: struct {
-    card: Implicit_Card
+    card: Implicit_Card,
 }
 
 Minion_Difference :: struct {}
@@ -72,23 +75,26 @@ Implicit_Target :: union {
 
 
 Greater_Than :: struct {
-    term_1, term_2: Implicit_Quantity
+    term_1, term_2: Implicit_Quantity,
 }
 
 And :: []Implicit_Condition
 
 Primary_Is_Not :: struct {
-    kind: Ability_Kind
+    kind: Ability_Kind,
 }
 
 Blocked_Spawnpoints_Remain :: struct {}
+
+Alive :: struct {}
 
 Implicit_Condition :: union {
     bool,
     Greater_Than,
     Primary_Is_Not,
     And,
-    Blocked_Spawnpoints_Remain
+    Blocked_Spawnpoints_Remain,
+    Alive,
 }
 
 
@@ -177,6 +183,8 @@ calculate_implicit_condition :: proc(implicit_condition: Implicit_Condition) -> 
     case Blocked_Spawnpoints_Remain:
         my_team := get_my_player().team
         return len(blocked_spawns[my_team]) > 0
+    case Alive:
+        return !get_my_player().hero.dead
     }
     return false
 }
@@ -185,10 +193,23 @@ calculate_implicit_card :: proc(implicit_card: Implicit_Card) -> ^Card {
     switch card in implicit_card {
     case Card_ID:
         card_pointer, ok := get_card_by_id(card)
+        log.assert(ok, "Can't find card by ID")
         return card_pointer
     case Card_Creating_Effect:
         card_pointer, ok := get_card_by_id(game_state.ongoing_active_effects[card.effect].parent_card_id)
+        log.assert(ok, "Can't find card ID")
         return card_pointer
+    case Previous_Card_Choice:
+        index := get_my_player().hero.current_action_index
+        index.index -= 1
+        for ; true; index.index -= 1 {
+            action := get_action_at_index(index)
+            if variant, ok := action.variant.(Choose_Card_Action); ok {
+                card, ok2 := get_card_by_id(variant.result)
+                log.assert(ok2, "Previous choice of card was not valid!!!!!!")
+                return card
+            }
+        }
     }
     played_card, ok := find_played_card()
     log.assert(ok, "Could not find played card when calculating an implicit card")

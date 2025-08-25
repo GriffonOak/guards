@@ -17,6 +17,7 @@ Contains_All :: Space_Flags
 
 Is_Enemy_Unit :: struct {}
 Is_Friendly_Unit :: struct {}
+Is_Friendly_Spawnpoint :: struct {}
 Not_Previously_Targeted :: struct {}
 
 Ignoring_Immunity :: struct {}
@@ -30,6 +31,7 @@ Selection_Criterion :: union {
     // Contains_All,
     Is_Enemy_Unit,
     Is_Friendly_Unit,
+    Is_Friendly_Spawnpoint,
     Not_Previously_Targeted,
     Ignoring_Immunity,
     In_Battle_Zone,
@@ -48,7 +50,7 @@ Movement_Action :: struct {
     distance: Implicit_Quantity,
     valid_destinations: Implicit_Target_Set,
 
-    path: Path
+    path: Path,
 }
 
 Fast_Travel_Action :: struct {
@@ -91,6 +93,7 @@ Minion_Spawn_Action :: struct {
     location, spawnpoint: Implicit_Target,
 }
 
+Can_Defend :: struct {}
 
 Card_Selection_Criterion :: union {
     Can_Defend,
@@ -103,10 +106,22 @@ Choose_Card_Action :: struct {
     result: Card_ID,
 }
 
-Retrieve_Card_Action :: struct {}
+Retrieve_Card_Action :: struct {
+    card: Implicit_Card,
+}
+
+Discard_Card_Action :: struct {
+    card: Implicit_Card,
+}
 
 Jump_Action :: struct {
-    jump_index: Action_Index
+    jump_index: Action_Index,
+}
+
+Get_Defeated_Action :: struct {}
+
+Respawn_Action :: struct {
+    location: Implicit_Target,
 }
 
 Action_Variant :: union {
@@ -120,7 +135,10 @@ Action_Variant :: union {
     Halt_Action,
     Choose_Card_Action,
     Retrieve_Card_Action,
+    Discard_Card_Action,
     Jump_Action,
+    Get_Defeated_Action,
+    Respawn_Action,
 
     Minion_Removal_Action,
     Minion_Spawn_Action,
@@ -139,10 +157,14 @@ Action :: struct {
 Action_Sequence_ID :: enum {
     PRIMARY,
     HALT,
+    DIE,
+    RESPAWN,
     FIRST_CHOICE,
     BASIC_MOVEMENT,
     BASIC_FAST_TRAVEL,
     BASIC_CLEAR,
+
+    BASIC_DEFENSE,
 
     MINION_REMOVAL,
     MINION_SPAWN,
@@ -165,6 +187,7 @@ first_choice_tooltip: cstring : "Choose an action to take with your played card.
 
 first_choice_action := []Action {
     Action {
+        condition = Alive{},
         tooltip = first_choice_tooltip,
         variant = Choice_Action {
             choices = []Choice {
@@ -173,9 +196,9 @@ first_choice_action := []Action {
                 {name = "Fast Travel",  jump_index = {sequence=.BASIC_FAST_TRAVEL}},
                 {name = "Clear",        jump_index = {sequence=.BASIC_CLEAR}},
                 {name = "Hold",         jump_index = {sequence=.HALT}},
-            }
-        }
-    }
+            },
+        },
+    },
 }
 
 basic_movement_action := []Action {
@@ -185,8 +208,8 @@ basic_movement_action := []Action {
         variant = Movement_Action {
             target   = Self{},
             distance = Card_Value{kind=.MOVEMENT},
-        }
-    }
+        },
+    },
 }
 
 basic_fast_travel_action := []Action {
@@ -194,35 +217,62 @@ basic_fast_travel_action := []Action {
         tooltip = "Choose a space to fast travel to.",
         condition = Greater_Than{Card_Value{kind=.MOVEMENT}, 0},
         variant = Fast_Travel_Action{},
-    }
+    },
 }
 
 basic_clear_action := []Action {
     Action {
         tooltip = "Choose any number of tokens adjacent to you to remove.",
-        variant = Clear_Action{}
-    }
+        variant = Clear_Action{},
+    },
 }
 
 basic_defense_action := []Action {
     Action {
         tooltip = "Choose a card to defend with. You may also choose to die.",
         optional = true,
-        skip_index = {sequence = .HALT},  // Needs to be defeated
+        skip_index = {sequence = .DIE},  // Needs to be defeated
         skip_name = "Die",
         variant = Choose_Card_Action {
             criteria = {
                 Card_State.IN_HAND,
                 Can_Defend{},
-            }
-        }
+            },
+        },
     },
     Action {
         tooltip = error_tooltip,
         variant = Discard_Card_Action {
-            Previous_Card{}
-        }
-    }
+            Previous_Card_Choice{},
+        },
+    },
+}
+
+get_defeated_action := []Action {
+    Action {
+        variant = Get_Defeated_Action{},
+    },
+}
+
+respawn_action := []Action {
+    Action {
+        optional = true,
+        skip_index = {sequence = .HALT},
+        skip_name = "Stay dead",
+        variant = Choose_Target_Action {
+            num_targets = 1,
+            criteria = {
+                Empty{},
+                Contains_Any({.HERO_SPAWNPOINT}),
+                Is_Friendly_Spawnpoint{},
+            },
+        },
+    },
+    Action {
+        variant = Respawn_Action {
+            location = Previous_Choice{},
+        },
+    },
 }
 
 minion_removal_action := []Action {
@@ -235,20 +285,20 @@ minion_removal_action := []Action {
                     condition = Greater_Than{Minion_Difference{}, 1},
                     arg1 = string("s"),
                     arg2 = string(""),
-                }
-            }
+                },
+            },
         },
         variant = Choose_Target_Action {
             num_targets = Minion_Difference{},
             criteria = {
                 Contains_Any({.MELEE_MINION, .RANGED_MINION}),
                 Is_Friendly_Unit{},
-            }
-        }
+            },
+        },
     },
     Action {
-        variant = Minion_Removal_Action {}
-    }
+        variant = Minion_Removal_Action{},
+    },
 }
 
 minion_spawn_action := []Action {
@@ -261,22 +311,22 @@ minion_spawn_action := []Action {
                 In_Battle_Zone{},
                 Empty{},
                 Closest_Spaces {
-                    origin = Top_Blocked_Spawnpoint{}
+                    origin = Top_Blocked_Spawnpoint{},
                 },
-            }
-        }
+            },
+        },
     },
     Action {
         variant = Minion_Spawn_Action {
             location = Previous_Choice{},
             spawnpoint = Top_Blocked_Spawnpoint{},
-        }
+        },
     },
     Action {
         variant = Jump_Action {
-            jump_index = {.MINION_SPAWN, 0}
-        }
-    }
+            jump_index = {.MINION_SPAWN, 0},
+        },
+    },
 }
 
 
@@ -294,13 +344,16 @@ get_action_at_index :: proc(index: Action_Index) -> ^Action {
         card, ok := find_played_card()
         log.assert(ok, "no played card!!?!?!?!?!")
         action_sequence = card.primary_effect
-    case .HALT:              return nil
-    case .FIRST_CHOICE:      action_sequence = first_choice_action
-    case .BASIC_MOVEMENT:    action_sequence = basic_movement_action
-    case .BASIC_FAST_TRAVEL: action_sequence = basic_fast_travel_action
-    case .BASIC_CLEAR:       action_sequence = basic_clear_action
-    case .MINION_REMOVAL:    action_sequence = minion_removal_action
-    case .MINION_SPAWN:      action_sequence = minion_spawn_action
+    case .HALT:                 return nil
+    case .DIE:                  action_sequence = get_defeated_action
+    case .RESPAWN:              action_sequence = respawn_action
+    case .FIRST_CHOICE:         action_sequence = first_choice_action
+    case .BASIC_MOVEMENT:       action_sequence = basic_movement_action
+    case .BASIC_FAST_TRAVEL:    action_sequence = basic_fast_travel_action
+    case .BASIC_CLEAR:          action_sequence = basic_clear_action
+    case .BASIC_DEFENSE:        action_sequence = basic_defense_action
+    case .MINION_REMOVAL:       action_sequence = minion_removal_action
+    case .MINION_SPAWN:         action_sequence = minion_spawn_action
     }
 
     if index.index < len(action_sequence) {

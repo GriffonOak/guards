@@ -1,6 +1,6 @@
 package guards
 
-import "core:fmt"
+// import "core:fmt"
 import rl "vendor:raylib"
 import "core:math/rand"
 import "core:log"
@@ -69,13 +69,13 @@ Interrupt_Variant :: union {
 Interrupt :: struct {
     interrupted_player, interrupting_player: Player_ID,
     variant: Interrupt_Variant,
-    // on_resolution: Event,
 }
 
 Expanded_Interrupt :: struct {
     interrupt: Interrupt,
     previous_stage: Player_Stage,
     on_resolution: Event,
+    previous_action_index: Action_Index,
 }
 
 become_interrupted :: proc(interrupt: Interrupt, on_resolution: Event) {
@@ -84,6 +84,7 @@ become_interrupted :: proc(interrupt: Interrupt, on_resolution: Event) {
         interrupt, 
         get_my_player().stage,
         on_resolution,
+        get_my_player().hero.current_action_index,
     })
 
     broadcast_game_event(Begin_Interrupt_Event{interrupt})
@@ -94,6 +95,7 @@ Game_State :: struct {
     players: [dynamic]Player,
     team_captains: [Team]Player_ID,
     minion_counts: [Team]int,
+    life_counters: [Team]int,
     confirmed_players: int,
     resolved_players: int,
     upgraded_players: int,
@@ -103,7 +105,7 @@ Game_State :: struct {
     ongoing_active_effects: map[Active_Effect_ID]Active_Effect,
     stage: Game_Stage,
     current_battle_zone: Region_ID,
-    interrupt_stack: [dynamic]Expanded_Interrupt
+    interrupt_stack: [dynamic]Expanded_Interrupt,
 }
 
 // Secret host global vars
@@ -127,7 +129,11 @@ direction_vectors := [Direction]IVec2 {
     .SOUTH_EAST = {1, -1},
     .SOUTH = {0, -1},
     .SOUTH_WEST = {-1, 0},
-    .NORTH_WEST = {-1, 1}
+    .NORTH_WEST = {-1, 1},
+}
+
+num_life_counters := [?]int {
+    0, 1, 1, 1, 2, 2, 2, 3, 3,
 }
 
 
@@ -200,6 +206,8 @@ setup_hero_cards :: proc() {
 begin_game :: proc() {
     game_state.current_battle_zone = .CENTRE
     game_state.wave_counters = 5
+    game_state.life_counters[.RED] = 6
+    game_state.life_counters[.BLUE] = 6
 
     spawn_heroes_at_start()
 

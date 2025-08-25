@@ -46,7 +46,7 @@ UI_Element :: struct {
 Side_Button_Manager :: struct {
     buttons: []UI_Element,
     first_button_index: int,
-    button_location: rl.Rectangle
+    button_location: rl.Rectangle,
 }
 
 Conditional_String_Argument :: struct {
@@ -62,7 +62,7 @@ Formatted_String_Argument :: union {
 
 Formatted_String :: struct {
     format: string,
-    arguments: []Formatted_String_Argument
+    arguments: []Formatted_String_Argument,
 }
 
 
@@ -81,7 +81,7 @@ FIRST_SIDE_BUTTON_LOCATION :: rl.Rectangle {
     BOARD_TEXTURE_SIZE.x + BUTTON_PADDING, 
     HEIGHT - BUTTON_PADDING - SELECTION_BUTTON_SIZE.y,
     SELECTION_BUTTON_SIZE.x,
-    SELECTION_BUTTON_SIZE.y
+    SELECTION_BUTTON_SIZE.y,
 }
 
 tooltip: Tooltip
@@ -91,7 +91,7 @@ ui_stack: [dynamic]UI_Element
 side_button_manager := Side_Button_Manager {
     buttons = {},
     first_button_index = 0,
-    button_location = FIRST_SIDE_BUTTON_LOCATION
+    button_location = FIRST_SIDE_BUTTON_LOCATION,
 }
 
 
@@ -143,7 +143,7 @@ draw_button: UI_Render_Proc : proc(element: UI_Element) {
         {element.bounding_rect.x + TEXT_PADDING, element.bounding_rect.y + TEXT_PADDING}, 
         element.bounding_rect.height - 2 * TEXT_PADDING,
         FONT_SPACING,
-        rl.BLACK
+        rl.BLACK,
     )
     if button_element.hovered {
         rl.DrawRectangleLinesEx(element.bounding_rect, TEXT_PADDING / 2, rl.WHITE)
@@ -228,7 +228,7 @@ add_game_ui_elements :: proc() {
         player := get_player_by_id(player_id)
 
         if player_id == my_player_id {
-            for card, card_color in player.hero.cards {
+            for card in player.hero.cards {
                 append(&ui_stack, UI_Element{
                     card_hand_position_rects[card.color],
                     UI_Card_Element{card_id = make_card_id(card, player_id)},
@@ -237,7 +237,7 @@ add_game_ui_elements :: proc() {
                 })
             }
         } else {
-            for card, card_color in player.hero.cards {
+            for card in player.hero.cards {
                 append(&ui_stack, UI_Element {
                     {},
                     UI_Card_Element{card_id = make_card_id(card, player_id)},

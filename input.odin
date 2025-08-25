@@ -1,8 +1,8 @@
 package guards
 
-import "core:math"
+// import "core:math"
 import ba "core:container/bit_array"
-import "core:log"
+// import "core:log"
 
 import rl "vendor:raylib"
 
@@ -24,7 +24,7 @@ Input_Already_Consumed :: struct{}
 
 Mouse_Pressed_Event :: struct {
     pos: Vec2,
-    button: rl.MouseButton
+    button: rl.MouseButton,
 }
 
 Mouse_Motion_Event :: struct {
@@ -34,12 +34,12 @@ Mouse_Motion_Event :: struct {
 
 Mouse_Down_Event :: struct {
     pos: Vec2,
-    button: rl.MouseButton
+    button: rl.MouseButton,
 }
 
 Mouse_Up_Event :: struct {
     pos: Vec2,
-    button: rl.MouseButton
+    button: rl.MouseButton,
 }
 
 Mouse_Scroll_Event :: struct {
@@ -56,7 +56,7 @@ Key_Up_Event :: struct {
 }
 
 Key_Pressed_Event :: struct {
-    key: rl.KeyboardKey
+    key: rl.KeyboardKey,
 }
 
 UI_State :: struct {
@@ -73,8 +73,8 @@ input_queue: [dynamic]Input_Event
 
 check_for_input_events :: proc(q: ^[dynamic]Input_Event) {
     p := rl.GetMousePosition() * window_scale
-    x := p.x;
-    y := p.y;
+    // x := p.x
+    // y := p.y
 
     for key := rl.GetKeyPressed(); key != .KEY_NULL; key = rl.GetKeyPressed() {
         // ba.set(&ui_state.pressed_keys, cast(int) key)
@@ -114,7 +114,7 @@ check_for_input_events :: proc(q: ^[dynamic]Input_Event) {
 
     if ui_state.mouse_pos != p {
         append(q, Mouse_Motion_Event {
-            p, p - ui_state.mouse_pos
+            p, p - ui_state.mouse_pos,
         })
         ui_state.mouse_pos = p
         // find_mouse_region()

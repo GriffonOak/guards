@@ -2,7 +2,7 @@ package guards
 
 import "base:intrinsics"
 import rl "vendor:raylib"
-import "core:fmt"
+// import "core:fmt"
 
 import "core:log"
 
@@ -144,7 +144,7 @@ begin_next_player_turn :: proc() {
 calculate_minion_modifiers :: proc() -> int {
     minion_modifiers := 0
     player := get_my_player()
-    context.allocator := context.temp_allocator
+    context.allocator = context.temp_allocator
     for adjacent in make_arbitrary_targets({Within_Distance{Self{}, 1, 1}}) {
         space := board[adjacent.x][adjacent.y]
         if space.flags & {.MELEE_MINION, .HEAVY_MINION} != {} {
@@ -158,5 +158,5 @@ calculate_minion_modifiers :: proc() -> int {
             minion_modifiers -= 1
         }
     }
-
+    return minion_modifiers
 }

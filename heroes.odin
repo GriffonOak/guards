@@ -20,19 +20,19 @@ hero_cards: [Hero_ID][]Card = #partial {
                             Within_Distance {
                                 origin = Self{},
                                 min = 1,
-                                max = 1
+                                max = 1,
                             },
                             Contains_Any(UNIT_FLAGS),
                             Is_Enemy_Unit{},
-                        }
-                    }
+                        },
+                    },
                 },
                 Action {
                     tooltip = "Waiting for opponent to defend...",
                     variant = Attack_Action {
                         target = Previous_Choice{},
                         strength = Card_Value{kind=.ATTACK},
-                    }
+                    },
                 },
                 Action {
                     tooltip = "May repeat once on a different enemy hero.",
@@ -44,22 +44,22 @@ hero_cards: [Hero_ID][]Card = #partial {
                             Within_Distance {
                                 origin = Self{},
                                 min = 1,
-                                max = 1
+                                max = 1,
                             },
                             Contains_Any({.HERO}),
                             Is_Enemy_Unit{},
                             Not_Previously_Targeted{},
-                        }
-                    }
+                        },
+                    },
                 },
                 Action {
                     tooltip = "Waiting for opponent to defend...",
                     variant = Attack_Action {
                         target = Previous_Choice{},
                         strength = Card_Value{kind=.ATTACK},
-                    }
+                    },
                 },
-            }
+            },
         },
         Card {
             name        = "Siren's Call",
@@ -82,8 +82,8 @@ hero_cards: [Hero_ID][]Card = #partial {
                             },
                             Contains_Any(UNIT_FLAGS),
                             Is_Enemy_Unit{},
-                        }
-                    }
+                        },
+                    },
                 },
                 Action {
                     tooltip = "Move the target up to 3 spaces to a space adjacent to you.",
@@ -95,11 +95,11 @@ hero_cards: [Hero_ID][]Card = #partial {
                                 origin = Self{},
                                 min = 1,
                                 max = 1,
-                            }
-                        }
-                    }
-                }
-            }
+                            },
+                        },
+                    },
+                },
+            },
         },
         Card {
             name        = "Threatening Slash",
@@ -119,12 +119,12 @@ hero_cards: [Hero_ID][]Card = #partial {
                             Within_Distance {
                                 origin = Self{},
                                 min = 1,
-                                max = 1
+                                max = 1,
                             },
                             Contains_Any(UNIT_FLAGS),
                             Is_Enemy_Unit{},
-                        }
-                    }
+                        },
+                    },
                 },
                 Action {
                     tooltip = "Waiting for opponent to defend...",
@@ -136,17 +136,17 @@ hero_cards: [Hero_ID][]Card = #partial {
                                 Within_Distance {
                                     origin = Self{},
                                     min = 1,
-                                    max = 1
+                                    max = 1,
                                 },
                                 Contains_Any(UNIT_FLAGS),
                                 Is_Enemy_Unit{},
                                 Ignoring_Immunity{},
                             },
                             -1,
-                        }
-                    }
+                        },
+                    },
                 },
-            }
+            },
         },
         Card {
             name        = "Charm",
@@ -165,14 +165,14 @@ hero_cards: [Hero_ID][]Card = #partial {
                             {name = "Move self",    jump_index = {index=1}},
                             {name = "Move minion",  jump_index = {index=5}},
                         },
-                    }
+                    },
                 },
                 Action {  // 1
                     tooltip = player_movement_tooltip,
                     variant = Movement_Action {
                         target = Self{},
                         distance = Card_Value{kind=.MOVEMENT},
-                    }
+                    },
                 },
                 Action {  // 2
                     optional = true,
@@ -182,24 +182,24 @@ hero_cards: [Hero_ID][]Card = #partial {
                         num_targets = 1,
                         criteria = {
                             Within_Distance {
-                                origin = Self {},
+                                origin = Self{},
                                 min = 1,
                                 max = Card_Reach{},
                             },
                             Contains_Any({.RANGED_MINION}),
                             Is_Enemy_Unit{},
-                        }
-                    }
+                        },
+                    },
                 },
                 Action {  // 3
                     tooltip = "Move the ranged minion up to 2 spaces.",
                     variant = Movement_Action {
                         target = Previous_Choice{},
                         distance = 2,
-                    }
+                    },
                 },
                 Action {  // 4
-                    variant = Halt_Action{}
+                    variant = Halt_Action{},
                 },
                 Action {  // 5
                     tooltip = "Choose a ranged minion to move.",
@@ -207,30 +207,30 @@ hero_cards: [Hero_ID][]Card = #partial {
                         num_targets = 1,
                         criteria = {
                             Within_Distance {
-                                origin = Self {},
+                                origin = Self{},
                                 min = 1,
                                 max = Card_Reach{},
                             },
                             Contains_Any({.RANGED_MINION}),
                             Is_Enemy_Unit{},
-                        }
-                    }
+                        },
+                    },
                 },
                 Action {  // 6
                     tooltip = "Move the ranged minion up to 2 spaces.",
                     variant = Movement_Action {
                         target = Previous_Choice{},
                         distance = 2,
-                    }
+                    },
                 },
                 Action {  // 7
                     tooltip = player_movement_tooltip,
                     variant = Movement_Action {
                         target = Self{},
                         distance = Card_Value{kind=.MOVEMENT},
-                    }
+                    },
                 },
-            }
+            },
         },
         Card {
             name        = "Stone Gaze",
@@ -248,10 +248,10 @@ hero_cards: [Hero_ID][]Card = #partial {
                         effect = Active_Effect {
                             id = .XARGATHA_FREEZE,
                             duration = Single_Turn(Sum{Turn_Played{Card_Creating_Effect{.XARGATHA_FREEZE}}, 1}),
-                        }
-                    }
-                }
-            }
+                        },
+                    },
+                },
+            },
         },
         Card {
             name        = "Deadly Swipe",
@@ -272,12 +272,12 @@ hero_cards: [Hero_ID][]Card = #partial {
                             Within_Distance {
                                 origin = Self{},
                                 min = 1,
-                                max = 1
+                                max = 1,
                             },
                             Contains_Any(UNIT_FLAGS),
                             Is_Enemy_Unit{},
-                        }
-                    }
+                        },
+                    },
                 },
                 Action {
                     tooltip = "Waiting for opponent to defend...",
@@ -291,7 +291,7 @@ hero_cards: [Hero_ID][]Card = #partial {
                                         Within_Distance {
                                             origin = Self{},
                                             min = 1,
-                                            max = 1
+                                            max = 1,
                                         },
                                         Contains_Any(UNIT_FLAGS),
                                         Is_Enemy_Unit{},
@@ -299,12 +299,12 @@ hero_cards: [Hero_ID][]Card = #partial {
                                     },
                                     -1,
                                 },
-                                2
-                            } 
-                        }
-                    }
+                                2,
+                            },
+                        },
+                    },
                 },
-            }
+            },
         },
         Card {
             name        = "Long Thrust",
@@ -333,27 +333,27 @@ hero_cards: [Hero_ID][]Card = #partial {
                                         Within_Distance {
                                             origin = Self{},
                                             min = 1,
-                                            max = 1
+                                            max = 1,
                                         },
                                         Contains_Any(UNIT_FLAGS),
                                         Is_Enemy_Unit{},
                                         Ignoring_Immunity{},
                                     },
-                                }
+                                },
                             },
                             Contains_Any(UNIT_FLAGS),
                             Is_Enemy_Unit{},
-                        }
-                    }
+                        },
+                    },
                 },
                 Action {
                     tooltip = "Waiting for opponent to defend...",
                     variant = Attack_Action {
                         target = Previous_Choice{},
-                        strength = Card_Value{kind=.ATTACK}
-                    }
+                        strength = Card_Value{kind=.ATTACK},
+                    },
                 },
-            }
+            },
         },
         Card {
             name        = "Control",
@@ -373,14 +373,14 @@ hero_cards: [Hero_ID][]Card = #partial {
                             {name = "Move self",    jump_index = {index=1}},
                             {name = "Move minion",  jump_index = {index=5}},
                         },
-                    }
+                    },
                 },
                 Action {  // 1
                     tooltip = player_movement_tooltip,
                     variant = Movement_Action {
                         target = Self{},
                         distance = Card_Value{kind=.MOVEMENT},
-                    }
+                    },
                 },
                 Action {  // 2
                     optional = true,
@@ -390,24 +390,24 @@ hero_cards: [Hero_ID][]Card = #partial {
                         num_targets = 1,
                         criteria = {
                             Within_Distance {
-                                origin = Self {},
+                                origin = Self{},
                                 min = 1,
                                 max = Card_Reach{},
                             },
                             Contains_Any({.RANGED_MINION, .MELEE_MINION}),
                             Is_Enemy_Unit{},
-                        }
-                    }
+                        },
+                    },
                 },
                 Action {  // 3
                     tooltip = "Move the minion up to 2 spaces.",
                     variant = Movement_Action {
                         target = Previous_Choice{},
                         distance = 2,
-                    }
+                    },
                 },
                 Action {  // 4
-                    variant = Halt_Action{}
+                    variant = Halt_Action{},
                 },
                 Action {  // 5
                     tooltip = "Choose a ranged or melee minion to move.",
@@ -415,30 +415,30 @@ hero_cards: [Hero_ID][]Card = #partial {
                         num_targets = 1,
                         criteria = {
                             Within_Distance {
-                                origin = Self {},
+                                origin = Self{},
                                 min = 1,
                                 max = Card_Reach{},
                             },
                             Contains_Any({.RANGED_MINION, .MELEE_MINION}),
                             Is_Enemy_Unit{},
-                        }
-                    }
+                        },
+                    },
                 },
                 Action {  // 6
                     tooltip = "Move the minion up to 2 spaces.",
                     variant = Movement_Action {
                         target = Previous_Choice{},
                         distance = 2,
-                    }
+                    },
                 },
                 Action {  // 7
                     tooltip = player_movement_tooltip,
                     variant = Movement_Action {
                         target = Self{},
                         distance = Card_Value{kind=.MOVEMENT},
-                    }
+                    },
                 },
-            }
+            },
         },
         Card {
             name        = "Constrict",  // @incomplete
@@ -457,13 +457,13 @@ hero_cards: [Hero_ID][]Card = #partial {
                         effect = Active_Effect {
                             id = .XARGATHA_DEFEAT,
                             duration = End_Of_Round{},
-                        }
-                    }
+                        },
+                    },
                 },
                 Action {
-                    variant = Halt_Action{}
-                }
-            }
+                    variant = Halt_Action{},
+                },
+            },
         },
         Card {
             name        = "Petrifying Stare",
@@ -482,10 +482,10 @@ hero_cards: [Hero_ID][]Card = #partial {
                         effect = Active_Effect {
                             id = .XARGATHA_FREEZE,
                             duration = Single_Turn(Sum{Turn_Played{Card_Creating_Effect{.XARGATHA_FREEZE}}, 1}),
-                        }
-                    }
-                }
-            }
+                        },
+                    },
+                },
+            },
         },
         Card {
             name        = "Fresh Converts",  // @incompllete
@@ -501,13 +501,13 @@ hero_cards: [Hero_ID][]Card = #partial {
                 Action {
                     tooltip = "Choose a discarded card to retrieve.",
                     optional = true,
-                    variant = Choose_Card_Action {}
+                    variant = Choose_Card_Action{},
                 },
                 Action {
                     tooltip = error_tooltip,
-                    variant = Retrieve_Card_Action {}
-                }
-            }
+                    variant = Retrieve_Card_Action{},
+                },
+            },
         },
         Card {
             name        = "Lethal Spin",
@@ -528,12 +528,12 @@ hero_cards: [Hero_ID][]Card = #partial {
                             Within_Distance {
                                 origin = Self{},
                                 min = 1,
-                                max = 1
+                                max = 1,
                             },
                             Contains_Any(UNIT_FLAGS),
                             Is_Enemy_Unit{},
-                        }
-                    }
+                        },
+                    },
                 },
                 Action {
                     tooltip = "Waiting for opponent to defend...",
@@ -547,7 +547,7 @@ hero_cards: [Hero_ID][]Card = #partial {
                                         Within_Distance {
                                             origin = Self{},
                                             min = 1,
-                                            max = 1
+                                            max = 1,
                                         },
                                         Contains_Any(UNIT_FLAGS),
                                         Is_Enemy_Unit{},
@@ -555,12 +555,12 @@ hero_cards: [Hero_ID][]Card = #partial {
                                     },
                                     -1,
                                 },
-                                3
-                            } 
-                        }
-                    }
+                                3,
+                            },
+                        },
+                    },
                 },
-            }
+            },
         },
         Card {
             name        = "Rapid Thrusts",
@@ -589,25 +589,25 @@ hero_cards: [Hero_ID][]Card = #partial {
                                         Within_Distance {
                                             origin = Self{},
                                             min = 1,
-                                            max = 1
+                                            max = 1,
                                         },
                                         Contains_Any(UNIT_FLAGS),
                                         Is_Enemy_Unit{},
                                         Ignoring_Immunity{},
                                     },
-                                }
+                                },
                             },
                             Contains_Any(UNIT_FLAGS),
                             Is_Enemy_Unit{},
-                        }
-                    }
+                        },
+                    },
                 },
                 Action {
                     tooltip = "Waiting for opponent to defend...",
                     variant = Attack_Action {
                         target = Previous_Choice{},
-                        strength = Card_Value{kind=.ATTACK}
-                    }
+                        strength = Card_Value{kind=.ATTACK},
+                    },
                 },
                 Action {
                     tooltip = "May repeat once on a different enemy hero.",
@@ -623,28 +623,28 @@ hero_cards: [Hero_ID][]Card = #partial {
                                         Within_Distance {
                                             origin = Self{},
                                             min = 1,
-                                            max = 1
+                                            max = 1,
                                         },
                                         Contains_Any(UNIT_FLAGS),
                                         Is_Enemy_Unit{},
                                         Ignoring_Immunity{},
                                     },
-                                }
+                                },
                             },
                             Contains_Any({.HERO}),
                             Is_Enemy_Unit{},
                             Not_Previously_Targeted{},
-                        }
-                    }
+                        },
+                    },
                 },
                 Action {
                     tooltip = "Waiting for opponent to defend...",
                     variant = Attack_Action {
                         target = Previous_Choice{},
-                        strength = Card_Value{kind=.ATTACK}
-                    }
+                        strength = Card_Value{kind=.ATTACK},
+                    },
                 },
-            }
+            },
         },
         Card {
             name        = "Dominate",
@@ -664,14 +664,14 @@ hero_cards: [Hero_ID][]Card = #partial {
                             {name = "Move self",    jump_index = {index=1}},
                             {name = "Move minion",  jump_index = {index=5}},
                         },
-                    }
+                    },
                 },
                 Action {  // 1
                     tooltip = player_movement_tooltip,
                     variant = Movement_Action {
                         target = Self{},
                         distance = Card_Value{kind=.MOVEMENT},
-                    }
+                    },
                 },
                 Action {  // 2
                     optional = true,
@@ -681,25 +681,25 @@ hero_cards: [Hero_ID][]Card = #partial {
                         num_targets = 1,
                         criteria = {
                             Within_Distance {
-                                origin = Self {},
+                                origin = Self{},
                                 min = 1,
                                 max = Card_Reach{},
                             },
                             Contains_Any(MINION_FLAGS),
                             Is_Enemy_Unit{},
                             Ignoring_Immunity{},
-                        }
-                    }
+                        },
+                    },
                 },
                 Action {  // 3
                     tooltip = "Move the minion up to 2 spaces.",
                     variant = Movement_Action {
                         target = Previous_Choice{},
                         distance = 2,
-                    }
+                    },
                 },
                 Action {  // 4
-                    variant = Halt_Action{}
+                    variant = Halt_Action{},
                 },
                 Action {  // 5
                     tooltip = "Choose a minion to move.",
@@ -707,31 +707,31 @@ hero_cards: [Hero_ID][]Card = #partial {
                         num_targets = 1,
                         criteria = {
                             Within_Distance {
-                                origin = Self {},
+                                origin = Self{},
                                 min = 1,
                                 max = Card_Reach{},
                             },
                             Contains_Any(MINION_FLAGS),
                             Is_Enemy_Unit{},
                             Ignoring_Immunity{},
-                        }
-                    }
+                        },
+                    },
                 },
                 Action {  // 6
                     tooltip = "Move the minion up to 2 spaces.",
                     variant = Movement_Action {
                         target = Previous_Choice{},
                         distance = 2,
-                    }
+                    },
                 },
                 Action {  // 7
                     tooltip = player_movement_tooltip,
                     variant = Movement_Action {
                         target = Self{},
                         distance = Card_Value{kind=.MOVEMENT},
-                    }
+                    },
                 },
-            }
+            },
         },
         Card {
             name        = "Final Embrace",  // @incomplete
@@ -750,13 +750,13 @@ hero_cards: [Hero_ID][]Card = #partial {
                         effect = Active_Effect {
                             id = .XARGATHA_DEFEAT,
                             duration = End_Of_Round{},
-                        }
-                    }
+                        },
+                    },
                 },
                 Action {
-                    variant = Halt_Action{}
-                }
-            }
+                    variant = Halt_Action{},
+                },
+            },
         },
         Card {
             name        = "Turn Into Statues",
@@ -775,10 +775,10 @@ hero_cards: [Hero_ID][]Card = #partial {
                         effect = Active_Effect {
                             id = .XARGATHA_FREEZE,
                             duration = Single_Turn(Sum{Turn_Played{Card_Creating_Effect{.XARGATHA_FREEZE}}, 1}),
-                        }
-                    }
-                }
-            }
+                        },
+                    },
+                },
+            },
         },
         Card {
             name        = "Devoted Followers",  // @incompllete
@@ -794,13 +794,13 @@ hero_cards: [Hero_ID][]Card = #partial {
                 Action {
                     tooltip = "Choose a discarded card to retrieve.",
                     optional = true,
-                    variant = Choose_Card_Action {}
+                    variant = Choose_Card_Action{},
                 },
                 Action {
                     tooltip = error_tooltip,
-                    variant = Retrieve_Card_Action {}
-                }
-            }
+                    variant = Retrieve_Card_Action{},
+                },
+            },
         },
-    }
+    },
 }

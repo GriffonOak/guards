@@ -2,12 +2,12 @@ package guards
 
 
 import rl "vendor:raylib"
-import "core:fmt"
-import "core:math"
-import "core:strings"
+// import "core:fmt"
+// import "core:math"
+// import "core:strings"
 import "core:log"
 
-import "core:mem"
+// import "core:mem"
 
 
 // Todo list
@@ -215,7 +215,7 @@ main :: proc() {
             window_texture.texture,
             {0, 0, WIDTH, -HEIGHT},
             {0, 0, WIDTH / window_scale, HEIGHT / window_scale},
-            {0, 0}, 0, rl.WHITE
+            {0, 0}, 0, rl.WHITE,
         )
 
         // rl.DrawCircleV({200, 200}, 200, rl.RED)

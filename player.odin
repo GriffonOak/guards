@@ -32,6 +32,7 @@ Hero :: struct {
     cards: [Card_Color]Card,
     coins: int,
     level: int,
+    dead: bool,
     // target_list: map[Target]Void,
     // num_locked_targets: int,
     // chosen_targets: [dynamic]Target,
@@ -42,6 +43,7 @@ Player_ID :: int
 Player :: struct {
     id: Player_ID,
     stage: Player_Stage,
+    // interrupting: bool,
     hero: Hero,
     
     team: Team,
@@ -74,7 +76,7 @@ player_offset :: proc(player_id: Player_ID) -> int {
 }
 
 render_other_player_info :: proc() {
-    for player, player_id in game_state.players {
+    for _, player_id in game_state.players {
         if player_id == my_player_id do continue
         player_offset := player_offset(player_id)
         x := BOARD_TEXTURE_SIZE.x + TEXT_PADDING + RESOLVED_CARD_WIDTH / 2
@@ -87,7 +89,7 @@ render_player_info_at_position :: proc(player_id: Player_ID, pos: Vec2) {
     pos := pos
     player := get_player_by_id(player_id)
     context.allocator = context.temp_allocator
-    name, ok := reflect.enum_name_from_value(player.hero.id)
+    name, _ := reflect.enum_name_from_value(player.hero.id)
     // hero_name := strings.clone_to_cstring(strings.to_ada_case(name))
     hero_name := fmt.ctprintf("[%v%v] %v", player_id, "!" if player.is_team_captain else "", strings.to_ada_case(name))
     

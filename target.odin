@@ -1,6 +1,7 @@
 package guards
 
-import "core:fmt"
+// import "core:fmt"
+import "core:log"
 
 
 
@@ -22,8 +23,8 @@ validate_action :: proc(index: Action_Index) -> bool {
         if calculate_implicit_quantity(freeze.duration.(Single_Turn)) == game_state.turn_counter {
             context.allocator = context.temp_allocator
             if get_my_player().hero.location in calculate_implicit_target_set(freeze.target_set) {
-                played_card, ok := find_played_card()
-                assert(ok, "Could not find played card when checking for Xargatha freeze")
+                played_card, ok2 := find_played_card()
+                assert(ok2, "Could not find played card when checking for Xargatha freeze")
                 if index.sequence == .BASIC_MOVEMENT || (index.index == 0 && played_card.primary == .MOVEMENT) {
                     // phew
                     return false
@@ -60,14 +61,19 @@ validate_action :: proc(index: Action_Index) -> bool {
         }
         return out
 
-    case Halt_Action, Attack_Action, Add_Active_Effect_Action, Minion_Removal_Action, Jump_Action, Minion_Spawn_Action:
+    // @Note maybe respawn should check if we're dead
+    case Halt_Action, Attack_Action, Add_Active_Effect_Action, Minion_Removal_Action, Jump_Action, Minion_Spawn_Action, Get_Defeated_Action, Respawn_Action:
         return true
 
     case Choose_Card_Action:
-        // @todo!
+        variant.card_targets = make_card_targets(variant.criteria)
+        return len(variant.card_targets) > 0
+
+    case Discard_Card_Action:
+        return true
 
     case Retrieve_Card_Action:
-
+        return true
     }
     return false
 }
@@ -127,17 +133,16 @@ make_movement_targets :: proc(distance: Implicit_Quantity, origin: Implicit_Targ
     if valid_destinations != nil {
         destination_set := calculate_implicit_target_set(valid_destinations)
         for valid_endpoint in destination_set {
-            endpoint_info, ok := visited_set[valid_endpoint]
-            if !ok do continue
+            if valid_endpoint not_in visited_set do continue
             reachable_targets_from_endpoint := make_movement_targets(
                 real_distance,
                 valid_endpoint,
                 allocator = context.temp_allocator,
             )
             for potential_target, potential_info in visited_set {
-                target_info, ok := reachable_targets_from_endpoint[potential_target]
+                target_info, ok2 := reachable_targets_from_endpoint[potential_target]
 
-                if ok && target_info.dist + potential_info.dist <= real_distance {
+                if ok2 && target_info.dist + potential_info.dist <= real_distance {
                     out[potential_target] = Target_Info{potential_info.dist, potential_info.prev_node}
                 } 
             }
@@ -220,6 +225,8 @@ target_fulfills_criterion :: proc(target: Target, criterion: Selection_Criterion
     case Is_Enemy_Unit:    return get_my_player().team != space.unit_team
     case Is_Friendly_Unit: return get_my_player().team == space.unit_team
 
+    case Is_Friendly_Spawnpoint: return get_my_player().team == space.spawnpoint_team
+
     case In_Battle_Zone:   return space.region_id == game_state.current_battle_zone
     case Empty:            return space.flags & OBSTACLE_FLAGS == {}
 
@@ -247,8 +254,8 @@ make_arbitrary_targets :: proc(criteria: []Selection_Criterion, allocator := con
 
     for criterion in criteria[1:] {
         switch variant in criterion {
-        case Within_Distance, Contains_Any, Is_Enemy_Unit, Is_Friendly_Unit, In_Battle_Zone, Empty:
-            for target, info in out {
+        case Within_Distance, Contains_Any, Is_Enemy_Unit, Is_Friendly_Unit, Is_Friendly_Spawnpoint, In_Battle_Zone, Empty:
+            for target in out {
                 if !target_fulfills_criterion(target, criterion) {
                     delete_key(&out, target)
                 }
@@ -291,7 +298,7 @@ make_arbitrary_targets :: proc(criteria: []Selection_Criterion, allocator := con
     }
 
     if !ignore_immunity {
-        for target, info in out {
+        for target in out {
             space := board[target.x][target.y]
             if space.flags & {.IMMUNE} != {} {
                 delete_key(&out, target)
@@ -305,7 +312,7 @@ make_arbitrary_targets :: proc(criteria: []Selection_Criterion, allocator := con
 
 
 card_fulfills_criterion :: proc(card: Card, criterion: Card_Selection_Criterion, allocator := context.allocator) -> bool {
-    switch variant in criterion.variant {
+    switch variant in criterion {
     case Card_State: return card.state == variant
     case Can_Defend:
         // Phew
@@ -316,24 +323,24 @@ card_fulfills_criterion :: proc(card: Card, criterion: Card_Selection_Criterion,
             #partial switch interrupt_variant in expanded_interrupt.interrupt.variant {
             case Attack_Interrupt:
                 attack_strength = interrupt_variant.strength
-                minion_modifiers = interrupt.
+                minion_modifiers = interrupt_variant.minion_modifiers
             }
         }
         log.assert(attack_strength != -1e6, "No attack found in interrupt stack!!!!!" )
 
-        minion_modifiers := 0
-        context.allocator := context.temp_allocator
-        for adjacent in make_arbitrary_targets({Within_Distance{Self{}, 1, 1}}) {
-            space := board[adjacent.x][adjacent.y]
-        }
-
+        return card.values[.DEFENSE] + minion_modifiers >= attack_strength  // @Item
     }
+    log.assert(false, "non-returning switch case in card criterion checker")
+    return false
 }
 
 make_card_targets :: proc(criteria: []Card_Selection_Criterion) -> (out: [dynamic]Card_ID) {
     for card in get_my_player().hero.cards {
         if card_fulfills_criterion(card, criteria[0]) {
-            append(&out, make_card_id(card))
+            append(&out, make_card_id(card, my_player_id))
         }
     }
+
+
+    return out
 }

@@ -85,7 +85,7 @@ send_network_packet_socket :: proc(socket: net.TCP_Socket, net_event: Network_Pa
 join_local_game :: proc() -> bool {
 
     is_host = false
-    local_address, ok := net.parse_ip4_address(MY_ADDRESS)
+    local_address, _ := net.parse_ip4_address(MY_ADDRESS)
 
 	socket, err := net.dial_tcp_from_address_and_port(local_address, GUARDS_PORT)
 	if err != nil {
@@ -125,7 +125,7 @@ begin_hosting_local_game :: proc() -> bool {
     add_or_update_player( Player {
         id = 0,
         hero = Hero {
-            id = .XARGATHA
+            id = .XARGATHA,
         },
         team = .RED,
         is_team_captain = true,
@@ -155,7 +155,7 @@ _thread_host_wait_for_clients :: proc(sock: net.TCP_Socket) {
                 id = client_player_id,
                 stage = .SELECTING,
                 hero = Hero {
-                    id = .XARGATHA
+                    id = .XARGATHA,
                 },
                 team = .BLUE,
                 is_team_captain = client_player_id == 1,
@@ -174,10 +174,10 @@ _thread_host_wait_for_clients :: proc(sock: net.TCP_Socket) {
 
             send_network_packet_socket(client, {0, Set_Client_Player_ID{client_player_id}})
 
-            for player in game_state.players {
-                // update existing players that new player has joined
-                // At some point :P
-            }
+            // for player in game_state.players {
+            //     // update existing players that new player has joined
+            //     // At some point :P
+            // }
         }
 	}
 	net.close(sock)
@@ -233,6 +233,7 @@ process_network_packets :: proc() {
             add_or_update_player(event.player)
 
         case Event:
+            log.infof("NET: %v", reflect.union_variant_typeid(event))
             append(&event_queue, event)
         }
     }

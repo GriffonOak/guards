@@ -95,7 +95,7 @@ CARD_HOVER_POSITION_RECT :: rl.Rectangle {
     WIDTH - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x,
     HEIGHT - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y,
     CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x,
-    CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y
+    CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y,
 }
 
 PLAYED_CARD_SIZE :: Vec2{150, 210}
@@ -113,14 +113,21 @@ OTHER_PLAYER_PLAYED_CARD_POSITION_RECT :: rl.Rectangle {
     BOARD_TEXTURE_SIZE.x - RESOLVED_CARD_WIDTH / 2,
     TOOLTIP_FONT_SIZE + BOARD_HAND_SPACE * 0.1,
     RESOLVED_CARD_WIDTH,
-    RESOLVED_CARD_HEIGHT
+    RESOLVED_CARD_HEIGHT,
 }
 // Copy and paste of above but with +constant on x
 OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT :: rl.Rectangle {
     BOARD_TEXTURE_SIZE.x - RESOLVED_CARD_WIDTH / 2 + 300,
     TOOLTIP_FONT_SIZE + BOARD_HAND_SPACE * 0.1,
     RESOLVED_CARD_WIDTH,
-    RESOLVED_CARD_HEIGHT
+    RESOLVED_CARD_HEIGHT,
+}
+
+OTHER_PLAYER_DISCARDED_CARD_POSITION_RECT :: rl.Rectangle {
+    BOARD_TEXTURE_SIZE.x - RESOLVED_CARD_WIDTH / 2 + 300 + (4 * RESOLVED_CARD_WIDTH + RESOLVED_CARD_PADDING),
+    TOOLTIP_FONT_SIZE + BOARD_HAND_SPACE * 0.1,
+    RESOLVED_CARD_WIDTH * 0.75,
+    RESOLVED_CARD_HEIGHT * 0.75,
 }
 
 
@@ -128,8 +135,17 @@ FIRST_CARD_RESOLVED_POSITION_RECT :: rl.Rectangle {
     RESOLVED_CARD_PADDING,
     BOARD_POSITION_RECT.height + RESOLVED_CARD_PADDING,
     RESOLVED_CARD_WIDTH,
-    RESOLVED_CARD_HEIGHT
+    RESOLVED_CARD_HEIGHT,
 }
+
+
+FIRST_DISCARDED_CARD_POSITION_RECT :: rl.Rectangle {
+    4 * (RESOLVED_CARD_PADDING + RESOLVED_CARD_WIDTH),
+    BOARD_POSITION_RECT.height + RESOLVED_CARD_PADDING,
+    RESOLVED_CARD_WIDTH * 0.75,
+    RESOLVED_CARD_HEIGHT * 0.75,
+}
+
 
 CARD_PLAYED_POSITION_RECT :: rl.Rectangle{BOARD_POSITION_RECT.width * 0.8 - PLAYED_CARD_SIZE.x / 2, BOARD_POSITION_RECT.height - PLAYED_CARD_SIZE.y / 4, PLAYED_CARD_SIZE.x, PLAYED_CARD_SIZE.y}
 
@@ -262,7 +278,7 @@ draw_card: UI_Render_Proc: proc(element: UI_Element) {
 
     log.assert(ok, "Tried to draw card element with no assigned card!")
 
-    amount_to_show := element.bounding_rect.height / element.bounding_rect.width * CARD_TEXTURE_SIZE.y
+    // amount_to_show := element.bounding_rect.height / element.bounding_rect.width * CARD_TEXTURE_SIZE.y
     if card_element.hidden {
         rl.DrawRectangleRec(element.bounding_rect, rl.RAYWHITE)
         rl.DrawRectangleLinesEx(element.bounding_rect, 4, rl.LIGHTGRAY)
@@ -337,21 +353,25 @@ make_card_id :: proc(card: Card, player_id: Player_ID) -> Card_ID {
     }
 }
 
-find_element_for_card :: proc(card: Card) -> ^UI_Element {
-    ui_slice := ui_stack[1 + 5 * card.owner:][:5]
+get_ui_card_slice :: proc(player_id: Player_ID) -> []UI_Element {
+    return ui_stack[1 + 5 * player_id:][:5]
+}
 
-    for &element in ui_slice {
+find_element_for_card :: proc(card: Card) -> (^UI_Element, int) {
+    ui_slice := get_ui_card_slice(card.owner)
+
+    for &element, index in ui_slice {
         card_element := assert_variant(&element.variant, UI_Card_Element)
         if card_element.card_id.color == card.color {
-            return &element
+            return &element, index
         }
     }
 
-    return nil
+    return nil, -1
 }
 
 find_selected_card_element :: proc() -> (^UI_Element, bool) {
-    ui_slice := ui_stack[1 + 5 * my_player_id:][:5]
+    ui_slice := get_ui_card_slice(my_player_id)
     for &element in ui_slice {
         card_element := assert_variant(&element.variant, UI_Card_Element)
         if card_element.selected {
@@ -363,7 +383,7 @@ find_selected_card_element :: proc() -> (^UI_Element, bool) {
 
 play_card :: proc(card: ^Card) {
 
-    element := find_element_for_card(card^)
+    element, _ := find_element_for_card(card^)
     card_element := &element.variant.(UI_Card_Element)
     card_element.selected = false
 
@@ -382,7 +402,7 @@ play_card :: proc(card: ^Card) {
 
 retrieve_card :: proc(card: ^Card) {
 
-    element := find_element_for_card(card^)
+    element, _ := find_element_for_card(card^)
     if card.owner == my_player_id {
         element.bounding_rect = card_hand_position_rects[card.color]
     } else {
@@ -394,7 +414,7 @@ retrieve_card :: proc(card: ^Card) {
 
 resolve_card :: proc(card: ^Card) {
     
-    element := find_element_for_card(card^)
+    element, _ := find_element_for_card(card^)
     
     if card.owner == my_player_id {
         element.bounding_rect = FIRST_CARD_RESOLVED_POSITION_RECT
@@ -405,4 +425,32 @@ resolve_card :: proc(card: ^Card) {
     element.bounding_rect.x += f32(game_state.turn_counter) * (FIRST_CARD_RESOLVED_POSITION_RECT.x + FIRST_CARD_RESOLVED_POSITION_RECT.width)
     
     card.state = .RESOLVED
+}
+
+discard_card :: proc(card: ^Card) {
+    element, index := find_element_for_card(card^)
+
+    if card.owner == my_player_id {
+        element.bounding_rect = FIRST_DISCARDED_CARD_POSITION_RECT
+    } else {
+        element.bounding_rect = OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT
+        element.bounding_rect.y += f32(player_offset(card.owner)) * BOARD_HAND_SPACE
+    }
+
+    player := get_player_by_id(card.owner)
+    prev_discarded_cards := 0
+
+    for card in player.hero.cards {
+        if card.state == .DISCARDED do prev_discarded_cards += 1
+    }
+    
+    offset := f32(prev_discarded_cards) * RESOLVED_CARD_PADDING
+    element.bounding_rect.x += offset
+    element.bounding_rect.y += offset
+
+    ui_card_slice := get_ui_card_slice(card.owner)
+
+    ui_card_slice[prev_discarded_cards], ui_card_slice[index] = ui_card_slice[index], ui_card_slice[prev_discarded_cards]
+
+    card.state = .DISCARDED
 }

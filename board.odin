@@ -1,7 +1,7 @@
 package guards
 
 import rl "vendor:raylib"
-import "core:fmt"
+// import "core:fmt"
 import "core:math"
 import "core:reflect"
 import "core:strings"
@@ -107,7 +107,7 @@ fast_travel_adjacencies := [Region_ID]bit_set[Region_ID] {
     .CENTRE = {.RED_BEACH, .RED_JUNGLE, .BLUE_BEACH, .BLUE_JUNGLE},
     .BLUE_BEACH = {.BLUE_BASE, .CENTRE},
     .BLUE_BASE = {.BLUE_BEACH, .BLUE_JUNGLE},
-    .BLUE_JUNGLE = {.BLUE_BASE, .CENTRE}
+    .BLUE_JUNGLE = {.BLUE_BASE, .CENTRE},
 }
 
 spawnpoints := [?]Spawnpoint_Marker {
