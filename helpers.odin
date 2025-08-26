@@ -145,12 +145,14 @@ calculate_minion_modifiers :: proc() -> int {
     minion_modifiers := 0
     player := get_my_player()
     context.allocator = context.temp_allocator
-    for adjacent in make_arbitrary_targets({Within_Distance{Self{}, 1, 1}}) {
+    for adjacent in make_arbitrary_targets({Within_Distance{Self{}, 1, 1}, Ignoring_Immunity{}}) {
         space := board[adjacent.x][adjacent.y]
         if space.flags & {.MELEE_MINION, .HEAVY_MINION} != {} {
             minion_modifiers += 1 if space.unit_team == player.team else -1
         }
     }
+
+    log.infof("Melee & heavy modifier: %v", minion_modifiers)
 
     for adjacent in make_arbitrary_targets({Within_Distance{Self{}, 1, 2}}) {
         space := board[adjacent.x][adjacent.y]
@@ -158,5 +160,7 @@ calculate_minion_modifiers :: proc() -> int {
             minion_modifiers -= 1
         }
     }
+
+    log.infof("Minion modifier: %v", minion_modifiers)
     return minion_modifiers
 }

@@ -433,7 +433,7 @@ discard_card :: proc(card: ^Card) {
     if card.owner == my_player_id {
         element.bounding_rect = FIRST_DISCARDED_CARD_POSITION_RECT
     } else {
-        element.bounding_rect = OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT
+        element.bounding_rect = OTHER_PLAYER_DISCARDED_CARD_POSITION_RECT
         element.bounding_rect.y += f32(player_offset(card.owner)) * BOARD_HAND_SPACE
     }
 

@@ -146,7 +146,7 @@ spawn_minions :: proc(zone: Region_ID) {
             spawnpoint_type := get_first_set_bit(spawnpoint_flags).?
 
             minion_to_spawn := spawnpoint_to_minion[spawnpoint_type]
-            if minion_to_spawn == .MELEE_MINION && space.spawnpoint_team == .RED do continue
+            // if minion_to_spawn == .MELEE_MINION && space.spawnpoint_team == .RED do continue
 
             if (space.flags - {.TOKEN}) & OBSTACLE_FLAGS != {} {
                 broadcast_game_event(Minion_Blocked_Event{index})

@@ -13,7 +13,7 @@ import "core:thread"
 import "core:sync"
 
 LOOPBACK_ADDRESS :: "127.0.0.1"
-MY_ADDRESS :: "25.2.114.107"
+MY_ADDRESS :: LOOPBACK_ADDRESS // "25.2.114.107"
 
 GUARDS_PORT :: 8081
 

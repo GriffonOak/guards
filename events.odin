@@ -389,6 +389,19 @@ resolve_event :: proc(event: Event) {
                     }
                 }
             }
+
+        case .RESOLVING, .INTERRUPTING:
+            action := get_current_action()
+            #partial switch &variant in action.variant {
+            case Choose_Card_Action:
+                for target_card_id in variant.card_targets {
+                    if target_card_id == card_id {
+                        variant.result = card_id
+                        append(&event_queue, Resolve_Current_Action_Event{})
+                        break
+                    }
+                }
+            }
         }
 
     case Cancel_Event:
@@ -479,13 +492,15 @@ resolve_event :: proc(event: Event) {
         defeated_hero.dead = true
         defeater := get_player_by_id(var.defeater)
 
-        if var.defeated == my_player_id && len(game_state.interrupt_stack) > 0 {
-            game_state.interrupt_stack[0].previous_stage = .RESOLVED
-        } else { 
-            defeated.stage = .RESOLVED
-        }
-        card, ok := find_played_card(var.defeated)
-        if ok do resolve_card(card)
+        if defeated_card, ok := find_played_card(var.defeated); ok {
+            if var.defeated == my_player_id && len(game_state.interrupt_stack) > 0 {
+                game_state.interrupt_stack[0].previous_stage = .RESOLVED
+            } else { 
+                defeated.stage = .RESOLVED
+            }
+            game_state.resolved_players += 1
+            resolve_card(defeated_card)
+        }        
 
         board[defeated_hero.location.x][defeated_hero.location.y].flags -= {.HERO}
 
@@ -506,7 +521,8 @@ resolve_event :: proc(event: Event) {
 
     case Hero_Respawn_Event:
         player := get_player_by_id(var.respawner)
-        get_player_by_id(var.respawner).hero.location = var.location
+        player.hero.location = var.location
+        player.hero.dead = false
         board[var.location.x][var.location.y].flags += {.HERO}
         board[var.location.x][var.location.y].hero_id = player.hero.id
         board[var.location.x][var.location.y].unit_team = player.team
@@ -582,7 +598,9 @@ resolve_event :: proc(event: Event) {
         }
 
     case Card_Discarded_Event:
-        // card, ok := get_card_by_id(var.card_id)
+        card, ok := get_card_by_id(var.card_id)
+        log.assert(ok, "Discarded card has invalid card ID!")
+        discard_card(card)
 
     case Begin_Resolution_Stage_Event: 
         game_state.stage = .RESOLUTION
@@ -681,7 +699,7 @@ resolve_event :: proc(event: Event) {
             target := calculate_implicit_target(action_type.target)
             space := &board[target.x][target.y]
             attack_strength := calculate_implicit_quantity(action_type.strength)  // @Item
-            log.debugf("Attack strength: %v", attack_strength)
+            log.infof("Attack strength: %v", attack_strength)
             // Here we assume the target must be an enemy. Enemy should always be in the selection flags for attacks.
             if MINION_FLAGS & space.flags != {} {
                 if defeat_minion(target) {  // Add a wave push interrupt if the minion defeated was the last one
@@ -965,16 +983,16 @@ resolve_event :: proc(event: Event) {
 
         log.assert(is_host, "sometyhing sommethign client")
         broadcast_game_event(Resolve_Interrupt_Event{})
-        
+
     case Begin_Upgrading_Event:
         clear(&game_state.ongoing_active_effects)
         retrieve_all_cards()
         // append(&event_queue, End_Upgrading_Event{})
 
         if get_my_player().hero.coins < get_my_player().hero.level {
+            // log.infof("Pity coin collected. Current coin count: %v", get_my_player().hero.coins)
             get_my_player().hero.coins += 1
-            log.infof("Pity coin collected. Current coin count: %v", get_my_player().hero.coins)
-            broadcast_game_event(End_Upgrading_Event{})
+            broadcast_game_event(End_Upgrading_Event{my_player_id})
         } else {
             append(&event_queue, Begin_Next_Upgrade_Event{})
         }
@@ -988,20 +1006,19 @@ resolve_event :: proc(event: Event) {
             get_my_player().hero.level += 1
             log.infof("Player levelled up! Current level: %v", get_my_player().hero.level)
         } else {
-            broadcast_game_event(End_Upgrading_Event{})
+            broadcast_game_event(End_Upgrading_Event{my_player_id})
         }
 
     case End_Upgrading_Event:
         if var.player_id == my_player_id {
             tooltip = "Waiting for other players to finish upgrading."
         }
-        game_state.turn_counter = 0
         game_state.upgraded_players += 1
 
         if game_state.upgraded_players == len(game_state.players) {
             broadcast_network_event(Update_Player_Data{get_my_player()^})
+            game_state.turn_counter = 0
             if is_host {
-
                 broadcast_game_event(Begin_Card_Selection_Event{})
             }
         }

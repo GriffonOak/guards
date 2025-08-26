@@ -259,6 +259,7 @@ respawn_action := []Action {
         optional = true,
         skip_index = {sequence = .HALT},
         skip_name = "Stay dead",
+        tooltip = "Choose a spawnpoint to respawn in. You may also stay dead.",
         variant = Choose_Target_Action {
             num_targets = 1,
             criteria = {

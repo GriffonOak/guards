@@ -319,15 +319,17 @@ card_fulfills_criterion :: proc(card: Card, criterion: Card_Selection_Criterion,
         // Find the attack first
         attack_strength := -1e6
         minion_modifiers := -1e6
-        #reverse for expanded_interrupt in game_state.interrupt_stack {
+        search_interrupts: #reverse for expanded_interrupt in game_state.interrupt_stack {
             #partial switch interrupt_variant in expanded_interrupt.interrupt.variant {
             case Attack_Interrupt:
                 attack_strength = interrupt_variant.strength
                 minion_modifiers = interrupt_variant.minion_modifiers
+                break search_interrupts
             }
         }
         log.assert(attack_strength != -1e6, "No attack found in interrupt stack!!!!!" )
 
+        log.infof("Defending attack of %v, minions %v, card value %v", attack_strength, minion_modifiers, card.values[.DEFENSE])
         return card.values[.DEFENSE] + minion_modifiers >= attack_strength  // @Item
     }
     log.assert(false, "non-returning switch case in card criterion checker")
@@ -341,6 +343,15 @@ make_card_targets :: proc(criteria: []Card_Selection_Criterion) -> (out: [dynami
         }
     }
 
+    for criterion in criteria [1:] {
+        #reverse for card_id, index in out {
+            card, ok := get_card_by_id(card_id)
+            log.assert(ok, "How would this even happen lol")
+            if !card_fulfills_criterion(card^, criterion) {
+                unordered_remove(&out, index)
+            }
+        }
+    }
 
     return out
 }
