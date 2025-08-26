@@ -64,7 +64,8 @@ Update_Tiebreaker_Event :: struct {
 
 Begin_Card_Selection_Event :: struct {}
 Card_Confirmed_Event :: struct {
-    card_id: Card_ID,
+    player_id: Player_ID,
+    maybe_card_id: Maybe(Card_ID),
 }
 
 Card_Discarded_Event :: struct {
@@ -308,7 +309,7 @@ resolve_event :: proc(event: Event) {
                 }
 
                 var.card_element.selected = true
-                add_side_button("Confirm card", Card_Confirmed_Event{card_id}, global=true)
+                add_side_button("Confirm card", Card_Confirmed_Event{my_player_id, card_id}, global=true)
             }
 
         case .UPGRADING:
@@ -498,7 +499,6 @@ resolve_event :: proc(event: Event) {
             } else { 
                 defeated.stage = .RESOLVED
             }
-            game_state.resolved_players += 1
             resolve_card(defeated_card)
         }        
 
@@ -577,21 +577,38 @@ resolve_event :: proc(event: Event) {
         game_state.confirmed_players = 0
         tooltip = "Choose a card to play and then confirm it."
 
+        // Streamline card selection if player has 0 or 1 cards
+        hand_card_count := 0
+        hand_card: Maybe(Card_ID) = nil
+
+        for card in get_my_player().hero.cards {
+            if card.state == .IN_HAND {
+                hand_card_count += 1
+                hand_card = make_card_id(card, my_player_id)
+            }
+        }
+
+        // 0 or 1 cards remaining => forced choice
+        if hand_card_count <= 1 {
+            broadcast_game_event(Card_Confirmed_Event{my_player_id, hand_card})
+        }
+
     case Card_Confirmed_Event:
-        player := get_player_by_id(var.card_id.player_id)
-        card, ok := get_card_by_id(var.card_id)
+        player := get_player_by_id(var.player_id)
         player.stage = .CONFIRMED
         game_state.confirmed_players += 1
 
-       
-        log.assert(ok, "Invalid card ID in card confirmation event!")
+        card_id, played_card_exists := var.maybe_card_id.?
+        if played_card_exists {
+            card, ok := get_card_by_id(card_id)
+            log.assert(ok, "Invalid card ID in card confirmation event!")
+            play_card(card)
+        }
 
-        if var.card_id.player_id == my_player_id {
+        if var.player_id == my_player_id {
             clear_side_buttons()
             tooltip = "Waiting for other players to confirm their cards."
-        } 
-
-        play_card(card)
+        }
 
         if is_host && game_state.confirmed_players == len(game_state.players) {
             broadcast_game_event(Begin_Resolution_Stage_Event{})
@@ -604,7 +621,6 @@ resolve_event :: proc(event: Event) {
 
     case Begin_Resolution_Stage_Event: 
         game_state.stage = .RESOLUTION
-        game_state.resolved_players = 0
 
         tooltip = "Waiting for other players to resolve their cards."
 
@@ -672,6 +688,7 @@ resolve_event :: proc(event: Event) {
             }
 
         case Choose_Target_Action:
+            clear(&action_type.result)
             if len(action.targets) == calculate_implicit_quantity(action_type.num_targets) && !action.optional {
                 for space in action.targets {
                     append(&action_type.result, space)
@@ -813,7 +830,7 @@ resolve_event :: proc(event: Event) {
             }
             broadcast_game_event(Unit_Translocation_Event{calculate_implicit_target(variant.target), variant.path.spaces[len(variant.path.spaces) - 1]})
         case Choice_Action:
-            variant.result = var.jump_index.?
+            variant.result = var.jump_index.?            
         }
 
         delete(action.targets)
@@ -841,7 +858,6 @@ resolve_event :: proc(event: Event) {
 
     case End_Resolution_Event:
         clear_side_buttons()
-        game_state.resolved_players += 1
 
         // This is to ensure that if a player's state changes mid-interrupt, only the underlying "base state" changes, rather than all the froth on top.
         game_state.players[var.player_id].stage = .RESOLVED
@@ -860,12 +876,9 @@ resolve_event :: proc(event: Event) {
                 broadcast_game_event(Update_Tiebreaker_Event{get_enemy_team(game_state.tiebreaker_coin)})
             }
             initiative_tied = false
+        
+            begin_next_player_turn()
 
-            if game_state.resolved_players == len(game_state.players) {
-                broadcast_game_event(Resolutions_Completed_Event{})
-            } else {
-                begin_next_player_turn()
-            }
         }
 
     case Resolutions_Completed_Event:

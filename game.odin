@@ -97,7 +97,7 @@ Game_State :: struct {
     minion_counts: [Team]int,
     life_counters: [Team]int,
     confirmed_players: int,
-    resolved_players: int,
+    // resolved_players: int,
     upgraded_players: int,
     turn_counter: int,
     wave_counters: int,
