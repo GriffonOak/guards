@@ -124,11 +124,11 @@ OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT :: rl.Rectangle {
 }
 
 OTHER_PLAYER_DISCARDED_CARD_POSITION_RECT :: rl.Rectangle {
-    BOARD_TEXTURE_SIZE.x - RESOLVED_CARD_WIDTH / 2 + 300 + 4 * (RESOLVED_CARD_WIDTH + RESOLVED_CARD_PADDING) + RESOLVED_CARD_PADDING,
+    BOARD_TEXTURE_SIZE.x - RESOLVED_CARD_WIDTH / 2 + 300 + (4 * RESOLVED_CARD_WIDTH + RESOLVED_CARD_PADDING),
     TOOLTIP_FONT_SIZE + BOARD_HAND_SPACE * 0.1,
     RESOLVED_CARD_WIDTH * 0.75,
     RESOLVED_CARD_HEIGHT * 0.75,
-}
+}  // Mouse contribution: h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h 
 
 
 FIRST_CARD_RESOLVED_POSITION_RECT :: rl.Rectangle {
@@ -140,7 +140,7 @@ FIRST_CARD_RESOLVED_POSITION_RECT :: rl.Rectangle {
 
 
 FIRST_DISCARDED_CARD_POSITION_RECT :: rl.Rectangle {
-    4 * (RESOLVED_CARD_PADDING + RESOLVED_CARD_WIDTH) + RESOLVED_CARD_PADDING,
+    4 * (RESOLVED_CARD_PADDING + RESOLVED_CARD_WIDTH),
     BOARD_POSITION_RECT.height + RESOLVED_CARD_PADDING,
     RESOLVED_CARD_WIDTH * 0.75,
     RESOLVED_CARD_HEIGHT * 0.75,
@@ -148,6 +148,8 @@ FIRST_DISCARDED_CARD_POSITION_RECT :: rl.Rectangle {
 
 
 CARD_PLAYED_POSITION_RECT :: rl.Rectangle{BOARD_POSITION_RECT.width * 0.8 - PLAYED_CARD_SIZE.x / 2, BOARD_POSITION_RECT.height - PLAYED_CARD_SIZE.y / 4, PLAYED_CARD_SIZE.x, PLAYED_CARD_SIZE.y}
+
+
 
 
 ability_initials := [Ability_Kind]string {
@@ -431,7 +433,23 @@ discard_card :: proc(card: ^Card) {
     if card.owner == my_player_id {
         element.bounding_rect = FIRST_DISCARDED_CARD_POSITION_RECT
     } else {
-        element.bounding_rect = OTHER_PLAYER_DISCARDED_CARD_POSITION_RECT
+        element.bounding_rect = 
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         element.bounding_rect.y += f32(player_offset(card.owner)) * BOARD_HAND_SPACE
     }
 
