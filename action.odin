@@ -22,6 +22,7 @@ Not_Previously_Targeted :: struct {}
 
 Ignoring_Immunity :: struct {}
 In_Battle_Zone :: struct {}
+Outside_Battle_Zone :: struct {}
 Empty :: struct {}
 
 Selection_Criterion :: union {
@@ -35,6 +36,7 @@ Selection_Criterion :: union {
     Not_Previously_Targeted,
     Ignoring_Immunity,
     In_Battle_Zone,
+    Outside_Battle_Zone,
     Empty,
 }
 
@@ -45,10 +47,20 @@ Path :: struct {
     spaces: [dynamic]Target,
 }
 
+Movement_Flag :: enum {
+    SHORTEST_PATH,
+    // IGNORING_OBSTACLES,
+    // STRAIGHT_LINE,
+    // etc...
+}
+
+Movement_Flags :: bit_set[Movement_Flag]
+
 Movement_Action :: struct {
     target: Implicit_Target,
     distance: Implicit_Quantity,
     valid_destinations: Implicit_Target_Set,
+    flags: Movement_Flags,
 
     path: Path,
 }
@@ -168,6 +180,7 @@ Action_Sequence_ID :: enum {
 
     MINION_REMOVAL,
     MINION_SPAWN,
+    MINION_OUTSIDE_ZONE,
 }
 
 Action_Index :: struct {
@@ -330,6 +343,30 @@ minion_spawn_action := []Action {
     },
 }
 
+minion_outside_zone_action := []Action {  // Still need to handle the case where there is no valid path here
+    Action {
+        tooltip = "Choose which minion outside the zone to move.",
+        variant = Choose_Target_Action {
+            num_targets = 1,
+            criteria = {
+                Contains_Any(MINION_FLAGS),
+                Is_Friendly_Unit{},
+                Outside_Battle_Zone{},
+            },
+        },
+    },
+    Action {
+        tooltip = "Choose one of the closest spaces in the battle zone to move the minion to.",
+        variant = Movement_Action {
+            target = Previous_Choice{},
+            valid_destinations = []Selection_Criterion {
+                In_Battle_Zone{},
+            },
+            flags = {.SHORTEST_PATH},
+        },
+    },
+}
+
 
 
 
@@ -355,6 +392,7 @@ get_action_at_index :: proc(index: Action_Index) -> ^Action {
     case .BASIC_DEFENSE:        action_sequence = basic_defense_action
     case .MINION_REMOVAL:       action_sequence = minion_removal_action
     case .MINION_SPAWN:         action_sequence = minion_spawn_action
+    case .MINION_OUTSIDE_ZONE:  action_sequence = minion_outside_zone_action
     }
 
     if index.index < len(action_sequence) {

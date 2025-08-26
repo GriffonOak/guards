@@ -423,7 +423,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
 
     highlight_action_targets :: proc(action: Action) {
 
-        valid_destinations: Target_Set = nil
+        // valid_destinations: Target_Set = nil
         origin: Target
 
         frequency: f64 = 4
@@ -438,7 +438,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             }
             return
         case Movement_Action:
-            valid_destinations = calculate_implicit_target_set(variant.valid_destinations)
+            // valid_destinations = calculate_implicit_target_set(variant.valid_destinations)
             if variant.path.num_locked_spaces == 0 {
                 origin = calculate_implicit_target(variant.target)
             } else {
@@ -481,7 +481,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             highlight_color := rl.LIGHTGRAY
             // color: = color_lerp(rl.BLUE, rl.ORANGE, color_blend)
             color := color_lerp(base_color, highlight_color, color_blend)
-            if valid_destinations != nil && target not_in valid_destinations {
+            if info.invalid {
                 rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.08, color)
             } else {
                 rl.DrawPolyLinesEx(space.position, 6, VERTICAL_SPACING / 2, 0, VERTICAL_SPACING * 0.08, color)

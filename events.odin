@@ -83,6 +83,9 @@ Resolve_Current_Action_Event :: struct {
 End_Resolution_Event :: struct {
     player_id: Player_ID,
 }
+
+Check_Minions_Outside_Zone_Event :: struct {}
+
 Resolutions_Completed_Event :: struct {}
 
 Begin_Minion_Battle_Event :: struct {}
@@ -158,6 +161,7 @@ Event :: union {
     Begin_Next_Action_Event,
     Resolve_Current_Action_Event,
     End_Resolution_Event,
+    Check_Minions_Outside_Zone_Event,
 
     Resolutions_Completed_Event,
 
@@ -256,18 +260,14 @@ resolve_event :: proc(event: Event) {
                 action_variant.path.num_locked_spaces = len(action_variant.path.spaces)
                 last_target := action_variant.path.spaces[len(action_variant.path.spaces)-1]
                 
-                target_valid: bool = true
-                if action_variant.valid_destinations != nil {
-                    context.allocator = context.temp_allocator
-                    destination_set := calculate_implicit_target_set(action_variant.valid_destinations)
-                    target_valid = var.space in destination_set
-                }
+                target_valid := !action.targets[var.space].invalid
 
                 delete(action.targets)
                 action.targets = make_movement_targets(
-                    distance = Implicit_Quantity(calculate_implicit_quantity(action_variant.distance) - action_variant.path.num_locked_spaces),
+                    max_distance = Implicit_Quantity(calculate_implicit_quantity(action_variant.distance) - action_variant.path.num_locked_spaces),
                     origin = last_target,
                     valid_destinations = action_variant.valid_destinations,
+                    flags = action_variant.flags,
                 )
 
                 log.assert(len(side_button_manager.buttons) > 0, "No side buttons!?")
@@ -416,7 +416,12 @@ resolve_event :: proc(event: Event) {
 
                 movement_val := action_variant.distance
                 delete(action.targets)
-                action.targets = make_movement_targets(movement_val, action_variant.target, action_variant.valid_destinations)
+                action.targets = make_movement_targets(
+                    movement_val,
+                    action_variant.target,
+                    action_variant.valid_destinations,
+                    action_variant.flags,
+                )
 
                 log.assert(len(side_button_manager.buttons) > 0, "No side buttons!?")
                 top_button := side_button_manager.buttons[len(side_button_manager.buttons) - 1].variant.(UI_Button_Element)
@@ -627,14 +632,14 @@ resolve_event :: proc(event: Event) {
         // Unhide hidden cards
         for _, player_id in game_state.players {
             player_card, ok := find_played_card(player_id)
-            log.assertf(ok, "Player %v had no played card at the start of the resolution stage!")
+            if !ok do continue  // Player had no played card
             element, _ := find_element_for_card(player_card^)
             card_element := &element.variant.(UI_Card_Element)
             card_element.hidden = false
         }
 
         if is_host {
-            begin_next_player_turn()
+            broadcast_game_event(get_next_turn_event())
         }
 
 
@@ -656,7 +661,7 @@ resolve_event :: proc(event: Event) {
                 },
                 Begin_Next_Action_Event{},
             )
-            return
+            break
         }
 
         append(&event_queue, Begin_Next_Action_Event{})
@@ -850,7 +855,7 @@ resolve_event :: proc(event: Event) {
 
         if next_index.sequence == .HALT || get_action_at_index(next_index) == nil {
             end_current_action_sequence()
-            return
+            break
         }
 
         get_my_player().hero.current_action_index = next_index
@@ -876,9 +881,46 @@ resolve_event :: proc(event: Event) {
                 broadcast_game_event(Update_Tiebreaker_Event{get_enemy_team(game_state.tiebreaker_coin)})
             }
             initiative_tied = false
-        
-            begin_next_player_turn()
 
+            append(&event_queue, Check_Minions_Outside_Zone_Event{})
+        }
+
+    case Check_Minions_Outside_Zone_Event:
+
+        log.assert(is_host, "Clients should not be checking minions outside the battle zone")
+
+        needs_interrupt: [Team]bool
+
+        check_spaces: for region_id in Region_ID{
+            if region_id == .NONE || region_id == game_state.current_battle_zone do continue
+            for index in zone_indices[region_id] {
+                space := board[index.x][index.y]
+                if space.flags & MINION_FLAGS != {} {
+                    needs_interrupt[space.unit_team] = true
+                    if space.unit_team == game_state.tiebreaker_coin do break check_spaces
+                }
+            }
+        }
+
+        if needs_interrupt[game_state.tiebreaker_coin] {
+            become_interrupted (
+                Interrupt {
+                    my_player_id, game_state.team_captains[game_state.tiebreaker_coin],
+                    Action_Index{.MINION_OUTSIDE_ZONE, 0},
+                },
+                Check_Minions_Outside_Zone_Event{},
+            )
+        } else if non_tb_team := get_enemy_team(game_state.tiebreaker_coin); needs_interrupt[non_tb_team] {
+            become_interrupted (
+                Interrupt {
+                    my_player_id, game_state.team_captains[non_tb_team],
+                    Action_Index{.MINION_OUTSIDE_ZONE, 0},
+                },
+                Check_Minions_Outside_Zone_Event{},
+            )
+        } else {
+            next_event := get_next_turn_event()
+            broadcast_game_event(next_event)
         }
 
     case Resolutions_Completed_Event:
@@ -956,7 +998,7 @@ resolve_event :: proc(event: Event) {
         if game_state.wave_counters == 0 || game_state.current_battle_zone == .RED_BASE || game_state.current_battle_zone == .BLUE_BASE {
             // Win on base push or last push
             append(&event_queue, Game_Over_Event{var.pushing_team})
-            return
+            break
         }
 
         // Remove all minions in current battle zone
@@ -1000,7 +1042,7 @@ resolve_event :: proc(event: Event) {
     case Begin_Upgrading_Event:
         clear(&game_state.ongoing_active_effects)
         retrieve_all_cards()
-        // append(&event_queue, End_Upgrading_Event{})
+        game_state.upgraded_players = 0
 
         if get_my_player().hero.coins < get_my_player().hero.level {
             // log.infof("Pity coin collected. Current coin count: %v", get_my_player().hero.coins)

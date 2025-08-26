@@ -10,6 +10,8 @@ Target :: IVec2
 Target_Info :: struct {
     dist: int,
     prev_node: Target,
+    invalid: bool,  // True if we can move to the space along the way to a valid endpoint but the space itself is not a valid endpoint
+    // We flag invalid rather than valid here so spaces default to being valid
 }
 
 Target_Set :: map[Target]Target_Info
@@ -38,7 +40,7 @@ validate_action :: proc(index: Action_Index) -> bool {
 
     switch &variant in action.variant {
     case Movement_Action:
-        action.targets =  make_movement_targets(variant.distance, variant.target, variant.valid_destinations)
+        action.targets =  make_movement_targets(variant.distance, variant.target, variant.valid_destinations, variant.flags)
         return len(action.targets) > 0
 
     case Fast_Travel_Action:
@@ -78,28 +80,42 @@ validate_action :: proc(index: Action_Index) -> bool {
     return false
 }
 
-Dijkstra_Info :: struct {
-    dist: int,
-    prev_node: IVec2,
-}
-
-make_movement_targets :: proc(distance: Implicit_Quantity, origin: Implicit_Target, valid_destinations: Implicit_Target_Set = nil, allocator := context.allocator) -> (out: Target_Set) {
+make_movement_targets :: proc (
+    max_distance: Implicit_Quantity,
+    origin: Implicit_Target,
+    valid_destinations: Implicit_Target_Set = nil,
+    flags: Movement_Flags = {},
+    allocator := context.allocator,
+) -> (visited_set: Target_Set) {
 
     context.allocator = allocator
 
-    visited_set: map[IVec2]Dijkstra_Info
-    unvisited_set: map[IVec2]Dijkstra_Info
+    BIG_NUMBER :: 1e6
 
-    start := calculate_implicit_target(origin)
-    unvisited_set[start] = {0, {-1, -1}}
+    real_max_distance := calculate_implicit_quantity(max_distance)
+    if .SHORTEST_PATH in flags {
+        log.assert(valid_destinations != nil, "Trying to calculate shortest path with no valid destination set given!")
+        real_max_distance = BIG_NUMBER
+    }
 
-    real_distance := calculate_implicit_quantity(distance)
+    destination_set: Target_Set
+    defer delete(destination_set)
+
+    if valid_destinations != nil {
+        destination_set = calculate_implicit_target_set(valid_destinations)
+    }
 
     // dijkstra's algorithm!
 
+    
+    unvisited_set: Target_Set
+
+    start := calculate_implicit_target(origin)
+    unvisited_set[start] = {0, {-1, -1}, false}
+
     for len(unvisited_set) > 0 {
         // find minimum
-        min_info := Dijkstra_Info{1e6, {-1, -1}}
+        min_info := Target_Info{dist = BIG_NUMBER}
         min_loc := IVec2{-1, -1}
         for loc, info in unvisited_set {
             if info.dist < min_info.dist {
@@ -108,22 +124,35 @@ make_movement_targets :: proc(distance: Implicit_Quantity, origin: Implicit_Targ
             }
         }
 
+        if .SHORTEST_PATH in flags && real_max_distance == BIG_NUMBER && min_loc in destination_set {
+            // Shortest distance found!
+            real_max_distance = min_info.dist
+        }
+
         directions: for vector in direction_vectors {
             next_loc := min_loc + vector
-            if next_loc.x < 0 || next_loc.x >= GRID_WIDTH || next_loc.y < 0 || next_loc.y >= GRID_HEIGHT do continue
-            if OBSTACLE_FLAGS & board[next_loc.x][next_loc.y].flags != {} do continue
-            if next_loc in visited_set do continue
-            if get_my_player().stage == .RESOLVING {
-                #partial switch &action in get_current_action().variant {
-                case Movement_Action:
-                    // Can't path to places we have already stepped on
-                    for traversed_loc in action.path.spaces do if traversed_loc == next_loc do continue directions
+
+            {   // Validate next location
+                if next_loc.x < 0 || next_loc.x >= GRID_WIDTH || next_loc.y < 0 || next_loc.y >= GRID_HEIGHT do continue
+                if OBSTACLE_FLAGS & board[next_loc.x][next_loc.y].flags != {} do continue
+                if next_loc in visited_set do continue
+                if get_my_player().stage == .RESOLVING {
+                    #partial switch &action in get_current_action().variant {
+                    case Movement_Action:
+                        // Can't path to places we have already stepped on
+                        for traversed_loc in action.path.spaces do if traversed_loc == next_loc do continue directions
+                    }
                 }
             }
+
             next_dist := min_info.dist + 1
-            if next_dist > real_distance do continue
+            if next_dist > real_max_distance do continue
             existing_info, ok := unvisited_set[next_loc]
-            if !ok || next_dist < existing_info.dist do unvisited_set[next_loc] = {next_dist, min_loc}
+            if !ok || next_dist < existing_info.dist do unvisited_set[next_loc] = Target_Info {
+                next_dist,
+                min_loc,
+                false,
+            }
         }
 
         visited_set[min_loc] = min_info
@@ -131,31 +160,43 @@ make_movement_targets :: proc(distance: Implicit_Quantity, origin: Implicit_Targ
     }
 
     if valid_destinations != nil {
-        destination_set := calculate_implicit_target_set(valid_destinations)
+        // first flag all nodes in the visited set as invalid (temporarily)
+        for _, &info in visited_set {
+            info.invalid = true
+        }
+
+        // Check all spaces in the visited set to see if they can be reached by one of the valid endpoints.
+        // If they can, they will be marked as valid. Otherwise they will stay invalid.
         for valid_endpoint in destination_set {
             if valid_endpoint not_in visited_set do continue
             reachable_targets_from_endpoint := make_movement_targets(
-                real_distance,
+                real_max_distance,
                 valid_endpoint,
                 allocator = context.temp_allocator,
             )
-            for potential_target, potential_info in visited_set {
+            for potential_target, &potential_info in visited_set {
                 target_info, ok2 := reachable_targets_from_endpoint[potential_target]
 
-                if ok2 && target_info.dist + potential_info.dist <= real_distance {
-                    out[potential_target] = Target_Info{potential_info.dist, potential_info.prev_node}
+                if ok2 && target_info.dist + potential_info.dist <= real_max_distance {
+                    potential_info.invalid = false
                 } 
             }
         }
-    } else {
-        add_loop: for loc, info in visited_set {
-            out[loc] = Target_Info{info.dist, info.prev_node}
+
+        // Remove all unreachable spaces
+        for target, info in visited_set {
+            if info.invalid do delete_key(&visited_set, target)
         }
+
+        // Now the only spaces left in the visited set are those that can reach valid endpoints.
+        // We now flag the spaces as invalid if they are not in the destination set.
+        for target, &info in visited_set {
+            info.invalid = target not_in destination_set
+        }
+
     }
 
-    // if start in out do delete_key(&out, start)
-
-    return out
+    return visited_set
 }
 
 make_fast_travel_targets :: proc() -> (out: Target_Set) {
@@ -222,13 +263,15 @@ target_fulfills_criterion :: proc(target: Target, criterion: Selection_Criterion
 
 
     // @Note these don't actually test whether a unit is present in the space, only that the teams are the same / different
-    case Is_Enemy_Unit:    return get_my_player().team != space.unit_team
-    case Is_Friendly_Unit: return get_my_player().team == space.unit_team
+    case Is_Enemy_Unit:         return get_my_player().team != space.unit_team
+    case Is_Friendly_Unit:      return get_my_player().team == space.unit_team
 
     case Is_Friendly_Spawnpoint: return get_my_player().team == space.spawnpoint_team
 
-    case In_Battle_Zone:   return space.region_id == game_state.current_battle_zone
-    case Empty:            return space.flags & OBSTACLE_FLAGS == {}
+    case In_Battle_Zone:        return space.region_id == game_state.current_battle_zone
+    case Outside_Battle_Zone:   return space.region_id != game_state.current_battle_zone
+
+    case Empty: return space.flags & OBSTACLE_FLAGS == {}
 
     case Ignoring_Immunity, Not_Previously_Targeted, Closest_Spaces:
     }
@@ -254,7 +297,7 @@ make_arbitrary_targets :: proc(criteria: []Selection_Criterion, allocator := con
 
     for criterion in criteria[1:] {
         switch variant in criterion {
-        case Within_Distance, Contains_Any, Is_Enemy_Unit, Is_Friendly_Unit, Is_Friendly_Spawnpoint, In_Battle_Zone, Empty:
+        case Within_Distance, Contains_Any, Is_Enemy_Unit, Is_Friendly_Unit, Is_Friendly_Spawnpoint, In_Battle_Zone, Outside_Battle_Zone, Empty:
             for target in out {
                 if !target_fulfills_criterion(target, criterion) {
                     delete_key(&out, target)

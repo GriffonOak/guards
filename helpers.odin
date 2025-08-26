@@ -111,7 +111,7 @@ end_current_action_sequence :: proc() {
     }
 }
 
-begin_next_player_turn :: proc() {
+get_next_turn_event :: proc() -> Event {
     
     highest_initiative: int = -1
     highest_player: Player
@@ -139,10 +139,9 @@ begin_next_player_turn :: proc() {
     }
 
     if highest_initiative == -1  {
-        broadcast_game_event(Resolutions_Completed_Event{})
-    } else {
-        broadcast_game_event(Begin_Player_Resolution_Event{highest_player.id})
+        return Resolutions_Completed_Event{}
     }
+    return Begin_Player_Resolution_Event{highest_player.id}
 }
 
 calculate_minion_modifiers :: proc() -> int {

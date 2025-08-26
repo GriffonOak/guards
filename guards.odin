@@ -12,12 +12,14 @@ import "core:log"
 
 // Todo list
 // BASIC INTERRUPTS:
-//   Attack / defense
-//   Minions outside the battle zone
+//   Tied initiative on the same team
 // Once those are figured out, do xargatha minion defeat greens
 // Items ??
 // Finish implementing xargatha cards
 // Xargatha ult
+
+// Xargatha LITERALLY DONE after this point !!!!
+
 // Other heroes / hero picker
 // Lobby that isn't ass
 // Snorri runes
