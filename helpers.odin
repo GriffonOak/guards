@@ -118,6 +118,8 @@ get_next_turn_event :: proc() -> Event {
 
     initiative_tied = false
 
+    tie: Resolve_Same_Team_Tied_Event
+
     for player, player_id in game_state.players {
         player_card, ok := find_played_card(player_id)
         if !ok do continue
@@ -127,12 +129,24 @@ get_next_turn_event :: proc() -> Event {
         if effective_initiative > highest_initiative {
             highest_initiative = player_card.initiative
             highest_player = player
+            tie = {}
         } else if effective_initiative == highest_initiative {
             if player.team != highest_player.team {
                 initiative_tied = true
                 if player.team == game_state.tiebreaker_coin {
                     highest_initiative = effective_initiative
                     highest_player = player  // @Note: need to consider ties between players on the same team
+                    tie = {}
+                }
+            } else {
+                if tie.num_ties == 0 {
+                    tie.team = player.team
+                    tie.tied_player_ids[0] = highest_player.id
+                    tie.tied_player_ids[1] = player_id
+                    tie.num_ties = 2
+                } else {
+                    tie.tied_player_ids[tie.num_ties] = player_id
+                    tie.num_ties += 1
                 }
             }
         }
@@ -140,6 +154,8 @@ get_next_turn_event :: proc() -> Event {
 
     if highest_initiative == -1  {
         return Resolutions_Completed_Event{}
+    } else if tie.num_ties > 0 {
+        return tie
     }
     return Begin_Player_Resolution_Event{highest_player.id}
 }

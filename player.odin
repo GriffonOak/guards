@@ -46,8 +46,10 @@ Player_ID :: int
 Player :: struct {
     id: Player_ID,
     stage: Player_Stage,
-    // interrupting: bool,
     hero: Hero,
+
+    _username_buf: [40]u8,
+    username: cstring,
     
     team: Team,
     is_team_captain: bool,
@@ -102,7 +104,7 @@ render_player_info_at_position :: proc(player_id: Player_ID, pos: Vec2) {
     context.allocator = context.temp_allocator
     name, _ := reflect.enum_name_from_value(player.hero.id)
     // hero_name := strings.clone_to_cstring(strings.to_ada_case(name))
-    hero_name := fmt.ctprintf("[%v%v] %v", player_id, "!" if player.is_team_captain else "", strings.to_ada_case(name))
+    hero_name := fmt.ctprintf("[%v%v] %v", get_username(player.id), "!" if player.is_team_captain else "", strings.to_ada_case(name))
     
     rl.DrawTextEx(default_font, hero_name, next_pos, INFO_FONT_SIZE, FONT_SPACING, team_colors[player.team])
     next_pos.y += INFO_FONT_SIZE + TEXT_PADDING
@@ -141,6 +143,10 @@ add_or_update_player :: proc(player: Player) {
     if player.is_team_captain {
         game_state.team_captains[player.team] = player.id
     }
+}
+
+get_username :: proc(player_id: Player_ID) -> cstring {
+    return cstring(raw_data(game_state.players[player_id]._username_buf[:]))
 }
 
 get_player_by_id :: proc(player_id: Player_ID) -> ^Player {

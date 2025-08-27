@@ -92,7 +92,7 @@ become_interrupted :: proc(interrupt: Interrupt, on_resolution: Event) {
 
 
 Game_State :: struct {
-    players: [dynamic]Player,
+    players: [dynamic]Player,  // @Note: Might be better to use sa or fixed array here so entries don't move around (problem for username strings)
     team_captains: [Team]Player_ID,
     minion_counts: [Team]int,
     life_counters: [Team]int,
@@ -181,7 +181,7 @@ spawn_heroes_at_start :: proc() {
         spawnpoint_space.hero_id = player.hero.id
         spawnpoint_space.owner = player_id
 
-        player.hero.coins = 1
+        player.hero.coins = 0
         player.hero.level = 1
 
     }

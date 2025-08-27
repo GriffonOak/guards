@@ -11,8 +11,6 @@ import "core:log"
 
 
 // Todo list
-// BASIC INTERRUPTS:
-//   Tied initiative on the same team
 // Once those are figured out, do xargatha minion defeat greens
 // Finish implementing xargatha cards (retrieval blues)
 // Highlight chooseable cards for selection, defense, & upgrading

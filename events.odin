@@ -72,6 +72,13 @@ Card_Discarded_Event :: struct {
 }
 
 Begin_Resolution_Stage_Event :: struct{}
+
+Resolve_Same_Team_Tied_Event :: struct {
+    team: Team,
+    tied_player_ids: [5]Player_ID,
+    num_ties: int,
+}
+
 Begin_Player_Resolution_Event :: struct {
     player_id: Player_ID,
 }
@@ -156,6 +163,7 @@ Event :: union {
     Card_Confirmed_Event,
 
     Begin_Resolution_Stage_Event,
+    Resolve_Same_Team_Tied_Event,
     Begin_Player_Resolution_Event,
     Begin_Next_Action_Event,
     Resolve_Current_Action_Event,
@@ -631,8 +639,6 @@ resolve_event :: proc(event: Event) {
     case Begin_Resolution_Stage_Event: 
         game_state.stage = .RESOLUTION
 
-        tooltip = "Waiting for other players to resolve their cards."
-
         // Unhide hidden cards
         for _, player_id in game_state.players {
             player_card, ok := find_played_card(player_id)
@@ -646,9 +652,21 @@ resolve_event :: proc(event: Event) {
             broadcast_game_event(get_next_turn_event())
         }
 
+    case Resolve_Same_Team_Tied_Event:
+        if var.team == get_my_player().team && get_my_player().is_team_captain {
+            tooltip = "Tied initiative: Choose which player on your team acts first."
+            for tied_id, index in var.tied_player_ids {
+                if index == var.num_ties do break
+                add_side_button(get_username(tied_id), Begin_Player_Resolution_Event{tied_id}, global = true)
+            }
+        } else {
+            tooltip = "Waiting for the team captain to resolve tied initiative."
+        }
 
     case Begin_Player_Resolution_Event:
         game_state.players[var.player_id].stage = .RESOLVING
+        tooltip = "Waiting for other players to resolve their cards."
+        clear_side_buttons()
         if var.player_id != my_player_id do break
 
         // Find the played card
@@ -922,8 +940,7 @@ resolve_event :: proc(event: Event) {
                 Check_Minions_Outside_Zone_Event{},
             )
         } else {
-            next_event := get_next_turn_event()
-            broadcast_game_event(next_event)
+            broadcast_game_event(get_next_turn_event())
         }
 
     case Resolutions_Completed_Event:

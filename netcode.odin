@@ -122,14 +122,17 @@ begin_hosting_local_game :: proc() -> bool {
 
     my_player_id = 0
     clear(&game_state.players)
-    add_or_update_player( Player {
+    me := Player {
         id = 0,
         hero = Hero {
             id = .XARGATHA,
         },
         team = .RED,
         is_team_captain = true,
-    })
+    }
+    fmt.bprintf(me._username_buf[:], "P%v", 0)
+
+    add_or_update_player(me)
 
     thread.create_and_start_with_poly_data(sock, _thread_host_wait_for_clients)
     return true
@@ -161,6 +164,7 @@ _thread_host_wait_for_clients :: proc(sock: net.TCP_Socket) {
                 is_team_captain = client_player_id == 1,
                 socket = client,
             }
+            fmt.bprintf(client_player._username_buf[:], "P%v", client_player_id)
             add_or_update_player(client_player)
 
             for player, player_id in game_state.players {
