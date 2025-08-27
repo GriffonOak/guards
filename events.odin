@@ -4,7 +4,6 @@ package guards
 
 import rl "vendor:raylib"
 
-import "core:fmt"
 import "core:reflect"
 import "core:log"
 
@@ -240,7 +239,6 @@ resolve_event :: proc(event: Event) {
 
     case Begin_Game_Event:
         begin_game()
-        add_game_ui_elements()
 
     case Space_Clicked_Event:
         #partial switch get_my_player().stage {
@@ -350,12 +348,10 @@ resolve_event :: proc(event: Event) {
 
                 // fmt.printf("%#v\n", upgrade_options)
 
-                for option in upgrade_options {
-                    option_card_id := make_card_id(option, my_player_id)
-                    fmt.println(option_card_id)
+                for option_card in upgrade_options {
                     append(&ui_stack, UI_Element {
                         card_position_rect,
-                        UI_Card_Element{card_id = option_card_id},
+                        UI_Card_Element{card_id = option_card.id},
                         card_input_proc,
                         draw_card,
                     }) 
@@ -375,7 +371,7 @@ resolve_event :: proc(event: Event) {
                         ui_element, _  := find_element_for_card(hand_card)
                         hand_card_element := &ui_element.variant.(UI_Card_Element)
 
-                        chosen_card_id := make_card_id(card^, my_player_id)
+                        chosen_card_id := card.id
 
                         hand_card_element.card_id = chosen_card_id
                         hand_card = card^
@@ -597,7 +593,7 @@ resolve_event :: proc(event: Event) {
         for card in get_my_player().hero.cards {
             if card.state == .IN_HAND {
                 hand_card_count += 1
-                hand_card = make_card_id(card, my_player_id)
+                hand_card = card.id
             }
         }
 
@@ -799,8 +795,7 @@ resolve_event :: proc(event: Event) {
             
         case Discard_Card_Action:
             card := calculate_implicit_card(action_type.card)
-            id := make_card_id(card^, my_player_id)
-            broadcast_game_event(Card_Discarded_Event{id})
+            broadcast_game_event(Card_Discarded_Event{card.id})
             append(&event_queue, Resolve_Current_Action_Event{})
 
         case Get_Defeated_Action:

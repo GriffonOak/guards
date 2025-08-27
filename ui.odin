@@ -231,7 +231,7 @@ add_game_ui_elements :: proc() {
             for card in player.hero.cards {
                 append(&ui_stack, UI_Element{
                     card_hand_position_rects[card.color],
-                    UI_Card_Element{card_id = make_card_id(card, player_id)},
+                    UI_Card_Element{card_id = card.id},
                     card_input_proc,
                     draw_card,
                 })
@@ -240,7 +240,7 @@ add_game_ui_elements :: proc() {
             for card in player.hero.cards {
                 append(&ui_stack, UI_Element {
                     {},
-                    UI_Card_Element{card_id = make_card_id(card, player_id)},
+                    UI_Card_Element{card_id = card.id},
                     card_input_proc,
                     draw_card,
                 })

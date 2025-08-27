@@ -63,12 +63,17 @@ Action_Reach :: union {
 
 PLUS_SIGN: cstring : "+"
 
-Card :: struct {
-    name: cstring,
+Card_ID :: struct {
+    owner: Player_ID,
     color: Card_Color,
     tier: int,
     alternate: bool,
+}
 
+Card :: struct {
+    using id: Card_ID,
+    
+    name: cstring,
     initiative: int,
     values: [Ability_Kind]int,
     primary: Ability_Kind,
@@ -81,20 +86,10 @@ Card :: struct {
     // !!This cannot be sent over the network :(
     primary_effect: []Action,
 
-    owner: Player_ID,
     texture: rl.Texture2D,
     state: Card_State,
     turn_played: int,
 }
-
-Card_ID :: struct {
-    player_id: Player_ID,
-    hero_id: Hero_ID,
-    color: Card_Color,
-    tier: int,
-    alternate: bool,
-}
-
 
 
 CARD_TEXTURE_SIZE :: Vec2{500, 700}
@@ -325,16 +320,15 @@ draw_card: UI_Render_Proc: proc(element: UI_Element) {
 }
 
 get_card_by_id :: proc(card_id: Card_ID) -> (card: ^Card, ok: bool) { // #optional_ok {
-    player := &game_state.players[card_id.player_id]
+    player := &game_state.players[card_id.owner]
 
     // If a player is holding the card, return a pointer to that
-    if player.hero.id != card_id.hero_id do return
     player_card := &player.hero.cards[card_id.color]
 
     if player_card.tier != card_id.tier || player_card.alternate != card_id.alternate {
         // Walk the card array
         // log.info("This should not be happening outside of upgrades")
-        for &hero_card in hero_cards[card_id.hero_id] {
+        for &hero_card in hero_cards[player.hero.id] {
             if hero_card.color == card_id.color {
                 if hero_card.color == .GOLD || hero_card.color == .SILVER {
                     return &hero_card, true
@@ -361,15 +355,14 @@ find_upgrade_options :: proc(card: Card) -> []Card {
     return {}
 }
 
-make_card_id :: proc(card: Card, player_id: Player_ID) -> Card_ID {
-    return Card_ID {
-        player_id,
-        get_player_by_id(player_id).hero.id,
-        card.color,
-        card.tier,
-        card.alternate,
-    }
-}
+// make_card_id :: proc(card: Card, player_id: Player_ID) -> Card_ID {
+//     return Card_ID {
+//         player_id,
+//         card.color,
+//         card.tier,
+//         card.alternate,
+//     }
+// }
 
 get_ui_card_slice :: proc(player_id: Player_ID) -> []UI_Element {
     return ui_stack[1 + 5 * player_id:][:5]

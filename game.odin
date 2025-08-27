@@ -220,6 +220,8 @@ begin_game :: proc() {
         spawn_minions(game_state.current_battle_zone)
     }
 
+    add_game_ui_elements()
+
     append(&event_queue, Begin_Card_Selection_Event{})
 }
 

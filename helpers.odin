@@ -23,7 +23,7 @@ assert_variant_rdonly :: proc(u: $U, $V: typeid, loc := #caller_location) -> V w
 find_played_card_id :: proc(player_id: Player_ID = my_player_id, loc := #caller_location) -> (Card_ID, bool) {
     card, ok := find_played_card(player_id)
     if !ok do return {}, false
-    return make_card_id(card^, player_id), true
+    return card.id, true
 }
 
 find_played_card :: proc(player_id: Player_ID = my_player_id, loc := #caller_location) -> (^Card, bool) {

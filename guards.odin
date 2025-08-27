@@ -36,11 +36,6 @@ import "core:log"
 // Always send team captain the minion removal event and just skip the choose step if there are more minions to remove than exist
 // Model wave push as an action sequence to obviate the need for interrupt_variant
 
-/* Refactor card as Card :: struct {
-    using id: Card_ID
-}
-this would eliminate the need for make_card_id
-*/
 
 
 Window_Size :: enum {

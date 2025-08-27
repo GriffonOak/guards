@@ -375,7 +375,7 @@ card_fulfills_criterion :: proc(card: Card, criterion: Card_Selection_Criterion,
         log.infof("Defending attack of %v, minions %v, card value %v", attack_strength, minion_modifiers)
 
         // We do it this way so that defense items get calculated
-        defense_strength := calculate_implicit_quantity(Card_Value{make_card_id(card, card.owner), .DEFENSE})
+        defense_strength := calculate_implicit_quantity(Card_Value{card.id, .DEFENSE})
         return defense_strength + minion_modifiers >= attack_strength
     }
     log.assert(false, "non-returning switch case in card criterion checker")
@@ -385,7 +385,7 @@ card_fulfills_criterion :: proc(card: Card, criterion: Card_Selection_Criterion,
 make_card_targets :: proc(criteria: []Card_Selection_Criterion) -> (out: [dynamic]Card_ID) {
     for card in get_my_player().hero.cards {
         if card_fulfills_criterion(card, criteria[0]) {
-            append(&out, make_card_id(card, my_player_id))
+            append(&out, card.id)
         }
     }
 
