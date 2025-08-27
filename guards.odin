@@ -16,7 +16,7 @@ import "core:log"
 // Once those are figured out, do xargatha minion defeat greens
 // Finish implementing xargatha cards (retrieval blues)
 // Highlight chooseable cards for selection, defense, & upgrading
-// Display wave counters & life counters
+// Highlight items when hovering over upgrade options
 // Xargatha ult
 
 // Xargatha LITERALLY DONE after this point !!!!

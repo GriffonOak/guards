@@ -527,6 +527,33 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
     rl.DrawCircleV({100, 100}, 75, team_colors[game_state.tiebreaker_coin])
     rl.DrawRing({100, 100}, 70, 75, 0, 360, 100, rl.RAYWHITE)
 
+    // Draw wave counters
+    for wave_counter_index in 0..<5 {
+        angle: f32 = math.TAU / 8 - math.TAU / 6  // @Magic
+        angle += f32(wave_counter_index) * math.TAU / (3 * 4)
+        wave_counter_position := Vec2{100, 100} + 140 * {math.cos_f32(angle), math.sin_f32(angle)}
+        color := rl.RAYWHITE if wave_counter_index < game_state.wave_counters else rl.GRAY
+        rl.DrawCircleV(wave_counter_position, 25, color)
+        rl.DrawRing(wave_counter_position, 25, 30, 0, 360, 100, rl.RAYWHITE)
+    }
+    // rl.DrawCircleV({100, 100}, 30, rl.BLACK)
+
+    // Draw life counters 
+    for team in Team {
+        for life_counter_index in 0..<6 {
+            LIFE_COUNTER_RADIUS :: 23
+            LIFE_COUNTER_PADDING :: 10
+            life_counter_position: Vec2 = {0, BOARD_TEXTURE_SIZE.y} + {LIFE_COUNTER_RADIUS, -LIFE_COUNTER_RADIUS} + {LIFE_COUNTER_PADDING, -LIFE_COUNTER_PADDING}
+            life_counter_position.x += f32(life_counter_index) * (LIFE_COUNTER_RADIUS * 2 + LIFE_COUNTER_PADDING)
+            if team == .BLUE do life_counter_position = BOARD_TEXTURE_SIZE - life_counter_position
+            darker_team_color := team_colors[team] / 2
+            darker_team_color.a = 255
+            color := team_colors[team] if life_counter_index < game_state.life_counters[team] else darker_team_color
+            rl.DrawCircleV(life_counter_position, LIFE_COUNTER_RADIUS, color)
+            rl.DrawRing(life_counter_position, LIFE_COUNTER_RADIUS - 5, LIFE_COUNTER_RADIUS, 0, 360, 100, team_colors[team])
+        }
+    }
+
     when ODIN_DEBUG {
         for x in 0..<GRID_WIDTH {
             for y in 0..<GRID_HEIGHT {
