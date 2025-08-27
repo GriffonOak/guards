@@ -22,6 +22,7 @@ Card_State :: enum {
     PLAYED,
     RESOLVED,
     DISCARDED,
+    ITEM,
 }
 
 // I philosophically dislike this enum
@@ -35,12 +36,21 @@ Ability_Kind :: enum {
 }
 
 Item_Kind :: enum {
-    INITIATIVE,
     ATTACK,
     DEFENSE,
-    MOVEMENT,
+    INITIATIVE,
     RANGE,
+    MOVEMENT,
     RADIUS,
+}
+
+item_initials: [Item_Kind]cstring = {
+    .ATTACK = "A",
+    .DEFENSE = "D",
+    .INITIATIVE = "I",
+    .RANGE = "Rn",
+    .MOVEMENT = "M",
+    .RADIUS = "Ra",
 }
 
 Range  :: distinct int
@@ -117,14 +127,14 @@ OTHER_PLAYER_PLAYED_CARD_POSITION_RECT :: rl.Rectangle {
 }
 // Copy and paste of above but with +constant on x
 OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT :: rl.Rectangle {
-    BOARD_TEXTURE_SIZE.x - RESOLVED_CARD_WIDTH / 2 + 300,
+    BOARD_TEXTURE_SIZE.x + RESOLVED_CARD_WIDTH / 2 + RESOLVED_CARD_PADDING + 450, // @Magic
     TOOLTIP_FONT_SIZE + BOARD_HAND_SPACE * 0.1,
     RESOLVED_CARD_WIDTH,
     RESOLVED_CARD_HEIGHT,
 }
 
 OTHER_PLAYER_DISCARDED_CARD_POSITION_RECT :: rl.Rectangle {
-    BOARD_TEXTURE_SIZE.x - RESOLVED_CARD_WIDTH / 2 + 300 + 4 * (RESOLVED_CARD_WIDTH + RESOLVED_CARD_PADDING) + RESOLVED_CARD_PADDING,
+    OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.x + 4 * (RESOLVED_CARD_WIDTH + RESOLVED_CARD_PADDING),
     TOOLTIP_FONT_SIZE + BOARD_HAND_SPACE * 0.1,
     RESOLVED_CARD_WIDTH * 0.75,
     RESOLVED_CARD_HEIGHT * 0.75,
@@ -132,7 +142,7 @@ OTHER_PLAYER_DISCARDED_CARD_POSITION_RECT :: rl.Rectangle {
 
 
 FIRST_CARD_RESOLVED_POSITION_RECT :: rl.Rectangle {
-    RESOLVED_CARD_PADDING,
+    RESOLVED_CARD_PADDING + 450,  // @Magic this comes from the amount of space we give items when rendering player info
     BOARD_POSITION_RECT.height + RESOLVED_CARD_PADDING,
     RESOLVED_CARD_WIDTH,
     RESOLVED_CARD_HEIGHT,
@@ -140,13 +150,13 @@ FIRST_CARD_RESOLVED_POSITION_RECT :: rl.Rectangle {
 
 
 FIRST_DISCARDED_CARD_POSITION_RECT :: rl.Rectangle {
-    4 * (RESOLVED_CARD_PADDING + RESOLVED_CARD_WIDTH) + RESOLVED_CARD_PADDING,
+    4 * (RESOLVED_CARD_PADDING + RESOLVED_CARD_WIDTH) + FIRST_CARD_RESOLVED_POSITION_RECT.x,
     BOARD_POSITION_RECT.height + RESOLVED_CARD_PADDING,
     RESOLVED_CARD_WIDTH * 0.75,
     RESOLVED_CARD_HEIGHT * 0.75,
 }
 
-CARD_PLAYED_POSITION_RECT :: rl.Rectangle{BOARD_POSITION_RECT.width * 0.8 - PLAYED_CARD_SIZE.x / 2, BOARD_POSITION_RECT.height - PLAYED_CARD_SIZE.y / 4, PLAYED_CARD_SIZE.x, PLAYED_CARD_SIZE.y}
+CARD_PLAYED_POSITION_RECT :: rl.Rectangle{BOARD_POSITION_RECT.width - PLAYED_CARD_SIZE.x - RESOLVED_CARD_PADDING, BOARD_POSITION_RECT.height - PLAYED_CARD_SIZE.y / 4, PLAYED_CARD_SIZE.x, PLAYED_CARD_SIZE.y}
 
 
 
@@ -233,34 +243,44 @@ create_texture_for_card :: proc(card: ^Card) {
         tier_text_location := tier_ball_loc - tier_dimensions / 2
         rl.DrawTextEx(default_font, tier_string, tier_text_location, TIER_FONT_SIZE, FONT_SPACING, rl.WHITE)
     }
-    
 
-    // Body text
+    // Prep for bottom of card
+    y_offset := CARD_TEXTURE_SIZE.y
+    if card.tier > 1 {
+        y_offset -= COLORED_BAND_WIDTH
+    }
+
     text_cstring := strings.clone_to_cstring(card.text)
     text_dimensions := rl.MeasureTextEx(default_font, text_cstring, TEXT_FONT_SIZE, FONT_SPACING)
-    rl.DrawTextEx(default_font, text_cstring, {TEXT_PADDING, CARD_TEXTURE_SIZE.y - text_dimensions.y - TEXT_PADDING}, TEXT_FONT_SIZE, FONT_SPACING, rl.BLACK)
-
 
     // Primary & its value & sign
     primary_value := card.values[card.primary]
     switch card.primary {
     case .ATTACK, .DEFENSE, .MOVEMENT, .DEFENSE_SKILL:
-        rl.DrawTextEx(default_font, fmt.ctprintf("%s%d%s", ability_initials[card.primary], primary_value, card.primary_sign), {TEXT_PADDING, CARD_TEXTURE_SIZE.y - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+        rl.DrawTextEx(default_font, fmt.ctprintf("%s%d%s", ability_initials[card.primary], primary_value, card.primary_sign), {TEXT_PADDING, y_offset - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     case .SKILL:
-        rl.DrawTextEx(default_font, fmt.ctprintf("%s", ability_initials[card.primary]), {TEXT_PADDING, CARD_TEXTURE_SIZE.y - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+        rl.DrawTextEx(default_font, fmt.ctprintf("%s", ability_initials[card.primary]), {TEXT_PADDING, y_offset - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     case .NONE:
     }
-
 
     // Reach & sign
     if card.reach != nil {
         _, is_radius := card.reach.(Radius)
         reach_string := fmt.ctprintf("%s%d%s", "Rd" if is_radius else "Rn", card.reach, card.reach_sign)
         reach_dimensions := rl.MeasureTextEx(default_font, reach_string, TITLE_FONT_SIZE, FONT_SPACING).x
-        rl.DrawTextEx(default_font, reach_string, {CARD_TEXTURE_SIZE.x - reach_dimensions - TEXT_PADDING, CARD_TEXTURE_SIZE.y - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+        rl.DrawTextEx(default_font, reach_string, {CARD_TEXTURE_SIZE.x - reach_dimensions - TEXT_PADDING, y_offset - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     }
 
+    // Body text
+    rl.DrawTextEx(default_font, text_cstring, {TEXT_PADDING, y_offset - text_dimensions.y - TEXT_PADDING}, TEXT_FONT_SIZE, FONT_SPACING, rl.BLACK)
 
+    // Item
+    if card.tier > 1 {
+        rl.DrawRectangleRec({0, y_offset, CARD_TEXTURE_SIZE.x, COLORED_BAND_WIDTH}, rl.DARKGRAY)
+        item_initial := item_initials[card.item]
+        item_text_dimensions := rl.MeasureTextEx(default_font, item_initial, TITLE_FONT_SIZE, FONT_SPACING)
+        rl.DrawTextEx(default_font, item_initial, {0, y_offset} + ({CARD_TEXTURE_SIZE.x, COLORED_BAND_WIDTH} - item_text_dimensions) / 2, TITLE_FONT_SIZE, FONT_SPACING, rl.WHITE)
+    }
     
     rl.EndTextureMode()
 
@@ -420,7 +440,7 @@ resolve_card :: proc(card: ^Card) {
         element.bounding_rect = OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT
         element.bounding_rect.y += f32(player_offset(card.owner)) * BOARD_HAND_SPACE
     }
-    element.bounding_rect.x += f32(game_state.turn_counter) * (FIRST_CARD_RESOLVED_POSITION_RECT.x + FIRST_CARD_RESOLVED_POSITION_RECT.width)
+    element.bounding_rect.x +=  f32(game_state.turn_counter) * (RESOLVED_CARD_PADDING + FIRST_CARD_RESOLVED_POSITION_RECT.width)
     
     card.state = .RESOLVED
 }

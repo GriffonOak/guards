@@ -375,10 +375,18 @@ resolve_event :: proc(event: Event) {
                         ui_element, _  := find_element_for_card(hand_card)
                         hand_card_element := &ui_element.variant.(UI_Card_Element)
 
-                        hand_card_element.card_id = make_card_id(card^, my_player_id)
+                        chosen_card_id := make_card_id(card^, my_player_id)
+
+                        hand_card_element.card_id = chosen_card_id
                         hand_card = card^
                         hand_card.owner = my_player_id
                         hand_card.state = .IN_HAND
+
+                        alternate_card_id := chosen_card_id
+                        alternate_card_id.alternate = !alternate_card_id.alternate
+                        hero := &get_my_player().hero
+                        hero.items[hero.item_count] = alternate_card_id
+                        hero.item_count += 1
                         
                         // Pop two card elements and a potential cancel button
                         pop(&ui_stack)
@@ -720,7 +728,7 @@ resolve_event :: proc(event: Event) {
         case Attack_Action:
             target := calculate_implicit_target(action_type.target)
             space := &board[target.x][target.y]
-            attack_strength := calculate_implicit_quantity(action_type.strength)  // @Item
+            attack_strength := calculate_implicit_quantity(action_type.strength)
             log.infof("Attack strength: %v", attack_strength)
             // Here we assume the target must be an enemy. Enemy should always be in the selection flags for attacks.
             if MINION_FLAGS & space.flags != {} {

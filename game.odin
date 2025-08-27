@@ -132,6 +132,7 @@ direction_vectors := [Direction]IVec2 {
     .NORTH_WEST = {-1, 1},
 }
 
+// lamayo
 num_life_counters := [?]int {
     0, 1, 1, 1, 2, 2, 2, 3, 3,
 }
@@ -180,7 +181,7 @@ spawn_heroes_at_start :: proc() {
         spawnpoint_space.hero_id = player.hero.id
         spawnpoint_space.owner = player_id
 
-        player.hero.coins = 0
+        player.hero.coins = 1
         player.hero.level = 1
 
     }

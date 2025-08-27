@@ -104,17 +104,23 @@ calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity) -> (ou
     case int: return quantity
 
     case Card_Reach:
-        // @Item Need to add items here also at some point
         card := calculate_implicit_card(quantity.card)
         switch reach in card.reach{
-        case Range: out = int(reach)
-        case Radius: out = int(reach)
-        case: assert(false)
+        case Range: out = int(reach) + count_hero_items(get_player_by_id(card.owner).hero, .RANGE)
+        case Radius: out = int(reach) + count_hero_items(get_player_by_id(card.owner).hero, .RADIUS)
+        case: log.assert(false, "tried to calculate nil card reach!")
         } 
 
     case Card_Value:
         card := calculate_implicit_card(quantity.card)
-        return card.values[quantity.kind]
+        hero := get_player_by_id(card.owner).hero
+        value := card.values[quantity.kind]
+        #partial switch quantity.kind {
+        case .ATTACK: value += count_hero_items(hero, .ATTACK)
+        case .DEFENSE: value += count_hero_items(hero, .DEFENSE)
+        case .MOVEMENT: value += count_hero_items(hero, .MOVEMENT)
+        }
+        return value
 
     case Sum:
         for summand in quantity do out += calculate_implicit_quantity(summand)

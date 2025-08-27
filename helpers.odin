@@ -122,16 +122,16 @@ get_next_turn_event :: proc() -> Event {
         player_card, ok := find_played_card(player_id)
         if !ok do continue
 
-        // effective_initiative := player_card.initiative * 2 + (1 if player.team == game_state.tiebreaker_coin else 0)
+        effective_initiative := player_card.initiative + count_hero_items(get_player_by_id(player_id).hero, .INITIATIVE)
     
-        if player_card.initiative > highest_initiative { // @Item
+        if effective_initiative > highest_initiative {
             highest_initiative = player_card.initiative
-            highest_player = player  // @Note: need to consider ties between players on the same team
-        } else if player_card.initiative == highest_initiative {
+            highest_player = player
+        } else if effective_initiative == highest_initiative {
             if player.team != highest_player.team {
                 initiative_tied = true
                 if player.team == game_state.tiebreaker_coin {
-                    highest_initiative = player_card.initiative
+                    highest_initiative = effective_initiative
                     highest_player = player  // @Note: need to consider ties between players on the same team
                 }
             }

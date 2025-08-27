@@ -372,8 +372,11 @@ card_fulfills_criterion :: proc(card: Card, criterion: Card_Selection_Criterion,
         }
         log.assert(attack_strength != -1e6, "No attack found in interrupt stack!!!!!" )
 
-        log.infof("Defending attack of %v, minions %v, card value %v", attack_strength, minion_modifiers, card.values[.DEFENSE])
-        return card.values[.DEFENSE] + minion_modifiers >= attack_strength  // @Item
+        log.infof("Defending attack of %v, minions %v, card value %v", attack_strength, minion_modifiers)
+
+        // We do it this way so that defense items get calculated
+        defense_strength := calculate_implicit_quantity(Card_Value{make_card_id(card, card.owner), .DEFENSE})
+        return defense_strength + minion_modifiers >= attack_strength
     }
     log.assert(false, "non-returning switch case in card criterion checker")
     return false

@@ -14,14 +14,18 @@ import "core:log"
 // BASIC INTERRUPTS:
 //   Tied initiative on the same team
 // Once those are figured out, do xargatha minion defeat greens
-// Items ??
-// Finish implementing xargatha cards
+// Finish implementing xargatha cards (retrieval blues)
+// Highlight chooseable cards for selection, defense, & upgrading
+// Display wave counters & life counters
 // Xargatha ult
 
 // Xargatha LITERALLY DONE after this point !!!!
 
+// Toast, for a bit of flair & usability
+// basic animations?
 // Other heroes / hero picker
 // Lobby that isn't ass
+// Minions outside battle zone if path blocked
 // Snorri runes
 
 
@@ -31,6 +35,12 @@ import "core:log"
 // Refactor skip_index in actions as next_index and use that to skip to the halt sequence instead of having a literal halt action
 // Always send team captain the minion removal event and just skip the choose step if there are more minions to remove than exist
 // Model wave push as an action sequence to obviate the need for interrupt_variant
+
+/* Refactor card as Card :: struct {
+    using id: Card_ID
+}
+this would eliminate the need for make_card_id
+*/
 
 
 Window_Size :: enum {
@@ -201,8 +211,7 @@ main :: proc() {
         }
 
         if game_state.stage != .PRE_LOBBY && game_state.stage != .IN_LOBBY {
-            render_player_info(my_player_id)
-            render_other_player_info()
+            render_player_info()
         }
         render_tooltip()
 
