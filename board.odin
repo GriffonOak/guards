@@ -438,7 +438,6 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             }
             return
         case Movement_Action:
-            // valid_destinations = calculate_implicit_target_set(variant.valid_destinations)
             if variant.path.num_locked_spaces == 0 {
                 origin = calculate_implicit_target(variant.target)
             } else {

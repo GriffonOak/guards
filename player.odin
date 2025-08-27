@@ -21,9 +21,10 @@ Player_Stage :: enum {
 }
 
 Hero_ID :: enum {
-    NONE,
     XARGATHA,
 }
+
+hero_cards: [Hero_ID][]Card
 
 Hero :: struct {
     id: Hero_ID,

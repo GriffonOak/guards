@@ -108,6 +108,10 @@ Hero_Respawn_Event :: struct {
     location: Target,
 }
 
+Add_Active_Effect_Event :: struct {
+    effect_id: Active_Effect_ID,
+}
+
 Begin_Wave_Push_Event :: struct {
     pushing_team: Team,
 }
@@ -153,6 +157,7 @@ Event :: union {
     Card_Discarded_Event,
     Hero_Defeated_Event,
     Hero_Respawn_Event,
+    Add_Active_Effect_Event,
 
     Begin_Interrupt_Event,
     Resolve_Interrupt_Event,
@@ -545,6 +550,20 @@ resolve_event :: proc(event: Event) {
         board[var.location.x][var.location.y].unit_team = player.team
         board[var.location.x][var.location.y].owner = var.respawner
 
+    case Add_Active_Effect_Event:
+
+        parent_card, ok := get_card_by_id(var.effect_id.parent_card_id)
+        log.assertf(ok, "Invalid card ID in new active effect!")
+        effect_action := parent_card.primary_effect[0].variant.(Add_Active_Effect_Action).effect
+
+        // todo set duration & target set from parent card
+        log.infof("Adding active effect: %v", var.effect_id.kind)
+        game_state.ongoing_active_effects[var.effect_id.kind] = Active_Effect {
+            var.effect_id,
+            effect_action.duration,
+            effect_action.target_set,
+        }
+
     case Begin_Interrupt_Event:
         interrupt := var.interrupt
         if interrupt.interrupted_player != my_player_id {  // The interruptee should already have added to their own interrupt stack in become_interrupted
@@ -771,12 +790,11 @@ resolve_event :: proc(event: Event) {
             }
         
         case Add_Active_Effect_Action:
-            effect := action_type.effect
-            log.infof("Adding active effect: %v", effect.id)
+            effect_id := action_type.effect.id
             parent_card_id, ok := find_played_card_id()
             log.assert(ok, "Could not resolve parent card when adding an active effect!")
-            effect.parent_card_id = parent_card_id
-            game_state.ongoing_active_effects[effect.id] = effect
+            effect_id.parent_card_id = parent_card_id
+            broadcast_game_event(Add_Active_Effect_Event{effect_id})
             append(&event_queue, Resolve_Current_Action_Event{})
 
         case Halt_Action:

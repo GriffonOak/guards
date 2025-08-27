@@ -17,6 +17,9 @@ Contains_All :: Space_Flags
 
 Is_Enemy_Unit :: struct {}
 Is_Friendly_Unit :: struct {}
+Enemy_Of_Card_Owner :: struct {
+    implicit_card: Implicit_Card,
+}
 Is_Friendly_Spawnpoint :: struct {}
 Not_Previously_Targeted :: struct {}
 
@@ -32,6 +35,7 @@ Selection_Criterion :: union {
     // Contains_All,
     Is_Enemy_Unit,
     Is_Friendly_Unit,
+    Enemy_Of_Card_Owner,
     Is_Friendly_Spawnpoint,
     Not_Previously_Targeted,
     Ignoring_Immunity,

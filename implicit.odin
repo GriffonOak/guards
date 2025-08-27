@@ -3,7 +3,7 @@ package guards
 import "core:log"
 
 Card_Creating_Effect :: struct {
-    effect: Active_Effect_ID,
+    effect: Active_Effect_Kind,
 }
 
 Previous_Card_Choice :: struct {}
@@ -53,7 +53,7 @@ Implicit_Quantity :: union {
 
 
 Implicit_Target_Set :: union {
-    Target_Set,
+    // Target_Set,
     []Selection_Criterion,
 }
 
@@ -65,11 +65,16 @@ Previous_Choice :: struct {}
 
 Top_Blocked_Spawnpoint :: struct {}
 
+Hero_Owning_Card :: struct {
+    implicit_card: Implicit_Card,
+}
+
 Implicit_Target :: union {
     Target,
     Self,
     Previous_Choice,
     Top_Blocked_Spawnpoint,
+    Hero_Owning_Card,
 }
 
 
@@ -162,13 +167,15 @@ calculate_implicit_target :: proc(implicit_target: Implicit_Target) -> (out: Tar
         num_blocked_spawns := len(blocked_spawns[my_team])
         log.assert(num_blocked_spawns > 0, "No blocked spawns!!!!!")
         return blocked_spawns[my_team][num_blocked_spawns - 1]
+    case Hero_Owning_Card:
+        card := calculate_implicit_card(target.implicit_card)
+        return get_player_by_id(card.owner).hero.location
     }
     return
 }
 
 calculate_implicit_target_set :: proc(implicit_set: Implicit_Target_Set, allocator := context.allocator) -> Target_Set {
     switch set in implicit_set {
-    case Target_Set: return set
     case []Selection_Criterion: return make_arbitrary_targets(set, allocator)
     }
     return nil

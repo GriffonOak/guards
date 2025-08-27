@@ -265,6 +265,9 @@ target_fulfills_criterion :: proc(target: Target, criterion: Selection_Criterion
     // @Note these don't actually test whether a unit is present in the space, only that the teams are the same / different
     case Is_Enemy_Unit:         return get_my_player().team != space.unit_team
     case Is_Friendly_Unit:      return get_my_player().team == space.unit_team
+    case Enemy_Of_Card_Owner:
+        card := calculate_implicit_card(selector.implicit_card)
+        return get_player_by_id(card.owner).team != space.unit_team
 
     case Is_Friendly_Spawnpoint: return get_my_player().team == space.spawnpoint_team
 
@@ -297,7 +300,7 @@ make_arbitrary_targets :: proc(criteria: []Selection_Criterion, allocator := con
 
     for criterion in criteria[1:] {
         switch variant in criterion {
-        case Within_Distance, Contains_Any, Is_Enemy_Unit, Is_Friendly_Unit, Is_Friendly_Spawnpoint, In_Battle_Zone, Outside_Battle_Zone, Empty:
+        case Within_Distance, Contains_Any, Is_Enemy_Unit, Is_Friendly_Unit, Enemy_Of_Card_Owner, Is_Friendly_Spawnpoint, In_Battle_Zone, Outside_Battle_Zone, Empty:
             for target in out {
                 if !target_fulfills_criterion(target, criterion) {
                     delete_key(&out, target)

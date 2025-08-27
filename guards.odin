@@ -13,6 +13,7 @@ import "core:log"
 // Todo list
 // Once those are figured out, do xargatha minion defeat greens
 // Finish implementing xargatha cards (retrieval blues)
+// Reaffirm stone gaze works lol
 // Highlight chooseable cards for selection, defense, & upgrading
 // Highlight items when hovering over upgrade options
 // Xargatha ult
@@ -65,6 +66,10 @@ default_font: rl.Font
 
 
 main :: proc() {
+
+    {  // Do the heroes!
+        hero_cards[.XARGATHA] = xargatha_cards
+    }
 
     when ODIN_DEBUG {
         default_allocator := context.allocator

@@ -28,7 +28,7 @@ Game_Stage :: enum {
     UPGRADES,
 }
 
-Active_Effect_ID :: enum {
+Active_Effect_Kind :: enum {
     NONE,
     XARGATHA_FREEZE,
     XARGATHA_DEFEAT,
@@ -44,11 +44,16 @@ Effect_Duration :: union {
     Single_Turn,
 }
 
+Active_Effect_ID :: struct {
+    kind: Active_Effect_Kind,
+    parent_card_id: Card_ID,
+}
+
 Active_Effect :: struct {
-    id: Active_Effect_ID,
+    using id: Active_Effect_ID,
+
     duration: Effect_Duration,
     target_set: Implicit_Target_Set,
-    parent_card_id: Card_ID,
 }
 
 Wave_Push_Interrupt :: struct {
@@ -102,7 +107,7 @@ Game_State :: struct {
     turn_counter: int,
     wave_counters: int,
     tiebreaker_coin: Team,
-    ongoing_active_effects: map[Active_Effect_ID]Active_Effect,
+    ongoing_active_effects: map[Active_Effect_Kind]Active_Effect,
     stage: Game_Stage,
     current_battle_zone: Region_ID,
     interrupt_stack: [dynamic]Expanded_Interrupt,
