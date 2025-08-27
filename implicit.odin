@@ -160,10 +160,10 @@ calculate_implicit_target :: proc(implicit_target: Implicit_Target) -> (out: Tar
     return
 }
 
-calculate_implicit_target_set :: proc(implicit_set: Implicit_Target_Set) -> Target_Set {
+calculate_implicit_target_set :: proc(implicit_set: Implicit_Target_Set, allocator := context.allocator) -> Target_Set {
     switch set in implicit_set {
     case Target_Set: return set
-    case []Selection_Criterion: return make_arbitrary_targets(set)
+    case []Selection_Criterion: return make_arbitrary_targets(set, allocator)
     }
     return nil
 }

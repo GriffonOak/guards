@@ -102,7 +102,7 @@ make_movement_targets :: proc (
     defer delete(destination_set)
 
     if valid_destinations != nil {
-        destination_set = calculate_implicit_target_set(valid_destinations)
+        destination_set = calculate_implicit_target_set(valid_destinations, context.temp_allocator)
     }
 
     // dijkstra's algorithm!
