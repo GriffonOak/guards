@@ -1,0 +1,140 @@
+package parser
+
+import "core:os"
+import "core:strings"
+import "core:fmt"
+import "core:strconv"
+
+
+hero_name := "Dodger"
+
+NUM_CARDS :: 17
+cards: [NUM_CARDS]Card
+
+Card :: struct {
+    name: string,
+
+    color: string,
+    tier: int,
+    alternate: bool,
+    
+    initiative: int,
+    attack_value: int,
+    defense_value: int,
+    movement_value: int,
+
+    primary: string,
+    primary_sign: string,
+    reach: string,
+    reach_sign: string,
+    item: string,
+    text: string,
+}
+
+main :: proc() {
+    input_filename := fmt.tprintf("input/Cards - %v.csv", hero_name)
+    // fmt.println(input_filename)
+    in_file, ok := os.read_entire_file(input_filename)
+    assert(ok)
+    lines := strings.split(string(in_file), "\r\n")
+
+    card_lines := lines[4:][:NUM_CARDS]
+
+    for line in card_lines {
+        card: Card
+        tokens := strings.split(line, ",")
+
+        card.name = tokens[0]
+        card.color = tokens[1]
+        card.tier, _ = strconv.parse_int(tokens[2])
+        card.alternate, _ = strconv.parse_bool(tokens[3])
+        card.initiative, _ = strconv.parse_int(tokens[4])
+        card.attack_value, _ = strconv.parse_int(tokens[5])
+        card.defense_value, _ =  strconv.parse_int(tokens[6])
+        card.movement_value, _ =  strconv.parse_int(tokens[7])
+
+        card.primary = tokens[8]
+        card.primary_sign = tokens[9]
+        card.reach = tokens[10]
+        card.reach_sign = tokens[11]
+        card.item = tokens[12]
+
+
+        text_slice := tokens[13:]
+        text := strings.join(text_slice, ",")
+        if text[0] == '\"' {
+            text = text[1:len(text)-2]
+        }
+        card.text = text
+        // card.text, _ = strings.replace(text, "\\n", "\n", -1)
+
+        index: int
+
+        color_offset :: proc(color: string) -> int {
+            if color == "RED" do return 0
+            if color == "GREEN" do return 1
+            if color == "BLUE" do return 2
+            assert(false)
+            return -999
+        }
+
+        switch card.tier {
+        case 0:
+            index = 0 if card.color == "GOLD" else 1
+        case 1:
+            index = 2 + color_offset(card.color)
+        case 2..=3:
+            index = 5 + 6 * (card.tier - 2) + 2 * color_offset(card.color) + (1 if card.alternate else 0)
+        }
+
+        cards[index] = card
+
+    }
+
+    // for card in cards {
+    //     fmt.printfln("%#v", card)
+    // }
+    builder := strings.builder_make()
+
+
+    fmt.sbprintfln(&builder, "package guards")
+    fmt.sbprintfln(&builder, "")
+    fmt.sbprintfln(&builder, "/// %v", strings.to_upper(hero_name))
+    fmt.sbprintfln(&builder, "")
+    fmt.sbprintfln(&builder, "%v_cards := []Card {{", strings.to_lower(hero_name))
+    for card in cards {
+        fmt.sbprintfln(&builder, "\tCard {{ name = \"%v\",", card.name)
+        fmt.sbprintfln(&builder, "\t\tcolor =\t\t\t.%v,", card.color)
+        if card.tier > 0 do fmt.sbprintfln(&builder, "\t\ttier =\t\t\t%v,", card.tier)
+        if card.alternate do fmt.sbprintfln(&builder, "\t\talternate =\t\ttrue,")
+        fmt.sbprintfln(&builder, "\t\tinitiative =\t%v,", card.initiative)
+
+        fmt.sbprintf(&builder, "\t\tvalues =\t\t#partial{{")
+        fmt.sbprintf(&builder, ".DEFENSE = %v", card.defense_value)
+        if card.attack_value > 0 do fmt.sbprintf(&builder, ", .ATTACK = %v", card.attack_value)
+        if card.movement_value > 0 do fmt.sbprintf(&builder, ", .MOVEMENT = %v", card.movement_value)
+        fmt.sbprintfln(&builder, "}},")
+        fmt.sbprintfln(&builder, "\t\tprimary =\t\t.%v,", card.primary)
+        if card.primary_sign != "" do fmt.sbprintfln(&builder, "\t\tprimary_sign =\t.%v,", card.primary_sign)
+        if card.reach != "" do fmt.sbprintfln(&builder, "\t\treach =\t\t\t%v,", card.reach)
+        if card.reach_sign != "" do fmt.sbprintfln(&builder, "\t\treach_sign =\t.%v,", card.reach_sign)
+        if card.item != "" do fmt.sbprintfln(&builder, "\t\titem =\t\t\t.%v,", card.item)
+        fmt.sbprintfln(&builder, "\t\ttext =\t\t\t\"%v\",", card.text)
+        fmt.sbprintfln(&builder, "\t\tprimary_effect = []Action {{}},")
+
+
+
+        fmt.sbprintfln(&builder, "\t}},")
+    }
+    fmt.sbprintfln(&builder, "}}")
+
+    out_string := strings.expand_tabs(strings.to_string(builder), 4)
+
+
+    outfile_name := fmt.tprintf("output/hero_%v.odin", strings.to_lower(hero_name))
+    os.remove(outfile_name)
+    outfile, err := os.open(outfile_name, os.O_WRONLY | os.O_CREATE)
+    assert(err == nil)
+    fmt.fprint(outfile, out_string)
+    os.close(outfile)
+}

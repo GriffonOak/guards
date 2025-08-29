@@ -1,6 +1,6 @@
 package guards
 
-/// XARGATHA
+// XARGATHA
 
 xargatha_cards := []Card {
     Card { name = "Cleave",
@@ -104,44 +104,44 @@ xargatha_cards := []Card {
         tier        = 1,
         values      = #partial{.ATTACK = 5, .DEFENSE = 6, .MOVEMENT = 5},
         primary     = .ATTACK,
-        primary_sign = PLUS_SIGN,
+        primary_sign = .PLUS,
         text        = "Target a unit adjacent to you. +1 Attack\nfor each other enemy unit adjacent to you.",
         primary_effect = {
-            Action {
-                tooltip = "Target a unit adjacent to you.",
-                variant = Choose_Target_Action {
-                    num_targets = 1,
-                    criteria = {
-                        Within_Distance {
-                            origin = Self{},
-                            min = 1,
-                            max = 1,
-                        },
-                        Contains_Any(UNIT_FLAGS),
-                        Is_Enemy_Unit{},
-                    },
-                },
-            },
-            Action {
-                tooltip = "Waiting for opponent to defend...",
-                variant = Attack_Action {
-                    target = Previous_Choice{},
-                    strength = Sum {
-                        Card_Value{kind=.ATTACK}, 
-                        Count_Targets {
-                            Within_Distance {
-                                origin = Self{},
-                                min = 1,
-                                max = 1,
-                            },
-                            Contains_Any(UNIT_FLAGS),
-                            Is_Enemy_Unit{},
-                            Ignoring_Immunity{},
-                        },
-                        -1,
-                    },
-                },
-            },
+            // Action {
+            //     tooltip = "Target a unit adjacent to you.",
+            //     variant = Choose_Target_Action {
+            //         num_targets = 1,
+            //         criteria = {
+            //             Within_Distance {
+            //                 origin = Self{},
+            //                 min = 1,
+            //                 max = 1,
+            //             },
+            //             Contains_Any(UNIT_FLAGS),
+            //             Is_Enemy_Unit{},
+            //         },
+            //     },
+            // },
+            // Action {
+            //     tooltip = "Waiting for opponent to defend...",
+            //     variant = Attack_Action {
+            //         target = Previous_Choice{},
+            //         strength = Sum {
+            //             Card_Value{kind=.ATTACK}, 
+            //             Count_Targets {
+            //                 Within_Distance {
+            //                     origin = Self{},
+            //                     min = 1,
+            //                     max = 1,
+            //                 },
+            //                 Contains_Any(UNIT_FLAGS),
+            //                 Is_Enemy_Unit{},
+            //                 Ignoring_Immunity{},
+            //             },
+            //             -1,
+            //         },
+            //     },
+            // },
         },
     },
     Card { name = "Charm",
@@ -256,14 +256,13 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card {
-        name        = "Deadly Swipe",
+    Card { name = "Deadly Swipe",
         color       = .RED,
         initiative  = 8,
         tier        = 2,
         values      = #partial{.ATTACK = 5, .DEFENSE = 7, .MOVEMENT = 5},
         primary     = .ATTACK,
-        primary_sign = PLUS_SIGN,
+        primary_sign = .PLUS,
         item        = .INITIATIVE,
         text        = "Target a unit adjacent to you. +2 Attack\nfor each other enemy unit adjacent to you.",
         primary_effect = {
@@ -309,8 +308,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card {
-        name        = "Long Thrust",
+    Card { name = "Long Thrust",
         color       = .RED,
         initiative  = 8,
         tier        = 2,
@@ -318,7 +316,7 @@ xargatha_cards := []Card {
         values      = #partial{.ATTACK = 3, .DEFENSE = 4, .MOVEMENT = 4},
         primary     = .ATTACK,
         reach       = Range(1),
-        reach_sign  = PLUS_SIGN,
+        reach_sign  = .PLUS,
         item        = .DEFENSE,
         text        = "Target a unit in range. +1 Range\nfor each enemy unit adjacent to you.",
         primary_effect = {
@@ -358,8 +356,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card {
-        name        = "Control",
+    Card { name = "Control",
         color       = .GREEN,
         initiative  = 4,
         tier        = 2,
@@ -443,8 +440,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card {
-        name        = "Constrict",  // @incomplete
+    Card { name = "Constrict",  // @incomplete
         color       = .GREEN,
         initiative  = 4,
         tier        = 2,
@@ -468,8 +464,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card {
-        name        = "Petrifying Stare",
+    Card { name = "Petrifying Stare",
         color       = .BLUE,
         initiative  = 10,
         tier        = 2,
@@ -490,8 +485,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card {
-        name        = "Fresh Converts",  // @incompllete
+    Card { name = "Fresh Converts",  // @incomplete
         color       = .BLUE,
         initiative  = 10,
         tier        = 2,
@@ -512,14 +506,13 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card {
-        name        = "Lethal Spin",
+    Card { name = "Lethal Spin",
         color       = .RED,
         initiative  = 8,
         tier        = 3,
         values      = #partial{.ATTACK = 5, .DEFENSE = 7, .MOVEMENT = 5},
         primary     = .ATTACK,
-        primary_sign = PLUS_SIGN,
+        primary_sign = .PLUS,
         item        = .RADIUS,
         text        = "Target a unit adjacent to you. +2 Attack\nfor each other enemy unit adjacent to you.",
         primary_effect = {
@@ -565,8 +558,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card {
-        name        = "Rapid Thrusts",
+    Card { name = "Rapid Thrusts",
         color       = .RED,
         initiative  = 8,
         tier        = 2,
@@ -574,7 +566,7 @@ xargatha_cards := []Card {
         values      = #partial{.ATTACK = 3, .DEFENSE = 4, .MOVEMENT = 4},
         primary     = .ATTACK,
         reach       = Range(1),
-        reach_sign  = PLUS_SIGN,
+        reach_sign  = .PLUS,
         item        = .DEFENSE,
         text        = "Target a unit in range. +1 Range\nfor each enemy unit adjacent to you.",
         primary_effect = {
@@ -649,8 +641,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card {
-        name        = "Dominate",
+    Card { name = "Dominate",
         color       = .GREEN,
         initiative  = 4,
         tier        = 3,
@@ -736,8 +727,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card {
-        name        = "Final Embrace",  // @incomplete
+    Card { name = "Final Embrace",  // @incomplete
         color       = .GREEN,
         initiative  = 4,
         tier        = 3,
@@ -761,8 +751,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card {
-        name        = "Turn Into Statues",
+    Card { name = "Turn Into Statues",
         color       = .BLUE,
         initiative  = 10,
         tier        = 3,
@@ -783,8 +772,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card {
-        name        = "Devoted Followers",  // @incompllete
+    Card { name = "Devoted Followers",  // @incomplete
         color       = .BLUE,
         initiative  = 10,
         tier        = 2,
@@ -794,15 +782,15 @@ xargatha_cards := []Card {
         item        = .ATTACK,
         text        = "If you are adjacent to an enemy minion,\nyou may retrieve a discarded card.",\
         primary_effect = {
-            Action {
-                tooltip = "Choose a discarded card to retrieve.",
-                optional = true,
-                variant = Choose_Card_Action{},
-            },
-            Action {
-                tooltip = error_tooltip,
-                variant = Retrieve_Card_Action{},
-            },
+            // Action {
+            //     tooltip = "Choose a discarded card to retrieve.",
+            //     optional = true,
+            //     variant = Choose_Card_Action{},
+            // },
+            // Action {
+            //     tooltip = error_tooltip,
+            //     variant = Retrieve_Card_Action{},
+            // },
         },
     },
 }

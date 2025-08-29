@@ -1,0 +1,24 @@
+,,Gold / Silver cards should be tier 0,,,,,,,,e.g. Range(3) or Radius(4),,,Replace line break with \n pls
+,,,"The ""Alt path"" card, the one different from the starting card of the same color",,,,,,Leave blank if unsigned,,Leave blank if unsigned,,
+,,,,,,,,,,leave blank if n/a,,Blank if n/a,
+Name,Color,Tier,Alternate?,Initiative,Attack Value,Defense Value,Movement Value,Primary Kind,Primary Sign,Reach,Reach Sign,Item Kind,Text
+Dread Razor,GOLD,0,FALSE,12,2,1,1,ATTACK,,Range(3),,,"Choose one -\n* Target a unit adjacent to you.\n*If you are adjacent to an empty spawn point\nin the battle zone, target a unit in range."
+Death Trap,SILVER,0,FALSE,7,,1,,SKILL,,Radius(4),,,"An enemy hero in radius who is\nadjacent to an empty spawn point in\nthe battle zone discards a card, if able."
+Littlefinger of Death,RED,1,FALSE,9,4,5,4,ATTACK,,Range(2),,,Choose one -\n* Target a unit adjacent to you.\n* Target a hero in range who has one or\nmore cards in the discard.
+Shield of Decay,BLUE,1,FALSE,10,,,3,DEFENSE,PLUS,Radius(2),,,+2 Defense if there are 2 or more empty\nspawn points in radius in the battle zone.
+Finger of Death,RED,2,FALSE,9,4,6,4,ATTACK,,Range(3),,INITIATIVE,Choose one -\n* Target a unit adjacent to you.\n*Target a hero in range who has one or\nmore cards in the discard.
+Burning Skull,RED,2,TRUE,9,3,5,4,ATTACK,,Range(2),,DEFENSE,"Target a unit in range. After the attack:\nMove up to 1 minion adjacent to you\n1 space, to a space not adjacent to you."
+Darker Ritual,GREEN,2,FALSE,3,,2,2,SKILL,,Radius(3),,DEFENSE,"If there are 2 or more empty spawn points\nin radius in the battle zone, gain 2 coins."
+Dark Ritual,GREEN,1,FALSE,3,,2,2,SKILL,,Radius(3),,,"If there are 2 or more empty spawn points\nin radius in the battle zone, gain 1 coin."
+Necromancy,GREEN,2,TRUE,3,,2,2,SKILL,,,,ATTACK,Respawn a friendly minion in an empty friendly\nspawn point adjacent to you in the battle zone.
+Middlefinger of Death,RED,3,FALSE,10,5,6,4,ATTACK,,Range(3),,MOVEMENT,"Choose one, or both, on different targets -\n*Target a unit adjacent to you.\nTarget a hero in range who has one or\nmore cards in the discard."
+Vampiric Shield,BLUE,2,FALSE,10,,,3,DEFENSE,PLUS,Radius(2),,INITIATIVE,+2 Defense if there are 2 or more empty\nspawn points in radius in the battle zone.
+Weakness,BLUE,2,TRUE,10,,4,3,SKILL,,Radius(4),,ATTACK,"This turn: Enemy heroes\nin radius have -4 Attack.\n(They can still attack, even with a negative attack value.)"
+Blazing Skull,RED,3,TRUE,10,4,5,4,ATTACK,,Range(2),,RADIUS,"Target a unit in range. After the attack:\nMove up to 2 minions adjacent to you\n1 space, to spaces not adjacent to you."
+Darkest Ritual,GREEN,3,FALSE,2,,3,2,SKILL,,Radius(3),,DEFENSE,"If there are 2 or more empty spawn points in\nradius in the battle zone, gain 2 coins. If you\nhave your Ultimate, gain an Attack item.\n(Use any spare card from the box with the corresponding icon.)"
+Necromastery,GREEN,3,TRUE,2,,3,2,SKILL,,Radius(1),,RANGE,Respawn a friendly minion in an empty friendly\nspawn point in radius in the battle zone.
+Aegis of Doom,BLUE,3,FALSE,11,,,3,DEFENSE,PLUS,Radius(2),,INITIATIVE,+4 Defense if there are 2 or more empty\nspawn points in radius in the battle zone.
+Enfeeblement,BLUE,3,TRUE,11,,4,3,SKILL,,Radius(4),,ATTACK,This turn: Enemy heroes\nin radius have -6 Attack and cannot repeat actions.
+,,,,,,,,,,,,,
+Ultimate:,"While you are performing an action, all spaces\ncount as if they were in the battle zone and\nhad a friendly minion spawn point.",,,,,,,,,,,,
+,"^ Just write it out above, I'll deal with it separately",,,,,,,,,,,,

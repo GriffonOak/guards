@@ -2,12 +2,12 @@ package guards
 
 
 import rl "vendor:raylib"
-// import "core:fmt"
+import "core:fmt"
 // import "core:math"
 // import "core:strings"
 import "core:log"
 
-// import "core:mem"
+import "core:mem"
 
 
 // Todo list

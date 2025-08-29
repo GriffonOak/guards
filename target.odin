@@ -36,6 +36,7 @@ validate_action :: proc(index: Action_Index) -> bool {
     }
 
     action := get_action_at_index(index)
+    if action == nil do return false
     if action.condition != nil && !calculate_implicit_condition(action.condition) do return false
 
     switch &variant in action.variant {

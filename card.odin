@@ -27,7 +27,7 @@ Card_State :: enum {
 
 // I philosophically dislike this enum
 Ability_Kind :: enum {
-    NONE,
+    // NONE,
     ATTACK,
     SKILL,
     DEFENSE_SKILL,
@@ -63,6 +63,12 @@ Action_Reach :: union {
 
 PLUS_SIGN: cstring : "+"
 
+Sign :: enum {
+    NONE,
+    PLUS,
+    MINUS,
+}
+
 Card_ID :: struct {
     owner: Player_ID,
     color: Card_Color,
@@ -71,15 +77,16 @@ Card_ID :: struct {
 }
 
 Card :: struct {
+    name: cstring,
+
     using id: Card_ID,
     
-    name: cstring,
     initiative: int,
     values: [Ability_Kind]int,
     primary: Ability_Kind,
-    primary_sign: cstring,
+    primary_sign: Sign,
     reach: Action_Reach,
-    reach_sign: cstring,
+    reach_sign: Sign,
     item: Item_Kind,
     text: string,
 
@@ -156,7 +163,6 @@ CARD_PLAYED_POSITION_RECT :: rl.Rectangle{BOARD_POSITION_RECT.width - PLAYED_CAR
 
 
 ability_initials := [Ability_Kind]string {
-    .NONE = "X",
     .ATTACK = "A",
     .SKILL = "S",
     .DEFENSE = "D",
@@ -252,16 +258,15 @@ create_texture_for_card :: proc(card: ^Card) {
     primary_value := card.values[card.primary]
     switch card.primary {
     case .ATTACK, .DEFENSE, .MOVEMENT, .DEFENSE_SKILL:
-        rl.DrawTextEx(default_font, fmt.ctprintf("%s%d%s", ability_initials[card.primary], primary_value, card.primary_sign), {TEXT_PADDING, y_offset - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+        rl.DrawTextEx(default_font, fmt.ctprintf("%s%d%s", ability_initials[card.primary], primary_value, PLUS_SIGN if card.primary_sign == .PLUS else ""), {TEXT_PADDING, y_offset - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     case .SKILL:
         rl.DrawTextEx(default_font, fmt.ctprintf("%s", ability_initials[card.primary]), {TEXT_PADDING, y_offset - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
-    case .NONE:
     }
 
     // Reach & sign
     if card.reach != nil {
         _, is_radius := card.reach.(Radius)
-        reach_string := fmt.ctprintf("%s%d%s", "Rd" if is_radius else "Rn", card.reach, card.reach_sign)
+        reach_string := fmt.ctprintf("%s%d%s", "Rd" if is_radius else "Rn", card.reach, PLUS_SIGN if card.reach_sign == .PLUS else "")
         reach_dimensions := rl.MeasureTextEx(default_font, reach_string, TITLE_FONT_SIZE, FONT_SPACING).x
         rl.DrawTextEx(default_font, reach_string, {CARD_TEXTURE_SIZE.x - reach_dimensions - TEXT_PADDING, y_offset - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     }
