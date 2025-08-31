@@ -92,7 +92,7 @@ main :: proc() {
         context.logger = log.create_console_logger(lowest = .Info)
     }
 
-    
+
     // arena_buffer := make([]u8, 80000)
     // defer delete(arena_buffer)
 

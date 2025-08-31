@@ -172,16 +172,16 @@ Action :: struct {
 
 Action_Sequence_ID :: enum {
     PRIMARY,
-    HALT,
-    DIE,
-    RESPAWN,
-    FIRST_CHOICE,
     BASIC_MOVEMENT,
     BASIC_FAST_TRAVEL,
     BASIC_CLEAR,
-
     BASIC_DEFENSE,
 
+    FIRST_CHOICE,
+    HALT,
+
+    DIE,
+    RESPAWN,
     MINION_REMOVAL,
     MINION_SPAWN,
     MINION_OUTSIDE_ZONE,

@@ -246,7 +246,7 @@ xargatha_cards := []Card {
                             Within_Distance {
                                 Hero_Owning_Card{Card_Creating_Effect{.XARGATHA_FREEZE}},
                                 1,
-                                Card_Reach{},
+                                Card_Reach{Card_Creating_Effect{.XARGATHA_FREEZE}},
                             },
                             Contains_Any({.HERO}),
                             Enemy_Of_Card_Owner{Card_Creating_Effect{.XARGATHA_FREEZE}},

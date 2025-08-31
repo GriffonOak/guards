@@ -104,16 +104,16 @@ Implicit_Condition :: union {
 
 
 
-calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity) -> (out: int) {
+calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity, loc := #caller_location) -> (out: int) {
     switch quantity in implicit_quantity {
     case int: return quantity
 
     case Card_Reach:
         card := calculate_implicit_card(quantity.card)
-        switch reach in card.reach{
+        switch reach in card.reach {
         case Range: out = int(reach) + count_hero_items(get_player_by_id(card.owner).hero, .RANGE)
         case Radius: out = int(reach) + count_hero_items(get_player_by_id(card.owner).hero, .RADIUS)
-        case: log.assert(false, "tried to calculate nil card reach!")
+        case: log.assert(false, "tried to calculate nil card reach!", loc)
         } 
 
     case Card_Value:

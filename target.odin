@@ -20,20 +20,20 @@ Target_Set :: map[Target]Target_Info
 validate_action :: proc(index: Action_Index) -> bool {
     if index.sequence == .HALT do return true
 
-    // Disable movement on xargatha freeze
-    if freeze, ok := game_state.ongoing_active_effects[.XARGATHA_FREEZE]; ok {
-        if calculate_implicit_quantity(freeze.duration.(Single_Turn)) == game_state.turn_counter {
-            context.allocator = context.temp_allocator
-            if get_my_player().hero.location in calculate_implicit_target_set(freeze.target_set) {
-                played_card, ok2 := find_played_card()
-                assert(ok2, "Could not find played card when checking for Xargatha freeze")
-                if index.sequence == .BASIC_MOVEMENT || (index.index == 0 && played_card.primary == .MOVEMENT) {
-                    // phew
-                    return false
-                }
-            }
+    xarg_freeze: { // Disable movement on xargatha freeze
+        freeze, ok := game_state.ongoing_active_effects[.XARGATHA_FREEZE]
+        if !ok do break xarg_freeze
+        if calculate_implicit_quantity(freeze.duration.(Single_Turn)) != game_state.turn_counter do break xarg_freeze
+        context.allocator = context.temp_allocator
+        if get_my_player().hero.location not_in calculate_implicit_target_set(freeze.target_set) do break xarg_freeze
+        played_card, ok2 := find_played_card()
+        log.assert(ok2, "Could not find played card when checking for Xargatha freeze")
+        if index.sequence == .BASIC_MOVEMENT || (index.index == 0 && played_card.primary == .MOVEMENT) {
+            // phew
+            return false
         }
     }
+
 
     action := get_action_at_index(index)
     if action == nil do return false
