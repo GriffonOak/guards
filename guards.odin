@@ -30,6 +30,7 @@ import "core:mem"
 
 // Ideas
 // Could maybe be an idea to use bit_set[0..<GRID_WIDTH*GRID_HEIGHT] types for calculating the intersection between targets
+// Alternatively, Could use a fixed array of bit field structs
 // Might also be overkill :)
 // Refactor skip_index in actions as next_index and use that to skip to the halt sequence instead of having a literal halt action
 // Always send team captain the minion removal event and just skip the choose step if there are more minions to remove than exist
