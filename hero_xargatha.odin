@@ -9,7 +9,7 @@ xargatha_cards := []Card {
         values      = #partial{.ATTACK = 4, .DEFENSE = 2, .MOVEMENT = 1},
         primary     = .ATTACK,
         text        = "Target a unit adjacent to you.\nAfter the attack: May repeat once\non a different enemy hero.",
-        primary_effect = {
+        primary_effect = []Action {
             Action {
                 tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
@@ -66,7 +66,7 @@ xargatha_cards := []Card {
         primary     = .SKILL,
         reach       = Range(3),
         text        = "Target an enemy unit not adjacent to you\nand in range; if able, move the target\nup to 3 spaces to a space adjacent to you.",
-        primary_effect = {
+        primary_effect = []Action {
             Action { 
                 tooltip = "Target an enemy unit not adjacent to you and in range.",
                 variant = Choose_Target_Action {
@@ -106,42 +106,42 @@ xargatha_cards := []Card {
         primary     = .ATTACK,
         primary_sign = .PLUS,
         text        = "Target a unit adjacent to you. +1 Attack\nfor each other enemy unit adjacent to you.",
-        primary_effect = {
-            // Action {
-            //     tooltip = "Target a unit adjacent to you.",
-            //     variant = Choose_Target_Action {
-            //         num_targets = 1,
-            //         criteria = {
-            //             Within_Distance {
-            //                 origin = Self{},
-            //                 min = 1,
-            //                 max = 1,
-            //             },
-            //             Contains_Any(UNIT_FLAGS),
-            //             Is_Enemy_Unit{},
-            //         },
-            //     },
-            // },
-            // Action {
-            //     tooltip = "Waiting for opponent to defend...",
-            //     variant = Attack_Action {
-            //         target = Previous_Choice{},
-            //         strength = Sum {
-            //             Card_Value{kind=.ATTACK}, 
-            //             Count_Targets {
-            //                 Within_Distance {
-            //                     origin = Self{},
-            //                     min = 1,
-            //                     max = 1,
-            //                 },
-            //                 Contains_Any(UNIT_FLAGS),
-            //                 Is_Enemy_Unit{},
-            //                 Ignoring_Immunity{},
-            //             },
-            //             -1,
-            //         },
-            //     },
-            // },
+        primary_effect = []Action {
+            Action {
+                tooltip = "Target a unit adjacent to you.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    criteria = {
+                        Within_Distance {
+                            origin = Self{},
+                            min = 1,
+                            max = 1,
+                        },
+                        Contains_Any(UNIT_FLAGS),
+                        Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Waiting for opponent to defend...",
+                variant = Attack_Action {
+                    target = Previous_Choice{},
+                    strength = Sum {
+                        Card_Value{kind=.ATTACK}, 
+                        Count_Targets {
+                            Within_Distance {
+                                origin = Self{},
+                                min = 1,
+                                max = 1,
+                            },
+                            Contains_Any(UNIT_FLAGS),
+                            Is_Enemy_Unit{},
+                            Ignoring_Immunity{},
+                        },
+                        -1,
+                    },
+                },
+            },
         },
     },
     Card { name = "Charm",
@@ -152,7 +152,7 @@ xargatha_cards := []Card {
         primary     = .MOVEMENT,
         reach       = Radius(2),
         text        = "Before or after movement, you may\nmove an enemy ranged minion\nin radius up to 2 spaces.",
-        primary_effect = {
+        primary_effect = []Action {
             Action {  // 0
                 tooltip = "You may either move yourself or a ranged minion.",
                 variant = Choice_Action {
@@ -235,7 +235,7 @@ xargatha_cards := []Card {
         primary     = .SKILL,
         reach       = Radius(2),
         text        = "Next turn: Enemy heroes in radius count\nas both heroes and terrain, and cannot\nperform movement actions.",
-        primary_effect = {
+        primary_effect = []Action {
             Action {
                 tooltip = error_tooltip,
                 variant = Add_Active_Effect_Action {
@@ -265,7 +265,7 @@ xargatha_cards := []Card {
         primary_sign = .PLUS,
         item        = .INITIATIVE,
         text        = "Target a unit adjacent to you. +2 Attack\nfor each other enemy unit adjacent to you.",
-        primary_effect = {
+        primary_effect = []Action {
             Action {
                 tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
@@ -319,7 +319,7 @@ xargatha_cards := []Card {
         reach_sign  = .PLUS,
         item        = .DEFENSE,
         text        = "Target a unit in range. +1 Range\nfor each enemy unit adjacent to you.",
-        primary_effect = {
+        primary_effect = []Action {
             Action {
                 tooltip = "Target a unit in range.",
                 variant = Choose_Target_Action {
@@ -365,7 +365,7 @@ xargatha_cards := []Card {
         reach       = Radius(2),
         item        = .ATTACK,
         text        = "Before or after movement, you may move\nan enemy ranged or melee minion\nin radius up to 2 spaces.",
-        primary_effect = {
+        primary_effect = []Action {
             Action {  // 0
                 tooltip = "You may either move yourself or a ranged or melee minion.",
                 variant = Choice_Action {
@@ -449,7 +449,7 @@ xargatha_cards := []Card {
         primary     = .SKILL,
         item        = .INITIATIVE,
         text        = "End of round: Defeat an enemy\nmelee minion adjacent to you.",
-        primary_effect = {
+        primary_effect = []Action {
             Action {
                 tooltip = error_tooltip,
                 variant = Add_Active_Effect_Action {
@@ -473,7 +473,7 @@ xargatha_cards := []Card {
         reach       = Radius(3),
         item        = .DEFENSE,
         text        = "Next turn: Enemy heroes in radius count\nas both heroes and terrain, and cannot\nperform movement actions.",
-        primary_effect = {
+        primary_effect = []Action {
             Action {
                 tooltip = error_tooltip,
                 variant = Add_Active_Effect_Action {
@@ -494,7 +494,7 @@ xargatha_cards := []Card {
         primary     = .SKILL,
         item        = .ATTACK,
         text        = "If you are adjacent to an enemy minion,\nyou may retrieve a discarded card.",\
-        primary_effect = {
+        primary_effect = []Action {
             Action {
                 tooltip = "Choose a discarded card to retrieve.",
                 optional = true,
@@ -515,7 +515,7 @@ xargatha_cards := []Card {
         primary_sign = .PLUS,
         item        = .RADIUS,
         text        = "Target a unit adjacent to you. +2 Attack\nfor each other enemy unit adjacent to you.",
-        primary_effect = {
+        primary_effect = []Action {
             Action {
                 tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
@@ -569,7 +569,7 @@ xargatha_cards := []Card {
         reach_sign  = .PLUS,
         item        = .DEFENSE,
         text        = "Target a unit in range. +1 Range\nfor each enemy unit adjacent to you.",
-        primary_effect = {
+        primary_effect = []Action {
             Action {
                 tooltip = "Target a unit in range.",
                 variant = Choose_Target_Action {
@@ -650,7 +650,7 @@ xargatha_cards := []Card {
         reach       = Radius(2),
         item        = .ATTACK,
         text        = "Before or after movement, you may move\nan enemy minion in radius up to 2 spaces;\nignore heavy minion immunity.",
-        primary_effect = {
+        primary_effect = []Action {
             Action {  // 0
                 tooltip = "You may either move yourself or a minion.",
                 variant = Choice_Action {
@@ -736,7 +736,7 @@ xargatha_cards := []Card {
         primary     = .SKILL,
         item        = .INITIATIVE,
         text        = "End of round: Defeat an enemy\nmelee minion adjacent to you.",
-        primary_effect = {
+        primary_effect = []Action {
             Action {
                 tooltip = error_tooltip,
                 variant = Add_Active_Effect_Action {
@@ -760,7 +760,7 @@ xargatha_cards := []Card {
         reach       = Radius(4),
         item        = .DEFENSE,
         text        = "Next turn: Enemy heroes in radius count\nas both heroes and terrain, and cannot\nperform movement actions.",
-        primary_effect = {
+        primary_effect = []Action {
             Action {
                 tooltip = error_tooltip,
                 variant = Add_Active_Effect_Action {
@@ -781,7 +781,7 @@ xargatha_cards := []Card {
         primary     = .SKILL,
         item        = .ATTACK,
         text        = "If you are adjacent to an enemy minion,\nyou may retrieve a discarded card.",\
-        primary_effect = {
+        primary_effect = []Action {
             // Action {
             //     tooltip = "Choose a discarded card to retrieve.",
             //     optional = true,

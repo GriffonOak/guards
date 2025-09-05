@@ -130,7 +130,7 @@ main :: proc() {
     rl.InitWindow(i32(WIDTH / window_scale), i32(HEIGHT / window_scale), "guards")
     defer rl.CloseWindow()
 
-    default_font = rl.LoadFontEx("times.ttf", 200, nil, 0)
+    default_font = rl.LoadFontEx("Inter-VariableFont_opsz,wght.ttf", 200, nil, 0)
     // default_font = rl.LoadFont("Inconsolata-Regular.ttf")
 
     board_render_texture = rl.LoadRenderTexture(i32(BOARD_TEXTURE_SIZE.x), i32(BOARD_TEXTURE_SIZE.y))
