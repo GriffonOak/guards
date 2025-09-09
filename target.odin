@@ -47,6 +47,10 @@ validate_action :: proc(index: Action_Index) -> bool {
             make_arbitrary_targets(variant.valid_destinations, index.card_id),
             variant.flags,
         )
+        origin := calculate_implicit_target(variant.target, index.card_id)
+        clear(&variant.path.spaces)
+        append(&variant.path.spaces, origin)
+        variant.path.num_locked_spaces = 1
         return len(action.targets) > 0
 
     case Fast_Travel_Action:

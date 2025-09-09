@@ -17,7 +17,6 @@ _ :: strings
 // Todo list
 // Once those are figured out, do xargatha minion defeat greens
 // Finish implementing xargatha cards (retrieval blues)
-// Reaffirm stone gaze works lol
 // Highlight chooseable cards for selection, defense, & upgrading
 // Highlight items when hovering over upgrade options
 // Xargatha ult
@@ -36,11 +35,9 @@ _ :: strings
 
 
 // Ideas
-// Add the starting space to movement paths (simplifies a bit)
 // Could maybe be an idea to use bit_set[0..<GRID_WIDTH*GRID_HEIGHT] types for calculating the intersection between targets
 // Alternatively, Could use a fixed array of bit field structs
 // Might also be overkill :)
-// Nuke implicit target set from orbit
 // Refactor skip_index in actions as next_index and use that to skip to the halt sequence instead of having a literal halt action
 // Always send team captain the minion removal event and just skip the choose step if there are more minions to remove than exist
 // Model wave push as an action sequence to obviate the need for interrupt_variant

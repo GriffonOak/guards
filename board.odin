@@ -322,13 +322,7 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
 
                 if board_element.hovered_space not_in action.targets do break
 
-                starting_space: Target
-                if action_variant.path.num_locked_spaces > 0 {
-                    starting_space = action_variant.path.spaces[action_variant.path.num_locked_spaces - 1]
-                } else {
-                    // @Cleanup SHOULD BE ABLE TO REMOVE THIS TOO
-                    starting_space = calculate_implicit_target(action_variant.target, action_index.card_id)
-                }
+                starting_space := action_variant.path.spaces[action_variant.path.num_locked_spaces - 1]
 
                 current_space := board_element.hovered_space
                 for ; current_space != starting_space; current_space = action.targets[current_space].prev_node {
@@ -444,11 +438,8 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             }
             return
         case Movement_Action:
-            if variant.path.num_locked_spaces == 0 {
-                origin = calculate_implicit_target(variant.target, action_index.card_id)
-            } else {
-                origin = variant.path.spaces[variant.path.num_locked_spaces - 1]
-            }
+            origin = variant.path.spaces[variant.path.num_locked_spaces - 1]
+
         case Choose_Target_Action:
             frequency = 14
             for target in variant.result {
@@ -506,8 +497,8 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
                 rl.DrawLineEx(space_pos, player_pos, 4, rl.VIOLET)
             }
         case Movement_Action:
-            current_loc := calculate_implicit_target(variant.target, action_index.card_id)  // @Cleanup again with movement paths
-            for target in variant.path.spaces {
+            current_loc := variant.path.spaces[0]
+            for target in variant.path.spaces[1:] {
                 rl.DrawLineEx(board[current_loc.x][current_loc.y].position, board[target.x][target.y].position, 4, rl.VIOLET)
                 current_loc = target
             }

@@ -430,8 +430,8 @@ resolve_event :: proc(event: Event) {
             action := get_action_at_index(action_index)
             #partial switch &action_variant in action.variant {
             case Movement_Action:
-                action_variant.path.num_locked_spaces = 0
-                clear(&action_variant.path.spaces)
+                action_variant.path.num_locked_spaces = 1
+                resize(&action_variant.path.spaces, 1)
 
                 movement_val := action_variant.distance
                 delete(action.targets)
@@ -731,7 +731,6 @@ resolve_event :: proc(event: Event) {
         switch &action_type in action.variant {
         case Movement_Action:
             add_side_button("Reset move", Cancel_Event{})
-            // This is technically wrong because a move of 0 could still be a valid destination
             if action_type.valid_destinations == nil {
                 add_side_button("Confirm move", Resolve_Current_Action_Event{})
             }
@@ -870,7 +869,6 @@ resolve_event :: proc(event: Event) {
         case Fast_Travel_Action:
             broadcast_game_event(Unit_Translocation_Event{get_my_player().hero.location, variant.result})
         case Movement_Action:
-            if len(variant.path.spaces) == 0 do break
             defer {
                 delete(variant.path.spaces)
                 variant.path.spaces = nil
@@ -882,9 +880,9 @@ resolve_event :: proc(event: Event) {
                 log.debugf("Traversed_space: %v", space)
             }
 
-            // @Cleanup SHOULD BE ABLE TO REMOVE THIS
-            starting_space := calculate_implicit_target(variant.target, action_index.card_id)
-            broadcast_game_event(Unit_Translocation_Event{starting_space, variant.path.spaces[len(variant.path.spaces) - 1]})
+            starting_space := variant.path.spaces[0]
+            ending_space := variant.path.spaces[len(variant.path.spaces) - 1]
+            broadcast_game_event(Unit_Translocation_Event{starting_space, ending_space})
         case Choice_Action:
             variant.result = var.jump_index.?            
         }
