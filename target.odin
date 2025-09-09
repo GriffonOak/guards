@@ -25,7 +25,7 @@ validate_action :: proc(index: Action_Index) -> bool {
         if !ok do break xarg_freeze
         if calculate_implicit_quantity(freeze.duration.(Single_Turn), freeze.parent_card_id) != game_state.turn_counter do break xarg_freeze
         context.allocator = context.temp_allocator
-        if get_my_player().hero.location not_in calculate_implicit_target_set(freeze.target_set) do break xarg_freeze
+        if get_my_player().hero.location not_in make_arbitrary_targets(freeze.target_set, freeze.parent_card_id) do break xarg_freeze
         played_card, ok2 := find_played_card()
         log.assert(ok2, "Could not find played card when checking for Xargatha freeze")
         if index.sequence == .BASIC_MOVEMENT || (index.index == 0 && played_card.primary == .MOVEMENT) {
@@ -42,8 +42,10 @@ validate_action :: proc(index: Action_Index) -> bool {
     switch &variant in action.variant {
     case Movement_Action:
         action.targets =  make_movement_targets(
-            calculate_implicit_quantity(variant.distance, index.card_id), 
-            variant.target, variant.valid_destinations, variant.flags
+            calculate_implicit_quantity(variant.distance, index.card_id),
+            calculate_implicit_target(variant.target, index.card_id),
+            make_arbitrary_targets(variant.valid_destinations, index.card_id),
+            variant.flags,
         )
         return len(action.targets) > 0
 
@@ -88,8 +90,8 @@ validate_action :: proc(index: Action_Index) -> bool {
 
 make_movement_targets :: proc (
     max_distance: int,
-    origin: Implicit_Target,
-    valid_destinations: Implicit_Target_Set = nil,
+    origin: Target,
+    valid_destinations: Target_Set = nil,
     flags: Movement_Flags = {},
     allocator := context.allocator,
 ) -> (visited_set: Target_Set) {
@@ -104,20 +106,12 @@ make_movement_targets :: proc (
         max_distance = BIG_NUMBER
     }
 
-    destination_set: Target_Set
-    defer delete(destination_set)
-
-    if valid_destinations != nil {
-        destination_set = calculate_implicit_target_set(valid_destinations, context.temp_allocator)
-    }
-
     // dijkstra's algorithm!
 
     
     unvisited_set: Target_Set
 
-    start := calculate_implicit_target(origin)
-    unvisited_set[start] = {0, {-1, -1}, false}
+    unvisited_set[origin] = {0, {-1, -1}, false}
 
     for len(unvisited_set) > 0 {
         // find minimum
@@ -130,7 +124,7 @@ make_movement_targets :: proc (
             }
         }
 
-        if .SHORTEST_PATH in flags && max_distance == BIG_NUMBER && min_loc in destination_set {
+        if .SHORTEST_PATH in flags && max_distance == BIG_NUMBER && min_loc in valid_destinations {
             // Shortest distance found!
             max_distance = min_info.dist
         }
@@ -173,7 +167,7 @@ make_movement_targets :: proc (
 
         // Check all spaces in the visited set to see if they can be reached by one of the valid endpoints.
         // If they can, they will be marked as valid. Otherwise they will stay invalid.
-        for valid_endpoint in destination_set {
+        for valid_endpoint in valid_destinations {
             if valid_endpoint not_in visited_set do continue
             reachable_targets_from_endpoint := make_movement_targets(
                 max_distance,
@@ -197,7 +191,7 @@ make_movement_targets :: proc (
         // Now the only spaces left in the visited set are those that can reach valid endpoints.
         // We now flag the spaces as invalid if they are not in the destination set.
         for target, &info in visited_set {
-            info.invalid = target not_in destination_set
+            info.invalid = target not_in valid_destinations
         }
 
     }
@@ -255,7 +249,7 @@ target_fulfills_criterion :: proc(target: Target, criterion: Selection_Criterion
     switch selector in criterion {
     case Within_Distance:
 
-        origin := calculate_implicit_target(selector.origin)
+        origin := calculate_implicit_target(selector.origin, card_id)
         min_dist := calculate_implicit_quantity(selector.min, card_id)
         max_dist := calculate_implicit_quantity(selector.max, card_id)
 
@@ -271,9 +265,10 @@ target_fulfills_criterion :: proc(target: Target, criterion: Selection_Criterion
     // @Note these don't actually test whether a unit is present in the space, only that the teams are the same / different
     case Is_Enemy_Unit:         return get_my_player().team != space.unit_team
     case Is_Friendly_Unit:      return get_my_player().team == space.unit_team
-    case Enemy_Of_Card_Owner:
-        card := calculate_implicit_card(selector.implicit_card)
-        return get_player_by_id(card.owner).team != space.unit_team
+    case Is_Enemy_Of:
+        other_target := calculate_implicit_target(selector.target, card_id)
+        other_space := board[other_target.x][other_target.y]
+        return other_space.unit_team != space.unit_team
 
     case Is_Friendly_Spawnpoint: return get_my_player().team == space.spawnpoint_team
 
@@ -289,6 +284,7 @@ target_fulfills_criterion :: proc(target: Target, criterion: Selection_Criterion
 
 make_arbitrary_targets :: proc(criteria: []Selection_Criterion, card_id: Card_ID = NULL_CARD_ID, allocator := context.allocator) -> (out: Target_Set) {
 
+    if criteria == nil do return nil
     context.allocator = allocator
 
     // Start with completely populated board (Inefficient!)
@@ -306,7 +302,7 @@ make_arbitrary_targets :: proc(criteria: []Selection_Criterion, card_id: Card_ID
 
     for criterion in criteria[1:] {
         switch variant in criterion {
-        case Within_Distance, Contains_Any, Is_Enemy_Unit, Is_Friendly_Unit, Enemy_Of_Card_Owner, Is_Friendly_Spawnpoint, In_Battle_Zone, Outside_Battle_Zone, Empty:
+        case Within_Distance, Contains_Any, Is_Enemy_Unit, Is_Friendly_Unit, Is_Enemy_Of, Is_Friendly_Spawnpoint, In_Battle_Zone, Outside_Battle_Zone, Empty:
             for target in out {
                 if !target_fulfills_criterion(target, criterion, card_id) {
                     delete_key(&out, target)
@@ -314,7 +310,7 @@ make_arbitrary_targets :: proc(criteria: []Selection_Criterion, card_id: Card_ID
             }
 
         case Not_Previously_Targeted:
-            previous_target := calculate_implicit_target(Previous_Choice{})
+            previous_target := calculate_implicit_target(Previous_Choice{}, card_id)
             delete_key(&out, previous_target)
 
         case Ignoring_Immunity:

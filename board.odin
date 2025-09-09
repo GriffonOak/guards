@@ -8,6 +8,7 @@ import "core:strings"
 
 import "core:log"
 
+_ :: fmt
 
 
 Spawnpoint_Marker :: struct {
@@ -313,7 +314,8 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
 
         #partial switch get_my_player().stage {
         case .RESOLVING, .INTERRUPTING:
-            action := get_current_action()
+            action_index := get_my_player().hero.current_action_index
+            action := get_action_at_index(action_index)
             #partial switch &action_variant in action.variant {
             case Movement_Action:
                 resize(&action_variant.path.spaces, action_variant.path.num_locked_spaces)
@@ -324,7 +326,8 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
                 if action_variant.path.num_locked_spaces > 0 {
                     starting_space = action_variant.path.spaces[action_variant.path.num_locked_spaces - 1]
                 } else {
-                    starting_space = calculate_implicit_target(action_variant.target)
+                    // @Cleanup SHOULD BE ABLE TO REMOVE THIS TOO
+                    starting_space = calculate_implicit_target(action_variant.target, action_index.card_id)
                 }
 
                 current_space := board_element.hovered_space
@@ -442,7 +445,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             return
         case Movement_Action:
             if variant.path.num_locked_spaces == 0 {
-                origin = calculate_implicit_target(variant.target)
+                origin = calculate_implicit_target(variant.target, action_index.card_id)
             } else {
                 origin = variant.path.spaces[variant.path.num_locked_spaces - 1]
             }
@@ -503,7 +506,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
                 rl.DrawLineEx(space_pos, player_pos, 4, rl.VIOLET)
             }
         case Movement_Action:
-            current_loc := calculate_implicit_target(variant.target)
+            current_loc := calculate_implicit_target(variant.target, action_index.card_id)  // @Cleanup again with movement paths
             for target in variant.path.spaces {
                 rl.DrawLineEx(board[current_loc.x][current_loc.y].position, board[target.x][target.y].position, 4, rl.VIOLET)
                 current_loc = target

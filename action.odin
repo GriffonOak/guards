@@ -17,8 +17,8 @@ Contains_All :: Space_Flags
 
 Is_Enemy_Unit :: struct {}
 Is_Friendly_Unit :: struct {}
-Enemy_Of_Card_Owner :: struct {
-    implicit_card: Implicit_Card,
+Is_Enemy_Of :: struct {
+    target: Implicit_Target,
 }
 Is_Friendly_Spawnpoint :: struct {}
 Not_Previously_Targeted :: struct {}
@@ -35,7 +35,7 @@ Selection_Criterion :: union {
     // Contains_All,
     Is_Enemy_Unit,
     Is_Friendly_Unit,
-    Enemy_Of_Card_Owner,
+    Is_Enemy_Of,
     Is_Friendly_Spawnpoint,
     Not_Previously_Targeted,
     Ignoring_Immunity,
@@ -63,7 +63,7 @@ Movement_Flags :: bit_set[Movement_Flag]
 Movement_Action :: struct {
     target: Implicit_Target,
     distance: Implicit_Quantity,
-    valid_destinations: Implicit_Target_Set,
+    valid_destinations: []Selection_Criterion,
     flags: Movement_Flags,
 
     path: Path,

@@ -49,27 +49,20 @@ Implicit_Quantity :: union {
 
 
 
-Implicit_Target_Set :: union {
-    // Target_Set,
-    []Selection_Criterion,
-}
-
-
-
 Self :: struct {}
 
 Previous_Choice :: struct {}
 
 Top_Blocked_Spawnpoint :: struct {}
 
-Hero_Owning_Card :: struct {}
+Card_Owner :: struct {}
 
 Implicit_Target :: union {
     Target,
     Self,
     Previous_Choice,
     Top_Blocked_Spawnpoint,
-    Hero_Owning_Card,
+    Card_Owner,
 }
 
 
@@ -133,6 +126,7 @@ calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity, card_i
 
     case Turn_Played:
         card, ok := get_card_by_id(card_id)
+        log.assert(ok, "Invalid card when trying to calculate turn played", loc)
         return card.turn_played
 
     // case Current_Turn:
@@ -145,7 +139,7 @@ calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity, card_i
     return 
 }
 
-calculate_implicit_target :: proc(implicit_target: Implicit_Target) -> (out: Target) {
+calculate_implicit_target :: proc(implicit_target: Implicit_Target, card_id: Card_ID, loc := #caller_location) -> (out: Target) {
     switch target in implicit_target {
     case Target: out = target
     case Self: out = get_my_player().hero.location
@@ -162,21 +156,22 @@ calculate_implicit_target :: proc(implicit_target: Implicit_Target) -> (out: Tar
     case Top_Blocked_Spawnpoint:
         my_team := get_my_player().team
         num_blocked_spawns := len(blocked_spawns[my_team])
-        log.assert(num_blocked_spawns > 0, "No blocked spawns!!!!!")
+        log.assert(num_blocked_spawns > 0, "No blocked spawns!!!!!", loc)
         return blocked_spawns[my_team][num_blocked_spawns - 1]
-    case Hero_Owning_Card:
-        card := calculate_implicit_card(target.implicit_card)
+    case Card_Owner:
+        card, ok := get_card_by_id(card_id)
+        log.assert(ok, "Invalid card when trying to calculate owner", loc)
         return get_player_by_id(card.owner).hero.location
     }
     return
 }
 
-calculate_implicit_target_set :: proc(implicit_set: Implicit_Target_Set, allocator := context.allocator) -> Target_Set {
-    switch set in implicit_set {
-    case []Selection_Criterion: return make_arbitrary_targets(set, allocator = allocator)
-    }
-    return nil
-}
+// calculate_implicit_target_set :: proc(implicit_set: Implicit_Target_Set, allocator := context.allocator) -> Target_Set {
+//     switch set in implicit_set {
+//     case []Selection_Criterion: return make_arbitrary_targets(set, allocator = allocator)
+//     }
+//     return nil
+// }
 
 calculate_implicit_condition :: proc(implicit_condition: Implicit_Condition, card_id: Card_ID = NULL_CARD_ID) -> bool {
     switch condition in implicit_condition {

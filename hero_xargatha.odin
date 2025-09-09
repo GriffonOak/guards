@@ -244,12 +244,12 @@ xargatha_cards := []Card {
                         duration = Single_Turn(Sum{Turn_Played{}, 1}),
                         target_set = []Selection_Criterion {
                             Within_Distance {
-                                Hero_Owning_Card{},
+                                Card_Owner{},
                                 1,
                                 Card_Reach{},
                             },
                             Contains_Any({.HERO}),
-                            Enemy_Of_Card_Owner{},
+                            Is_Enemy_Of{Card_Owner{}},
                         },
                     },
                 },

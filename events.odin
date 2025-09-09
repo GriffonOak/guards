@@ -278,7 +278,7 @@ resolve_event :: proc(event: Event) {
                 action.targets = make_movement_targets(
                     max_distance = calculate_implicit_quantity(action_variant.distance, action_index.card_id) - action_variant.path.num_locked_spaces,
                     origin = last_target,
-                    valid_destinations = action_variant.valid_destinations,
+                    valid_destinations = make_arbitrary_targets(action_variant.valid_destinations, action_index.card_id),
                     flags = action_variant.flags,
                 )
 
@@ -437,8 +437,8 @@ resolve_event :: proc(event: Event) {
                 delete(action.targets)
                 action.targets = make_movement_targets(
                     calculate_implicit_quantity(movement_val, action_index.card_id),
-                    action_variant.target,
-                    action_variant.valid_destinations,
+                    calculate_implicit_target(action_variant.target, action_index.card_id),
+                    make_arbitrary_targets(action_variant.valid_destinations, action_index.card_id),
                     action_variant.flags,
                 )
 
@@ -762,7 +762,7 @@ resolve_event :: proc(event: Event) {
             }
 
         case Attack_Action:
-            target := calculate_implicit_target(action_type.target)
+            target := calculate_implicit_target(action_type.target, action_index.card_id)
             space := &board[target.x][target.y]
             attack_strength := calculate_implicit_quantity(action_type.strength, action_index.card_id)
             log.infof("Attack strength: %v", attack_strength)
@@ -816,8 +816,8 @@ resolve_event :: proc(event: Event) {
             append(&event_queue, Resolve_Current_Action_Event{action_type.jump_index})
             
         case Minion_Spawn_Action:
-            target := calculate_implicit_target(action_type.location)
-            spawnpoint := calculate_implicit_target(action_type.spawnpoint)
+            target := calculate_implicit_target(action_type.location, NULL_CARD_ID)
+            spawnpoint := calculate_implicit_target(action_type.spawnpoint, NULL_CARD_ID)
             space := board[spawnpoint.x][spawnpoint.y]
             spawnpoint_flags := space.flags & (SPAWNPOINT_FLAGS - {.HERO_SPAWNPOINT})
             log.assert(spawnpoint_flags != {}, "Minion spawn action with invalid spawnpoint!!!")
@@ -848,7 +848,12 @@ resolve_event :: proc(event: Event) {
             append(&event_queue, Resolve_Current_Action_Event{})
 
         case Respawn_Action:
-            broadcast_game_event(Hero_Respawn_Event{my_player_id, calculate_implicit_target(action_type.location)})
+            // @Cleanup yet another point where Choose_Target_Action kind of gets in the way of clear code
+            // We know that the player has chosen a single spawnpoint to respawn at by this point,
+            // why do we need to go through all the trouble of recalculating it?
+            // Shouldn't need the card ID here
+            respawn_point := calculate_implicit_target(action_type.location, NULL_CARD_ID)
+            broadcast_game_event(Hero_Respawn_Event{my_player_id, respawn_point})
             append(&event_queue, Resolve_Current_Action_Event{})
 
         case Fast_Travel_Action, Clear_Action, Choose_Card_Action, Retrieve_Card_Action:
@@ -858,7 +863,8 @@ resolve_event :: proc(event: Event) {
     case Resolve_Current_Action_Event:
         clear_side_buttons()
 
-        action := get_current_action()
+        action_index := get_my_player().hero.current_action_index
+        action := get_action_at_index(action_index)
 
         #partial switch &variant in action.variant {
         case Fast_Travel_Action:
@@ -875,7 +881,10 @@ resolve_event :: proc(event: Event) {
                 // Stuff that happens on move through goes here
                 log.debugf("Traversed_space: %v", space)
             }
-            broadcast_game_event(Unit_Translocation_Event{calculate_implicit_target(variant.target), variant.path.spaces[len(variant.path.spaces) - 1]})
+
+            // @Cleanup SHOULD BE ABLE TO REMOVE THIS
+            starting_space := calculate_implicit_target(variant.target, action_index.card_id)
+            broadcast_game_event(Unit_Translocation_Event{starting_space, variant.path.spaces[len(variant.path.spaces) - 1]})
         case Choice_Action:
             variant.result = var.jump_index.?            
         }
