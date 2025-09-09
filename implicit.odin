@@ -2,15 +2,10 @@ package guards
 
 import "core:log"
 
-Card_Creating_Effect :: struct {
-    effect: Active_Effect_Kind,
-}
-
 Previous_Card_Choice :: struct {}
 
 Implicit_Card :: union {
     Card_ID,
-    Card_Creating_Effect,
     Previous_Card_Choice,
 }
 
@@ -30,9 +25,7 @@ Count_Targets :: []Selection_Criterion
 
 // Current_Turn :: struct {}
 
-Turn_Played :: struct {
-    card: Implicit_Card,
-}
+Turn_Played :: struct {}
 
 Minion_Difference :: struct {}
 
@@ -200,10 +193,6 @@ calculate_implicit_card :: proc(implicit_card: Implicit_Card) -> ^Card {
     case Card_ID:
         card_pointer, ok := get_card_by_id(card)
         log.assert(ok, "Can't find card by ID")
-        return card_pointer
-    case Card_Creating_Effect:
-        card_pointer, ok := get_card_by_id(game_state.ongoing_active_effects[card.effect].parent_card_id)
-        log.assert(ok, "Can't find card ID")
         return card_pointer
     case Previous_Card_Choice:
         index := get_my_player().hero.current_action_index

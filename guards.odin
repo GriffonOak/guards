@@ -24,6 +24,8 @@ _ :: strings
 
 // Xargatha LITERALLY DONE after this point !!!!
 
+// Write UNIMPLEMENTED over unfinished cards
+
 // Some automated tests for things like xarg freeze would go hard
 // Toast, for a bit of flair & usability
 // basic animations?

@@ -450,18 +450,18 @@ xargatha_cards := []Card {
         item        = .INITIATIVE,
         text        = "End of round: Defeat an enemy\nmelee minion adjacent to you.",
         primary_effect = []Action {
-            Action {
-                tooltip = error_tooltip,
-                variant = Add_Active_Effect_Action {
-                    effect = Active_Effect {
-                        kind = .XARGATHA_DEFEAT,
-                        duration = End_Of_Round{},
-                    },
-                },
-            },
-            Action {
-                variant = Halt_Action{},
-            },
+            // Action {
+            //     tooltip = error_tooltip,
+            //     variant = Add_Active_Effect_Action {
+            //         effect = Active_Effect {
+            //             kind = .XARGATHA_DEFEAT,
+            //             duration = End_Of_Round{},
+            //         },
+            //     },
+            // },
+            // Action {
+            //     variant = Halt_Action{},
+            // },
         },
     },
     Card { name = "Petrifying Stare",
@@ -479,7 +479,7 @@ xargatha_cards := []Card {
                 variant = Add_Active_Effect_Action {
                     effect = Active_Effect {
                         kind = .XARGATHA_FREEZE,
-                        duration = Single_Turn(Sum{Turn_Played{Card_Creating_Effect{.XARGATHA_FREEZE}}, 1}),
+                        duration = Single_Turn(Sum{Turn_Played{}, 1}),
                     },
                 },
             },
@@ -495,15 +495,15 @@ xargatha_cards := []Card {
         item        = .ATTACK,
         text        = "If you are adjacent to an enemy minion,\nyou may retrieve a discarded card.",\
         primary_effect = []Action {
-            Action {
-                tooltip = "Choose a discarded card to retrieve.",
-                optional = true,
-                variant = Choose_Card_Action{},
-            },
-            Action {
-                tooltip = error_tooltip,
-                variant = Retrieve_Card_Action{},
-            },
+            // Action {
+            //     tooltip = "Choose a discarded card to retrieve.",
+            //     optional = true,
+            //     variant = Choose_Card_Action{},
+            // },
+            // Action {
+            //     tooltip = error_tooltip,
+            //     variant = Retrieve_Card_Action{},
+            // },
         },
     },
     Card { name = "Lethal Spin",
@@ -737,18 +737,18 @@ xargatha_cards := []Card {
         item        = .INITIATIVE,
         text        = "End of round: Defeat an enemy\nmelee minion adjacent to you.",
         primary_effect = []Action {
-            Action {
-                tooltip = error_tooltip,
-                variant = Add_Active_Effect_Action {
-                    effect = Active_Effect {
-                        kind = .XARGATHA_DEFEAT,
-                        duration = End_Of_Round{},
-                    },
-                },
-            },
-            Action {
-                variant = Halt_Action{},
-            },
+            // Action {
+            //     tooltip = error_tooltip,
+            //     variant = Add_Active_Effect_Action {
+            //         effect = Active_Effect {
+            //             kind = .XARGATHA_DEFEAT,
+            //             duration = End_Of_Round{},
+            //         },
+            //     },
+            // },
+            // Action {
+            //     variant = Halt_Action{},
+            // },
         },
     },
     Card { name = "Turn Into Statues",
@@ -766,7 +766,7 @@ xargatha_cards := []Card {
                 variant = Add_Active_Effect_Action {
                     effect = Active_Effect {
                         kind = .XARGATHA_FREEZE,
-                        duration = Single_Turn(Sum{Turn_Played{Card_Creating_Effect{.XARGATHA_FREEZE}}, 1}),
+                        duration = Single_Turn(Sum{Turn_Played{}, 1}),
                     },
                 },
             },
