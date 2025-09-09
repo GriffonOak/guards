@@ -23,7 +23,7 @@ validate_action :: proc(index: Action_Index) -> bool {
     xarg_freeze: { // Disable movement on xargatha freeze
         freeze, ok := game_state.ongoing_active_effects[.XARGATHA_FREEZE]
         if !ok do break xarg_freeze
-        if calculate_implicit_quantity(freeze.duration.(Single_Turn)) != game_state.turn_counter do break xarg_freeze
+        if calculate_implicit_quantity(freeze.duration.(Single_Turn), freeze.parent_card_id) != game_state.turn_counter do break xarg_freeze
         context.allocator = context.temp_allocator
         if get_my_player().hero.location not_in calculate_implicit_target_set(freeze.target_set) do break xarg_freeze
         played_card, ok2 := find_played_card()
@@ -37,11 +37,14 @@ validate_action :: proc(index: Action_Index) -> bool {
 
     action := get_action_at_index(index)
     if action == nil do return false
-    if action.condition != nil && !calculate_implicit_condition(action.condition) do return false
+    if action.condition != nil && !calculate_implicit_condition(action.condition, index.card_id) do return false
 
     switch &variant in action.variant {
     case Movement_Action:
-        action.targets =  make_movement_targets(variant.distance, variant.target, variant.valid_destinations, variant.flags)
+        action.targets =  make_movement_targets(
+            calculate_implicit_quantity(variant.distance, index.card_id), 
+            variant.target, variant.valid_destinations, variant.flags
+        )
         return len(action.targets) > 0
 
     case Fast_Travel_Action:
@@ -53,13 +56,15 @@ validate_action :: proc(index: Action_Index) -> bool {
         return len(action.targets) > 0
 
     case Choose_Target_Action:
-        action.targets =  make_arbitrary_targets(variant.criteria)
+        action.targets =  make_arbitrary_targets(variant.criteria, index.card_id)
         return len(action.targets) > 0
 
     case Choice_Action:
         out := false
         for &choice in &variant.choices {
-            choice.valid = validate_action(choice.jump_index)
+            jump_index := choice.jump_index
+            if jump_index.card_id == NULL_CARD_ID do jump_index.card_id = index.card_id
+            choice.valid = validate_action(jump_index)
             out ||= choice.valid
         }
         return out
@@ -82,7 +87,7 @@ validate_action :: proc(index: Action_Index) -> bool {
 }
 
 make_movement_targets :: proc (
-    max_distance: Implicit_Quantity,
+    max_distance: int,
     origin: Implicit_Target,
     valid_destinations: Implicit_Target_Set = nil,
     flags: Movement_Flags = {},
@@ -92,11 +97,11 @@ make_movement_targets :: proc (
     context.allocator = allocator
 
     BIG_NUMBER :: 1e6
+    max_distance := max_distance
 
-    real_max_distance := calculate_implicit_quantity(max_distance)
     if .SHORTEST_PATH in flags {
         log.assert(valid_destinations != nil, "Trying to calculate shortest path with no valid destination set given!")
-        real_max_distance = BIG_NUMBER
+        max_distance = BIG_NUMBER
     }
 
     destination_set: Target_Set
@@ -125,9 +130,9 @@ make_movement_targets :: proc (
             }
         }
 
-        if .SHORTEST_PATH in flags && real_max_distance == BIG_NUMBER && min_loc in destination_set {
+        if .SHORTEST_PATH in flags && max_distance == BIG_NUMBER && min_loc in destination_set {
             // Shortest distance found!
-            real_max_distance = min_info.dist
+            max_distance = min_info.dist
         }
 
         directions: for vector in direction_vectors {
@@ -147,7 +152,7 @@ make_movement_targets :: proc (
             }
 
             next_dist := min_info.dist + 1
-            if next_dist > real_max_distance do continue
+            if next_dist > max_distance do continue
             existing_info, ok := unvisited_set[next_loc]
             if !ok || next_dist < existing_info.dist do unvisited_set[next_loc] = Target_Info {
                 next_dist,
@@ -171,14 +176,14 @@ make_movement_targets :: proc (
         for valid_endpoint in destination_set {
             if valid_endpoint not_in visited_set do continue
             reachable_targets_from_endpoint := make_movement_targets(
-                real_max_distance,
+                max_distance,
                 valid_endpoint,
                 allocator = context.temp_allocator,
             )
             for potential_target, &potential_info in visited_set {
                 target_info, ok2 := reachable_targets_from_endpoint[potential_target]
 
-                if ok2 && target_info.dist + potential_info.dist <= real_max_distance {
+                if ok2 && target_info.dist + potential_info.dist <= max_distance {
                     potential_info.invalid = false
                 } 
             }
@@ -244,15 +249,15 @@ make_clear_targets :: proc() -> (out: Target_Set) {
     return out
 }
 
-target_fulfills_criterion :: proc(target: Target, criterion: Selection_Criterion) -> bool {
+target_fulfills_criterion :: proc(target: Target, criterion: Selection_Criterion, card_id: Card_ID = NULL_CARD_ID) -> bool {
     space := board[target.x][target.y]
 
     switch selector in criterion {
     case Within_Distance:
 
         origin := calculate_implicit_target(selector.origin)
-        min_dist := calculate_implicit_quantity(selector.min)
-        max_dist := calculate_implicit_quantity(selector.max)
+        min_dist := calculate_implicit_quantity(selector.min, card_id)
+        max_dist := calculate_implicit_quantity(selector.max, card_id)
 
         distance := calculate_hexagonal_distance(origin, target)
         return distance <= max_dist && distance >= min_dist
@@ -282,7 +287,7 @@ target_fulfills_criterion :: proc(target: Target, criterion: Selection_Criterion
     return true
 }
 
-make_arbitrary_targets :: proc(criteria: []Selection_Criterion, allocator := context.allocator) -> (out: Target_Set) {
+make_arbitrary_targets :: proc(criteria: []Selection_Criterion, card_id: Card_ID = NULL_CARD_ID, allocator := context.allocator) -> (out: Target_Set) {
 
     context.allocator = allocator
 
@@ -291,7 +296,7 @@ make_arbitrary_targets :: proc(criteria: []Selection_Criterion, allocator := con
     for x in 0..<GRID_WIDTH {
         for y in 0..<GRID_HEIGHT {
             target := Target{x, y}
-            if target_fulfills_criterion(target, criteria[0]) {
+            if target_fulfills_criterion(target, criteria[0], card_id) {
                 out[target] = {}
             }
         }
@@ -303,7 +308,7 @@ make_arbitrary_targets :: proc(criteria: []Selection_Criterion, allocator := con
         switch variant in criterion {
         case Within_Distance, Contains_Any, Is_Enemy_Unit, Is_Friendly_Unit, Enemy_Of_Card_Owner, Is_Friendly_Spawnpoint, In_Battle_Zone, Outside_Battle_Zone, Empty:
             for target in out {
-                if !target_fulfills_criterion(target, criterion) {
+                if !target_fulfills_criterion(target, criterion, card_id) {
                     delete_key(&out, target)
                 }
             }
@@ -379,7 +384,7 @@ card_fulfills_criterion :: proc(card: Card, criterion: Card_Selection_Criterion,
         log.infof("Defending attack of %v, minions %v, card value %v", attack_strength, minion_modifiers)
 
         // We do it this way so that defense items get calculated
-        defense_strength := calculate_implicit_quantity(Card_Value{card.id, .DEFENSE})
+        defense_strength := calculate_implicit_quantity(Card_Value{.DEFENSE}, card.id)
         return defense_strength + minion_modifiers >= attack_strength
     }
     log.assert(false, "non-returning switch case in card criterion checker")

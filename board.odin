@@ -421,7 +421,10 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
         rl.DrawPolyLinesEx(space_pos, 6, VERTICAL_SPACING * (1 / math.sqrt_f32(3) + 0.05), 0, VERTICAL_SPACING * 0.05, rl.WHITE)
     }
 
-    highlight_action_targets :: proc(action: Action) {
+    highlight_action_targets :: proc(action_index: Action_Index) {
+
+        action := get_action_at_index(action_index)
+        if action == nil do return
 
         // valid_destinations: Target_Set = nil
         origin: Target
@@ -432,9 +435,9 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
         #partial switch variant in action.variant {
         case Choice_Action:
             for choice in variant.choices {
-                next_choice := get_action_at_index(choice.jump_index)
-                if next_choice == nil do continue
-                highlight_action_targets(next_choice^)
+                jump_index := choice.jump_index
+                if jump_index.card_id == NULL_CARD_ID do jump_index.card_id = action_index.card_id
+                highlight_action_targets(jump_index)
             }
             return
         case Movement_Action:
@@ -490,7 +493,8 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
 
     draw_hover_effect: #partial switch get_my_player().stage {
     case .RESOLVING, .INTERRUPTING:
-        action := get_current_action()
+        action_index := get_my_player().hero.current_action_index
+        action := get_action_at_index(action_index)
         #partial switch variant in action.variant {
         case Fast_Travel_Action:
             if board_element.hovered_space in action.targets {
@@ -508,17 +512,17 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             // See if any side buttons are hovered
             for &ui_element in side_button_manager.buttons {
                 button_element := assert_variant(&ui_element.variant, UI_Button_Element)
+                if !button_element.hovered do continue
                 event, ok := button_element.event.(Resolve_Current_Action_Event)
-                index := event.jump_index.?
-                next_action := get_action_at_index(index)
-                if ok && next_action != nil && button_element.hovered {
-                    highlight_action_targets(next_action^)
-                }
+                if !ok do continue
+                next_index := event.jump_index.?
+                if next_index.card_id == NULL_CARD_ID do next_index.card_id = action_index.card_id
+                highlight_action_targets(next_index)
             }
         }
 
         if _, ok := action.variant.(Choice_Action); !ok && action != nil {
-            highlight_action_targets(action^)
+            highlight_action_targets(action_index)
         }
     }
 

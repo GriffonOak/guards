@@ -9,11 +9,11 @@ import "core:log"
 
 
 Card_Color :: enum {
-    GOLD,
-    SILVER,
     RED,
     GREEN,
     BLUE,
+    GOLD,
+    SILVER,
 }
 
 Card_State :: enum {
@@ -75,6 +75,10 @@ Card_ID :: struct {
     tier: int,
     alternate: bool,
 }
+
+// @Note: The null card ID is understood to be invalid because it is a red card of tier 0, which does not exist.
+//        If refactoring the Card id, ensure the zero value stays invalid.
+NULL_CARD_ID :: Card_ID {}
 
 Card :: struct {
     name: cstring,
@@ -325,6 +329,7 @@ draw_card: UI_Render_Proc: proc(element: UI_Element) {
 }
 
 get_card_by_id :: proc(card_id: Card_ID) -> (card: ^Card, ok: bool) { // #optional_ok {
+    if card_id == NULL_CARD_ID do return nil, false
     player := &game_state.players[card_id.owner]
 
     // If a player is holding the card, return a pointer to that

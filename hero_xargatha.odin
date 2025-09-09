@@ -241,15 +241,15 @@ xargatha_cards := []Card {
                 variant = Add_Active_Effect_Action {
                     effect = Active_Effect {
                         kind = .XARGATHA_FREEZE,
-                        duration = Single_Turn(Sum{Turn_Played{Card_Creating_Effect{.XARGATHA_FREEZE}}, 1}),
+                        duration = Single_Turn(Sum{Turn_Played{}, 1}),
                         target_set = []Selection_Criterion {
                             Within_Distance {
-                                Hero_Owning_Card{Card_Creating_Effect{.XARGATHA_FREEZE}},
+                                Hero_Owning_Card{},
                                 1,
-                                Card_Reach{Card_Creating_Effect{.XARGATHA_FREEZE}},
+                                Card_Reach{},
                             },
                             Contains_Any({.HERO}),
-                            Enemy_Of_Card_Owner{Card_Creating_Effect{.XARGATHA_FREEZE}},
+                            Enemy_Of_Card_Owner{},
                         },
                     },
                 },

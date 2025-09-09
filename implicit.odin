@@ -16,12 +16,9 @@ Implicit_Card :: union {
 
 
 
-Card_Reach :: struct {
-    card: Implicit_Card,
-}
+Card_Reach :: struct {}
 
 Card_Value :: struct {
-    card: Implicit_Card,
     kind: Ability_Kind,
 }
 
@@ -65,9 +62,7 @@ Previous_Choice :: struct {}
 
 Top_Blocked_Spawnpoint :: struct {}
 
-Hero_Owning_Card :: struct {
-    implicit_card: Implicit_Card,
-}
+Hero_Owning_Card :: struct {}
 
 Implicit_Target :: union {
     Target,
@@ -104,12 +99,13 @@ Implicit_Condition :: union {
 
 
 
-calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity, loc := #caller_location) -> (out: int) {
+calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity, card_id: Card_ID, loc := #caller_location) -> (out: int) {
     switch quantity in implicit_quantity {
     case int: return quantity
 
     case Card_Reach:
-        card := calculate_implicit_card(quantity.card)
+        card, ok := get_card_by_id(card_id)
+        log.assert(ok, "Invalid card ID when calculating reach", loc)
         switch reach in card.reach {
         case Range: out = int(reach) + count_hero_items(get_player_by_id(card.owner).hero, .RANGE)
         case Radius: out = int(reach) + count_hero_items(get_player_by_id(card.owner).hero, .RADIUS)
@@ -117,7 +113,8 @@ calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity, loc :=
         } 
 
     case Card_Value:
-        card := calculate_implicit_card(quantity.card)
+        card, ok := get_card_by_id(card_id)
+        log.assert(ok, "Invalid card ID when calculating value", loc)
         hero := get_player_by_id(card.owner).hero
         value := card.values[quantity.kind]
         #partial switch quantity.kind {
@@ -128,14 +125,14 @@ calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity, loc :=
         return value
 
     case Sum:
-        for summand in quantity do out += calculate_implicit_quantity(summand)
+        for summand in quantity do out += calculate_implicit_quantity(summand, card_id)
 
     case Count_Targets:
-        targets := make_arbitrary_targets(quantity, context.temp_allocator)
+        targets := make_arbitrary_targets(quantity, card_id, context.temp_allocator)
         return len(targets)
 
     case Turn_Played:
-        card := calculate_implicit_card(quantity.card)
+        card, ok := get_card_by_id(card_id)
         return card.turn_played
 
     // case Current_Turn:
@@ -176,22 +173,23 @@ calculate_implicit_target :: proc(implicit_target: Implicit_Target) -> (out: Tar
 
 calculate_implicit_target_set :: proc(implicit_set: Implicit_Target_Set, allocator := context.allocator) -> Target_Set {
     switch set in implicit_set {
-    case []Selection_Criterion: return make_arbitrary_targets(set, allocator)
+    case []Selection_Criterion: return make_arbitrary_targets(set, allocator = allocator)
     }
     return nil
 }
 
-calculate_implicit_condition :: proc(implicit_condition: Implicit_Condition) -> bool {
+calculate_implicit_condition :: proc(implicit_condition: Implicit_Condition, card_id: Card_ID = NULL_CARD_ID) -> bool {
     switch condition in implicit_condition {
     case bool: return condition
-    case Greater_Than: return calculate_implicit_quantity(condition.term_1) > calculate_implicit_quantity(condition.term_2)
+    // Check this
+    case Greater_Than: return calculate_implicit_quantity(condition.term_1, card_id) > calculate_implicit_quantity(condition.term_2, card_id)
     case Primary_Is_Not: 
         played_card, ok := find_played_card()
         log.assert(ok, "Could not find the played card when checking for its primary type!")
         return played_card.primary != condition.kind
     case And:
         out := true
-        for extra_condition in condition do out &&= calculate_implicit_condition(extra_condition)
+        for extra_condition in condition do out &&= calculate_implicit_condition(extra_condition, card_id)
         return out
     case Blocked_Spawnpoints_Remain:
         my_team := get_my_player().team

@@ -171,6 +171,7 @@ Action :: struct {
 }
 
 Action_Sequence_ID :: enum {
+    // Requires Card ID
     PRIMARY,
     BASIC_MOVEMENT,
     BASIC_FAST_TRAVEL,
@@ -178,8 +179,9 @@ Action_Sequence_ID :: enum {
     BASIC_DEFENSE,
 
     FIRST_CHOICE,
-    HALT,
 
+    // Doesn't require Card ID
+    HALT,
     DIE,
     RESPAWN,
     MINION_REMOVAL,
@@ -189,6 +191,7 @@ Action_Sequence_ID :: enum {
 
 Action_Index :: struct {
     sequence: Action_Sequence_ID,
+    card_id: Card_ID,
     index: int,
 }
 
@@ -342,7 +345,7 @@ minion_spawn_action := []Action {
     },
     Action {
         variant = Jump_Action {
-            jump_index = {.MINION_SPAWN, 0},
+            jump_index = {sequence = .MINION_SPAWN, index = 0},
         },
     },
 }
@@ -378,13 +381,13 @@ get_current_action :: proc() -> ^Action {
     return get_action_at_index(get_my_player().hero.current_action_index)
 }
 
-get_action_at_index :: proc(index: Action_Index) -> ^Action {
+get_action_at_index :: proc(index: Action_Index, loc := #caller_location) -> ^Action {
     action_sequence: []Action
 
     switch index.sequence {
     case .PRIMARY:
-        card, ok := find_played_card()
-        log.assert(ok, "no played card!!?!?!?!?!")
+        card, ok := get_card_by_id(index.card_id)
+        log.assert(ok, "no played card!!?!?!?!?!", loc)
         action_sequence = card.primary_effect
     case .HALT:                 return nil
     case .DIE:                  action_sequence = get_defeated_action

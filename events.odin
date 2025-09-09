@@ -256,7 +256,8 @@ resolve_event :: proc(event: Event) {
     case Space_Clicked_Event:
         #partial switch get_my_player().stage {
         case .RESOLVING, .INTERRUPTING:
-            action := get_current_action()
+            action_index := get_my_player().hero.current_action_index
+            action := get_action_at_index(action_index)
 
             if ui_stack[0].variant.(UI_Board_Element).hovered_space not_in action.targets do break
 
@@ -275,7 +276,7 @@ resolve_event :: proc(event: Event) {
 
                 delete(action.targets)
                 action.targets = make_movement_targets(
-                    max_distance = Implicit_Quantity(calculate_implicit_quantity(action_variant.distance) - action_variant.path.num_locked_spaces),
+                    max_distance = calculate_implicit_quantity(action_variant.distance, action_index.card_id) - action_variant.path.num_locked_spaces,
                     origin = last_target,
                     valid_destinations = action_variant.valid_destinations,
                     flags = action_variant.flags,
@@ -293,7 +294,7 @@ resolve_event :: proc(event: Event) {
             case Choose_Target_Action:
                 append(&action_variant.result, var.space)
                 delete_key(&action.targets, var.space)
-                if len(action_variant.result) == calculate_implicit_quantity(action_variant.num_targets) {
+                if len(action_variant.result) == calculate_implicit_quantity(action_variant.num_targets, action_index.card_id) {
                     append(&event_queue, Resolve_Current_Action_Event{})
                 } else if len(side_button_manager.buttons) == 0 {
                     add_side_button("Cancel", Cancel_Event{})
@@ -425,7 +426,8 @@ resolve_event :: proc(event: Event) {
     case Cancel_Event:
         #partial switch get_my_player().stage {
         case .RESOLVING, .INTERRUPTING:
-            action := get_current_action()
+            action_index := get_my_player().hero.current_action_index
+            action := get_action_at_index(action_index)
             #partial switch &action_variant in action.variant {
             case Movement_Action:
                 action_variant.path.num_locked_spaces = 0
@@ -434,7 +436,7 @@ resolve_event :: proc(event: Event) {
                 movement_val := action_variant.distance
                 delete(action.targets)
                 action.targets = make_movement_targets(
-                    movement_val,
+                    calculate_implicit_quantity(movement_val, action_index.card_id),
                     action_variant.target,
                     action_variant.valid_destinations,
                     action_variant.flags,
@@ -588,7 +590,7 @@ resolve_event :: proc(event: Event) {
             case Attack_Interrupt:
                 interrupt_variant.minion_modifiers = calculate_minion_modifiers()
                 // @Todo need to do attacks now
-                get_my_player().hero.current_action_index = {.BASIC_DEFENSE, 0}
+                get_my_player().hero.current_action_index = {sequence = .BASIC_DEFENSE, index = 0}
                 append(&event_queue, Begin_Next_Action_Event{})
             }
         } else {
@@ -689,16 +691,16 @@ resolve_event :: proc(event: Event) {
         if var.player_id != my_player_id do break
 
         // Find the played card
-        _, ok := find_played_card()
+        card, ok := find_played_card()
         log.assert(ok, "No played card when player begins their resolution!")
 
-        get_my_player().hero.current_action_index = {sequence=.FIRST_CHOICE}
+        get_my_player().hero.current_action_index = {card_id = card.id, sequence=.FIRST_CHOICE}
 
         if get_my_player().hero.dead {
             become_interrupted (
                 Interrupt {
                     interrupted_player = my_player_id, interrupting_player = my_player_id,
-                    variant = Action_Index{.RESPAWN, 0},
+                    variant = Action_Index{sequence = .RESPAWN, index = 0},
                 },
                 Begin_Next_Action_Event{},
             )
@@ -709,11 +711,12 @@ resolve_event :: proc(event: Event) {
 
     case Begin_Next_Action_Event:
 
-        action := get_current_action()
+        action_index := get_my_player().hero.current_action_index
+        action := get_action_at_index(action_index)
         tooltip = action.tooltip
         log.infof("ACTION: %v", reflect.union_variant_typeid(action.variant))
 
-        if !validate_action(get_my_player().hero.current_action_index) {
+        if !validate_action(action_index) {
             if action.optional {
                 append(&event_queue, Resolve_Current_Action_Event{action.skip_index})
             } else {
@@ -735,7 +738,7 @@ resolve_event :: proc(event: Event) {
 
         case Choose_Target_Action:
             clear(&action_type.result)
-            if len(action.targets) == calculate_implicit_quantity(action_type.num_targets) && !action.optional {
+            if len(action.targets) == calculate_implicit_quantity(action_type.num_targets, action_index.card_id) && !action.optional {
                 for space in action.targets {
                     append(&action_type.result, space)
                 }
@@ -761,7 +764,7 @@ resolve_event :: proc(event: Event) {
         case Attack_Action:
             target := calculate_implicit_target(action_type.target)
             space := &board[target.x][target.y]
-            attack_strength := calculate_implicit_quantity(action_type.strength)
+            attack_strength := calculate_implicit_quantity(action_type.strength, action_index.card_id)
             log.infof("Attack strength: %v", attack_strength)
             // Here we assume the target must be an enemy. Enemy should always be in the selection flags for attacks.
             if MINION_FLAGS & space.flags != {} {
@@ -791,9 +794,9 @@ resolve_event :: proc(event: Event) {
         
         case Add_Active_Effect_Action:
             effect_id := action_type.effect.id
-            parent_card_id, ok := find_played_card_id()
+            parent_card, ok := find_played_card()
             log.assert(ok, "Could not resolve parent card when adding an active effect!")
-            effect_id.parent_card_id = parent_card_id
+            effect_id.parent_card_id = parent_card.id
             broadcast_game_event(Add_Active_Effect_Event{effect_id})
             append(&event_queue, Resolve_Current_Action_Event{})
 
@@ -887,6 +890,7 @@ resolve_event :: proc(event: Event) {
         // Determine next action
         next_index := get_my_player().hero.current_action_index
         if index, ok := var.jump_index.?; ok {
+            if index.card_id == NULL_CARD_ID do index.card_id = next_index.card_id
             next_index = index
         } else {
             next_index.index += 1
@@ -945,7 +949,7 @@ resolve_event :: proc(event: Event) {
             become_interrupted (
                 Interrupt {
                     my_player_id, game_state.team_captains[game_state.tiebreaker_coin],
-                    Action_Index{.MINION_OUTSIDE_ZONE, 0},
+                    Action_Index{sequence = .MINION_OUTSIDE_ZONE, index = 0},
                 },
                 Check_Minions_Outside_Zone_Event{},
             )
@@ -953,7 +957,7 @@ resolve_event :: proc(event: Event) {
             become_interrupted (
                 Interrupt {
                     my_player_id, game_state.team_captains[non_tb_team],
-                    Action_Index{.MINION_OUTSIDE_ZONE, 0},
+                    Action_Index{sequence = .MINION_OUTSIDE_ZONE, index = 0},
                 },
                 Check_Minions_Outside_Zone_Event{},
             )
@@ -963,10 +967,10 @@ resolve_event :: proc(event: Event) {
 
     case Resolutions_Completed_Event:
         // Check for end of turn effects and stuff here
-        for effect_id, effect in game_state.ongoing_active_effects {
-            if turn, ok := effect.duration.(Single_Turn); ok && calculate_implicit_quantity(turn) == game_state.turn_counter {
-                log.infof("Removing active effect: %v", effect_id)
-                delete_key(&game_state.ongoing_active_effects, effect_id)
+        for effect_kind, effect in game_state.ongoing_active_effects {
+            if turn, ok := effect.duration.(Single_Turn); ok && calculate_implicit_quantity(turn, effect.parent_card_id) == game_state.turn_counter {
+                log.infof("Removing active effect: %v", effect_kind)
+                delete_key(&game_state.ongoing_active_effects, effect_kind)
             }
         }
 
@@ -1006,7 +1010,7 @@ resolve_event :: proc(event: Event) {
                 become_interrupted (
                     Interrupt {
                         my_player_id, game_state.team_captains[pushed_team],
-                        Action_Index{.MINION_REMOVAL, 0},
+                        Action_Index{sequence = .MINION_REMOVAL, index = 0},
                     },
                     End_Minion_Battle_Event{},
                 )
@@ -1064,7 +1068,7 @@ resolve_event :: proc(event: Event) {
             become_interrupted (
                 Interrupt {
                     my_player_id, game_state.team_captains[var.team],
-                    Action_Index{.MINION_SPAWN, 0},
+                    Action_Index{sequence = .MINION_SPAWN, index = 0},
                 },
                 next_event,
             )
