@@ -12,6 +12,8 @@ import "core:net"
 import "core:thread"
 import "core:sync"
 
+import "core:testing"
+
 LOOPBACK_ADDRESS :: "127.0.0.1"
 MY_ADDRESS :: LOOPBACK_ADDRESS // "25.2.114.107"
 
@@ -37,38 +39,27 @@ Network_Packet :: struct {
     event: Network_Event,
 }
 
+broadcast_game_event :: proc(gs: ^Game_State, event: Event) {
 
-
-is_host: bool
-
-host_socket: net.TCP_Socket
-
-net_queue_mutex: sync.Mutex
-
-network_queue: [dynamic]Network_Packet
-
-
-broadcast_game_event :: proc(event: Event) {
-
-    broadcast_network_event(event)
-    append(&event_queue, event)
+    broadcast_network_event(gs, event)
+    append(&gs.event_queue, event)
 
 }
 
-broadcast_network_event :: proc(net_event: Network_Event) {
+broadcast_network_event :: proc(gs: ^Game_State, net_event: Network_Event) {
     packet := Network_Packet {
-        my_player_id,
+        gs.my_player_id,
         net_event,
     }
 
-    if is_host {
-        for player, player_id in game_state.players {
+    if gs.is_host {
+        for player, player_id in gs.players {
             if player_id != 0 {
                 send_network_packet_socket(player.socket, packet)
             }
         }
     } else {
-        send_network_packet_socket(host_socket, packet)
+        send_network_packet_socket(gs.host_socket, packet)
     }
 }
 
@@ -82,9 +73,9 @@ send_network_packet_socket :: proc(socket: net.TCP_Socket, net_event: Network_Pa
 
 
 
-join_local_game :: proc() -> bool {
+join_local_game :: proc(gs: ^Game_State) -> bool {
 
-    is_host = false
+    gs.is_host = false
     local_address, _ := net.parse_ip4_address(MY_ADDRESS)
 
 	socket, err := net.dial_tcp_from_address_and_port(local_address, GUARDS_PORT)
@@ -93,16 +84,29 @@ join_local_game :: proc() -> bool {
 		return false
 	}
 
-    host_socket = socket
-    add_socket_listener(socket)
+    gs.host_socket = socket
+    add_socket_listener(gs, socket)
     return true
 }
 
+@(test)
+test_host_local_game :: proc(t: ^testing.T) {
+    gs: Game_State
+
+    begin_hosting_local_game(&gs)
+
+    testing.expect(t, gs.is_host, "Failed to become host!")
+    testing.expect(t, len(gs.players) == 1, "There is not exactly 1 player!")
+    testing.expect(t, gs.my_player_id == 0, "Host player ID is not 0!")
+    player := gs.players[0]
+    testing.expect(t, player.id == 0, "Player 0 does not have ID 0!")
+    testing.expect(t, player.is_team_captain == true, "Host player is not the team captain!")
+}
 
 // The host always has player ID 0
-begin_hosting_local_game :: proc() -> bool {
+begin_hosting_local_game :: proc(gs: ^Game_State) -> bool {
 
-    is_host = true
+    gs.is_host = true
     local_addr, ok := net.parse_ip4_address("0.0.0.0")
 
 	if !ok {
@@ -120,8 +124,8 @@ begin_hosting_local_game :: proc() -> bool {
 	}
 	log.debug("Listening on TCP: %s", net.endpoint_to_string(endpoint))
 
-    my_player_id = 0
-    clear(&game_state.players)
+    gs.my_player_id = 0
+    clear(&gs.players)
     me := Player {
         id = 0,
         hero = Hero {
@@ -132,13 +136,13 @@ begin_hosting_local_game :: proc() -> bool {
     }
     fmt.bprintf(me._username_buf[:], "P%v", 0)
 
-    add_or_update_player(me)
+    add_or_update_player(gs, me)
 
-    thread.create_and_start_with_poly_data(sock, _thread_host_wait_for_clients)
+    thread.create_and_start_with_poly_data2(gs, sock, _thread_host_wait_for_clients)
     return true
 }
 
-_thread_host_wait_for_clients :: proc(sock: net.TCP_Socket) {
+_thread_host_wait_for_clients :: proc(gs: ^Game_State, sock: net.TCP_Socket) {
     // Host only!
 
     for {
@@ -147,11 +151,11 @@ _thread_host_wait_for_clients :: proc(sock: net.TCP_Socket) {
 			log.error("Failed to accept TCP connection")
 		} else {
             log.debug("Connected with client!", client)
-            add_socket_listener(client)
+            add_socket_listener(gs, client)
 
-            if game_state.stage != .IN_LOBBY do return
+            if gs.stage != .IN_LOBBY do return
 
-            client_player_id := len(game_state.players)
+            client_player_id := len(gs.players)
 
             // Right now we just completely decide the fate of the client but realistically they should get to decide their own team and stuff
             client_player := Player {
@@ -165,9 +169,9 @@ _thread_host_wait_for_clients :: proc(sock: net.TCP_Socket) {
                 socket = client,
             }
             fmt.bprintf(client_player._username_buf[:], "P%v", client_player_id)
-            add_or_update_player(client_player)
+            add_or_update_player(gs, client_player)
 
-            for player, player_id in game_state.players {
+            for player, player_id in gs.players {
                 if player_id != 0 {
                     // Update existing player that new player has joined
                     send_network_packet_socket(player.socket, {0, Update_Player_Data{client_player}})
@@ -178,7 +182,7 @@ _thread_host_wait_for_clients :: proc(sock: net.TCP_Socket) {
 
             send_network_packet_socket(client, {0, Set_Client_Player_ID{client_player_id}})
 
-            // for player in game_state.players {
+            // for player in gs.players {
             //     // update existing players that new player has joined
             //     // At some point :P
             // }
@@ -188,7 +192,7 @@ _thread_host_wait_for_clients :: proc(sock: net.TCP_Socket) {
 	log.debug("Closed socket")
 }
 
-_thread_listen_socket :: proc(socket: net.TCP_Socket) {
+_thread_listen_socket :: proc(gs: ^Game_State, socket: net.TCP_Socket) {
     buf: [20 * size_of(Network_Packet)]byte
     for {  // Probably this should end at some point
         bytes_read, err := net.recv_tcp(socket, buf[:])
@@ -197,30 +201,30 @@ _thread_listen_socket :: proc(socket: net.TCP_Socket) {
         }
         if bytes_read >= size_of(Network_Packet) {
             packets := slice.reinterpret([]Network_Packet, buf[:bytes_read])
-            sync.mutex_lock(&net_queue_mutex)
+            sync.mutex_lock(&gs.net_queue_mutex)
             for packet in packets {
-                append(&network_queue, packet)
+                append(&gs.network_queue, packet)
             }
-            sync.mutex_unlock(&net_queue_mutex)
+            sync.mutex_unlock(&gs.net_queue_mutex)
         }
     }
 }
 
-add_socket_listener :: proc(socket: net.TCP_Socket) {
-    thread.create_and_start_with_poly_data(socket, _thread_listen_socket)
+add_socket_listener :: proc(gs: ^Game_State, socket: net.TCP_Socket) {
+    thread.create_and_start_with_poly_data2(gs, socket, _thread_listen_socket)
 }
 
-process_network_packets :: proc() {
+process_network_packets :: proc(gs: ^Game_State) {
 
-    sync.mutex_lock(&net_queue_mutex) 
-    defer sync.mutex_unlock(&net_queue_mutex)
+    sync.mutex_lock(&gs.net_queue_mutex) 
+    defer sync.mutex_unlock(&gs.net_queue_mutex)
 
-    for packet in network_queue {
+    for packet in gs.network_queue {
         log.infof("NET: %v", reflect.union_variant_typeid(packet.event))
 
         // broadcast packet to everyone
-        if is_host && packet.sender != 0 {
-            for player, player_id in game_state.players {
+        if gs.is_host && packet.sender != 0 {
+            for player, player_id in gs.players {
                 if player_id != 0 && player_id != packet.sender {
                     send_network_packet_socket(player.socket, packet)
                 }
@@ -229,18 +233,18 @@ process_network_packets :: proc() {
 
         switch event in packet.event {
         case Set_Client_Player_ID:
-            if !is_host {
-                my_player_id = event.player_id
+            if !gs.is_host {
+                gs.my_player_id = event.player_id
             }
 
         case Update_Player_Data:
-            add_or_update_player(event.player)
+            add_or_update_player(gs, event.player)
 
         case Event:
             log.infof("NET: %v", reflect.union_variant_typeid(event))
-            append(&event_queue, event)
+            append(&gs.event_queue, event)
         }
     }
-    clear(&network_queue)
+    clear(&gs.network_queue)
 
 }

@@ -68,54 +68,55 @@ count_members :: proc(target_set: ^Target_Set) -> (count: int) {
     return
 }
 
-validate_action :: proc(index: Action_Index) -> bool {
+validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
     if index.sequence == .HALT do return true
 
     xarg_freeze: { // Disable movement on xargatha freeze
-        freeze, ok := game_state.ongoing_active_effects[.XARGATHA_FREEZE]
+        freeze, ok := gs.ongoing_active_effects[.XARGATHA_FREEZE]
         if !ok do break xarg_freeze
-        if calculate_implicit_quantity(freeze.duration.(Single_Turn), freeze.parent_card_id) != game_state.turn_counter do break xarg_freeze
+        if calculate_implicit_quantity(gs, freeze.duration.(Single_Turn), freeze.parent_card_id) != gs.turn_counter do break xarg_freeze
         context.allocator = context.temp_allocator
-        my_location := get_my_player().hero.location
-        freeze_targets := make_arbitrary_targets(freeze.target_set, freeze.parent_card_id)
+        my_location := get_my_player(gs).hero.location
+        freeze_targets := make_arbitrary_targets(gs, freeze.target_set, freeze.parent_card_id)
         if !freeze_targets[my_location.x][my_location.y].member do break xarg_freeze
-        played_card, ok2 := find_played_card()
+        played_card, ok2 := find_played_card(gs)
         log.assert(ok2, "Could not find played card when checking for Xargatha freeze")
-        if index.sequence == .BASIC_MOVEMENT || (index.index == 0 && played_card.primary == .MOVEMENT) {
+        if index.sequence == .BASIC_MOVEMENT || (index.index == 0 && index.sequence == .PRIMARY && played_card.primary == .MOVEMENT) {
             // phew
             return false
         }
     }
 
 
-    action := get_action_at_index(index)
+    action := get_action_at_index(gs, index)
     if action == nil do return false
-    if action.condition != nil && !calculate_implicit_condition(action.condition, index.card_id) do return false
+    if action.condition != nil && !calculate_implicit_condition(gs, action.condition, index.card_id) do return false
 
     switch &variant in action.variant {
     case Movement_Action:
         action.targets = make_movement_targets(
-            calculate_implicit_quantity(variant.distance, index.card_id),
-            calculate_implicit_target(variant.target, index.card_id),
-            resolve_movement_destinations(variant.destination_criteria, index.card_id),
+            gs,
+            calculate_implicit_quantity(gs, variant.distance, index.card_id),
+            calculate_implicit_target(gs, variant.target, index.card_id),
+            resolve_movement_destinations(gs, variant.destination_criteria, index.card_id),
             variant.flags,
         )
-        origin := calculate_implicit_target(variant.target, index.card_id)
+        origin := calculate_implicit_target(gs, variant.target, index.card_id)
         clear(&variant.path.spaces)
         append(&variant.path.spaces, origin)
         variant.path.num_locked_spaces = 1
         return count_members(&action.targets) > 0
 
     case Fast_Travel_Action:
-        action.targets =  make_fast_travel_targets()
+        action.targets =  make_fast_travel_targets(gs)
         return count_members(&action.targets) > 0
 
     case Clear_Action:
-        action.targets =  make_clear_targets()
+        action.targets =  make_clear_targets(gs)
         return count_members(&action.targets) > 0
 
     case Choose_Target_Action:
-        action.targets =  make_arbitrary_targets(variant.criteria, index.card_id)
+        action.targets =  make_arbitrary_targets(gs, variant.criteria, index.card_id)
         return count_members(&action.targets) > 0
 
     case Choice_Action:
@@ -123,7 +124,7 @@ validate_action :: proc(index: Action_Index) -> bool {
         for &choice in &variant.choices {
             jump_index := choice.jump_index
             if jump_index.card_id == NULL_CARD_ID do jump_index.card_id = index.card_id
-            choice.valid = validate_action(jump_index)
+            choice.valid = validate_action(gs, jump_index)
             out ||= choice.valid
         }
         return out
@@ -133,7 +134,7 @@ validate_action :: proc(index: Action_Index) -> bool {
         return true
 
     case Choose_Card_Action:
-        variant.card_targets = make_card_targets(variant.criteria)
+        variant.card_targets = make_card_targets(gs, variant.criteria)
         return len(variant.card_targets) > 0
 
     case Discard_Card_Action:
@@ -146,6 +147,7 @@ validate_action :: proc(index: Action_Index) -> bool {
 }
 
 make_movement_targets :: proc (
+    gs: ^Game_State,
     max_distance: int,
     origin: Target,
     valid_destinations: Maybe(Target_Set) = nil,
@@ -193,10 +195,10 @@ make_movement_targets :: proc (
 
             {   // Validate next location
                 if next_loc.x < 0 || next_loc.x >= GRID_WIDTH || next_loc.y < 0 || next_loc.y >= GRID_HEIGHT do continue
-                if OBSTACLE_FLAGS & board[next_loc.x][next_loc.y].flags != {} do continue
+                if OBSTACLE_FLAGS & gs.board[next_loc.x][next_loc.y].flags != {} do continue
                 if visited_set[next_loc.x][next_loc.y].member do continue
-                if get_my_player().stage == .RESOLVING {
-                    #partial switch &action in get_current_action().variant {
+                if get_my_player(gs).stage == .RESOLVING {
+                    #partial switch &action in get_current_action(gs).variant {
                     case Movement_Action:
                         // Can't path to places we have already stepped on
                         for traversed_loc in action.path.spaces do if traversed_loc == next_loc do continue directions
@@ -233,6 +235,7 @@ make_movement_targets :: proc (
         for _, valid_endpoint in target_set_iter_members(&valid_destinations_iter) {
             if !visited_set[valid_endpoint.x][valid_endpoint.y].member do continue
             reachable_targets_from_endpoint := make_movement_targets(
+                gs,
                 max_distance,
                 valid_endpoint,
                 allocator = context.temp_allocator,
@@ -265,59 +268,64 @@ make_movement_targets :: proc (
     return visited_set
 }
 
-make_fast_travel_targets :: proc() -> (out: Target_Set) {
-    hero_loc := get_my_player().hero.location
-    region := board[hero_loc.x][hero_loc.y].region_id
+make_fast_travel_targets :: proc(gs: ^Game_State) -> (out: Target_Set) {
+    hero_loc := get_my_player(gs).hero.location
+    region := gs.board[hero_loc.x][hero_loc.y].region_id
 
     for loc in zone_indices[region] {
-        space := board[loc.x][loc.y]
-        if UNIT_FLAGS & space.flags != {} && space.unit_team != get_my_player().team {
+        space := gs.board[loc.x][loc.y]
+        if UNIT_FLAGS & space.flags != {} && space.unit_team != get_my_player(gs).team {
             return
         }
     }
 
     for loc in zone_indices[region] {
-        if OBSTACLE_FLAGS & board[loc.x][loc.y].flags != {} do continue
+        if OBSTACLE_FLAGS & gs.board[loc.x][loc.y].flags != {} do continue
         out[loc.x][loc.y].member = true
     }
 
     outer: for other_region in Region_ID {
         if other_region not_in fast_travel_adjacencies[region] do continue
         for loc in zone_indices[other_region] {
-            space := board[loc.x][loc.y]
-            if UNIT_FLAGS & space.flags != {} && space.unit_team != get_my_player().team {
+            space := gs.board[loc.x][loc.y]
+            if UNIT_FLAGS & space.flags != {} && space.unit_team != get_my_player(gs).team {
                 continue outer
             }
         }
         for loc in zone_indices[other_region] {
-            if OBSTACLE_FLAGS & board[loc.x][loc.y].flags != {} do continue
+            if OBSTACLE_FLAGS & gs.board[loc.x][loc.y].flags != {} do continue
             out[loc.x][loc.y].member = true
         }
     }
     return out
 }
 
-make_clear_targets :: proc() -> (out: Target_Set) {
-    hero_loc := get_my_player().hero.location
+make_clear_targets :: proc(gs: ^Game_State) -> (out: Target_Set) {
+    hero_loc := get_my_player(gs).hero.location
 
     for vector in direction_vectors {
         other_loc := hero_loc + vector
-        if .TOKEN in board[other_loc.x][other_loc.y].flags {
+        if .TOKEN in gs.board[other_loc.x][other_loc.y].flags {
             out[other_loc.x][other_loc.y].member = true
         }
     }
     return out
 }
 
-target_fulfills_criterion :: proc(target: Target, criterion: Selection_Criterion, card_id: Card_ID = NULL_CARD_ID) -> bool {
-    space := board[target.x][target.y]
+target_fulfills_criterion :: proc (
+    gs: ^Game_State,
+    target: Target,
+    criterion: Selection_Criterion,
+    card_id: Card_ID = NULL_CARD_ID,
+) -> bool {
+    space := gs.board[target.x][target.y]
 
     switch selector in criterion {
     case Within_Distance:
 
-        origin := calculate_implicit_target(selector.origin, card_id)
-        min_dist := calculate_implicit_quantity(selector.min, card_id)
-        max_dist := calculate_implicit_quantity(selector.max, card_id)
+        origin := calculate_implicit_target(gs, selector.origin, card_id)
+        min_dist := calculate_implicit_quantity(gs, selector.min, card_id)
+        max_dist := calculate_implicit_quantity(gs, selector.max, card_id)
 
         distance := calculate_hexagonal_distance(origin, target)
         return distance <= max_dist && distance >= min_dist
@@ -329,17 +337,17 @@ target_fulfills_criterion :: proc(target: Target, criterion: Selection_Criterion
 
 
     // @Note these don't actually test whether a unit is present in the space, only that the teams are the same / different
-    case Is_Enemy_Unit:         return get_my_player().team != space.unit_team
-    case Is_Friendly_Unit:      return get_my_player().team == space.unit_team
+    case Is_Enemy_Unit:         return get_my_player(gs).team != space.unit_team
+    case Is_Friendly_Unit:      return get_my_player(gs).team == space.unit_team
     case Is_Enemy_Of:
-        other_target := calculate_implicit_target(selector.target, card_id)
-        other_space := board[other_target.x][other_target.y]
+        other_target := calculate_implicit_target(gs, selector.target, card_id)
+        other_space := gs.board[other_target.x][other_target.y]
         return other_space.unit_team != space.unit_team
 
-    case Is_Friendly_Spawnpoint: return get_my_player().team == space.spawnpoint_team
+    case Is_Friendly_Spawnpoint: return get_my_player(gs).team == space.spawnpoint_team
 
-    case In_Battle_Zone:        return space.region_id == game_state.current_battle_zone
-    case Outside_Battle_Zone:   return space.region_id != game_state.current_battle_zone
+    case In_Battle_Zone:        return space.region_id == gs.current_battle_zone
+    case Outside_Battle_Zone:   return space.region_id != gs.current_battle_zone
 
     case Empty: return space.flags & OBSTACLE_FLAGS == {}
 
@@ -349,6 +357,7 @@ target_fulfills_criterion :: proc(target: Target, criterion: Selection_Criterion
 }
 
 make_arbitrary_targets :: proc(
+    gs: ^Game_State,
     criteria: []Selection_Criterion,
     card_id: Card_ID = NULL_CARD_ID,
 ) -> (out: Target_Set) {
@@ -360,7 +369,7 @@ make_arbitrary_targets :: proc(
     for x in 0..<GRID_WIDTH {
         for y in 0..<GRID_HEIGHT {
             target := Target{i8(x), i8(y)}
-            if target_fulfills_criterion(target, criteria[0], card_id) {
+            if target_fulfills_criterion(gs, target, criteria[0], card_id) {
                 out[target.x][target.y].member = true
             }
         }
@@ -373,13 +382,13 @@ make_arbitrary_targets :: proc(
         case Within_Distance, Contains_Any, Is_Enemy_Unit, Is_Friendly_Unit, Is_Enemy_Of, Is_Friendly_Spawnpoint, In_Battle_Zone, Outside_Battle_Zone, Empty:
             out_iter := make_target_set_iterator(&out)
             for info, target in target_set_iter_members(&out_iter) {
-                if !target_fulfills_criterion(target, criterion, card_id) {
+                if !target_fulfills_criterion(gs, target, criterion, card_id) {
                     info.member = false
                 }
             }
 
         case Not_Previously_Targeted:
-            previous_target := calculate_implicit_target(Previous_Choice{}, card_id)
+            previous_target := calculate_implicit_target(gs, Previous_Choice{}, card_id)
             out[previous_target.x][previous_target.y].member = false
 
         case Ignoring_Immunity:
@@ -389,6 +398,7 @@ make_arbitrary_targets :: proc(
             context.allocator = context.temp_allocator
             for dist := 1 ; true ; dist += 1 {
                 dist_targets := make_arbitrary_targets(
+                    gs,
                     {
                         Within_Distance {
                             origin = variant.origin,
@@ -419,7 +429,7 @@ make_arbitrary_targets :: proc(
     if !ignore_immunity {
         target_set_iter := make_target_set_iterator(&out)
         for info, target in target_set_iter_members(&target_set_iter) {
-            space := board[target.x][target.y]
+            space := gs.board[target.x][target.y]
             if space.flags & {.IMMUNE} != {} {
                 info.member = false
             }
@@ -431,7 +441,7 @@ make_arbitrary_targets :: proc(
 }
 
 
-card_fulfills_criterion :: proc(card: Card, criterion: Card_Selection_Criterion, allocator := context.allocator) -> bool {
+card_fulfills_criterion :: proc(gs: ^Game_State, card: Card, criterion: Card_Selection_Criterion, allocator := context.allocator) -> bool {
     switch variant in criterion {
     case Card_State: return card.state == variant
     case Can_Defend:
@@ -439,7 +449,7 @@ card_fulfills_criterion :: proc(card: Card, criterion: Card_Selection_Criterion,
         // Find the attack first
         attack_strength := -1e6
         minion_modifiers := -1e6
-        search_interrupts: #reverse for expanded_interrupt in game_state.interrupt_stack {
+        search_interrupts: #reverse for expanded_interrupt in gs.interrupt_stack {
             #partial switch interrupt_variant in expanded_interrupt.interrupt.variant {
             case Attack_Interrupt:
                 attack_strength = interrupt_variant.strength
@@ -452,25 +462,25 @@ card_fulfills_criterion :: proc(card: Card, criterion: Card_Selection_Criterion,
         log.infof("Defending attack of %v, minions %v, card value %v", attack_strength, minion_modifiers)
 
         // We do it this way so that defense items get calculated
-        defense_strength := calculate_implicit_quantity(Card_Value{.DEFENSE}, card.id)
+        defense_strength := calculate_implicit_quantity(gs, Card_Value{.DEFENSE}, card.id)
         return defense_strength + minion_modifiers >= attack_strength
     }
     log.assert(false, "non-returning switch case in card criterion checker")
     return false
 }
 
-make_card_targets :: proc(criteria: []Card_Selection_Criterion) -> (out: [dynamic]Card_ID) {
-    for card in get_my_player().hero.cards {
-        if card_fulfills_criterion(card, criteria[0]) {
+make_card_targets :: proc(gs: ^Game_State, criteria: []Card_Selection_Criterion) -> (out: [dynamic]Card_ID) {
+    for card in get_my_player(gs).hero.cards {
+        if card_fulfills_criterion(gs, card, criteria[0]) {
             append(&out, card.id)
         }
     }
 
     for criterion in criteria [1:] {
         #reverse for card_id, index in out {
-            card, ok := get_card_by_id(card_id)
+            card, ok := get_card_by_id(gs, card_id)
             log.assert(ok, "How would this even happen lol")
-            if !card_fulfills_criterion(card^, criterion) {
+            if !card_fulfills_criterion(gs, card^, criterion) {
                 unordered_remove(&out, index)
             }
         }

@@ -7,6 +7,7 @@ import rl "vendor:raylib"
 
 UI_Board_Element :: struct {
     hovered_space: Target,
+    texture: rl.RenderTexture2D,
 }
 
 UI_Card_Element :: struct {
@@ -33,8 +34,8 @@ UI_Variant :: union {
     UI_Button_Element,
 }
 
-UI_Input_Proc :: #type proc(Input_Event, ^UI_Element) -> bool
-UI_Render_Proc :: #type proc(UI_Element)
+UI_Input_Proc :: #type proc(^Game_State, Input_Event, ^UI_Element) -> bool
+UI_Render_Proc :: #type proc(^Game_State, UI_Element)
 
 UI_Element :: struct {
     bounding_rect: rl.Rectangle,
@@ -84,20 +85,8 @@ FIRST_SIDE_BUTTON_LOCATION :: rl.Rectangle {
     SELECTION_BUTTON_SIZE.y,
 }
 
-tooltip: Tooltip
-
-ui_stack: [dynamic]UI_Element
-
-side_button_manager := Side_Button_Manager {
-    buttons = {},
-    first_button_index = 0,
-    button_location = FIRST_SIDE_BUTTON_LOCATION,
-}
-
-
-
-null_input_proc: UI_Input_Proc : proc(_: Input_Event, _: ^UI_Element) -> bool { return false }
-null_render_proc: UI_Render_Proc : proc(_: UI_Element) {}
+null_input_proc: UI_Input_Proc : proc(_: ^Game_State, _: Input_Event, _: ^UI_Element) -> bool { return false }
+null_render_proc: UI_Render_Proc : proc(_: ^Game_State, _: UI_Element) {}
 
 check_outside_or_deselected :: proc(input: Input_Event, element: UI_Element) -> bool {
     #partial switch var in input {
@@ -111,7 +100,7 @@ check_outside_or_deselected :: proc(input: Input_Event, element: UI_Element) -> 
     return true
 }
 
-button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)-> bool {
+button_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, element: ^UI_Element)-> bool {
     button_element := assert_variant(&element.variant, UI_Button_Element)
     if !check_outside_or_deselected(input, element^) {
         button_element.hovered = false
@@ -121,9 +110,9 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
     #partial switch var in input {
     case Mouse_Pressed_Event:
         if button_element.global {
-            broadcast_game_event(button_element.event)
+            broadcast_game_event(gs, button_element.event)
         } else {
-            append(&event_queue, button_element.event)
+            append(&gs.event_queue, button_element.event)
         }
     }
 
@@ -131,7 +120,7 @@ button_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element
     return true
 }
 
-draw_button: UI_Render_Proc : proc(element: UI_Element) {
+draw_button: UI_Render_Proc : proc(_: ^Game_State, element: UI_Element) {
     button_element := assert_variant_rdonly(element.variant, UI_Button_Element)
 
     TEXT_PADDING :: 20
@@ -150,7 +139,7 @@ draw_button: UI_Render_Proc : proc(element: UI_Element) {
     }
 }
 
-format_tooltip :: proc(tooltip: Tooltip) -> cstring {
+format_tooltip :: proc(gs: ^Game_State, tooltip: Tooltip) -> cstring {
     context.allocator = context.temp_allocator
     switch variant in tooltip {
     case cstring: return variant
@@ -159,9 +148,9 @@ format_tooltip :: proc(tooltip: Tooltip) -> cstring {
         for arg in variant.arguments {
             switch arg_variant in arg {
             case Implicit_Quantity:
-                append(&args, calculate_implicit_quantity(arg_variant, NULL_CARD_ID))
+                append(&args, calculate_implicit_quantity(gs, arg_variant, NULL_CARD_ID))
             case Conditional_String_Argument:
-                append(&args, arg_variant.arg1 if calculate_implicit_condition(arg_variant.condition) else arg_variant.arg2)
+                append(&args, arg_variant.arg1 if calculate_implicit_condition(gs, arg_variant.condition) else arg_variant.arg2)
             case any: append(&args, arg_variant)
             }
         }
@@ -171,9 +160,9 @@ format_tooltip :: proc(tooltip: Tooltip) -> cstring {
     return nil
 }
 
-render_tooltip :: proc() {
-    if tooltip == nil do return
-    tooltip_text := format_tooltip(tooltip)
+render_tooltip :: proc(gs: ^Game_State) {
+    if gs.tooltip == nil do return
+    tooltip_text := format_tooltip(gs, gs.tooltip)
     dimensions := rl.MeasureTextEx(default_font, tooltip_text, TOOLTIP_FONT_SIZE, FONT_SPACING)
     top_width := WIDTH - BOARD_TEXTURE_SIZE.x
     offset := BOARD_TEXTURE_SIZE.x + (top_width - dimensions.x) / 2
@@ -181,8 +170,8 @@ render_tooltip :: proc() {
 }
 
 
-add_generic_button :: proc(location: rl.Rectangle, text: cstring, event: Event, global: bool = false) {
-    append(&ui_stack, UI_Element {
+add_generic_button :: proc(gs: ^Game_State, location: rl.Rectangle, text: cstring, event: Event, global: bool = false) {
+    append(&gs.ui_stack, UI_Element {
         location, UI_Button_Element {
             event, text, false, global,
         },
@@ -191,45 +180,54 @@ add_generic_button :: proc(location: rl.Rectangle, text: cstring, event: Event, 
     })
 }
 
-add_side_button :: proc(text: cstring, event: Event, global: bool = false) {
-    if len(side_button_manager.buttons) == 0 {
-        side_button_manager.first_button_index = len(ui_stack)
+add_side_button :: proc(gs: ^Game_State, text: cstring, event: Event, global: bool = false) {
+    if len(gs.side_button_manager.buttons) == 0 {
+        gs.side_button_manager.first_button_index = len(gs.ui_stack)
     }
 
-    add_generic_button(side_button_manager.button_location, text, event, global)
-    side_button_manager.buttons = ui_stack[side_button_manager.first_button_index:][:len(side_button_manager.buttons) + 1]
-    side_button_manager.button_location.y -= SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+    add_generic_button(gs, gs.side_button_manager.button_location, text, event, global)
+    gs.side_button_manager.buttons = gs.ui_stack[gs.side_button_manager.first_button_index:][:len(gs.side_button_manager.buttons) + 1]
+    gs.side_button_manager.button_location.y -= SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
 }
 
-pop_side_button :: proc() {
-    if len(side_button_manager.buttons) == 0 do return
-    pop(&ui_stack)
-    side_button_manager.buttons = ui_stack[side_button_manager.first_button_index:][:len(side_button_manager.buttons) - 1]
-    side_button_manager.button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+pop_side_button :: proc(gs: ^Game_State) {
+    if len(gs.side_button_manager.buttons) == 0 do return
+    pop(&gs.ui_stack)
+    gs.side_button_manager.buttons = gs.ui_stack[gs.side_button_manager.first_button_index:][:len(gs.side_button_manager.buttons) - 1]
+    gs.side_button_manager.button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
 }
 
-clear_side_buttons :: proc() {
-    resize(&ui_stack, len(ui_stack) - len(side_button_manager.buttons))
-    side_button_manager.buttons = {}
-    side_button_manager.button_location = FIRST_SIDE_BUTTON_LOCATION
+clear_side_buttons :: proc(gs: ^Game_State) {
+    resize(&gs.ui_stack, len(gs.ui_stack) - len(gs.side_button_manager.buttons))
+    gs.side_button_manager.buttons = {}
+    gs.side_button_manager.button_location = FIRST_SIDE_BUTTON_LOCATION
 }
 
-add_game_ui_elements :: proc() {
-    clear(&ui_stack)
+add_game_ui_elements :: proc(gs: ^Game_State) {
+    clear(&gs.ui_stack)
+    gs.side_button_manager = Side_Button_Manager {
+        buttons = {},
+        first_button_index = 0,
+        button_location = FIRST_SIDE_BUTTON_LOCATION,
+    }
 
-    append(&ui_stack, UI_Element {
+    board_render_texture := rl.LoadRenderTexture(i32(BOARD_TEXTURE_SIZE.x), i32(BOARD_TEXTURE_SIZE.y))
+
+    append(&gs.ui_stack, UI_Element {
         BOARD_POSITION_RECT,
-        UI_Board_Element{},
+        UI_Board_Element{
+            texture = board_render_texture,
+        },
         board_input_proc,
         draw_board,
     })
 
-    for player_id in 0..<len(game_state.players) {
-        player := get_player_by_id(player_id)
+    for player_id in 0..<len(gs.players) {
+        player := get_player_by_id(gs, player_id)
 
-        if player_id == my_player_id {
+        if player_id == gs.my_player_id {
             for card in player.hero.cards {
-                append(&ui_stack, UI_Element{
+                append(&gs.ui_stack, UI_Element{
                     card_hand_position_rects[card.color],
                     UI_Card_Element{card_id = card.id},
                     card_input_proc,
@@ -238,7 +236,7 @@ add_game_ui_elements :: proc() {
             }
         } else {
             for card in player.hero.cards {
-                append(&ui_stack, UI_Element {
+                append(&gs.ui_stack, UI_Element {
                     {},
                     UI_Card_Element{card_id = card.id},
                     card_input_proc,

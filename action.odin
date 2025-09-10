@@ -204,7 +204,6 @@ error_tooltip: cstring : "You should never see this. Tell Griffon if you do!"
 first_choice_tooltip: cstring : "Choose an action to take with your played card."
 
 
-
 first_choice_action := []Action {
     Action {
         condition = Alive{},
@@ -251,7 +250,7 @@ basic_defense_action := []Action {
     Action {
         tooltip = "Choose a card to defend with. You may also choose to die.",
         optional = true,
-        skip_index = {sequence = .DIE},  // Needs to be defeated
+        skip_index = {sequence = .DIE},
         skip_name = "Die",
         variant = Choose_Card_Action {
             criteria = {
@@ -374,24 +373,24 @@ minion_outside_zone_action := []Action {  // Still need to handle the case where
     },
 }
 
-resolve_movement_destinations :: proc(criteria: []Selection_Criterion, card_id: Card_ID) -> Maybe(Target_Set) {
+resolve_movement_destinations :: proc(gs: ^Game_State, criteria: []Selection_Criterion, card_id: Card_ID) -> Maybe(Target_Set) {
     if len(criteria) > 0 {
-        return make_arbitrary_targets(criteria, card_id)
+        return make_arbitrary_targets(gs, criteria, card_id)
     }
     return nil
 }
 
 
-get_current_action :: proc() -> ^Action {
-    return get_action_at_index(get_my_player().hero.current_action_index)
+get_current_action :: proc(gs: ^Game_State) -> ^Action {
+    return get_action_at_index(gs, get_my_player(gs).hero.current_action_index)
 }
 
-get_action_at_index :: proc(index: Action_Index, loc := #caller_location) -> ^Action {
+get_action_at_index :: proc(gs: ^Game_State, index: Action_Index, loc := #caller_location) -> ^Action {
     action_sequence: []Action
 
     switch index.sequence {
     case .PRIMARY:
-        card, ok := get_card_by_id(index.card_id)
+        card, ok := get_card_by_id(gs, index.card_id)
         log.assert(ok, "no played card!!?!?!?!?!", loc)
         action_sequence = card.primary_effect
     case .HALT:                 return nil

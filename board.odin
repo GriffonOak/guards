@@ -81,6 +81,7 @@ UNIT_FLAGS       :: MINION_FLAGS + {.HERO}
 OBSTACLE_FLAGS   :: UNIT_FLAGS + {.TERRAIN, .TOKEN}
 
 
+@rodata
 starting_terrain := [?]Target {
     {1,8}, {1,9}, {1,10}, {1,13}, {1,14}, {1,15}, {1,16}, {1,17}, {1,18},
     {2,14}, {2,15}, {2,16}, {2,17}, 
@@ -100,6 +101,7 @@ starting_terrain := [?]Target {
     {18,1},
 }
 
+@rodata
 fast_travel_adjacencies := [Region_ID]bit_set[Region_ID] {
     .NONE = {},
     .RED_JUNGLE = {.RED_BASE, .CENTRE},
@@ -111,6 +113,7 @@ fast_travel_adjacencies := [Region_ID]bit_set[Region_ID] {
     .BLUE_JUNGLE = {.BLUE_BASE, .CENTRE},
 }
 
+@rodata
 spawnpoints := [?]Spawnpoint_Marker {
     {{2, 11}, .HERO_SPAWNPOINT, .RED},
     {{3, 9}, .HERO_SPAWNPOINT, .RED},
@@ -136,12 +139,14 @@ spawnpoints := [?]Spawnpoint_Marker {
     
 }
 
+@rodata
 spawnpoint_to_minion := #partial [Space_Flag]Space_Flag {
     .MELEE_MINION_SPAWNPOINT = .MELEE_MINION,
     .RANGED_MINION_SPAWNPOINT = .RANGED_MINION,
     .HEAVY_MINION_SPAWNPOINT = .HEAVY_MINION,
 }
 
+@rodata
 region_colors := [Region_ID]rl.Color {
     .NONE = rl.MAGENTA,
     .RED_BASE = STONE_COLOR,
@@ -153,6 +158,7 @@ region_colors := [Region_ID]rl.Color {
     .BLUE_BASE = STONE_COLOR,
 }
 
+@rodata
 minion_initials := #partial [Space_Flag]cstring {
     .MELEE_MINION  = "M",
     .RANGED_MINION = "R",
@@ -161,19 +167,14 @@ minion_initials := #partial [Space_Flag]cstring {
 
 zone_indices: [Region_ID][dynamic]Target
 
-board: [GRID_WIDTH][GRID_HEIGHT]Space
 
-board_render_texture: rl.RenderTexture2D
-
-
-
-get_symmetric_space :: proc(pos: Target) -> ^Space {
+get_symmetric_space :: proc(gs: ^Game_State, pos: Target) -> ^Space {
     sym_idx := Target{GRID_WIDTH, GRID_HEIGHT} - pos - 1
-    return &board[sym_idx.x][sym_idx.y]
+    return &gs.board[sym_idx.x][sym_idx.y]
 }
 
-setup_space_positions :: proc() {
-    for &x_arr, x_idx in board {
+setup_space_positions :: proc(gs: ^Game_State) {
+    for &x_arr, x_idx in gs.board {
         for &space, y_idx in x_arr {
             x_value := BOARD_TEXTURE_SIZE.x / 2 + HORIZONTAL_SPACING * f32(x_idx - GRID_WIDTH / 2)
             // I don't even really know how this works but it does 
@@ -183,78 +184,78 @@ setup_space_positions :: proc() {
     }
 }
 
-set_terrain_symmetric :: proc(target: Target) {
-    board[target.x][target.y].flags += {.TERRAIN}
-    get_symmetric_space(target).flags += {.TERRAIN}
+set_terrain_symmetric :: proc(gs: ^Game_State, target: Target) {
+    gs.board[target.x][target.y].flags += {.TERRAIN}
+    get_symmetric_space(gs, target).flags += {.TERRAIN}
 }
 
-setup_terrain :: proc() {
+setup_terrain :: proc(gs: ^Game_State) {
     for x_idx in 0..<GRID_WIDTH {
         for y_idx in 0..<GRID_HEIGHT {
             if x_idx == 0 || y_idx == 0 || x_idx + y_idx <= 8 {
-                set_terrain_symmetric(Target{i8(x_idx), i8(y_idx)})
+                set_terrain_symmetric(gs, Target{i8(x_idx), i8(y_idx)})
             }
         }
     }
 
     for vec in starting_terrain {
-        set_terrain_symmetric(vec)
+        set_terrain_symmetric(gs, vec)
     }
 }
 
-assign_region_symmetric :: proc(target: Target, region_id: Region_ID) {
-    board[target.x][target.y].region_id = region_id
+assign_region_symmetric :: proc(gs: ^Game_State, target: Target, region_id: Region_ID) {
+    gs.board[target.x][target.y].region_id = region_id
     append(&zone_indices[region_id], target)
     other_index := Target{GRID_WIDTH, GRID_HEIGHT} - target - 1
     other_region := Region_ID(len(Region_ID) - int(region_id))
-    board[other_index.x][other_index.y].region_id = other_region
+    gs.board[other_index.x][other_index.y].region_id = other_region
     append(&zone_indices[other_region], other_index)
 }
 
-setup_regions :: proc() {
+setup_regions :: proc(gs: ^Game_State) {
     // Bases
     for x_idx in 1..=4 {
         for y_idx in 6..=17 {
-            if .TERRAIN in board[x_idx][y_idx].flags do continue
+            if .TERRAIN in gs.board[x_idx][y_idx].flags do continue
             if y_idx <= 14-x_idx {
-                assign_region_symmetric(Target{i8(x_idx), i8(y_idx)}, .RED_BASE)
+                assign_region_symmetric(gs, Target{i8(x_idx), i8(y_idx)}, .RED_BASE)
             } else {
-                assign_region_symmetric(Target{i8(x_idx), i8(y_idx)}, .RED_JUNGLE)
+                assign_region_symmetric(gs, Target{i8(x_idx), i8(y_idx)}, .RED_JUNGLE)
             }
         }
     }
 
     for x_idx in 5..=8 {
         for y_idx in 3..=17 {
-            if .TERRAIN in board[x_idx][y_idx].flags do continue
+            if .TERRAIN in gs.board[x_idx][y_idx].flags do continue
             if x_idx <= 6 && y_idx >= 16 {
-                assign_region_symmetric(Target{i8(x_idx), i8(y_idx)}, .RED_JUNGLE)
+                assign_region_symmetric(gs, Target{i8(x_idx), i8(y_idx)}, .RED_JUNGLE)
             } else if y_idx <= 16 - x_idx {
-                assign_region_symmetric(Target{i8(x_idx), i8(y_idx)}, .RED_BEACH)
+                assign_region_symmetric(gs, Target{i8(x_idx), i8(y_idx)}, .RED_BEACH)
             }
         }
     }
 
     for x_idx in 9..=12 {
         for y_idx in 1..=15-x_idx {
-            if .TERRAIN in board[x_idx][y_idx].flags do continue
-            assign_region_symmetric(Target{i8(x_idx), i8(y_idx)}, .RED_BEACH)
+            if .TERRAIN in gs.board[x_idx][y_idx].flags do continue
+            assign_region_symmetric(gs, Target{i8(x_idx), i8(y_idx)}, .RED_BEACH)
         }
     }
 
     for x_idx in 5..=14 {
         for y_idx in 16-x_idx..=19-x_idx {
-            if .TERRAIN in board[x_idx][y_idx].flags || board[x_idx][y_idx].region_id != .NONE do continue
-            assign_region_symmetric(Target{i8(x_idx), i8(y_idx)}, .CENTRE)
+            if .TERRAIN in gs.board[x_idx][y_idx].flags || gs.board[x_idx][y_idx].region_id != .NONE do continue
+            assign_region_symmetric(gs, Target{i8(x_idx), i8(y_idx)}, .CENTRE)
         }
     }
 }
 
-setup_spawnpoints :: proc() {
+setup_spawnpoints :: proc(gs: ^Game_State) {
     for marker in spawnpoints {
         log.assert(marker.spawnpoint_flag in SPAWNPOINT_FLAGS, "Provided spawnpoint has no spawnpoint marker")
-        space := &board[marker.loc.x][marker.loc.y]
-        symmetric_space := get_symmetric_space(marker.loc)
+        space := &gs.board[marker.loc.x][marker.loc.y]
+        symmetric_space := get_symmetric_space(gs, marker.loc)
         space.flags += {marker.spawnpoint_flag}
         symmetric_space.flags += {marker.spawnpoint_flag}
 
@@ -263,18 +264,18 @@ setup_spawnpoints :: proc() {
     }
 }
 
-setup_board :: proc() {
+setup_board :: proc(gs: ^Game_State) {
     
-    setup_space_positions()
+    setup_space_positions(gs)
 
-    setup_terrain()
+    setup_terrain(gs)
 
-    setup_regions()
+    setup_regions(gs)
 
-    setup_spawnpoints()
+    setup_spawnpoints(gs)
 }
 
-board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element) -> (output: bool = false) {
+board_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, element: ^UI_Element) -> (output: bool = false) {
 
     board_element := assert_variant(&element.variant, UI_Board_Element)
 
@@ -287,7 +288,7 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
 
     #partial switch var in input {
     case Mouse_Pressed_Event:
-        append(&event_queue, Space_Clicked_Event{board_element.hovered_space})
+        append(&gs.event_queue, Space_Clicked_Event{board_element.hovered_space})
     case Mouse_Motion_Event:
         mouse_within_board := ui_state.mouse_pos - {element.bounding_rect.x, element.bounding_rect.y}
 
@@ -295,7 +296,7 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
 
         closest_idx := INVALID_TARGET
         closest_dist: f32 = 1e6
-        for arr, x in board {
+        for arr, x in gs.board {
             for space, y in arr {
                 diff := (mouse_within_board - space.position)
                 dist := diff.x * diff.x + diff.y * diff.y
@@ -305,17 +306,17 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
                 }
             }
         }
-        if closest_idx.x >= 0 &&  .TERRAIN not_in board[closest_idx.x][closest_idx.y].flags {
+        if closest_idx.x >= 0 &&  .TERRAIN not_in gs.board[closest_idx.x][closest_idx.y].flags {
             board_element.hovered_space = closest_idx
         } else {
             board_element.hovered_space = INVALID_TARGET
         }
 
 
-        #partial switch get_my_player().stage {
+        #partial switch get_my_player(gs).stage {
         case .RESOLVING, .INTERRUPTING:
-            action_index := get_my_player().hero.current_action_index
-            action := get_action_at_index(action_index)
+            action_index := get_my_player(gs).hero.current_action_index
+            action := get_action_at_index(gs, action_index)
             #partial switch &action_variant in action.variant {
             case Movement_Action:
                 resize(&action_variant.path.spaces, action_variant.path.num_locked_spaces)
@@ -337,14 +338,14 @@ board_input_proc: UI_Input_Proc : proc(input: Input_Event, element: ^UI_Element)
     return
 }
 
-render_board_to_texture :: proc(board_element: UI_Board_Element) {
+render_board_to_texture :: proc(gs: ^Game_State, board_element: UI_Board_Element) {
     context.allocator = context.temp_allocator
 
-    rl.BeginTextureMode(board_render_texture)
+    rl.BeginTextureMode(board_element.texture)
 
     rl.ClearBackground(WATER_COLOR)
 
-    for arr in board {
+    for arr in gs.board {
         for space in arr {
             color := rl.WHITE
             if .TERRAIN in space.flags do color = CLIFF_COLOR
@@ -414,14 +415,14 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
 
     space_pos: Vec2
     if board_element.hovered_space != INVALID_TARGET {
-        space_pos = board[board_element.hovered_space.x][board_element.hovered_space.y].position
+        space_pos = gs.board[board_element.hovered_space.x][board_element.hovered_space.y].position
         // rl.DrawRing(pos, VERTICAL_SPACING * 0.45, VERTICAL_SPACING * 0.5, 0, 360, 100, rl.WHITE)
         rl.DrawPolyLinesEx(space_pos, 6, VERTICAL_SPACING * (1 / math.sqrt_f32(3) + 0.05), 0, VERTICAL_SPACING * 0.05, rl.WHITE)
     }
 
-    highlight_action_targets :: proc(action_index: Action_Index) {
+    highlight_action_targets :: proc(gs: ^Game_State, action_index: Action_Index) {
 
-        action := get_action_at_index(action_index)
+        action := get_action_at_index(gs, action_index)
         if action == nil do return
 
         origin: Target
@@ -434,7 +435,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             for choice in variant.choices {
                 jump_index := choice.jump_index
                 if jump_index.card_id == NULL_CARD_ID do jump_index.card_id = action_index.card_id
-                highlight_action_targets(jump_index)
+                highlight_action_targets(gs, jump_index)
             }
             return
         case Movement_Action:
@@ -443,7 +444,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
         case Choose_Target_Action:
             frequency = 14
             for target in variant.result {
-                space := board[target.x][target.y]
+                space := gs.board[target.x][target.y]
                 selected_color := rl.LIGHTGRAY
                 pulse := f32(math.sin(1.5 * time) * VERTICAL_SPACING * 0.03)
 
@@ -453,7 +454,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
 
         target_iter := make_target_set_iterator(&action.targets)
         for info, target in target_set_iter_members(&target_iter) {
-            space := board[target.x][target.y]
+            space := gs.board[target.x][target.y]
             phase: f64 = 0
 
             // Different effects for highlighted spaces
@@ -486,44 +487,44 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
         }
     }
 
-    draw_hover_effect: #partial switch get_my_player().stage {
+    draw_hover_effect: #partial switch get_my_player(gs).stage {
     case .RESOLVING, .INTERRUPTING:
-        action_index := get_my_player().hero.current_action_index
-        action := get_action_at_index(action_index)
+        action_index := get_my_player(gs).hero.current_action_index
+        action := get_action_at_index(gs, action_index)
         #partial switch variant in action.variant {
         case Fast_Travel_Action:
             if board_element.hovered_space == INVALID_TARGET do break
             if index_target_set(&action.targets, board_element.hovered_space).member {
-                player_loc := get_my_player().hero.location
-                player_pos := board[player_loc.x][player_loc.y].position
+                player_loc := get_my_player(gs).hero.location
+                player_pos := gs.board[player_loc.x][player_loc.y].position
                 rl.DrawLineEx(space_pos, player_pos, 4, rl.VIOLET)
             }
         case Movement_Action:
             current_loc := variant.path.spaces[0]
             for target in variant.path.spaces[1:] {
-                rl.DrawLineEx(board[current_loc.x][current_loc.y].position, board[target.x][target.y].position, 4, rl.VIOLET)
+                rl.DrawLineEx(gs.board[current_loc.x][current_loc.y].position, gs.board[target.x][target.y].position, 4, rl.VIOLET)
                 current_loc = target
             }
         case Choice_Action:
             // See if any side buttons are hovered
-            for &ui_element in side_button_manager.buttons {
+            for &ui_element in gs.side_button_manager.buttons {
                 button_element := assert_variant(&ui_element.variant, UI_Button_Element)
                 if !button_element.hovered do continue
                 event, ok := button_element.event.(Resolve_Current_Action_Event)
                 if !ok do continue
                 next_index := event.jump_index.?
                 if next_index.card_id == NULL_CARD_ID do next_index.card_id = action_index.card_id
-                highlight_action_targets(next_index)
+                highlight_action_targets(gs, next_index)
             }
         }
 
         if _, ok := action.variant.(Choice_Action); !ok && action != nil {
-            highlight_action_targets(action_index)
+            highlight_action_targets(gs, action_index)
         }
     }
 
     // Draw Tiebreaker Coin
-    rl.DrawCircleV({100, 100}, 75, team_colors[game_state.tiebreaker_coin])
+    rl.DrawCircleV({100, 100}, 75, team_colors[gs.tiebreaker_coin])
     rl.DrawRing({100, 100}, 70, 75, 0, 360, 100, rl.RAYWHITE)
 
     // Draw wave counters
@@ -531,7 +532,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
         angle: f32 = math.TAU / 8 - math.TAU / 6  // @Magic
         angle += f32(wave_counter_index) * math.TAU / (3 * 4)
         wave_counter_position := Vec2{100, 100} + 140 * {math.cos_f32(angle), math.sin_f32(angle)}
-        color := rl.RAYWHITE if wave_counter_index < game_state.wave_counters else rl.GRAY
+        color := rl.RAYWHITE if wave_counter_index < gs.wave_counters else rl.GRAY
         rl.DrawCircleV(wave_counter_position, 25, color)
         rl.DrawRing(wave_counter_position, 25, 30, 0, 360, 100, rl.RAYWHITE)
     }
@@ -547,7 +548,7 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
             if team == .BLUE do life_counter_position = BOARD_TEXTURE_SIZE - life_counter_position
             darker_team_color := team_colors[team] / 2
             darker_team_color.a = 255
-            color := team_colors[team] if life_counter_index < game_state.life_counters[team] else darker_team_color
+            color := team_colors[team] if life_counter_index < gs.life_counters[team] else darker_team_color
             rl.DrawCircleV(life_counter_position, LIFE_COUNTER_RADIUS, color)
             rl.DrawRing(life_counter_position, LIFE_COUNTER_RADIUS - 5, LIFE_COUNTER_RADIUS, 0, 360, 100, team_colors[team])
         }
@@ -567,9 +568,11 @@ render_board_to_texture :: proc(board_element: UI_Board_Element) {
     rl.EndTextureMode()
 }
 
-draw_board: UI_Render_Proc : proc(element: UI_Element) {
+draw_board: UI_Render_Proc : proc(_: ^Game_State, element: UI_Element) {
 
-    rl.DrawTexturePro(board_render_texture.texture, {0, 0, BOARD_TEXTURE_SIZE.x, -BOARD_TEXTURE_SIZE.y}, element.bounding_rect, {0, 0}, 0, rl.WHITE)
+    board_element := element.variant.(UI_Board_Element)
+
+    rl.DrawTexturePro(board_element.texture.texture, {0, 0, BOARD_TEXTURE_SIZE.x, -BOARD_TEXTURE_SIZE.y}, element.bounding_rect, {0, 0}, 0, rl.WHITE)
 
     // rl.DrawRectangleLinesEx(BOARD_POSITION_RECT, 4, rl.WHITE)
 }

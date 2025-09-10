@@ -20,8 +20,10 @@ assert_variant_rdonly :: proc(u: $U, $V: typeid, loc := #caller_location) -> V w
     return out
 }
 
-find_played_card :: proc(player_id: Player_ID = my_player_id, loc := #caller_location) -> (^Card, bool) {
-    player := get_player_by_id(player_id)
+find_played_card :: proc(gs: ^Game_State, player_id: Player_ID = -1, loc := #caller_location) -> (^Card, bool) {
+    player_id := player_id
+    if player_id == -1 do player_id = gs.my_player_id
+    player := get_player_by_id(gs, player_id)
     for &card in player.hero.cards {
         if card.state == .PLAYED {
             return &card, true
@@ -30,19 +32,19 @@ find_played_card :: proc(player_id: Player_ID = my_player_id, loc := #caller_loc
     return nil, false
 }
 
-retrieve_my_cards :: proc() {
+retrieve_my_cards :: proc(gs: ^Game_State) {
 
-    player := get_my_player()
+    player := get_my_player(gs)
 
     for &card in player.hero.cards {
-        retrieve_card(&card)
+        retrieve_card(gs, &card)
     }
 }
 
-retrieve_all_cards :: proc() {
-    for &player in game_state.players {
+retrieve_all_cards :: proc(gs: ^Game_State) {
+    for &player in gs.players {
         for &card in player.hero.cards {
-            retrieve_card(&card)
+            retrieve_card(gs, &card)
         }
     }
 }
@@ -58,9 +60,9 @@ color_lerp :: proc(a, b: rl.Color, t: $T) -> (out: rl.Color) {
     return out
 }
 
-translocate_unit :: proc(src, dest: Target) {
-    src_space := &board[src.x][src.y]
-    dest_space := &board[dest.x][dest.y]
+translocate_unit :: proc(gs: ^Game_State, src, dest: Target) {
+    src_space := &gs.board[src.x][src.y]
+    dest_space := &gs.board[dest.x][dest.y]
 
     src_transient_flags := src_space.flags - PERMANENT_FLAGS
     src_space.flags -= src_transient_flags
@@ -71,7 +73,7 @@ translocate_unit :: proc(src, dest: Target) {
 
     if .HERO in src_transient_flags {
         dest_space.owner = src_space.owner
-        get_player_by_id(dest_space.owner).hero.location = dest
+        get_player_by_id(gs, dest_space.owner).hero.location = dest
     }
 }
 
@@ -96,29 +98,29 @@ get_enemy_team :: proc(team: Team) -> Team {
     return .BLUE if team == .RED else .RED
 }
 
-end_current_action_sequence :: proc() {
-    #partial switch get_my_player().stage {
+end_current_action_sequence :: proc(gs: ^Game_State) {
+    #partial switch get_my_player(gs).stage {
     case .RESOLVING:
-        broadcast_game_event(End_Resolution_Event{my_player_id})
+        broadcast_game_event(gs, End_Resolution_Event{gs.my_player_id})
     case .INTERRUPTING:
-        broadcast_game_event(Resolve_Interrupt_Event{})
+        broadcast_game_event(gs, Resolve_Interrupt_Event{})
     }
 }
 
-get_next_turn_event :: proc() -> Event {
+get_next_turn_event :: proc(gs: ^Game_State) -> Event {
     
     highest_initiative: int = -1
     highest_player: Player
 
-    initiative_tied = false
+    gs.initiative_tied = false
 
     tie: Resolve_Same_Team_Tied_Event
 
-    for player, player_id in game_state.players {
-        player_card, ok := find_played_card(player_id)
+    for player, player_id in gs.players {
+        player_card, ok := find_played_card(gs, player_id)
         if !ok do continue
 
-        effective_initiative := player_card.initiative + count_hero_items(get_player_by_id(player_id).hero, .INITIATIVE)
+        effective_initiative := player_card.initiative + count_hero_items(gs, get_player_by_id(gs, player_id).hero, .INITIATIVE)
     
         if effective_initiative > highest_initiative {
             highest_initiative = player_card.initiative
@@ -126,8 +128,8 @@ get_next_turn_event :: proc() -> Event {
             tie = {}
         } else if effective_initiative == highest_initiative {
             if player.team != highest_player.team {
-                initiative_tied = true
-                if player.team == game_state.tiebreaker_coin {
+                gs.initiative_tied = true
+                if player.team == gs.tiebreaker_coin {
                     highest_initiative = effective_initiative
                     highest_player = player  // @Note: need to consider ties between players on the same team
                     tie = {}
@@ -154,14 +156,14 @@ get_next_turn_event :: proc() -> Event {
     return Begin_Player_Resolution_Event{highest_player.id}
 }
 
-calculate_minion_modifiers :: proc() -> int {
+calculate_minion_modifiers :: proc(gs: ^Game_State) -> int {
     minion_modifiers := 0
-    player := get_my_player()
+    player := get_my_player(gs)
 
-    adjacent_targets := make_arbitrary_targets({Within_Distance{Self{}, 1, 1}, Ignoring_Immunity{}})
+    adjacent_targets := make_arbitrary_targets(gs, {Within_Distance{Self{}, 1, 1}, Ignoring_Immunity{}})
     adjacent_targets_iter := make_target_set_iterator(&adjacent_targets)
     for _, adjacent in target_set_iter_members(&adjacent_targets_iter) {
-        space := board[adjacent.x][adjacent.y]
+        space := gs.board[adjacent.x][adjacent.y]
         if space.flags & {.MELEE_MINION, .HEAVY_MINION} != {} {
             minion_modifiers += 1 if space.unit_team == player.team else -1
         }
@@ -170,10 +172,10 @@ calculate_minion_modifiers :: proc() -> int {
     log.infof("Melee & heavy modifier: %v", minion_modifiers)
 
     // Idk if the ranged minion would ever be immune but it doesn't hurt I guess
-    nearby_targets := make_arbitrary_targets({Within_Distance{Self{}, 1, 2}, Ignoring_Immunity{}})
+    nearby_targets := make_arbitrary_targets(gs, {Within_Distance{Self{}, 1, 2}, Ignoring_Immunity{}})
     nearby_targets_iter := make_target_set_iterator(&nearby_targets)
     for _, nearby in target_set_iter_members(&nearby_targets_iter) {
-        space := board[nearby.x][nearby.y]
+        space := gs.board[nearby.x][nearby.y]
         if .RANGED_MINION in space.flags && space.unit_team != player.team {
             minion_modifiers -= 1
         }

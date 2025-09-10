@@ -77,10 +77,6 @@ default_font: rl.Font
 
 main :: proc() {
 
-    {  // Do the heroes!
-        hero_cards[.XARGATHA] = xargatha_cards
-    }
-
     when ODIN_DEBUG {
         default_allocator := context.allocator
         tracking_allocator: mem.Tracking_Allocator
@@ -116,14 +112,6 @@ main :: proc() {
     // input_queue = make([dynamic]Input_Event)
     // event_queue = make([dynamic]Event)
 
-    defer {
-        delete(input_queue)
-        delete(event_queue)
-        for id in Region_ID do delete(zone_indices[id])
-        delete(ui_stack)
-        delete(game_state.players)
-    }
-
     active_element_index: int = -1
 
     for color, index in Card_Color {
@@ -143,18 +131,21 @@ main :: proc() {
     default_font = rl.LoadFontEx("Inter-VariableFont_opsz,wght.ttf", 200, nil, 0)
     // default_font = rl.LoadFont("Inconsolata-Regular.ttf")
 
-    board_render_texture = rl.LoadRenderTexture(i32(BOARD_TEXTURE_SIZE.x), i32(BOARD_TEXTURE_SIZE.y))
-
     window_texture := rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT))
     rl.SetTextureFilter(window_texture.texture, .BILINEAR)
 
-    setup_board()
+    gs: Game_State = {
+        confirmed_players = 0,
+        stage = .PRE_LOBBY,
+        current_battle_zone = .CENTRE,
+        tooltip = "Choose to host a game or join a game.",
+    }
 
-    game_state.stage = .PRE_LOBBY
-    tooltip = "Choose to host a game or join a game."
-    add_choose_host_ui_elements()
+    setup_board(&gs)
 
-    // append(&event_queue, Toggle_Fullscreen_Event{})
+    add_choose_host_ui_elements(&gs)
+
+    // append(&gs.event_queue, Toggle_Fullscreen_Event{})
     // begin_game()
 
     for !rl.WindowShouldClose() {
@@ -166,62 +157,62 @@ main :: proc() {
             #partial switch var in event {
             case Key_Pressed_Event:
                 #partial switch var.key {
-                case .EQUAL: append(&event_queue, Increase_Window_Size_Event{})
-                case.MINUS: append(&event_queue, Decrease_Window_Size_Event{})
-                case .F: append(&event_queue, Toggle_Fullscreen_Event{})
+                case .EQUAL: append(&gs.event_queue, Increase_Window_Size_Event{})
+                case.MINUS: append(&gs.event_queue, Decrease_Window_Size_Event{})
+                case .F: append(&gs.event_queue, Toggle_Fullscreen_Event{})
                 }
             }
 
             next_active_element_index := -1
-            #reverse for &element, index in ui_stack {
-                if element.consume_input(event, &element) {
+            #reverse for &element, index in gs.ui_stack {
+                if element.consume_input(&gs, event, &element) {
                     next_active_element_index = index
                     break
                 }
             }
-            if next_active_element_index != active_element_index && active_element_index >= 0 && active_element_index < len(ui_stack){
-                active_element := &ui_stack[active_element_index]
-                active_element.consume_input(Input_Already_Consumed{}, active_element)
+            if next_active_element_index != active_element_index && active_element_index >= 0 && active_element_index < len(gs.ui_stack){
+                active_element := &gs.ui_stack[active_element_index]
+                active_element.consume_input(&gs, Input_Already_Consumed{}, active_element)
             }
             active_element_index = next_active_element_index
         }
         clear(&input_queue)
 
-        process_network_packets()
+        process_network_packets(&gs)
 
         // Handle events
-        for event in event_queue {
-            resolve_event(event)
+        for event in gs.event_queue {
+            resolve_event(&gs, event)
         }
-        clear(&event_queue)
+        clear(&gs.event_queue)
 
 
         rl.BeginDrawing()
 
-        if game_state.stage != .PRE_LOBBY && game_state.stage != .IN_LOBBY {
-            render_board_to_texture(ui_stack[0].variant.(UI_Board_Element))
+        if gs.stage != .PRE_LOBBY && gs.stage != .IN_LOBBY {
+            render_board_to_texture(&gs, gs.ui_stack[0].variant.(UI_Board_Element))
         }
 
         rl.BeginTextureMode(window_texture)
 
         rl.ClearBackground(rl.BLACK)
 
-        for element in ui_stack {
-            element.render(element)
+        for element in gs.ui_stack {
+            element.render(&gs, element)
         }
 
-        if game_state.stage == .IN_LOBBY {
+        if gs.stage == .IN_LOBBY {
             pos := Vec2{10, 10}
-            for player_id in 0..<len(game_state.players) {
-                render_player_info_at_position(player_id, pos)
+            for player_id in 0..<len(gs.players) {
+                render_player_info_at_position(&gs, player_id, pos)
                 pos.y += 200
             }
         }
 
-        if game_state.stage != .PRE_LOBBY && game_state.stage != .IN_LOBBY {
-            render_player_info()
+        if gs.stage != .PRE_LOBBY && gs.stage != .IN_LOBBY {
+            render_player_info(&gs)
         }
-        render_tooltip()
+        render_tooltip(&gs)
 
         rl.EndTextureMode()
 
