@@ -28,18 +28,15 @@ hero_cards: [Hero_ID][]Card
 
 Hero :: struct {
     id: Hero_ID,
-    location: IVec2,
+    location: Target,
 
     current_action_index: Action_Index,
     cards: [Card_Color]Card,
     coins: int,
     level: int,
     dead: bool,
-    items: [10]Card_ID,
+    items: [10]Card_ID,  // lol
     item_count: int,
-    // target_list: map[Target]Void,
-    // num_locked_targets: int,
-    // chosen_targets: [dynamic]Target,
 }
 
 Player_ID :: int

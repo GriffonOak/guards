@@ -114,8 +114,8 @@ calculate_implicit_quantity :: proc(implicit_quantity: Implicit_Quantity, card_i
         for summand in quantity do out += calculate_implicit_quantity(summand, card_id)
 
     case Count_Targets:
-        targets := make_arbitrary_targets(quantity, card_id, context.temp_allocator)
-        return len(targets)
+        targets := make_arbitrary_targets(quantity, card_id)
+        return count_members(&targets)
 
     case Turn_Played:
         card, ok := get_card_by_id(card_id)

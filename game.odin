@@ -128,7 +128,7 @@ team_colors := [Team]rl.Color{
     .BLUE = {22, 147, 255, 255},
 }
 
-direction_vectors := [Direction]IVec2 {
+direction_vectors := [Direction]Target {
     .NORTH = {0, 1},
     .NORTH_EAST = {1, 0},
     .SOUTH_EAST = {1, -1},

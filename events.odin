@@ -19,7 +19,7 @@ Enter_Lobby_Event :: struct {}
 Begin_Game_Event :: struct {}
 
 Space_Clicked_Event :: struct {
-    space: IVec2,
+    space: Target,
 }
 
 Card_Clicked_Event :: struct {
@@ -259,7 +259,8 @@ resolve_event :: proc(event: Event) {
             action_index := get_my_player().hero.current_action_index
             action := get_action_at_index(action_index)
 
-            if ui_stack[0].variant.(UI_Board_Element).hovered_space not_in action.targets do break
+            hovered_space := ui_stack[0].variant.(UI_Board_Element).hovered_space
+            if !action.targets[hovered_space.x][hovered_space.y].member do break
 
             #partial switch &action_variant in action.variant {
             case Fast_Travel_Action:
@@ -272,13 +273,12 @@ resolve_event :: proc(event: Event) {
                 action_variant.path.num_locked_spaces = len(action_variant.path.spaces)
                 last_target := action_variant.path.spaces[len(action_variant.path.spaces)-1]
                 
-                target_valid := !action.targets[var.space].invalid
+                target_valid := !action.targets[var.space.x][var.space.y].invalid
 
-                delete(action.targets)
                 action.targets = make_movement_targets(
-                    max_distance = calculate_implicit_quantity(action_variant.distance, action_index.card_id) - action_variant.path.num_locked_spaces,
+                    max_distance = calculate_implicit_quantity(action_variant.distance, action_index.card_id) - action_variant.path.num_locked_spaces + 1,
                     origin = last_target,
-                    valid_destinations = make_arbitrary_targets(action_variant.valid_destinations, action_index.card_id),
+                    valid_destinations = resolve_movement_destinations(action_variant.destination_criteria, action_index.card_id),
                     flags = action_variant.flags,
                 )
 
@@ -293,7 +293,7 @@ resolve_event :: proc(event: Event) {
 
             case Choose_Target_Action:
                 append(&action_variant.result, var.space)
-                delete_key(&action.targets, var.space)
+                action.targets[var.space.x][var.space.y].member = false
                 if len(action_variant.result) == calculate_implicit_quantity(action_variant.num_targets, action_index.card_id) {
                     append(&event_queue, Resolve_Current_Action_Event{})
                 } else if len(side_button_manager.buttons) == 0 {
@@ -434,17 +434,16 @@ resolve_event :: proc(event: Event) {
                 resize(&action_variant.path.spaces, 1)
 
                 movement_val := action_variant.distance
-                delete(action.targets)
                 action.targets = make_movement_targets(
                     calculate_implicit_quantity(movement_val, action_index.card_id),
                     calculate_implicit_target(action_variant.target, action_index.card_id),
-                    make_arbitrary_targets(action_variant.valid_destinations, action_index.card_id),
+                    resolve_movement_destinations(action_variant.destination_criteria, action_index.card_id),
                     action_variant.flags,
                 )
 
                 log.assert(len(side_button_manager.buttons) > 0, "No side buttons!?")
                 top_button := side_button_manager.buttons[len(side_button_manager.buttons) - 1].variant.(UI_Button_Element)
-                if _, ok := top_button.event.(Resolve_Current_Action_Event); ok && action_variant.valid_destinations != nil {
+                if _, ok := top_button.event.(Resolve_Current_Action_Event); ok && len(action_variant.destination_criteria) != 0 {
                     pop_side_button()
                 }
             case Choose_Target_Action:
@@ -454,7 +453,7 @@ resolve_event :: proc(event: Event) {
                     pop_side_button()
                 }
                 for space in action_variant.result {
-                    action.targets[space] = {}
+                    action.targets[space.x][space.y].member = true
                 }
                 clear(&action_variant.result)
             }
@@ -731,14 +730,15 @@ resolve_event :: proc(event: Event) {
         switch &action_type in action.variant {
         case Movement_Action:
             add_side_button("Reset move", Cancel_Event{})
-            if action_type.valid_destinations == nil {
+            if len(action_type.destination_criteria) == 0 {
                 add_side_button("Confirm move", Resolve_Current_Action_Event{})
             }
 
         case Choose_Target_Action:
             clear(&action_type.result)
-            if len(action.targets) == calculate_implicit_quantity(action_type.num_targets, action_index.card_id) && !action.optional {
-                for space in action.targets {
+            if count_members(&action.targets) == calculate_implicit_quantity(action_type.num_targets, action_index.card_id) && !action.optional {
+                iter := make_target_set_iterator(&action.targets)
+                for _, space in target_set_iter_members(&iter) {
                     append(&action_type.result, space)
                 }
                 append(&event_queue, Resolve_Current_Action_Event{})
@@ -887,8 +887,7 @@ resolve_event :: proc(event: Event) {
             variant.result = var.jump_index.?            
         }
 
-        delete(action.targets)
-        action.targets = nil
+        action.targets = {}
         
         tooltip = nil
 

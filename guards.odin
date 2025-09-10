@@ -38,6 +38,7 @@ _ :: strings
 // Could maybe be an idea to use bit_set[0..<GRID_WIDTH*GRID_HEIGHT] types for calculating the intersection between targets
 // Alternatively, Could use a fixed array of bit field structs
 // Might also be overkill :)
+// Refactor ability_kind and item_kind together
 // Refactor skip_index in actions as next_index and use that to skip to the halt sequence instead of having a literal halt action
 // Always send team captain the minion removal event and just skip the choose step if there are more minions to remove than exist
 // Model wave push as an action sequence to obviate the need for interrupt_variant
@@ -53,7 +54,7 @@ Window_Size :: enum {
 }
 
 Vec2 :: [2]f32
-IVec2 :: [2]int
+// IVec2 :: [2]int
 
 Void :: struct {}
 

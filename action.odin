@@ -63,7 +63,7 @@ Movement_Flags :: bit_set[Movement_Flag]
 Movement_Action :: struct {
     target: Implicit_Target,
     distance: Implicit_Quantity,
-    valid_destinations: []Selection_Criterion,
+    destination_criteria: []Selection_Criterion,
     flags: Movement_Flags,
 
     path: Path,
@@ -366,7 +366,7 @@ minion_outside_zone_action := []Action {  // Still need to handle the case where
         tooltip = "Choose one of the closest spaces in the battle zone to move the minion to.",
         variant = Movement_Action {
             target = Previous_Choice{},
-            valid_destinations = []Selection_Criterion {
+            destination_criteria = []Selection_Criterion {
                 In_Battle_Zone{},
             },
             flags = {.SHORTEST_PATH},
@@ -374,7 +374,12 @@ minion_outside_zone_action := []Action {  // Still need to handle the case where
     },
 }
 
-
+resolve_movement_destinations :: proc(criteria: []Selection_Criterion, card_id: Card_ID) -> Maybe(Target_Set) {
+    if len(criteria) > 0 {
+        return make_arbitrary_targets(criteria, card_id)
+    }
+    return nil
+}
 
 
 get_current_action :: proc() -> ^Action {

@@ -87,7 +87,7 @@ xargatha_cards := []Card {
                 variant = Movement_Action {
                     target = Previous_Choice{},
                     distance = 3,
-                    valid_destinations = []Selection_Criterion {
+                    destination_criteria = []Selection_Criterion {
                         Within_Distance {
                             origin = Self{},
                             min = 1,

@@ -5,17 +5,68 @@ import "core:log"
 
 
 
-Target :: IVec2
+Target :: [2]i8
+
+INVALID_TARGET :: Target{-1, -1}
 
 Target_Info :: struct {
     dist: int,
-    prev_node: Target,
+    prev_loc: Target,
+    member: bool,
     invalid: bool,  // True if we can move to the space along the way to a valid endpoint but the space itself is not a valid endpoint
     // We flag invalid rather than valid here so spaces default to being valid
 }
 
-Target_Set :: map[Target]Target_Info
+Target_Set :: [GRID_WIDTH][GRID_HEIGHT]Target_Info
 
+Target_Set_Iterator :: struct {
+    index: Target,
+    set: ^Target_Set,
+}
+
+index_target_set :: proc(set: ^Target_Set, index: Target) -> ^Target_Info {
+    // if index.x < 0 || index.y < 0 || index.x >= GRID_WIDTH || index.y >= GRID_HEIGHT do return nil
+    return &set[index.x][index.y]
+}
+
+make_target_set_iterator :: proc(target_set: ^Target_Set) -> Target_Set_Iterator {
+    return {set = target_set}
+}
+
+target_set_iter_members :: proc(it: ^Target_Set_Iterator) -> (info: ^Target_Info, index: Target, cond: bool) {
+    cond = it.index.y < GRID_HEIGHT
+
+    update_index :: proc(it: ^Target_Set_Iterator) {
+        it.index.x += 1
+        if it.index.x >= GRID_WIDTH {
+            it.index.x = 0
+            it.index.y += 1
+        }
+    }
+
+    for ; cond ; cond = it.index.y < GRID_HEIGHT {
+        info = index_target_set(it.set, it.index)
+        if !info.member {
+            update_index(it)
+            continue
+        }
+        index = it.index
+
+        update_index(it)
+        break
+    }
+    return
+}
+
+count_members :: proc(target_set: ^Target_Set) -> (count: int) {
+    // @Speed we can probably just keep track of when we add and remove members and then dispense with this
+    iter := make_target_set_iterator(target_set)
+
+    for _ in target_set_iter_members(&iter) {
+        count += 1
+    }
+    return
+}
 
 validate_action :: proc(index: Action_Index) -> bool {
     if index.sequence == .HALT do return true
@@ -25,7 +76,9 @@ validate_action :: proc(index: Action_Index) -> bool {
         if !ok do break xarg_freeze
         if calculate_implicit_quantity(freeze.duration.(Single_Turn), freeze.parent_card_id) != game_state.turn_counter do break xarg_freeze
         context.allocator = context.temp_allocator
-        if get_my_player().hero.location not_in make_arbitrary_targets(freeze.target_set, freeze.parent_card_id) do break xarg_freeze
+        my_location := get_my_player().hero.location
+        freeze_targets := make_arbitrary_targets(freeze.target_set, freeze.parent_card_id)
+        if !freeze_targets[my_location.x][my_location.y].member do break xarg_freeze
         played_card, ok2 := find_played_card()
         log.assert(ok2, "Could not find played card when checking for Xargatha freeze")
         if index.sequence == .BASIC_MOVEMENT || (index.index == 0 && played_card.primary == .MOVEMENT) {
@@ -41,29 +94,29 @@ validate_action :: proc(index: Action_Index) -> bool {
 
     switch &variant in action.variant {
     case Movement_Action:
-        action.targets =  make_movement_targets(
+        action.targets = make_movement_targets(
             calculate_implicit_quantity(variant.distance, index.card_id),
             calculate_implicit_target(variant.target, index.card_id),
-            make_arbitrary_targets(variant.valid_destinations, index.card_id),
+            resolve_movement_destinations(variant.destination_criteria, index.card_id),
             variant.flags,
         )
         origin := calculate_implicit_target(variant.target, index.card_id)
         clear(&variant.path.spaces)
         append(&variant.path.spaces, origin)
         variant.path.num_locked_spaces = 1
-        return len(action.targets) > 0
+        return count_members(&action.targets) > 0
 
     case Fast_Travel_Action:
         action.targets =  make_fast_travel_targets()
-        return len(action.targets) > 0
+        return count_members(&action.targets) > 0
 
     case Clear_Action:
         action.targets =  make_clear_targets()
-        return len(action.targets) > 0
+        return count_members(&action.targets) > 0
 
     case Choose_Target_Action:
         action.targets =  make_arbitrary_targets(variant.criteria, index.card_id)
-        return len(action.targets) > 0
+        return count_members(&action.targets) > 0
 
     case Choice_Action:
         out := false
@@ -95,7 +148,7 @@ validate_action :: proc(index: Action_Index) -> bool {
 make_movement_targets :: proc (
     max_distance: int,
     origin: Target,
-    valid_destinations: Target_Set = nil,
+    valid_destinations: Maybe(Target_Set) = nil,
     flags: Movement_Flags = {},
     allocator := context.allocator,
 ) -> (visited_set: Target_Set) {
@@ -105,30 +158,32 @@ make_movement_targets :: proc (
     BIG_NUMBER :: 1e6
     max_distance := max_distance
 
+    valid_destinations, destinations_ok := valid_destinations.?
+
     if .SHORTEST_PATH in flags {
-        log.assert(valid_destinations != nil, "Trying to calculate shortest path with no valid destination set given!")
+        log.assert(destinations_ok, "Trying to calculate shortest path with no valid destination set given!")
         max_distance = BIG_NUMBER
     }
 
-    // dijkstra's algorithm!
-
+    // dijkstra's algorithm!   
     
     unvisited_set: Target_Set
 
-    unvisited_set[origin] = {0, {-1, -1}, false}
+    unvisited_set[origin.x][origin.y] = {dist = 0, prev_loc = INVALID_TARGET, member = true, invalid = false}
 
-    for len(unvisited_set) > 0 {
+    for count_members(&unvisited_set) > 0 {
         // find minimum
         min_info := Target_Info{dist = BIG_NUMBER}
-        min_loc := IVec2{-1, -1}
-        for loc, info in unvisited_set {
+        min_loc := INVALID_TARGET
+        unvisited_iter := make_target_set_iterator(&unvisited_set)
+        for info, loc in target_set_iter_members(&unvisited_iter) {
             if info.dist < min_info.dist {
                 min_loc = loc
-                min_info = info
+                min_info = info^
             }
         }
 
-        if .SHORTEST_PATH in flags && max_distance == BIG_NUMBER && min_loc in valid_destinations {
+        if destinations_ok && .SHORTEST_PATH in flags && max_distance == BIG_NUMBER && valid_destinations[min_loc.x][min_loc.y].member {
             // Shortest distance found!
             max_distance = min_info.dist
         }
@@ -139,7 +194,7 @@ make_movement_targets :: proc (
             {   // Validate next location
                 if next_loc.x < 0 || next_loc.x >= GRID_WIDTH || next_loc.y < 0 || next_loc.y >= GRID_HEIGHT do continue
                 if OBSTACLE_FLAGS & board[next_loc.x][next_loc.y].flags != {} do continue
-                if next_loc in visited_set do continue
+                if visited_set[next_loc.x][next_loc.y].member do continue
                 if get_my_player().stage == .RESOLVING {
                     #partial switch &action in get_current_action().variant {
                     case Movement_Action:
@@ -151,51 +206,58 @@ make_movement_targets :: proc (
 
             next_dist := min_info.dist + 1
             if next_dist > max_distance do continue
-            existing_info, ok := unvisited_set[next_loc]
-            if !ok || next_dist < existing_info.dist do unvisited_set[next_loc] = Target_Info {
-                next_dist,
-                min_loc,
-                false,
+            existing_info := unvisited_set[next_loc.x][next_loc.y]
+            if !existing_info.member || next_dist < existing_info.dist do unvisited_set[next_loc.x][next_loc.y] = Target_Info {
+                dist = next_dist,
+                prev_loc = min_loc,
+                member = true,
+                invalid = false,
             }
         }
 
-        visited_set[min_loc] = min_info
-        delete_key(&unvisited_set, min_loc)
+        visited_set[min_loc.x][min_loc.y] = min_info
+        unvisited_set[min_loc.x][min_loc.y].member = false
     }
 
-    if valid_destinations != nil {
+    // See if we have a set of valid destinations first
+    if destinations_ok {
         // first flag all nodes in the visited set as invalid (temporarily)
-        for _, &info in visited_set {
+        visited_set_iter := make_target_set_iterator(&visited_set)
+        for info in target_set_iter_members(&visited_set_iter) {
             info.invalid = true
         }
 
         // Check all spaces in the visited set to see if they can be reached by one of the valid endpoints.
         // If they can, they will be marked as valid. Otherwise they will stay invalid.
-        for valid_endpoint in valid_destinations {
-            if valid_endpoint not_in visited_set do continue
+        valid_destinations_iter := make_target_set_iterator(&valid_destinations)
+        for _, valid_endpoint in target_set_iter_members(&valid_destinations_iter) {
+            if !visited_set[valid_endpoint.x][valid_endpoint.y].member do continue
             reachable_targets_from_endpoint := make_movement_targets(
                 max_distance,
                 valid_endpoint,
                 allocator = context.temp_allocator,
             )
-            for potential_target, &potential_info in visited_set {
-                target_info, ok2 := reachable_targets_from_endpoint[potential_target]
+            visited_set_iter = make_target_set_iterator(&visited_set)
+            for potential_info, potential_target in target_set_iter_members(&visited_set_iter) {
+                target_info := reachable_targets_from_endpoint[potential_target.x][potential_target.y]
 
-                if ok2 && target_info.dist + potential_info.dist <= max_distance {
+                if target_info.member && target_info.dist + potential_info.dist <= max_distance {
                     potential_info.invalid = false
                 } 
             }
         }
 
         // Remove all unreachable spaces
-        for target, info in visited_set {
-            if info.invalid do delete_key(&visited_set, target)
+        visited_set_iter = make_target_set_iterator(&visited_set)
+        for info in target_set_iter_members(&visited_set_iter) {
+            if info.invalid do info.member = false
         }
 
         // Now the only spaces left in the visited set are those that can reach valid endpoints.
         // We now flag the spaces as invalid if they are not in the destination set.
-        for target, &info in visited_set {
-            info.invalid = target not_in valid_destinations
+        visited_set_iter = make_target_set_iterator(&visited_set)
+        for info, target in target_set_iter_members(&visited_set_iter) {
+            info.invalid = !valid_destinations[target.x][target.y].member
         }
 
     }
@@ -216,7 +278,7 @@ make_fast_travel_targets :: proc() -> (out: Target_Set) {
 
     for loc in zone_indices[region] {
         if OBSTACLE_FLAGS & board[loc.x][loc.y].flags != {} do continue
-        out[loc] = {}
+        out[loc.x][loc.y].member = true
     }
 
     outer: for other_region in Region_ID {
@@ -229,7 +291,7 @@ make_fast_travel_targets :: proc() -> (out: Target_Set) {
         }
         for loc in zone_indices[other_region] {
             if OBSTACLE_FLAGS & board[loc.x][loc.y].flags != {} do continue
-            out[loc] = {}
+            out[loc.x][loc.y].member = true
         }
     }
     return out
@@ -241,7 +303,7 @@ make_clear_targets :: proc() -> (out: Target_Set) {
     for vector in direction_vectors {
         other_loc := hero_loc + vector
         if .TOKEN in board[other_loc.x][other_loc.y].flags {
-            out[other_loc] = {}
+            out[other_loc.x][other_loc.y].member = true
         }
     }
     return out
@@ -286,18 +348,20 @@ target_fulfills_criterion :: proc(target: Target, criterion: Selection_Criterion
     return true
 }
 
-make_arbitrary_targets :: proc(criteria: []Selection_Criterion, card_id: Card_ID = NULL_CARD_ID, allocator := context.allocator) -> (out: Target_Set) {
+make_arbitrary_targets :: proc(
+    criteria: []Selection_Criterion,
+    card_id: Card_ID = NULL_CARD_ID,
+) -> (out: Target_Set) {
 
-    if criteria == nil do return nil
-    context.allocator = allocator
+    if criteria == nil do return
 
     // Start with completely populated board (Inefficient!)
     // @Speed
     for x in 0..<GRID_WIDTH {
         for y in 0..<GRID_HEIGHT {
-            target := Target{x, y}
+            target := Target{i8(x), i8(y)}
             if target_fulfills_criterion(target, criteria[0], card_id) {
-                out[target] = {}
+                out[target.x][target.y].member = true
             }
         }
     }
@@ -307,15 +371,16 @@ make_arbitrary_targets :: proc(criteria: []Selection_Criterion, card_id: Card_ID
     for criterion in criteria[1:] {
         switch variant in criterion {
         case Within_Distance, Contains_Any, Is_Enemy_Unit, Is_Friendly_Unit, Is_Enemy_Of, Is_Friendly_Spawnpoint, In_Battle_Zone, Outside_Battle_Zone, Empty:
-            for target in out {
+            out_iter := make_target_set_iterator(&out)
+            for info, target in target_set_iter_members(&out_iter) {
                 if !target_fulfills_criterion(target, criterion, card_id) {
-                    delete_key(&out, target)
+                    info.member = false
                 }
             }
 
         case Not_Previously_Targeted:
             previous_target := calculate_implicit_target(Previous_Choice{}, card_id)
-            delete_key(&out, previous_target)
+            out[previous_target.x][previous_target.y].member = false
 
         case Ignoring_Immunity:
             ignore_immunity = true
@@ -333,15 +398,17 @@ make_arbitrary_targets :: proc(criteria: []Selection_Criterion, card_id: Card_ID
                     },
                 )
                 overlap := false
-                for dist_target in dist_targets {
-                    if dist_target in out {
+                dist_iter := make_target_set_iterator(&dist_targets)
+                for _, dist_target in target_set_iter_members(&dist_iter) {
+                    if out[dist_target.x][dist_target.y].member {
                         overlap = true
                         break
                     }
                 }
                 if !overlap do continue
-                for target in out {
-                    if target not_in dist_targets do delete_key(&out, target)
+                out_iter := make_target_set_iterator(&out)
+                for info, target in target_set_iter_members(&out_iter) {
+                    if !dist_targets[target.x][target.y].member do info.member = false
                 }
                 break
             }
@@ -350,10 +417,11 @@ make_arbitrary_targets :: proc(criteria: []Selection_Criterion, card_id: Card_ID
     }
 
     if !ignore_immunity {
-        for target in out {
+        target_set_iter := make_target_set_iterator(&out)
+        for info, target in target_set_iter_members(&target_set_iter) {
             space := board[target.x][target.y]
             if space.flags & {.IMMUNE} != {} {
-                delete_key(&out, target)
+                info.member = false
             }
         }
     }

@@ -75,12 +75,12 @@ translocate_unit :: proc(src, dest: Target) {
     }
 }
 
-calculate_hexagonal_distance :: proc(a, b: IVec2) -> int {
+calculate_hexagonal_distance :: proc(a, b: Target) -> int {
     diff := a - b
     if diff.x * diff.y <= 0 {
-        return max(abs(diff.x), abs(diff.y))
+        return int(max(abs(diff.x), abs(diff.y)))
     } else {
-        return abs(diff.x) + abs(diff.y)
+        return int(abs(diff.x) + abs(diff.y))
     }
 }
 
@@ -157,8 +157,10 @@ get_next_turn_event :: proc() -> Event {
 calculate_minion_modifiers :: proc() -> int {
     minion_modifiers := 0
     player := get_my_player()
-    context.allocator = context.temp_allocator
-    for adjacent in make_arbitrary_targets({Within_Distance{Self{}, 1, 1}, Ignoring_Immunity{}}) {
+
+    adjacent_targets := make_arbitrary_targets({Within_Distance{Self{}, 1, 1}, Ignoring_Immunity{}})
+    adjacent_targets_iter := make_target_set_iterator(&adjacent_targets)
+    for _, adjacent in target_set_iter_members(&adjacent_targets_iter) {
         space := board[adjacent.x][adjacent.y]
         if space.flags & {.MELEE_MINION, .HEAVY_MINION} != {} {
             minion_modifiers += 1 if space.unit_team == player.team else -1
@@ -167,8 +169,11 @@ calculate_minion_modifiers :: proc() -> int {
 
     log.infof("Melee & heavy modifier: %v", minion_modifiers)
 
-    for adjacent in make_arbitrary_targets({Within_Distance{Self{}, 1, 2}}) {
-        space := board[adjacent.x][adjacent.y]
+    // Idk if the ranged minion would ever be immune but it doesn't hurt I guess
+    nearby_targets := make_arbitrary_targets({Within_Distance{Self{}, 1, 2}, Ignoring_Immunity{}})
+    nearby_targets_iter := make_target_set_iterator(&nearby_targets)
+    for _, nearby in target_set_iter_members(&nearby_targets_iter) {
+        space := board[nearby.x][nearby.y]
         if .RANGED_MINION in space.flags && space.unit_team != player.team {
             minion_modifiers -= 1
         }
