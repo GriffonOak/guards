@@ -511,7 +511,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card { name = "Fresh Converts",  // @incomplete
+    Card { name = "Fresh Converts",
         color       = .BLUE,
         initiative  = 10,
         tier        = 2,
@@ -521,15 +521,29 @@ xargatha_cards := []Card {
         item        = .ATTACK,
         text        = "If you are adjacent to an enemy minion,\nyou may retrieve a discarded card.",\
         primary_effect = []Action {
-            // Action {
-            //     tooltip = "Choose a discarded card to retrieve.",
-            //     optional = true,
-            //     variant = Choose_Card_Action{},
-            // },
-            // Action {
-            //     tooltip = error_tooltip,
-            //     variant = Retrieve_Card_Action{},
-            // },
+            Action {
+                tooltip = "Choose a discarded card to retrieve.",
+                condition = Greater_Than {
+                    Count_Targets {
+                        Within_Distance {
+                            Self{}, 1, 1,
+                        },
+                        Contains_Any(MINION_FLAGS),
+                        Ignoring_Immunity{},
+                        Is_Enemy_Unit{},
+                    },
+                    0,
+                },
+                variant = Choose_Card_Action{
+                    criteria = {.DISCARDED},
+                },
+            },
+            Action {
+                tooltip = error_tooltip,
+                variant = Retrieve_Card_Action {
+                    card = Previous_Card_Choice{},
+                },
+            },
         },
     },
     Card { name = "Lethal Spin",  // @Todo check wording

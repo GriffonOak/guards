@@ -211,7 +211,10 @@ add_game_ui_elements :: proc(gs: ^Game_State) {
         button_location = FIRST_SIDE_BUTTON_LOCATION,
     }
 
-    board_render_texture := rl.LoadRenderTexture(i32(BOARD_TEXTURE_SIZE.x), i32(BOARD_TEXTURE_SIZE.y))
+    board_render_texture: rl.RenderTexture2D
+    when !ODIN_TEST {
+        board_render_texture = rl.LoadRenderTexture(i32(BOARD_TEXTURE_SIZE.x), i32(BOARD_TEXTURE_SIZE.y))
+    }
 
     append(&gs.ui_stack, UI_Element {
         BOARD_POSITION_RECT,
@@ -244,5 +247,33 @@ add_game_ui_elements :: proc(gs: ^Game_State) {
                 })
             }
         }
+    }
+}
+
+increase_window_size :: proc() {
+    if window_size == .SMALL {
+        window_size = .BIG
+        rl.SetWindowSize(WIDTH, HEIGHT)
+        window_scale = 1
+    }
+}
+
+decrease_window_size :: proc() {
+    if window_size == .BIG {
+        window_size = .SMALL
+        rl.SetWindowSize(WIDTH / 2, HEIGHT / 2)
+        window_scale = 2
+    }
+}
+
+toggle_fullscreen :: proc() {
+    rl.ToggleBorderlessWindowed()
+    if window_size != .FULL_SCREEN {
+        window_size = .FULL_SCREEN
+        window_scale = WIDTH / f32(rl.GetRenderWidth())
+    } else {
+        window_size = .SMALL
+        rl.SetWindowSize(WIDTH / 2, HEIGHT / 2)
+        window_scale = 2
     }
 }

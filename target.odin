@@ -470,6 +470,7 @@ card_fulfills_criterion :: proc(gs: ^Game_State, card: Card, criterion: Card_Sel
 }
 
 make_card_targets :: proc(gs: ^Game_State, criteria: []Card_Selection_Criterion) -> (out: [dynamic]Card_ID) {
+    // @Note: At a later point, we probably have to consider cards from all heroes, as there are some actions that require choosing other players' cards
     for card in get_my_player(gs).hero.cards {
         if card_fulfills_criterion(gs, card, criteria[0]) {
             append(&out, card.id)

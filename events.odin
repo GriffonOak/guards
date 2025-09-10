@@ -2,15 +2,9 @@ package guards
 
 // This is a good file. It knows exactly what it is trying to do and does it extremely well.
 
-import rl "vendor:raylib"
-
 import "core:reflect"
 import "core:log"
 
-
-Increase_Window_Size_Event :: struct {}  
-Decrease_Window_Size_Event :: struct {}  
-Toggle_Fullscreen_Event :: struct {}
 
 Join_Game_Chosen_Event :: struct {}
 Host_Game_Chosen_Event :: struct {}
@@ -68,6 +62,10 @@ Card_Confirmed_Event :: struct {
 }
 
 Card_Discarded_Event :: struct {
+    card_id: Card_ID,
+}
+
+Card_Retrieved_Event :: struct {
     card_id: Card_ID,
 }
 
@@ -140,10 +138,6 @@ Game_Over_Event :: struct {
 
 Event :: union {
 
-    Increase_Window_Size_Event,
-    Decrease_Window_Size_Event,
-    Toggle_Fullscreen_Event,
-
     Join_Game_Chosen_Event,
     Host_Game_Chosen_Event,
 
@@ -156,13 +150,18 @@ Event :: union {
     Cancel_Event,
 
     Unit_Translocation_Event,
+
     Minion_Defeat_Event,
     Minion_Removal_Event,
     Minion_Spawn_Event,
     Minion_Blocked_Event,
+
     Card_Discarded_Event,
+    Card_Retrieved_Event,
+
     Hero_Defeated_Event,
     Hero_Respawn_Event,
+
     Add_Active_Effect_Event,
     Remove_Active_Effect_Event,
 
@@ -177,6 +176,7 @@ Event :: union {
     Begin_Resolution_Stage_Event,
     Resolve_Same_Team_Tied_Event,
     Begin_Player_Resolution_Event,
+
     Begin_Next_Action_Event,
     Resolve_Current_Action_Event,
     End_Resolution_Event,
@@ -205,32 +205,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     log.infof("EVENT: %v", reflect.union_variant_typeid(event))
     switch var in event {
-
-    case Increase_Window_Size_Event:
-        if window_size == .SMALL {
-            window_size = .BIG
-            rl.SetWindowSize(WIDTH, HEIGHT)
-            window_scale = 1
-        }
-
-    case Decrease_Window_Size_Event:
-        if window_size == .BIG {
-            window_size = .SMALL
-            rl.SetWindowSize(WIDTH / 2, HEIGHT / 2)
-            window_scale = 2
-        }
-    
-    case Toggle_Fullscreen_Event:
-        rl.ToggleBorderlessWindowed()
-        if window_size != .FULL_SCREEN {
-            window_size = .FULL_SCREEN
-            window_scale = WIDTH / f32(rl.GetRenderWidth())
-        } else {
-            window_size = .SMALL
-            rl.SetWindowSize(WIDTH / 2, HEIGHT / 2)
-            window_scale = 2
-        }
-
 
     case Join_Game_Chosen_Event:
         if join_local_game(gs) {
@@ -263,8 +237,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             action_index := get_my_player(gs).hero.current_action_index
             action := get_action_at_index(gs, action_index)
 
-            hovered_space := gs.ui_stack[0].variant.(UI_Board_Element).hovered_space
-            if !action.targets[hovered_space.x][hovered_space.y].member do break
+            if !action.targets[var.space.x][var.space.y].member do break
 
             #partial switch &action_variant in action.variant {
             case Fast_Travel_Action:
@@ -317,9 +290,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         case .SELECTING:
             #partial switch card.state {
             case .IN_HAND:
-                selected_element, ok2 := find_selected_card_element(gs)
 
-                if ok2 {
+                if selected_element, ok2 := find_selected_card_element(gs); ok2 {
                     selected_card_element := &selected_element.variant.(UI_Card_Element)
                     selected_card_element.selected = false
                     clear_side_buttons(gs)
@@ -354,7 +326,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 card_element_width := (SELECTION_BUTTON_SIZE.x - BUTTON_PADDING) / 2
                 card_element_height := card_element_width * 3.5 / 2.5
 
-                card_position_rect := rl.Rectangle {
+                card_position_rect := Rectangle {
                     FIRST_SIDE_BUTTON_LOCATION.x,
                     FIRST_SIDE_BUTTON_LOCATION.y - BUTTON_PADDING - card_element_height,
                     card_element_width,
@@ -664,6 +636,11 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         log.assert(ok, "Discarded card has invalid card ID!")
         discard_card(gs, card)
 
+    case Card_Retrieved_Event:
+        card, ok := get_card_by_id(gs, var.card_id)
+        log.assert(ok, "Retrieved card has invalid card ID!")
+        retrieve_card(gs, card)
+
     case Begin_Resolution_Stage_Event: 
         gs.stage = .RESOLUTION
 
@@ -858,6 +835,11 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             broadcast_game_event(gs, Card_Discarded_Event{card.id})
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
+        case Retrieve_Card_Action:
+            card := calculate_implicit_card(gs, action_type.card)
+            broadcast_game_event(gs, Card_Retrieved_Event{card.id})
+            append(&gs.event_queue, Resolve_Current_Action_Event{})
+
         case Get_Defeated_Action:
             // Here we assume the player who added the last interrupt is the one who kills us. This may not be correct always...
             // Would be nice to somehow store the defeater in the action itself
@@ -877,7 +859,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             broadcast_game_event(gs, Hero_Respawn_Event{gs.my_player_id, respawn_point})
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
-        case Fast_Travel_Action, Clear_Action, Choose_Card_Action, Retrieve_Card_Action:
+        case Fast_Travel_Action, Clear_Action, Choose_Card_Action:
             // nuffink
         }
 

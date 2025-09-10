@@ -55,6 +55,8 @@ Window_Size :: enum {
 Vec2 :: [2]f32
 // IVec2 :: [2]int
 
+Rectangle :: rl.Rectangle
+
 Void :: struct {}
 
 
@@ -133,6 +135,12 @@ main :: proc() {
     window_texture := rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT))
     rl.SetTextureFilter(window_texture.texture, .BILINEAR)
 
+    // Do the heroes!
+    hero_cards = {
+        .XARGATHA = xargatha_cards,
+    }
+    create_card_textures()
+
     gs: Game_State = {
         confirmed_players = 0,
         stage = .PRE_LOBBY,
@@ -155,9 +163,9 @@ main :: proc() {
             #partial switch var in event {
             case Key_Pressed_Event:
                 #partial switch var.key {
-                case .EQUAL: append(&gs.event_queue, Increase_Window_Size_Event{})
-                case.MINUS: append(&gs.event_queue, Decrease_Window_Size_Event{})
-                case .F: append(&gs.event_queue, Toggle_Fullscreen_Event{})
+                case .EQUAL: increase_window_size()
+                case.MINUS: decrease_window_size()
+                case .F: toggle_fullscreen()
                 }
             }
 

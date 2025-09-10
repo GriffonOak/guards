@@ -222,24 +222,25 @@ spawn_heroes_at_start :: proc(gs: ^Game_State) {
     }
 }
 
-setup_hero_cards :: proc(gs: ^Game_State) {
-    // Do the heroes!
-    hero_cards = {
-        .XARGATHA = xargatha_cards,
+create_card_textures :: proc() {
+    for hero_deck in hero_cards {
+        for &card in hero_deck {
+            create_texture_for_card(&card)
+        }
     }
+}
+
+setup_hero_cards :: proc(gs: ^Game_State) {
 
     for player_id in 0..<len(gs.players) {
         player := get_player_by_id(gs, player_id)
         hero_id := player.hero.id
 
-        for &card, index in hero_cards[hero_id] {
-            create_texture_for_card(&card)
-            if index < 5 {
-                player_card := &player.hero.cards[card.color]
-                player_card^ = card
-                player_card.state = .IN_HAND
-                player_card.owner = player_id
-            }
+        for &card in hero_cards[hero_id][:5] {
+            player_card := &player.hero.cards[card.color]
+            player_card^ = card
+            player_card.state = .IN_HAND
+            player_card.owner = player_id
         }
     }
 }

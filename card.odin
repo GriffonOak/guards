@@ -3,7 +3,7 @@ package guards
 import rl "vendor:raylib"
 import "core:strings"
 import "core:fmt"
-
+import "core:math"
 import "core:log"
 
 
@@ -302,6 +302,7 @@ create_texture_for_card :: proc(card: ^Card) {
 }
 
 draw_card: UI_Render_Proc: proc(gs: ^Game_State, element: UI_Element) {
+    if element.bounding_rect == {} do return
     card_element := assert_variant_rdonly(element.variant, UI_Card_Element)
 
     card, ok := get_card_by_id(gs, card_element.card_id)
@@ -325,6 +326,30 @@ draw_card: UI_Render_Proc: proc(gs: ^Game_State, element: UI_Element) {
     }
     // Looks a little bunk but I should revisit this
     // rl.DrawTexturePro(card_element.card.texture, {0, CARD_TEXTURE_SIZE.y - amount_to_show, CARD_TEXTURE_SIZE.x, -amount_to_show}, element.bounding_rect, {}, 0, rl.WHITE)
+
+    action := get_current_action(gs)
+    if action != nil {
+        if choose_card, ok2 := action.variant.(Choose_Card_Action); ok2 {
+            available: bool 
+            for card_id in choose_card.card_targets {
+                if card.id == card_id {
+                    available = true
+                    break
+                }
+            }
+            if available {
+                // Copy n paste from board highlighting
+                frequency: f64 = 8
+                color_blend := (math.sin(frequency * rl.GetTime()) + 1) / 2
+                color_blend = color_blend * color_blend
+                base_color := rl.DARKGRAY
+                highlight_color := rl.LIGHTGRAY
+                // color: = color_lerp(rl.BLUE, rl.ORANGE, color_blend)
+                color := color_lerp(base_color, highlight_color, color_blend)
+                rl.DrawRectangleLinesEx(element.bounding_rect, 8, color)
+            }
+        }
+    }
 
     if card_element.selected {
         rl.DrawRectangleLinesEx(element.bounding_rect, 8, rl.PURPLE)
@@ -435,7 +460,7 @@ retrieve_card :: proc(gs: ^Game_State, card: ^Card) {
     if card.owner == gs.my_player_id {
         element.bounding_rect = card_hand_position_rects[card.color]
     } else {
-        element.bounding_rect = {0, 0, 0, 0}
+        element.bounding_rect = {}
     }
 
     card.state = .IN_HAND

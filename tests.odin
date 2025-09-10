@@ -1,7 +1,7 @@
 package guards
 
 import "core:testing"
-
+import rl "vendor:raylib"
 
 something_else :: proc(gs: ^Game_State, events: []Event) {
 
@@ -38,8 +38,23 @@ test_basic_setup :: proc(t: ^testing.T) {
     events := []Event{Host_Game_Chosen_Event{}}
 
     append(&gs.event_queue, events[0])
-    resolve_event(&gs, events[0])
+    // resolve_event(&gs, events[0])
     // something_else(&gs, events)
 
     // testing.expect(t, gs.stage == .IN_LOBBY)
+}
+
+rectangle_proc :: proc(rect: rl.Rectangle) -> bool {
+    when !ODIN_TEST {
+        rl.SetConfigFlags({.MSAA_4X_HINT})
+    }
+    return rect.x == 0
+}
+
+@(test)
+test_sanity :: proc(t: ^testing.T) {
+    gs: Game_State
+    rect: rl.Rectangle
+    rectangle_proc(rect)
+    resolve_event(&gs, nil)
 }

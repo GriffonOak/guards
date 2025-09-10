@@ -2,6 +2,8 @@ package guards
 
 import "core:log"
 
+_ :: log
+
 Within_Distance :: struct {
     origin: Implicit_Target,
     min: Implicit_Quantity,
@@ -401,7 +403,8 @@ get_action_at_index :: proc(gs: ^Game_State, index: Action_Index, loc := #caller
     switch index.sequence {
     case .PRIMARY:
         card, ok := get_card_by_id(gs, index.card_id)
-        log.assert(ok, "no played card!!?!?!?!?!", loc)
+        if !ok do return nil
+        // log.assert(ok, "no played card!!?!?!?!?!", loc)
         action_sequence = card.primary_effect
     case .HALT:                 return nil
     case .DIE:                  action_sequence = get_defeated_action
