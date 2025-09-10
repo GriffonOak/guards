@@ -93,7 +93,9 @@ join_local_game :: proc(gs: ^Game_State) -> bool {
 test_host_local_game :: proc(t: ^testing.T) {
     gs: Game_State
 
-    begin_hosting_local_game(&gs)
+    out := begin_hosting_local_game(&gs)
+
+    testing.expect(t, out, "Failed to begin hosting!")
 
     testing.expect(t, gs.is_host, "Failed to become host!")
     testing.expect(t, len(gs.players) == 1, "There is not exactly 1 player!")
@@ -245,6 +247,6 @@ process_network_packets :: proc(gs: ^Game_State) {
             append(&gs.event_queue, event)
         }
     }
-    clear(&gs.network_queue)
 
+    clear(&gs.network_queue)
 }

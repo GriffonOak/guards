@@ -137,7 +137,6 @@ main :: proc() {
     gs: Game_State = {
         confirmed_players = 0,
         stage = .PRE_LOBBY,
-        current_battle_zone = .CENTRE,
         tooltip = "Choose to host a game or join a game.",
     }
 
@@ -218,17 +217,12 @@ main :: proc() {
 
         rl.ClearBackground(rl.BLACK)
 
-        // rl.DrawCircleV({200, 200}, 200, rl.RED)
-
-        // scale_factor: f32 = 1.0 if window_size == .BIG else 0.5
         rl.DrawTexturePro(
             window_texture.texture,
             {0, 0, WIDTH, -HEIGHT},
             {0, 0, WIDTH / window_scale, HEIGHT / window_scale},
             {0, 0}, 0, rl.WHITE,
         )
-
-        // rl.DrawCircleV({200, 200}, 200, rl.RED)
 
         rl.EndDrawing()
 

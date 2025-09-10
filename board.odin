@@ -557,7 +557,7 @@ render_board_to_texture :: proc(gs: ^Game_State, board_element: UI_Board_Element
     when ODIN_DEBUG {
         for x in 0..<GRID_WIDTH {
             for y in 0..<GRID_HEIGHT {
-                space := board[x][y]
+                space := gs.board[x][y]
                 coords := fmt.ctprintf("%d,%d", x, y)
                 bound := rl.MeasureTextEx(default_font, coords, 30, 0)
                 rl.DrawTextEx(default_font, coords, space.position - bound / 2, 30, 0, rl.BLACK)
