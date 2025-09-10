@@ -91,9 +91,11 @@ null_render_proc: UI_Render_Proc : proc(_: ^Game_State, _: UI_Element) {}
 check_outside_or_deselected :: proc(input: Input_Event, element: UI_Element) -> bool {
     #partial switch var in input {
     case Mouse_Up_Event, Mouse_Down_Event, Mouse_Pressed_Event, Mouse_Motion_Event:
+when !ODIN_TEST {
         if !rl.CheckCollisionPointRec(ui_state.mouse_pos, element.bounding_rect) {
             return false
         }
+}
     case Input_Already_Consumed:
         return false
     }
@@ -124,7 +126,7 @@ draw_button: UI_Render_Proc : proc(_: ^Game_State, element: UI_Element) {
     button_element := assert_variant_rdonly(element.variant, UI_Button_Element)
 
     TEXT_PADDING :: 20
-
+when !ODIN_TEST {
     rl.DrawRectangleRec(element.bounding_rect, rl.GRAY)
     rl.DrawTextEx(
         default_font,
@@ -137,6 +139,7 @@ draw_button: UI_Render_Proc : proc(_: ^Game_State, element: UI_Element) {
     if button_element.hovered {
         rl.DrawRectangleLinesEx(element.bounding_rect, TEXT_PADDING / 2, rl.WHITE)
     }
+}
 }
 
 format_tooltip :: proc(gs: ^Game_State, tooltip: Tooltip) -> cstring {

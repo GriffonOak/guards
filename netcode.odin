@@ -24,13 +24,8 @@ Set_Client_Player_ID :: struct {
     player_id: Player_ID,
 }
 
-Update_Player_Data :: struct {
-    player: Player,
-}
-
 Network_Event :: union {
     Set_Client_Player_ID,
-    Update_Player_Data,
     Event,
 }
 
@@ -120,10 +115,12 @@ begin_hosting_local_game :: proc(gs: ^Game_State) -> bool {
 		port    = GUARDS_PORT,
 	}
 	sock, err := net.listen_tcp(endpoint)
+when !ODIN_TEST {  // Apparently the address is in use during testing (?)
 	if err != nil {
-		log.error("Failed to listen on TCP")
+		log.error("Failed to listen on TCP:", err)
 		return false
 	}
+}
 	log.debug("Listening on TCP: %s", net.endpoint_to_string(endpoint))
 
     gs.my_player_id = 0
@@ -176,10 +173,10 @@ _thread_host_wait_for_clients :: proc(gs: ^Game_State, sock: net.TCP_Socket) {
             for player, player_id in gs.players {
                 if player_id != 0 {
                     // Update existing player that new player has joined
-                    send_network_packet_socket(player.socket, {0, Update_Player_Data{client_player}})
+                    send_network_packet_socket(player.socket, {0, Event(Update_Player_Data_Event{client_player})})
                 }
                 // Inform joining player of existing player
-                send_network_packet_socket(client, {0, Update_Player_Data{player}})
+                send_network_packet_socket(client, {0, Event(Update_Player_Data_Event{player})})
             }
 
             send_network_packet_socket(client, {0, Set_Client_Player_ID{client_player_id}})
@@ -238,9 +235,6 @@ process_network_packets :: proc(gs: ^Game_State) {
             if !gs.is_host {
                 gs.my_player_id = event.player_id
             }
-
-        case Update_Player_Data:
-            add_or_update_player(gs, event.player)
 
         case Event:
             log.infof("NET: %v", reflect.union_variant_typeid(event))

@@ -303,6 +303,7 @@ create_texture_for_card :: proc(card: ^Card) {
 
 draw_card: UI_Render_Proc: proc(gs: ^Game_State, element: UI_Element) {
     if element.bounding_rect == {} do return
+when !ODIN_TEST {
     card_element := assert_variant_rdonly(element.variant, UI_Card_Element)
 
     card, ok := get_card_by_id(gs, card_element.card_id)
@@ -359,6 +360,7 @@ draw_card: UI_Render_Proc: proc(gs: ^Game_State, element: UI_Element) {
         rl.DrawRectangleLinesEx(element.bounding_rect, 4, rl.WHITE)
         // rl.DrawRectangleLinesEx(CARD_HOVER_POSITION_RECT, 2, rl.RAYWHITE)
     }
+}
 }
 
 get_card_by_id :: proc(gs: ^Game_State, card_id: Card_ID) -> (card: ^Card, ok: bool) { // #optional_ok {

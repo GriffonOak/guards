@@ -278,6 +278,12 @@ setup_board :: proc(gs: ^Game_State) {
 board_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, element: ^UI_Element) -> (output: bool = false) {
 
     board_element := assert_variant(&element.variant, UI_Board_Element)
+    prev_hovered_space := board_element.hovered_space
+    defer {
+        if board_element.hovered_space != prev_hovered_space {
+            append(&gs.event_queue, Space_Hovered_Event{board_element.hovered_space})
+        }
+    }
 
     if !check_outside_or_deselected(input, element^) {
         board_element.hovered_space = INVALID_TARGET
@@ -310,28 +316,6 @@ board_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, elem
             board_element.hovered_space = closest_idx
         } else {
             board_element.hovered_space = INVALID_TARGET
-        }
-
-
-        #partial switch get_my_player(gs).stage {
-        case .RESOLVING, .INTERRUPTING:
-            action_index := get_my_player(gs).hero.current_action_index
-            action := get_action_at_index(gs, action_index)
-            #partial switch &action_variant in action.variant {
-            case Movement_Action:
-                resize(&action_variant.path.spaces, action_variant.path.num_locked_spaces)
-
-                if board_element.hovered_space == INVALID_TARGET do break
-                if !action.targets[board_element.hovered_space.x][board_element.hovered_space.y].member do break
-
-                starting_space := action_variant.path.spaces[action_variant.path.num_locked_spaces - 1]
-
-                current_space := board_element.hovered_space
-                for ; current_space != starting_space; current_space = action.targets[current_space.x][current_space.y].prev_loc {
-                    inject_at(&action_variant.path.spaces, action_variant.path.num_locked_spaces, current_space)
-                }
-
-            }
         }
     }
 
@@ -571,8 +555,9 @@ render_board_to_texture :: proc(gs: ^Game_State, board_element: UI_Board_Element
 draw_board: UI_Render_Proc : proc(_: ^Game_State, element: UI_Element) {
 
     board_element := element.variant.(UI_Board_Element)
-
+when !ODIN_TEST {
     rl.DrawTexturePro(board_element.texture.texture, {0, 0, BOARD_TEXTURE_SIZE.x, -BOARD_TEXTURE_SIZE.y}, element.bounding_rect, {0, 0}, 0, rl.WHITE)
+}
 
     // rl.DrawRectangleLinesEx(BOARD_POSITION_RECT, 4, rl.WHITE)
 }

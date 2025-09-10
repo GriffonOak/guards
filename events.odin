@@ -9,8 +9,16 @@ import "core:log"
 Join_Game_Chosen_Event :: struct {}
 Host_Game_Chosen_Event :: struct {}
 
+Update_Player_Data_Event :: struct {
+    player: Player,
+}
+
 Enter_Lobby_Event :: struct {}
 Begin_Game_Event :: struct {}
+
+Space_Hovered_Event :: struct {
+    space: Target,
+}
 
 Space_Clicked_Event :: struct {
     space: Target,
@@ -141,9 +149,12 @@ Event :: union {
     Join_Game_Chosen_Event,
     Host_Game_Chosen_Event,
 
+    Update_Player_Data_Event,
+
     Enter_Lobby_Event,
     Begin_Game_Event,
-
+    
+    Space_Hovered_Event,
     Space_Clicked_Event,
     Card_Clicked_Event,
     // Confirm_Event,
@@ -216,6 +227,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             append(&gs.event_queue, Enter_Lobby_Event{})
         }
 
+    case Update_Player_Data_Event:
+        add_or_update_player(gs, var.player)
+
 
     case Enter_Lobby_Event:
         gs.stage = .IN_LOBBY
@@ -230,6 +244,27 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Begin_Game_Event:
         begin_game(gs)
+
+    case Space_Hovered_Event:
+        #partial switch get_my_player(gs).stage {
+        case .RESOLVING, .INTERRUPTING:
+            action_index := get_my_player(gs).hero.current_action_index
+            action := get_action_at_index(gs, action_index)
+            #partial switch &action_variant in action.variant {
+            case Movement_Action:
+                resize(&action_variant.path.spaces, action_variant.path.num_locked_spaces)
+
+                if var.space == INVALID_TARGET do break
+                if !action.targets[var.space.x][var.space.y].member do break
+
+                starting_space := action_variant.path.spaces[action_variant.path.num_locked_spaces - 1]
+
+                current_space := var.space
+                for ; current_space != starting_space; current_space = action.targets[current_space.x][current_space.y].prev_loc {
+                    inject_at(&action_variant.path.spaces, action_variant.path.num_locked_spaces, current_space)
+                }
+            }
+        }
 
     case Space_Clicked_Event:
         #partial switch get_my_player(gs).stage {
@@ -1160,7 +1195,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         gs.upgraded_players += 1
 
         if gs.upgraded_players == len(gs.players) {
-            broadcast_network_event(gs, Update_Player_Data{get_my_player(gs)^})
+            broadcast_game_event(gs, Update_Player_Data_Event{get_my_player(gs)^})
             gs.turn_counter = 0
             if gs.is_host {
                 broadcast_game_event(gs, Begin_Card_Selection_Event{})
