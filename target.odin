@@ -74,7 +74,7 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
     xarg_freeze: { // Disable movement on xargatha freeze
         freeze, ok := gs.ongoing_active_effects[.XARGATHA_FREEZE]
         if !ok do break xarg_freeze
-        if calculate_implicit_quantity(gs, freeze.duration.(Single_Turn), freeze.parent_card_id) != gs.turn_counter do break xarg_freeze
+        if calculate_implicit_quantity(gs, freeze.timing.(Single_Turn), freeze.parent_card_id) != gs.turn_counter do break xarg_freeze
         context.allocator = context.temp_allocator
         my_location := get_my_player(gs).hero.location
         freeze_targets := make_arbitrary_targets(gs, freeze.target_set, freeze.parent_card_id)
@@ -130,7 +130,7 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         return out
 
     // @Note maybe respawn should check if we're dead
-    case Halt_Action, Attack_Action, Add_Active_Effect_Action, Minion_Removal_Action, Jump_Action, Minion_Spawn_Action, Get_Defeated_Action, Respawn_Action:
+    case Halt_Action, Attack_Action, Add_Active_Effect_Action, Minion_Defeat_Action, Minion_Removal_Action, Jump_Action, Minion_Spawn_Action, Get_Defeated_Action, Respawn_Action:
         return true
 
     case Choose_Card_Action:

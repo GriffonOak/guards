@@ -36,12 +36,18 @@ Active_Effect_Kind :: enum {
     XARGATHA_DEFEAT,
 }
 
-End_Of_Round :: struct {}
+End_Of_Turn :: struct {
+    extra_action_index: Action_Index,
+}
+
+End_Of_Round :: struct {
+    extra_action_index: Action_Index,
+}
 
 Single_Turn :: Implicit_Quantity
 
-Effect_Duration :: union {
-    // End_Of_Turn,
+Effect_Timing :: union {
+    End_Of_Turn,
     End_Of_Round,
     Single_Turn,
 }
@@ -54,7 +60,7 @@ Active_Effect_ID :: struct {
 Active_Effect :: struct {
     using id: Active_Effect_ID,
 
-    duration: Effect_Duration,
+    timing: Effect_Timing,
     target_set: []Selection_Criterion,
 }
 
@@ -82,13 +88,22 @@ Expanded_Interrupt :: struct {
     interrupt: Interrupt,
     previous_stage: Player_Stage,
     on_resolution: Event,
+    // global_resolution: bool,  @Cleanup I think something like this would simplify a lot of the interrupt flows
     previous_action_index: Action_Index,
 }
 
-become_interrupted :: proc(gs: ^Game_State, interrupt: Interrupt, on_resolution: Event) {
-
+become_interrupted :: proc(
+    gs: ^Game_State,
+    interrupting_player_id: Player_ID,
+    interrupt_variant: Interrupt_Variant,
+    on_resolution: Event,
+) {
+    interrupt := Interrupt {
+        gs.my_player_id, interrupting_player_id,
+        interrupt_variant,
+    }
     append(&gs.interrupt_stack, Expanded_Interrupt {
-        interrupt, 
+        interrupt,
         get_my_player(gs).stage,
         on_resolution,
         get_my_player(gs).hero.current_action_index,

@@ -241,7 +241,7 @@ xargatha_cards := []Card {
                 variant = Add_Active_Effect_Action {
                     effect = Active_Effect {
                         kind = .XARGATHA_FREEZE,
-                        duration = Single_Turn(Sum{Turn_Played{}, 1}),
+                        timing = Single_Turn(Sum{Turn_Played{}, 1}),
                         target_set = []Selection_Criterion {
                             Within_Distance {
                                 Card_Owner{},
@@ -440,7 +440,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card { name = "Constrict",  // @incomplete
+    Card { name = "Constrict",
         color       = .GREEN,
         initiative  = 4,
         tier        = 2,
@@ -450,18 +450,44 @@ xargatha_cards := []Card {
         item        = .INITIATIVE,
         text        = "End of round: Defeat an enemy\nmelee minion adjacent to you.",
         primary_effect = []Action {
-            // Action {
-            //     tooltip = error_tooltip,
-            //     variant = Add_Active_Effect_Action {
-            //         effect = Active_Effect {
-            //             kind = .XARGATHA_DEFEAT,
-            //             duration = End_Of_Round{},
-            //         },
-            //     },
-            // },
-            // Action {
-            //     variant = Halt_Action{},
-            // },
+            Action {
+                tooltip = error_tooltip,
+                variant = Add_Active_Effect_Action {
+                    effect = Active_Effect {
+                        kind = .XARGATHA_DEFEAT,
+                        timing = End_Of_Round {
+                            extra_action_index = Action_Index {
+                                sequence = .PRIMARY,
+                                index = 2,
+                            },
+                        },
+                    },
+                },
+            },
+            Action {  // "Turn action" stops here
+                variant = Halt_Action{},
+            },
+            Action {  // "Extra action" at end of round starts here
+                tooltip = "Defeat an enemy melee minion adjacent to you.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    criteria = {
+                        Within_Distance {
+                            origin = Self{},
+                            min = 1,
+                            max = 1,
+                        },
+                        Contains_Any({.MELEE_MINION}),
+                        Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = error_tooltip,
+                variant = Minion_Defeat_Action {
+                    target = Previous_Choice{},
+                },
+            },
         },
     },
     Card { name = "Petrifying Stare",
@@ -479,7 +505,7 @@ xargatha_cards := []Card {
                 variant = Add_Active_Effect_Action {
                     effect = Active_Effect {
                         kind = .XARGATHA_FREEZE,
-                        duration = Single_Turn(Sum{Turn_Played{}, 1}),
+                        timing = Single_Turn(Sum{Turn_Played{}, 1}),
                     },
                 },
             },
@@ -506,7 +532,7 @@ xargatha_cards := []Card {
             // },
         },
     },
-    Card { name = "Lethal Spin",
+    Card { name = "Lethal Spin",  // @Todo check wording
         color       = .RED,
         initiative  = 8,
         tier        = 3,
@@ -514,7 +540,7 @@ xargatha_cards := []Card {
         primary     = .ATTACK,
         primary_sign = .PLUS,
         item        = .RADIUS,
-        text        = "Target a unit adjacent to you. +2 Attack\nfor each other enemy unit adjacent to you.",
+        text        = "Target a unit adjacent to you. +3 Attack\nfor each other enemy unit adjacent to you.",
         primary_effect = []Action {
             Action {
                 tooltip = "Target a unit adjacent to you.",
@@ -727,7 +753,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card { name = "Final Embrace",  // @incomplete
+    Card { name = "Final Embrace",
         color       = .GREEN,
         initiative  = 4,
         tier        = 3,
@@ -735,20 +761,46 @@ xargatha_cards := []Card {
         values      = #partial{.DEFENSE = 3, .MOVEMENT = 2},
         primary     = .SKILL,
         item        = .INITIATIVE,
-        text        = "End of round: Defeat an enemy\nmelee minion adjacent to you.",
+        text        = "End of round: Defeat an enemy\nmelee or ranged minion adjacent to you.",  // @Todo check wording here
         primary_effect = []Action {
-            // Action {
-            //     tooltip = error_tooltip,
-            //     variant = Add_Active_Effect_Action {
-            //         effect = Active_Effect {
-            //             kind = .XARGATHA_DEFEAT,
-            //             duration = End_Of_Round{},
-            //         },
-            //     },
-            // },
-            // Action {
-            //     variant = Halt_Action{},
-            // },
+            Action {
+                tooltip = error_tooltip,
+                variant = Add_Active_Effect_Action {
+                    effect = Active_Effect {
+                        kind = .XARGATHA_DEFEAT,
+                        timing = End_Of_Round {
+                            extra_action_index = Action_Index {
+                                sequence = .PRIMARY,
+                                index = 2,
+                            },
+                        },
+                    },
+                },
+            },
+            Action {  // "Turn action" stops here
+                variant = Halt_Action{},
+            },
+            Action {  // "Extra action" at end of round starts here
+                tooltip = "Defeat an enemy melee minion adjacent to you.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    criteria = {
+                        Within_Distance {
+                            origin = Self{},
+                            min = 1,
+                            max = 1,
+                        },
+                        Contains_Any({.MELEE_MINION, .RANGED_MINION}),
+                        Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = error_tooltip,
+                variant = Minion_Defeat_Action {
+                    target = Previous_Choice{},
+                },
+            },
         },
     },
     Card { name = "Turn Into Statues",
@@ -766,13 +818,13 @@ xargatha_cards := []Card {
                 variant = Add_Active_Effect_Action {
                     effect = Active_Effect {
                         kind = .XARGATHA_FREEZE,
-                        duration = Single_Turn(Sum{Turn_Played{}, 1}),
+                        timing = Single_Turn(Sum{Turn_Played{}, 1}),
                     },
                 },
             },
         },
     },
-    Card { name = "Devoted Followers",  // @incomplete
+    Card { name = "Devoted Followers",  // @incomplete, @Todo check wording
         color       = .BLUE,
         initiative  = 10,
         tier        = 2,
@@ -780,7 +832,7 @@ xargatha_cards := []Card {
         values      = #partial{.DEFENSE = 6, .MOVEMENT = 3},
         primary     = .SKILL,
         item        = .ATTACK,
-        text        = "If you are adjacent to an enemy minion,\nyou may retrieve a discarded card.",\
+        text        = "If you are adjacent to an enemy minion,\nyou may retrieve a discarded card.",
         primary_effect = []Action {
             // Action {
             //     tooltip = "Choose a discarded card to retrieve.",

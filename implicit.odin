@@ -55,7 +55,12 @@ Implicit_Target :: union {
     Card_Owner,
 }
 
+Previous_Choices :: struct {}
 
+Implicit_Target_Slice :: union {
+    []Target,
+    Previous_Choices,
+}
 
 Greater_Than :: struct {
     term_1, term_2: Implicit_Quantity,
@@ -154,6 +159,22 @@ calculate_implicit_target :: proc(gs: ^Game_State, implicit_target: Implicit_Tar
         return get_player_by_id(gs, card.owner).hero.location
     }
     return
+}
+
+calculate_implicit_target_slice :: proc(gs: ^Game_State, implicit_slice: Implicit_Target_Slice) -> []Target {
+    switch slice in implicit_slice {
+    case []Target: return slice
+    case Previous_Choices:
+        index := get_my_player(gs).hero.current_action_index
+        index.index -= 1
+        for ; true; index.index -= 1 {
+            action := get_action_at_index(gs, index)
+            if variant, ok := action.variant.(Choose_Target_Action); ok {
+                return variant.result[:]
+            }
+        }
+    }
+    return {}
 }
 
 calculate_implicit_condition :: proc (

@@ -15,7 +15,6 @@ _ :: math
 _ :: strings
 
 // Todo list
-// Once those are figured out, do xargatha minion defeat greens
 // Finish implementing xargatha cards (retrieval blues)
 // Highlight chooseable cards for selection, defense, & upgrading
 // Highlight items when hovering over upgrade options

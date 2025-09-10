@@ -286,6 +286,13 @@ create_texture_for_card :: proc(card: ^Card) {
         item_text_dimensions := rl.MeasureTextEx(default_font, item_initial, TITLE_FONT_SIZE, FONT_SPACING)
         rl.DrawTextEx(default_font, item_initial, {0, y_offset} + ({CARD_TEXTURE_SIZE.x, COLORED_BAND_WIDTH} - item_text_dimensions) / 2, TITLE_FONT_SIZE, FONT_SPACING, rl.WHITE)
     }
+
+    // Unimplemented warning
+    if len(card.primary_effect) == 0 {
+        unimplemented_text: cstring = "UNIMPLEMENTADO"
+        unimplemented_dimensions := rl.MeasureTextEx(default_font, unimplemented_text, TITLE_FONT_SIZE, FONT_SPACING)
+        rl.DrawTextEx(default_font, unimplemented_text, (CARD_TEXTURE_SIZE - unimplemented_dimensions) / 2, TITLE_FONT_SIZE, FONT_SPACING, rl.RED)
+    }
     
     rl.EndTextureMode()
 

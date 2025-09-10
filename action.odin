@@ -104,7 +104,14 @@ Add_Active_Effect_Action :: struct {
 
 Halt_Action :: struct {}
 
-Minion_Removal_Action :: struct {}
+Minion_Defeat_Action :: struct {
+    target: Implicit_Target,
+}
+
+Minion_Removal_Action :: struct {
+    targets: Implicit_Target_Slice,
+}
+
 Minion_Spawn_Action :: struct {
     location, spawnpoint: Implicit_Target,
 }
@@ -157,6 +164,7 @@ Action_Variant :: union {
     Respawn_Action,
 
     Minion_Removal_Action,
+    Minion_Defeat_Action,
     Minion_Spawn_Action,
 }
 
@@ -317,7 +325,9 @@ minion_removal_action := []Action {
         },
     },
     Action {
-        variant = Minion_Removal_Action{},
+        variant = Minion_Removal_Action{
+            targets = Previous_Choices{},
+        },
     },
 }
 

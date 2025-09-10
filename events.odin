@@ -94,6 +94,8 @@ Check_Minions_Outside_Zone_Event :: struct {}
 
 Resolutions_Completed_Event :: struct {}
 
+End_Of_Turn_Event :: struct {}
+
 Begin_Minion_Battle_Event :: struct {}
 
 End_Minion_Battle_Event :: struct {}
@@ -110,6 +112,10 @@ Hero_Respawn_Event :: struct {
 
 Add_Active_Effect_Event :: struct {
     effect_id: Active_Effect_ID,
+}
+
+Remove_Active_Effect_Event :: struct {
+    effect_kind: Active_Effect_Kind,
 }
 
 Begin_Wave_Push_Event :: struct {
@@ -158,6 +164,7 @@ Event :: union {
     Hero_Defeated_Event,
     Hero_Respawn_Event,
     Add_Active_Effect_Event,
+    Remove_Active_Effect_Event,
 
     Begin_Interrupt_Event,
     Resolve_Interrupt_Event,
@@ -176,6 +183,7 @@ Event :: union {
     Check_Minions_Outside_Zone_Event,
 
     Resolutions_Completed_Event,
+    End_Of_Turn_Event,
 
     Begin_Minion_Battle_Event,
     
@@ -555,13 +563,15 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         log.assertf(ok, "Invalid card ID in new active effect!")
         effect_action := parent_card.primary_effect[0].variant.(Add_Active_Effect_Action).effect
 
-        // todo set duration & target set from parent card
         log.infof("Adding active effect: %v", var.effect_id.kind)
         gs.ongoing_active_effects[var.effect_id.kind] = Active_Effect {
             var.effect_id,
-            effect_action.duration,
+            effect_action.timing,
             effect_action.target_set,
         }
+
+    case Remove_Active_Effect_Event:
+        delete_key(&gs.ongoing_active_effects, var.effect_kind)
 
     case Begin_Interrupt_Event:
         interrupt := var.interrupt
@@ -696,10 +706,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         if get_my_player(gs).hero.dead {
             become_interrupted (
                 gs,
-                Interrupt {
-                    interrupted_player = gs.my_player_id, interrupting_player = gs.my_player_id,
-                    variant = Action_Index{sequence = .RESPAWN, index = 0},
-                },
+                gs.my_player_id,
+                Action_Index{sequence = .RESPAWN, index = 0},
                 Begin_Next_Action_Event{},
             )
             break
@@ -769,10 +777,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 if defeat_minion(gs, target) {  // Add a wave push interrupt if the minion defeated was the last one
                     become_interrupted (
                         gs,
-                        Interrupt {
-                            gs.my_player_id, 0,
-                            Wave_Push_Interrupt{get_my_player(gs).team},
-                        },
+                        0,  // Host ID
+                        Wave_Push_Interrupt{get_my_player(gs).team},
                         Resolve_Current_Action_Event{},
                     )
                 } else {
@@ -782,11 +788,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 owner := space.owner
                 become_interrupted (
                     gs,
-                    Interrupt {
-                        gs.my_player_id, owner,
-                        Attack_Interrupt {
-                            strength = attack_strength,
-                        },
+                    owner,
+                    Attack_Interrupt {
+                        strength = attack_strength,
                     },
                     Resolve_Current_Action_Event{},
                 )
@@ -794,7 +798,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         
         case Add_Active_Effect_Action:
             effect_id := action_type.effect.id
-            parent_card, ok := find_played_card(gs)
+            parent_card, ok := get_card_by_id(gs, action_index.card_id)
             log.assert(ok, "Could not resolve parent card when adding an active effect!")
             effect_id.parent_card_id = parent_card.id
             broadcast_game_event(gs, Add_Active_Effect_Event{effect_id})
@@ -803,9 +807,26 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         case Halt_Action:
             end_current_action_sequence(gs)
 
+        case Minion_Defeat_Action:
+            target := calculate_implicit_target(gs, action_type.target, action_index.card_id)
+            space := gs.board[target.x][target.y]
+            if MINION_FLAGS & space.flags != {} {
+                if defeat_minion(gs, target) {  // Add a wave push interrupt if the minion defeated was the last one
+                    become_interrupted (
+                        gs,
+                        0,  // Host ID
+                        Wave_Push_Interrupt{get_my_player(gs).team},
+                        Resolve_Current_Action_Event{},
+                    )
+                } else {
+                    append(&gs.event_queue, Resolve_Current_Action_Event{})
+                }
+            }
+
         case Minion_Removal_Action:
+            // This assert might not be necessary once we expand to more cases where minions can get removed.
             log.assert(get_my_player(gs).is_team_captain && get_my_player(gs).stage == .INTERRUPTING && gs.stage == .MINION_BATTLE)
-            minions_to_remove := minion_removal_action[0].variant.(Choose_Target_Action).result
+            minions_to_remove := calculate_implicit_target_slice(gs, action_type.targets)
             for minion in minions_to_remove {
                 log.assert(!remove_minion(gs, minion), "Minion removal during battle caused wave push!")
             }
@@ -955,19 +976,15 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         if needs_interrupt[gs.tiebreaker_coin] {
             become_interrupted (
                 gs,
-                Interrupt {
-                    gs.my_player_id, gs.team_captains[gs.tiebreaker_coin],
-                    Action_Index{sequence = .MINION_OUTSIDE_ZONE, index = 0},
-                },
+                gs.team_captains[gs.tiebreaker_coin],
+                Action_Index{sequence = .MINION_OUTSIDE_ZONE, index = 0},
                 Check_Minions_Outside_Zone_Event{},
             )
         } else if non_tb_team := get_enemy_team(gs.tiebreaker_coin); needs_interrupt[non_tb_team] {
             become_interrupted (
                 gs,
-                Interrupt {
-                    gs.my_player_id, gs.team_captains[non_tb_team],
-                    Action_Index{sequence = .MINION_OUTSIDE_ZONE, index = 0},
-                },
+                gs.team_captains[non_tb_team],
+                Action_Index{sequence = .MINION_OUTSIDE_ZONE, index = 0},
                 Check_Minions_Outside_Zone_Event{},
             )
         } else {
@@ -975,22 +992,64 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         }
 
     case Resolutions_Completed_Event:
-        // Check for end of turn effects and stuff here
+        gs.turn_counter += 1
+        if gs.is_host {
+            append(&gs.event_queue, End_Of_Turn_Event{})
+        }
+
+    case End_Of_Turn_Event:
+        log.assert(gs.is_host, "Clients should not be resolving end of turn")
+
+        
+        // Start any extra actions from end of turn effects
+        // @Todo in the future we need to care more about the order in which end of turn effects take place
         for effect_kind, effect in gs.ongoing_active_effects {
-            if turn, ok := effect.duration.(Single_Turn); ok && calculate_implicit_quantity(gs, turn, effect.parent_card_id) == gs.turn_counter {
-                log.infof("Removing active effect: %v", effect_kind)
-                delete_key(&gs.ongoing_active_effects, effect_kind)
+            #partial switch timing in effect.timing {
+            case End_Of_Turn:
+                broadcast_game_event(gs, Remove_Active_Effect_Event{effect_kind})
+                action_index := timing.extra_action_index
+                action_index.card_id = effect.parent_card_id  // Very important do to this otherwise we get lost
+                become_interrupted (
+                    gs,
+                    effect.parent_card_id.owner,
+                    action_index,
+                    End_Of_Turn_Event{},
+                )
+                return
             }
         }
 
-        gs.turn_counter += 1
-        if gs.is_host {
-            if gs.turn_counter >= 4 {
-                // End of round stuffs
-                broadcast_game_event(gs, Begin_Minion_Battle_Event{})
-            } else {
-                broadcast_game_event(gs, Begin_Card_Selection_Event{})
+        // Remove effects that last for the turn
+        for effect_kind, effect in gs.ongoing_active_effects {
+            #partial switch timing in effect.timing {
+            case Single_Turn:
+                if calculate_implicit_quantity(gs, timing, effect.parent_card_id) != gs.turn_counter {
+                    broadcast_game_event(gs, Remove_Active_Effect_Event{effect_kind})
+                }
             }
+        }
+
+        if gs.turn_counter < 4 {
+            broadcast_game_event(gs, Begin_Card_Selection_Event{})
+        } else {
+            // Start any extra actions from end of round effects
+            // @Todo in the future we need to care more about the order in which end of turn effects take place
+            for effect_kind, effect in gs.ongoing_active_effects {
+                #partial switch timing in effect.timing {
+                case End_Of_Round:
+                    broadcast_game_event(gs, Remove_Active_Effect_Event{effect_kind})
+                    action_index := timing.extra_action_index
+                    action_index.card_id = effect.parent_card_id  // Very important do to this otherwise we get lost
+                    become_interrupted (
+                        gs,
+                        effect.parent_card_id.owner,
+                        action_index,
+                        End_Of_Turn_Event{},
+                    )
+                    return
+                }
+            }
+            broadcast_game_event(gs, Begin_Minion_Battle_Event{})
         }
 
 
@@ -1010,19 +1069,15 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             if abs(minion_difference) >= gs.minion_counts[pushed_team] {
                 become_interrupted (
                     gs,
-                    Interrupt {
-                        gs.my_player_id, gs.my_player_id,
-                        Wave_Push_Interrupt{pushing_team},
-                    },
+                    gs.my_player_id,
+                    Wave_Push_Interrupt{pushing_team},
                     End_Minion_Battle_Event{},
                 )
             } else {
                 become_interrupted (
                     gs,
-                    Interrupt {
-                        gs.my_player_id, gs.team_captains[pushed_team],
-                        Action_Index{sequence = .MINION_REMOVAL, index = 0},
-                    },
+                    gs.team_captains[pushed_team],
+                    Action_Index{sequence = .MINION_REMOVAL, index = 0},
                     End_Minion_Battle_Event{},
                 )
             }
@@ -1078,10 +1133,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         if len(gs.blocked_spawns[var.team]) > 0 {
             become_interrupted (
                 gs,
-                Interrupt {
-                    gs.my_player_id, gs.team_captains[var.team],
-                    Action_Index{sequence = .MINION_SPAWN, index = 0},
-                },
+                gs.team_captains[var.team],
+                Action_Index{sequence = .MINION_SPAWN, index = 0},
                 next_event,
             )
         } else {
