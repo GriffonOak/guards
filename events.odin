@@ -6,6 +6,8 @@ import "core:reflect"
 import "core:log"
 
 
+Marker_Event :: struct {}
+
 Join_Game_Chosen_Event :: struct {}
 Host_Game_Chosen_Event :: struct {}
 
@@ -146,6 +148,8 @@ Game_Over_Event :: struct {
 
 Event :: union {
 
+    Marker_Event,
+
     Join_Game_Chosen_Event,
     Host_Game_Chosen_Event,
 
@@ -216,6 +220,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     log.infof("EVENT: %v", reflect.union_variant_typeid(event))
     switch var in event {
+
+    case Marker_Event:
+        return
 
     case Join_Game_Chosen_Event:
         if join_local_game(gs) {

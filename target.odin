@@ -83,7 +83,7 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         log.assert(ok2, "Could not find played card when checking for Xargatha freeze")
         played_card_data, ok3 := get_card_data_by_id(gs, played_card)
         log.assert(ok3, "Could not find played card data when checking for Xargatha freeze")
-        if index.sequence == .BASIC_MOVEMENT || (index.index == 0 && index.sequence == .PRIMARY && played_card_data.primary == .MOVEMENT) {
+        if index.sequence == .BASIC_MOVEMENT || index.sequence == .BASIC_FAST_TRAVEL || (index.index == 0 && index.sequence == .PRIMARY && played_card_data.primary == .MOVEMENT) {
             // phew
             return false
         }
@@ -124,9 +124,9 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
     case Choice_Action:
         out := false
         for &choice in &variant.choices {
-            jump_index := choice.jump_index
+            jump_index := &choice.jump_index
             if jump_index.card_id == NULL_CARD_ID do jump_index.card_id = index.card_id
-            choice.valid = validate_action(gs, jump_index)
+            choice.valid = validate_action(gs, jump_index^)
             out ||= choice.valid
         }
         return out

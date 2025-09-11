@@ -99,6 +99,7 @@ main :: proc() {
     } else {
         context.logger = log.create_console_logger(lowest = .Info)
     }
+    defer log.destroy_console_logger(context.logger)
 
     defer if recording_events {
         stop_recording_events()
@@ -162,6 +163,7 @@ main :: proc() {
                 case .EQUAL: increase_window_size()
                 case.MINUS: decrease_window_size()
                 case .F: toggle_fullscreen()
+                case .M: add_marker(&gs)
                 }
             }
 

@@ -186,3 +186,9 @@ calculate_minion_modifiers :: proc(gs: ^Game_State) -> int {
     log.infof("Minion modifier: %v", minion_modifiers)
     return minion_modifiers
 }
+
+add_marker :: proc(gs: ^Game_State) {
+    when ODIN_DEBUG {
+        append(&gs.event_queue, Marker_Event{})
+    }
+}
