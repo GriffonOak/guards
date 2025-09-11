@@ -19,6 +19,7 @@ Contains_All :: Space_Flags
 
 Is_Enemy_Unit :: struct {}
 Is_Friendly_Unit :: struct {}
+Is_Losing_Team_Unit :: struct {}
 Is_Enemy_Of :: struct {
     target: Implicit_Target,
 }
@@ -37,6 +38,7 @@ Selection_Criterion :: union {
     // Contains_All,
     Is_Enemy_Unit,
     Is_Friendly_Unit,
+    Is_Losing_Team_Unit,
     Is_Enemy_Of,
     Is_Friendly_Spawnpoint,
     Not_Previously_Targeted,
@@ -322,7 +324,7 @@ minion_removal_action := []Action {
             num_targets = Minion_Difference{},
             criteria = {
                 Contains_Any({.MELEE_MINION, .RANGED_MINION}),
-                Is_Friendly_Unit{},
+                Is_Losing_Team_Unit{},
             },
         },
     },
@@ -402,10 +404,10 @@ get_action_at_index :: proc(gs: ^Game_State, index: Action_Index, loc := #caller
 
     switch index.sequence {
     case .PRIMARY:
-        card, ok := get_card_by_id(gs, index.card_id)
+        card_data, ok := get_card_data_by_id(gs, index.card_id)
         if !ok do return nil
         // log.assert(ok, "no played card!!?!?!?!?!", loc)
-        action_sequence = card.primary_effect
+        action_sequence = card_data.primary_effect
     case .HALT:                 return nil
     case .DIE:                  action_sequence = get_defeated_action
     case .RESPAWN:              action_sequence = respawn_action

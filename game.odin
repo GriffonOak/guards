@@ -7,6 +7,8 @@ import "core:log"
 import "core:net"
 import "core:sync"
 
+_ :: rand
+
 Direction :: enum {
     NORTH,
     NORTH_EAST,
@@ -232,17 +234,27 @@ create_card_textures :: proc() {
 
 setup_hero_cards :: proc(gs: ^Game_State) {
 
+    // Do the heroes!
+    hero_cards = {
+        .XARGATHA = xargatha_cards,
+    }
+
     for player_id in 0..<len(gs.players) {
         player := get_player_by_id(gs, player_id)
         hero_id := player.hero.id
 
         for &card in hero_cards[hero_id][:5] {
             player_card := &player.hero.cards[card.color]
-            player_card^ = card
+            player_card.id = card.id
             player_card.state = .IN_HAND
-            player_card.owner = player_id
+            player_card.hero_id = hero_id
+            player_card.owner_id = player_id
         }
     }
+
+when !ODIN_TEST {
+    create_card_textures()
+}
 }
 
 begin_game :: proc(gs: ^Game_State) {
@@ -256,7 +268,8 @@ begin_game :: proc(gs: ^Game_State) {
     setup_hero_cards(gs)
 
     if gs.is_host {
-        tiebreaker: Team = .RED if rand.int31_max(2) == 0 else .BLUE
+        // tiebreaker: Team = .RED if rand.int31_max(2) == 0 else .BLUE
+        tiebreaker: Team = .RED
         broadcast_game_event(gs, Update_Tiebreaker_Event{tiebreaker})
         spawn_minions(gs, gs.current_battle_zone)
     }

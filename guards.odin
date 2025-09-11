@@ -6,13 +6,14 @@ import "core:fmt"
 import "core:math"
 import "core:strings"
 import "core:log"
-
+import "core:os"
 import "core:mem"
 
 _ :: fmt
 _ :: mem
 _ :: math
 _ :: strings
+_ :: os
 
 // Todo list
 // Finish implementing xargatha cards (retrieval blues)
@@ -99,6 +100,9 @@ main :: proc() {
         context.logger = log.create_console_logger(lowest = .Info)
     }
 
+    defer if recording_events {
+        stop_recording_events()
+    }
 
     // arena_buffer := make([]u8, 80000)
     // defer delete(arena_buffer)
@@ -120,8 +124,6 @@ main :: proc() {
         card_hand_position_rects[color] = {f32(index) * CARD_HAND_WIDTH, CARD_HAND_Y_POSITION, CARD_HAND_WIDTH, CARD_HAND_HEIGHT + 100}
     }
 
-
-
     // window_scale: i32 = 2 if window_size == .SMALL else 1
 
     // rl.SetConfigFlags({.WINDOW_TOPMOST})
@@ -134,12 +136,6 @@ main :: proc() {
 
     window_texture := rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT))
     rl.SetTextureFilter(window_texture.texture, .BILINEAR)
-
-    // Do the heroes!
-    hero_cards = {
-        .XARGATHA = xargatha_cards,
-    }
-    create_card_textures()
 
     gs: Game_State = {
         confirmed_players = 0,
@@ -185,6 +181,11 @@ main :: proc() {
         clear(&input_queue)
 
         process_network_packets(&gs)
+
+        // Record "Fresh" events this frame
+        if recording_events {
+            record_events(gs.event_queue[:])
+        }
 
         // Handle events
         for event in gs.event_queue {

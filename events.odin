@@ -10,7 +10,7 @@ Join_Game_Chosen_Event :: struct {}
 Host_Game_Chosen_Event :: struct {}
 
 Update_Player_Data_Event :: struct {
-    player: Player,
+    player_base: Player_Base,
 }
 
 Enter_Lobby_Event :: struct {}
@@ -224,12 +224,14 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Host_Game_Chosen_Event:
         if begin_hosting_local_game(gs) {
+            when !ODIN_TEST {
+                begin_recording_events()
+            }
             append(&gs.event_queue, Enter_Lobby_Event{})
         }
 
     case Update_Player_Data_Event:
-        add_or_update_player(gs, var.player)
-
+        add_or_update_player(gs, var.player_base)
 
     case Enter_Lobby_Event:
         gs.stage = .IN_LOBBY
@@ -318,11 +320,11 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Card_Clicked_Event:
         card_id := var.card_element.card_id
-        card, ok := get_card_by_id(gs, card_id)
-        log.assert(ok, "Card element clicked with no card associated!")
+        card, card_ok := get_card_by_id(gs, card_id)
 
         #partial switch get_my_player(gs).stage {
         case .SELECTING:
+            log.assert(card_ok, "Card element clicked with no card associated!")
             #partial switch card.state {
             case .IN_HAND:
 
@@ -337,90 +339,86 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             }
 
         case .UPGRADING:
-            #partial switch card.state {
-            case .IN_HAND:
-                if card.tier == 0 do break
-                // Ensure clicked card is able to be upgraded
-                lowest_tier: int = 1e6
-                for other_card in get_my_player(gs).hero.cards {
-                    if other_card.tier == 0 do continue
-                    lowest_tier = min(lowest_tier, other_card.tier)
-                }
-                if card.tier > lowest_tier || lowest_tier == 3 do break  // @cleanup This is not really correct, upgrade should not be possible if lowest tier is 3
+            if !card_ok {  // Clicked on an upgrade option
 
-                // I shouldn't really be checking this through the ui stack like this tbh
-                // But I don't have a better way of seeing if an upgrade is happening. // @Cleanup?
-                top_element := gs.ui_stack[len(gs.ui_stack) - 1]
-                card_element, ok2 := top_element.variant.(UI_Card_Element)
-                if ok2 {
-                    top_card, ok3 := get_card_by_id(gs, card_element.card_id)
-                    if ok3 && top_card.state == .NONEXISTENT do break
-                }
-
-                // Display possible upgrades for clicked card
-                card_element_width := (SELECTION_BUTTON_SIZE.x - BUTTON_PADDING) / 2
-                card_element_height := card_element_width * 3.5 / 2.5
-
-                card_position_rect := Rectangle {
-                    FIRST_SIDE_BUTTON_LOCATION.x,
-                    FIRST_SIDE_BUTTON_LOCATION.y - BUTTON_PADDING - card_element_height,
-                    card_element_width,
-                    card_element_height,
-                }
-
-                add_side_button(gs, "Cancel", Cancel_Event{})
-
-                upgrade_options := find_upgrade_options(gs, card^)
-
-                // fmt.printf("%#v\n", upgrade_options)
-
-                for option_card in upgrade_options {
-                    append(&gs.ui_stack, UI_Element {
-                        card_position_rect,
-                        UI_Card_Element{card_id = option_card.id},
-                        card_input_proc,
-                        draw_card,
-                    }) 
-    
-                    card_position_rect.x += BUTTON_PADDING + card_element_width
-                }
-
-            case .NONEXISTENT:
-                // Clicked on a new card to upgrade an existing card
+                // Find the predecessor card
+                hero := &get_my_player(gs).hero
+                hand_card := &hero.cards[card_id.color]
                 
-                // Find predecessor card
-                // There is probably a better way of doing this. maybe we can store the predecessor somewhere when it's clicked.
-                for &hand_card in get_my_player(gs).hero.cards {
+                // Swap over the card ID of the card element for the hand card
+                ui_element, _  := find_element_for_card(gs, hand_card)
+                log.assert(ui_element != nil, "Could not find hand card when upgrading!")
+                hand_card_element := &ui_element.variant.(UI_Card_Element)
+                hand_card_element.card_id = card_id
 
-                    if card.color == hand_card.color {
-                        // swap over the card ID to the new card
-                        ui_element, _  := find_element_for_card(gs, hand_card)
-                        hand_card_element := &ui_element.variant.(UI_Card_Element)
+                // Swap over the card ID in hand
+                hand_card.id = card_id
+                
+                // Add the alternate card to the hero's items
+                hero.items[hero.item_count] = card_id
+                hero.items[hero.item_count].alternate = !card_id.alternate
+                hero.item_count += 1
+                
+                // Pop two card elements and a potential cancel button
+                pop(&gs.ui_stack)
+                pop(&gs.ui_stack)
+                clear_side_buttons(gs)
 
-                        chosen_card_id := card.id
-
-                        hand_card_element.card_id = chosen_card_id
-                        hand_card = card^
-                        hand_card.owner = gs.my_player_id
-                        hand_card.state = .IN_HAND
-
-                        alternate_card_id := chosen_card_id
-                        alternate_card_id.alternate = !alternate_card_id.alternate
-                        hero := &get_my_player(gs).hero
-                        hero.items[hero.item_count] = alternate_card_id
-                        hero.item_count += 1
-                        
-                        // Pop two card elements and a potential cancel button
-                        pop(&gs.ui_stack)
-                        pop(&gs.ui_stack)
-                        clear_side_buttons(gs)
-
-                        append(&gs.event_queue, Begin_Next_Upgrade_Event{})
-                        break
+                // Complete the upgrade
+                append(&gs.event_queue, Begin_Next_Upgrade_Event{})
+            } else {
+                #partial switch card.state {
+                case .IN_HAND:
+                    if card.tier == 0 do break
+                    // Ensure clicked card is able to be upgraded
+                    lowest_tier: int = 1e6
+                    for other_card in get_my_player(gs).hero.cards {
+                        if other_card.tier == 0 do continue
+                        lowest_tier = min(lowest_tier, other_card.tier)
                     }
+                    if card.tier > lowest_tier || lowest_tier == 3 do break  // @cleanup This is not really correct, upgrade should not be possible if lowest tier is 3
+    
+                    // I shouldn't really be checking this through the ui stack like this tbh
+                    // But I don't have a better way of seeing if an upgrade is happening. // @Cleanup?
+                    top_element := gs.ui_stack[len(gs.ui_stack) - 1]
+                    card_element, ok2 := top_element.variant.(UI_Card_Element)
+                    if ok2 {
+                        if _, ok3 := get_card_by_id(gs, card_element.card_id); !ok3 do break
+                    }
+    
+                    // Display possible upgrades for clicked card
+                    card_element_width := (SELECTION_BUTTON_SIZE.x - BUTTON_PADDING) / 2
+                    card_element_height := card_element_width * 3.5 / 2.5
+    
+                    card_position_rect := Rectangle {
+                        FIRST_SIDE_BUTTON_LOCATION.x,
+                        FIRST_SIDE_BUTTON_LOCATION.y - BUTTON_PADDING - card_element_height,
+                        card_element_width,
+                        card_element_height,
+                    }
+    
+                    add_side_button(gs, "Cancel", Cancel_Event{})
+    
+                    upgrade_options, ok3 := find_upgrade_options(gs, card^)
+                    log.assertf(ok3, "Card has no upgrade options!!!")
+    
+                    // fmt.printf("%#v\n", upgrade_options)
+    
+                    for option_card in upgrade_options {
+                        option_id := option_card
+                        option_id.owner_id = gs.my_player_id
+                        append(&gs.ui_stack, UI_Element {
+                            card_position_rect,
+                            UI_Card_Element{
+                                card_id = option_id,
+                            },
+                            card_input_proc,
+                            draw_card,
+                        }) 
+                        card_position_rect.x += BUTTON_PADDING + card_element_width
+                    }  
                 }
             }
-
         case .RESOLVING, .INTERRUPTING:
             action := get_current_action(gs)
             #partial switch &variant in action.variant {
@@ -566,9 +564,11 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Add_Active_Effect_Event:
 
-        parent_card, ok := get_card_by_id(gs, var.effect_id.parent_card_id)
-        log.assertf(ok, "Invalid card ID in new active effect!")
-        effect_action := parent_card.primary_effect[0].variant.(Add_Active_Effect_Action).effect
+        // parent_card, ok := get_card_by_id(gs, var.effect_id.parent_card_id)
+        // log.assertf(ok, "Invalid card ID in new active effect!")
+        parent_card_data, ok := get_card_data_by_id(gs, var.effect_id.parent_card_id)
+        log.assertf(ok, "Could not find primary data for card!")
+        effect_action := parent_card_data.primary_effect[0].variant.(Add_Active_Effect_Action).effect
 
         log.infof("Adding active effect: %v", var.effect_id.kind)
         gs.ongoing_active_effects[var.effect_id.kind] = Active_Effect {
@@ -731,19 +731,22 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         action_index := get_my_player(gs).hero.current_action_index
         action := get_action_at_index(gs, action_index)
+
+        skip_index := action.skip_index
+    
         gs.tooltip = action.tooltip
         log.infof("ACTION: %v", reflect.union_variant_typeid(action.variant))
 
         if !validate_action(gs, action_index) {
             if action.optional {
-                append(&gs.event_queue, Resolve_Current_Action_Event{action.skip_index})
+                append(&gs.event_queue, Resolve_Current_Action_Event{skip_index})
             } else {
                 end_current_action_sequence(gs)
             }
         }
 
         if action.optional {
-            add_side_button(gs, "Skip" if action.skip_name == nil else action.skip_name, Resolve_Current_Action_Event{action.skip_index})
+            add_side_button(gs, "Skip" if action.skip_name == nil else action.skip_name, Resolve_Current_Action_Event{skip_index})
         }
 
         switch &action_type in action.variant {
@@ -769,9 +772,11 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
             for choice in action_type.choices {
                 if choice.valid {
-                    add_side_button(gs, choice.name, Resolve_Current_Action_Event{choice.jump_index})
+                    jump_index := choice.jump_index
+                    jump_index.card_id = action_index.card_id
+                    add_side_button(gs, choice.name, Resolve_Current_Action_Event{jump_index})
                     choices_added += 1
-                    most_recent_choice = choice.jump_index
+                    most_recent_choice = jump_index
                 }
             }
 
@@ -846,6 +851,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
             
         case Jump_Action:
+            jump_index := action_type.jump_index
+            jump_index.card_id = action_index.card_id
             append(&gs.event_queue, Resolve_Current_Action_Event{action_type.jump_index})
             
         case Minion_Spawn_Action:
@@ -1028,7 +1035,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 action_index.card_id = effect.parent_card_id  // Very important do to this otherwise we get lost
                 become_interrupted (
                     gs,
-                    effect.parent_card_id.owner,
+                    effect.parent_card_id.owner_id,
                     action_index,
                     End_Of_Turn_Event{},
                 )
@@ -1059,7 +1066,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                     action_index.card_id = effect.parent_card_id  // Very important do to this otherwise we get lost
                     become_interrupted (
                         gs,
-                        effect.parent_card_id.owner,
+                        effect.parent_card_id.owner_id,
                         action_index,
                         End_Of_Turn_Event{},
                     )
@@ -1195,7 +1202,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         gs.upgraded_players += 1
 
         if gs.upgraded_players == len(gs.players) {
-            broadcast_game_event(gs, Update_Player_Data_Event{get_my_player(gs)^})
+            broadcast_game_event(gs, Update_Player_Data_Event{get_my_player(gs).base})
             gs.turn_counter = 0
             if gs.is_host {
                 broadcast_game_event(gs, Begin_Card_Selection_Event{})

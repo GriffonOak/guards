@@ -92,19 +92,19 @@ calculate_implicit_quantity :: proc(gs: ^Game_State, implicit_quantity: Implicit
     case int: return quantity
 
     case Card_Reach:
-        card, ok := get_card_by_id(gs, card_id)
+        card_data, ok := get_card_data_by_id(gs, card_id)
         log.assert(ok, "Invalid card ID when calculating reach", loc)
-        switch reach in card.reach {
-        case Range: out = int(reach) + count_hero_items(gs, get_player_by_id(gs, card.owner).hero, .RANGE)
-        case Radius: out = int(reach) + count_hero_items(gs, get_player_by_id(gs, card.owner).hero, .RADIUS)
+        switch reach in card_data.reach {
+        case Range: out = int(reach) + count_hero_items(gs, get_player_by_id(gs, card_id.owner_id).hero, .RANGE)
+        case Radius: out = int(reach) + count_hero_items(gs, get_player_by_id(gs, card_id.owner_id).hero, .RADIUS)
         case: log.assert(false, "tried to calculate nil card reach!", loc)
         } 
 
     case Card_Value:
-        card, ok := get_card_by_id(gs, card_id)
+        card_data, ok := get_card_data_by_id(gs, card_id)
         log.assert(ok, "Invalid card ID when calculating value", loc)
-        hero := get_player_by_id(gs, card.owner).hero
-        value := card.values[quantity.kind]
+        hero := get_player_by_id(gs, card_id.owner_id).hero
+        value := card_data.values[quantity.kind]
         #partial switch quantity.kind {
         case .ATTACK: value += count_hero_items(gs, hero, .ATTACK)
         case .DEFENSE: value += count_hero_items(gs, hero, .DEFENSE)
@@ -154,9 +154,7 @@ calculate_implicit_target :: proc(gs: ^Game_State, implicit_target: Implicit_Tar
         log.assert(num_blocked_spawns > 0, "No blocked spawns!!!!!", loc)
         return gs.blocked_spawns[my_team][num_blocked_spawns - 1]
     case Card_Owner:
-        card, ok := get_card_by_id(gs, card_id)
-        log.assert(ok, "Invalid card when trying to calculate owner", loc)
-        return get_player_by_id(gs, card.owner).hero.location
+        return get_player_by_id(gs, card_id.owner_id).hero.location
     }
     return
 }
@@ -180,19 +178,22 @@ calculate_implicit_target_slice :: proc(gs: ^Game_State, implicit_slice: Implici
 calculate_implicit_condition :: proc (
     gs: ^Game_State,
     implicit_condition: Implicit_Condition,
-    card_id: Card_ID = NULL_CARD_ID
+    card_id: Card_ID = NULL_CARD_ID,
+    loc := #caller_location
 ) -> bool {
     switch condition in implicit_condition {
     case bool: return condition
     // Check this
-    case Greater_Than: return calculate_implicit_quantity(gs, condition.term_1, card_id) > calculate_implicit_quantity(gs, condition.term_2, card_id)
+    case Greater_Than: return calculate_implicit_quantity(gs, condition.term_1, card_id, loc) > calculate_implicit_quantity(gs, condition.term_2, card_id, loc)
     case Primary_Is_Not: 
         played_card, ok := find_played_card(gs)
         log.assert(ok, "Could not find the played card when checking for its primary type!")
-        return played_card.primary != condition.kind
+        played_card_data, ok2 := get_card_data_by_id(gs, played_card)
+        log.assert(ok2, "Could not find card data")
+        return played_card_data.primary != condition.kind
     case And:
         out := true
-        for extra_condition in condition do out &&= calculate_implicit_condition(gs, extra_condition, card_id)
+        for extra_condition in condition do out &&= calculate_implicit_condition(gs, extra_condition, card_id, loc)
         return out
     case Blocked_Spawnpoints_Remain:
         my_team := get_my_player(gs).team

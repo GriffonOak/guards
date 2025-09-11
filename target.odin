@@ -81,7 +81,9 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         if !freeze_targets[my_location.x][my_location.y].member do break xarg_freeze
         played_card, ok2 := find_played_card(gs)
         log.assert(ok2, "Could not find played card when checking for Xargatha freeze")
-        if index.sequence == .BASIC_MOVEMENT || (index.index == 0 && index.sequence == .PRIMARY && played_card.primary == .MOVEMENT) {
+        played_card_data, ok3 := get_card_data_by_id(gs, played_card)
+        log.assert(ok3, "Could not find played card data when checking for Xargatha freeze")
+        if index.sequence == .BASIC_MOVEMENT || (index.index == 0 && index.sequence == .PRIMARY && played_card_data.primary == .MOVEMENT) {
             // phew
             return false
         }
@@ -339,6 +341,9 @@ target_fulfills_criterion :: proc (
     // @Note these don't actually test whether a unit is present in the space, only that the teams are the same / different
     case Is_Enemy_Unit:         return get_my_player(gs).team != space.unit_team
     case Is_Friendly_Unit:      return get_my_player(gs).team == space.unit_team
+    case Is_Losing_Team_Unit:
+        losing_team: Team = .RED if gs.minion_counts[.RED] < gs.minion_counts[.BLUE] else .BLUE
+        return losing_team == space.unit_team
     case Is_Enemy_Of:
         other_target := calculate_implicit_target(gs, selector.target, card_id)
         other_space := gs.board[other_target.x][other_target.y]
@@ -378,15 +383,7 @@ make_arbitrary_targets :: proc(
     ignore_immunity := false
 
     for criterion in criteria[1:] {
-        switch variant in criterion {
-        case Within_Distance, Contains_Any, Is_Enemy_Unit, Is_Friendly_Unit, Is_Enemy_Of, Is_Friendly_Spawnpoint, In_Battle_Zone, Outside_Battle_Zone, Empty:
-            out_iter := make_target_set_iterator(&out)
-            for info, target in target_set_iter_members(&out_iter) {
-                if !target_fulfills_criterion(gs, target, criterion, card_id) {
-                    info.member = false
-                }
-            }
-
+        #partial switch variant in criterion {
         case Not_Previously_Targeted:
             previous_target := calculate_implicit_target(gs, Previous_Choice{}, card_id)
             out[previous_target.x][previous_target.y].member = false
@@ -421,6 +418,13 @@ make_arbitrary_targets :: proc(
                     if !dist_targets[target.x][target.y].member do info.member = false
                 }
                 break
+            }
+        case:
+            out_iter := make_target_set_iterator(&out)
+            for info, target in target_set_iter_members(&out_iter) {
+                if !target_fulfills_criterion(gs, target, criterion, card_id) {
+                    info.member = false
+                }
             }
 
         }

@@ -70,7 +70,8 @@ Sign :: enum {
 }
 
 Card_ID :: struct {
-    owner: Player_ID,
+    hero_id: Hero_ID,
+    owner_id: Player_ID,
     color: Card_Color,
     tier: int,
     alternate: bool,
@@ -80,11 +81,10 @@ Card_ID :: struct {
 //        If refactoring the Card id, ensure the zero value stays invalid.
 NULL_CARD_ID :: Card_ID {}
 
-Card :: struct {
-    name: cstring,
-
+Card_Data :: struct {
     using id: Card_ID,
-    
+
+    name: cstring,
     initiative: int,
     values: [Ability_Kind]int,
     primary: Ability_Kind,
@@ -94,10 +94,13 @@ Card :: struct {
     item: Item_Kind,
     text: string,
 
-    // !!This cannot be sent over the network :(
+    // !!This cannot be sent over the network !!!!
     primary_effect: []Action,
-
     texture: rl.Texture2D,
+}
+
+Card :: struct {
+    using id: Card_ID,
     state: Card_State,
     turn_played: int,
 }
@@ -205,7 +208,7 @@ card_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, eleme
     return true
 }
 
-create_texture_for_card :: proc(card: ^Card) {
+create_texture_for_card :: proc(card: ^Card_Data) {
     context.allocator = context.temp_allocator
 
     render_texture := rl.LoadRenderTexture(i32(CARD_TEXTURE_SIZE.x), i32(CARD_TEXTURE_SIZE.y))
@@ -306,7 +309,7 @@ draw_card: UI_Render_Proc: proc(gs: ^Game_State, element: UI_Element) {
 when !ODIN_TEST {
     card_element := assert_variant_rdonly(element.variant, UI_Card_Element)
 
-    card, ok := get_card_by_id(gs, card_element.card_id)
+    card_data, ok := get_card_data_by_id(gs, card_element.card_id)
 
     log.assert(ok, "Tried to draw card element with no assigned card!")
 
@@ -315,25 +318,25 @@ when !ODIN_TEST {
         rl.DrawRectangleRec(element.bounding_rect, rl.RAYWHITE)
         rl.DrawRectangleLinesEx(element.bounding_rect, 4, rl.LIGHTGRAY)
     } else {
-        rl.DrawRectangleRec(element.bounding_rect, card_color_values[card.color])
+        rl.DrawRectangleRec(element.bounding_rect, card_color_values[card_data.color])
     
         name_font_size := element.bounding_rect.width / 7
         text_padding := element.bounding_rect.width / 80
 
-        name_size := rl.MeasureTextEx(default_font, card.name, name_font_size, FONT_SPACING)
+        name_size := rl.MeasureTextEx(default_font, card_data.name, name_font_size, FONT_SPACING)
 
         remaining_width := element.bounding_rect.width - name_size.x
-        rl.DrawTextEx(default_font, card.name, {element.bounding_rect.x + remaining_width / 2, element.bounding_rect.y + text_padding}, name_font_size, FONT_SPACING, rl.BLACK)
+        rl.DrawTextEx(default_font, card_data.name, {element.bounding_rect.x + remaining_width / 2, element.bounding_rect.y + text_padding}, name_font_size, FONT_SPACING, rl.BLACK)
     }
     // Looks a little bunk but I should revisit this
-    // rl.DrawTexturePro(card_element.card.texture, {0, CARD_TEXTURE_SIZE.y - amount_to_show, CARD_TEXTURE_SIZE.x, -amount_to_show}, element.bounding_rect, {}, 0, rl.WHITE)
+    // rl.DrawTexturePro(card_element.card_data.texture, {0, CARD_TEXTURE_SIZE.y - amount_to_show, CARD_TEXTURE_SIZE.x, -amount_to_show}, element.bounding_rect, {}, 0, rl.WHITE)
 
     action := get_current_action(gs)
     if action != nil {
         if choose_card, ok2 := action.variant.(Choose_Card_Action); ok2 {
             available: bool 
             for card_id in choose_card.card_targets {
-                if card.id == card_id {
+                if card_data.id == card_id {
                     available = true
                     break
                 }
@@ -356,48 +359,50 @@ when !ODIN_TEST {
         rl.DrawRectangleLinesEx(element.bounding_rect, 8, rl.PURPLE)
     }
     if card_element.hovered && !card_element.hidden {
-        rl.DrawTexturePro(card.texture, {0, 0, CARD_TEXTURE_SIZE.x, -CARD_TEXTURE_SIZE.y}, CARD_HOVER_POSITION_RECT, {}, 0, rl.WHITE)
+        rl.DrawTexturePro(card_data.texture, {0, 0, CARD_TEXTURE_SIZE.x, -CARD_TEXTURE_SIZE.y}, CARD_HOVER_POSITION_RECT, {}, 0, rl.WHITE)
         rl.DrawRectangleLinesEx(element.bounding_rect, 4, rl.WHITE)
         // rl.DrawRectangleLinesEx(CARD_HOVER_POSITION_RECT, 2, rl.RAYWHITE)
     }
 }
 }
 
-get_card_by_id :: proc(gs: ^Game_State, card_id: Card_ID) -> (card: ^Card, ok: bool) { // #optional_ok {
+get_card_by_id :: proc(gs: ^Game_State, card_id: Card_ID) -> (card: ^Card, ok: bool) {
+    player := get_player_by_id(gs, card_id.owner_id)
+    player_card := &player.hero.cards[card_id.color]
+    if player_card.id != card_id do return nil, false
+    return player_card, true
+}
+
+get_card_data_by_id :: proc(gs: ^Game_State, card_id: Card_ID) -> (card: ^Card_Data, ok: bool) { // #optional_ok {
     if card_id == NULL_CARD_ID do return nil, false
-    player := &gs.players[card_id.owner]
 
     // If a player is holding the card, return a pointer to that
-    player_card := &player.hero.cards[card_id.color]
-
-    if player_card.tier != card_id.tier || player_card.alternate != card_id.alternate {
-        // Walk the card array
-        // log.info("This should not be happening outside of upgrades")
-        for &hero_card in hero_cards[player.hero.id] {
-            if hero_card.color == card_id.color {
-                if hero_card.color == .GOLD || hero_card.color == .SILVER {
-                    return &hero_card, true
-                }
-                if hero_card.tier == card_id.tier && hero_card.alternate == card_id.alternate {
-                    return &hero_card, true
-                }
+    for &hero_card in hero_cards[card_id.hero_id] {
+        if hero_card.color == card_id.color {
+            if hero_card.color == .GOLD || hero_card.color == .SILVER {
+                return &hero_card, true
+            }
+            if hero_card.tier == card_id.tier && hero_card.alternate == card_id.alternate {
+                return &hero_card, true
             }
         }
     }
 
-    // log.info("default return")
-    return player_card, true
+    return nil, false
 }
 
-find_upgrade_options :: proc(gs: ^Game_State, card: Card) -> []Card {
+find_upgrade_options :: proc(gs: ^Game_State, card_id: Card_ID) -> (out: [2]Card_ID, ok: bool) {
 
     // Walk the hero cards to view upgrade options
-    for other_card, index in hero_cards[get_player_by_id(gs, card.owner).hero.id] {
-        if other_card.color == card.color && other_card.tier == card.tier + 1 {
-            return hero_cards[get_my_player(gs).hero.id][index:][:2]
+    for other_card, index in hero_cards[card_id.hero_id] {
+        if other_card.color == card_id.color && other_card.tier == card_id.tier + 1 {
+            out[0] = other_card.id
+            out[1] = hero_cards[card_id.hero_id][index + 1].id
+            ok = true
+            return
         }
     }
-    return {}
+    return
 }
 
 // make_card_id :: proc(card: Card, player_id: Player_ID) -> Card_ID {
@@ -413,12 +418,12 @@ get_ui_card_slice :: proc(gs: ^Game_State, player_id: Player_ID) -> []UI_Element
     return gs.ui_stack[1 + 5 * player_id:][:5]
 }
 
-find_element_for_card :: proc(gs: ^Game_State, card: Card) -> (^UI_Element, int) {
-    ui_slice := get_ui_card_slice(gs, card.owner)
+find_element_for_card :: proc(gs: ^Game_State, card_id: Card_ID) -> (^UI_Element, int) {
+    ui_slice := get_ui_card_slice(gs, card_id.owner_id)
 
     for &element, index in ui_slice {
         card_element := assert_variant(&element.variant, UI_Card_Element)
-        if card_element.card_id.color == card.color {
+        if card_element.card_id == card_id {
             return &element, index
         }
     }
@@ -443,13 +448,13 @@ play_card :: proc(gs: ^Game_State, card: ^Card) {
     card_element := &element.variant.(UI_Card_Element)
     card_element.selected = false
 
-    if card.owner == gs.my_player_id {
+    if card.owner_id == gs.my_player_id {
         element.bounding_rect = CARD_PLAYED_POSITION_RECT
     } else {
         card_element.hidden = true
 
         element.bounding_rect = OTHER_PLAYER_PLAYED_CARD_POSITION_RECT
-        element.bounding_rect.y += f32(player_offset(gs, card.owner)) * BOARD_HAND_SPACE
+        element.bounding_rect.y += f32(player_offset(gs, card.owner_id)) * BOARD_HAND_SPACE
     }
 
     card.turn_played = gs.turn_counter
@@ -459,7 +464,7 @@ play_card :: proc(gs: ^Game_State, card: ^Card) {
 retrieve_card :: proc(gs: ^Game_State, card: ^Card) {
 
     element, _ := find_element_for_card(gs, card^)
-    if card.owner == gs.my_player_id {
+    if card.owner_id == gs.my_player_id {
         element.bounding_rect = card_hand_position_rects[card.color]
     } else {
         element.bounding_rect = {}
@@ -472,11 +477,11 @@ resolve_card :: proc(gs: ^Game_State, card: ^Card) {
     
     element, _ := find_element_for_card(gs, card^)
     
-    if card.owner == gs.my_player_id {
+    if card.owner_id == gs.my_player_id {
         element.bounding_rect = FIRST_CARD_RESOLVED_POSITION_RECT
     } else {
         element.bounding_rect = OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT
-        element.bounding_rect.y += f32(player_offset(gs, card.owner)) * BOARD_HAND_SPACE
+        element.bounding_rect.y += f32(player_offset(gs, card.owner_id)) * BOARD_HAND_SPACE
     }
     element.bounding_rect.x +=  f32(gs.turn_counter) * (RESOLVED_CARD_PADDING + FIRST_CARD_RESOLVED_POSITION_RECT.width)
     
@@ -486,14 +491,14 @@ resolve_card :: proc(gs: ^Game_State, card: ^Card) {
 discard_card :: proc(gs: ^Game_State, card: ^Card) {
     element, index := find_element_for_card(gs, card^)
 
-    if card.owner == gs.my_player_id {
+    if card.owner_id == gs.my_player_id {
         element.bounding_rect = FIRST_DISCARDED_CARD_POSITION_RECT
     } else {
         element.bounding_rect = OTHER_PLAYER_DISCARDED_CARD_POSITION_RECT
-        element.bounding_rect.y += f32(player_offset(gs, card.owner)) * BOARD_HAND_SPACE
+        element.bounding_rect.y += f32(player_offset(gs, card.owner_id)) * BOARD_HAND_SPACE
     }
 
-    player := get_player_by_id(gs, card.owner)
+    player := get_player_by_id(gs, card.owner_id)
     prev_discarded_cards := 0
 
     for card in player.hero.cards {
@@ -504,7 +509,7 @@ discard_card :: proc(gs: ^Game_State, card: ^Card) {
     element.bounding_rect.x += offset
     element.bounding_rect.y += offset
 
-    ui_card_slice := get_ui_card_slice(gs, card.owner)
+    ui_card_slice := get_ui_card_slice(gs, card.owner_id)
 
     ui_card_slice[prev_discarded_cards], ui_card_slice[index] = ui_card_slice[index], ui_card_slice[prev_discarded_cards]
 

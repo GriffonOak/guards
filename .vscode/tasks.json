@@ -19,11 +19,24 @@
             "group": "build"
         },
         {
+            "label": "build-test",
+            "type": "shell",
+            "command": "odin build . -build-mode:test -debug -out:build/debug.exe -define:ODIN_TEST_THREADS=1 -define:ODIN_TEST_FANCY=false",
+            "group": "build"
+        },
+        {
             "label": "Build",
             "dependsOn": [
                 "mkdir",
                 "build"
             ]
-        }
+        },
+        {
+            "label": "Build-Test",
+            "dependsOn": [
+                "mkdir",
+                "build-test"
+            ]
+        },
     ]
 }

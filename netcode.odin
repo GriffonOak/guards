@@ -86,8 +86,10 @@ join_local_game :: proc(gs: ^Game_State) -> bool {
 
 @(test)
 test_host_local_game :: proc(t: ^testing.T) {
+    context.allocator = context.temp_allocator
+    defer free_all(context.temp_allocator)
+    
     gs: Game_State
-
     out := begin_hosting_local_game(&gs)
 
     testing.expect(t, out, "Failed to begin hosting!")
@@ -145,41 +147,37 @@ _thread_host_wait_for_clients :: proc(gs: ^Game_State, sock: net.TCP_Socket) {
     // Host only!
 
     for {
-		client, _, err_accept := net.accept_tcp(sock)
+		client_socket, _, err_accept := net.accept_tcp(sock)
 		if err_accept != nil {
 			log.error("Failed to accept TCP connection")
 		} else {
-            log.debug("Connected with client!", client)
-            add_socket_listener(gs, client)
+            log.debug("Connected with client!", client_socket)
+            add_socket_listener(gs, client_socket)
 
             if gs.stage != .IN_LOBBY do return
 
-            client_player_id := len(gs.players)
-
             // Right now we just completely decide the fate of the client but realistically they should get to decide their own team and stuff
             client_player := Player {
-                id = client_player_id,
+                id = len(gs.players),
                 stage = .SELECTING,
                 hero = Hero {
                     id = .XARGATHA,
                 },
                 team = .BLUE,
-                is_team_captain = client_player_id == 1,
-                socket = client,
+                is_team_captain = len(gs.players) == 1,
+                socket = client_socket,
             }
-            fmt.bprintf(client_player._username_buf[:], "P%v", client_player_id)
-            add_or_update_player(gs, client_player)
+            fmt.bprintf(client_player._username_buf[:], "P%v", client_player.id)
+            append(&gs.players, client_player)
 
-            for player, player_id in gs.players {
-                if player_id != 0 {
-                    // Update existing player that new player has joined
-                    send_network_packet_socket(player.socket, {0, Event(Update_Player_Data_Event{client_player})})
-                }
-                // Inform joining player of existing player
-                send_network_packet_socket(client, {0, Event(Update_Player_Data_Event{player})})
+            broadcast_game_event(gs, Update_Player_Data_Event{client_player.base})
+
+            for player in gs.players {
+                // Inform joining player of existing players
+                send_network_packet_socket(client_socket, {0, Event(Update_Player_Data_Event{player.base})})
             }
 
-            send_network_packet_socket(client, {0, Set_Client_Player_ID{client_player_id}})
+            send_network_packet_socket(client_socket, {0, Set_Client_Player_ID{client_player.id}})
 
             // for player in gs.players {
             //     // update existing players that new player has joined

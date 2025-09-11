@@ -101,9 +101,9 @@ main :: proc() {
     fmt.sbprintfln(&builder, "")
     fmt.sbprintfln(&builder, "/// %v", strings.to_upper(hero_name))
     fmt.sbprintfln(&builder, "")
-    fmt.sbprintfln(&builder, "%v_cards := []Card {{", strings.to_lower(hero_name))
+    fmt.sbprintfln(&builder, "%v_cards := []Card_Data {{", strings.to_lower(hero_name))
     for card in cards {
-        fmt.sbprintfln(&builder, "\tCard {{ name = \"%v\",", card.name)
+        fmt.sbprintfln(&builder, "\tCard_Data {{ name = \"%v\",", card.name)
         fmt.sbprintfln(&builder, "\t\tcolor =\t\t\t.%v,", card.color)
         if card.tier > 0 do fmt.sbprintfln(&builder, "\t\ttier =\t\t\t%v,", card.tier)
         if card.alternate do fmt.sbprintfln(&builder, "\t\talternate =\t\ttrue,")

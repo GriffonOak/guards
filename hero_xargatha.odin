@@ -2,8 +2,8 @@ package guards
 
 // XARGATHA
 
-xargatha_cards := []Card {
-    Card { name = "Cleave",
+xargatha_cards := []Card_Data {
+    Card_Data { name = "Cleave",
         color       = .GOLD,
         initiative  = 11,
         values      = #partial{.ATTACK = 4, .DEFENSE = 2, .MOVEMENT = 1},
@@ -59,7 +59,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card { name = "Siren's Call",
+    Card_Data { name = "Siren's Call",
         color       = .SILVER,
         initiative  = 3,
         values      = #partial{.DEFENSE = 3},
@@ -98,7 +98,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card { name = "Threatening Slash",
+    Card_Data { name = "Threatening Slash",
         color       = .RED,
         initiative  = 7,
         tier        = 1,
@@ -144,7 +144,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card { name = "Charm",
+    Card_Data { name = "Charm",
         color       = .GREEN,
         initiative  = 5,
         tier        = 1,
@@ -227,7 +227,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card { name = "Stone Gaze",
+    Card_Data { name = "Stone Gaze",
         color       = .BLUE,
         initiative  = 9,
         tier        = 1,
@@ -256,7 +256,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card { name = "Deadly Swipe",
+    Card_Data { name = "Deadly Swipe",
         color       = .RED,
         initiative  = 8,
         tier        = 2,
@@ -308,7 +308,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card { name = "Long Thrust",
+    Card_Data { name = "Long Thrust",
         color       = .RED,
         initiative  = 8,
         tier        = 2,
@@ -356,7 +356,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card { name = "Control",
+    Card_Data { name = "Control",
         color       = .GREEN,
         initiative  = 4,
         tier        = 2,
@@ -440,7 +440,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card { name = "Constrict",
+    Card_Data { name = "Constrict",
         color       = .GREEN,
         initiative  = 4,
         tier        = 2,
@@ -490,7 +490,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card { name = "Petrifying Stare",
+    Card_Data { name = "Petrifying Stare",
         color       = .BLUE,
         initiative  = 10,
         tier        = 2,
@@ -511,7 +511,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card { name = "Fresh Converts",
+    Card_Data { name = "Fresh Converts",
         color       = .BLUE,
         initiative  = 10,
         tier        = 2,
@@ -522,7 +522,7 @@ xargatha_cards := []Card {
         text        = "If you are adjacent to an enemy minion,\nyou may retrieve a discarded card.",\
         primary_effect = []Action {
             Action {
-                tooltip = "Choose a discarded card to retrieve.",
+                tooltip = "Choose a discarded Card_Data to retrieve.",
                 condition = Greater_Than {
                     Count_Targets {
                         Within_Distance {
@@ -546,7 +546,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card { name = "Lethal Spin",  // @Todo check wording
+    Card_Data { name = "Lethal Spin",  // @Todo check wording
         color       = .RED,
         initiative  = 8,
         tier        = 3,
@@ -598,7 +598,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card { name = "Rapid Thrusts",
+    Card_Data { name = "Rapid Thrusts",
         color       = .RED,
         initiative  = 8,
         tier        = 2,
@@ -681,7 +681,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card { name = "Dominate",
+    Card_Data { name = "Dominate",
         color       = .GREEN,
         initiative  = 4,
         tier        = 3,
@@ -767,7 +767,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card { name = "Final Embrace",
+    Card_Data { name = "Final Embrace",
         color       = .GREEN,
         initiative  = 4,
         tier        = 3,
@@ -817,7 +817,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card { name = "Turn Into Statues",
+    Card_Data { name = "Turn Into Statues",
         color       = .BLUE,
         initiative  = 10,
         tier        = 3,
@@ -838,7 +838,7 @@ xargatha_cards := []Card {
             },
         },
     },
-    Card { name = "Devoted Followers",  // @incomplete, @Todo check wording
+    Card_Data { name = "Devoted Followers",  // @incomplete, @Todo check wording
         color       = .BLUE,
         initiative  = 10,
         tier        = 2,
@@ -849,7 +849,7 @@ xargatha_cards := []Card {
         text        = "If you are adjacent to an enemy minion,\nyou may retrieve a discarded card.",
         primary_effect = []Action {
             // Action {
-            //     tooltip = "Choose a discarded card to retrieve.",
+            //     tooltip = "Choose a discarded Card_Data to retrieve.",
             //     optional = true,
             //     variant = Choose_Card_Action{},
             // },

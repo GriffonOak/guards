@@ -25,34 +25,39 @@ Hero_ID :: enum {
     // DODGER,
 }
 
-hero_cards: [Hero_ID][]Card
+hero_cards: [Hero_ID][]Card_Data
+
 
 Hero :: struct {
     id: Hero_ID,
     location: Target,
-
-    current_action_index: Action_Index,
     cards: [Card_Color]Card,
+
     coins: int,
     level: int,
     dead: bool,
     items: [10]Card_ID,  // lol
     item_count: int,
+
+    current_action_index: Action_Index,
 }
 
 Player_ID :: int
 
-Player :: struct {
+// For sending over the network
+Player_Base :: struct {
     id: Player_ID,
-    stage: Player_Stage,
-    hero: Hero,
-
     _username_buf: [40]u8,
-    username: cstring,
-    
     team: Team,
     is_team_captain: bool,
+    hero: Hero,
+}
+
+Player :: struct {
+    using base: Player_Base,
+
     socket: net.TCP_Socket,  // For host use only
+    stage: Player_Stage,
 }
 
 @(private="file")
@@ -84,9 +89,9 @@ render_player_info :: proc(gs: ^Game_State) {
 count_hero_items :: proc(gs: ^Game_State, hero: Hero, kind: Item_Kind) -> (out: int) {
     for item_index in 0..<hero.item_count {
         card_id := hero.items[item_index]
-        card, ok := get_card_by_id(gs, card_id)
+        card_data, ok := get_card_data_by_id(gs, card_id)
         log.assert(ok, "Invalid item!")
-        if card.item == kind do out += 1
+        if card_data.item == kind do out += 1
     }
     return out
 }
@@ -128,13 +133,15 @@ render_player_info_at_position :: proc(gs: ^Game_State, player_id: Player_ID, po
     
 }
 
-add_or_update_player :: proc(gs: ^Game_State, player: Player) {
-    if player.id >= len(gs.players) {
-        resize(&gs.players, player.id + 1)
+add_or_update_player :: proc(gs: ^Game_State, player_base: Player_Base) {
+
+    // Setup player
+    if player_base.id >= len(gs.players) {
+        resize(&gs.players, player_base.id + 1)
     }
-    gs.players[player.id] = player
-    if player.is_team_captain {
-        gs.team_captains[player.team] = player.id
+    gs.players[player_base.id].base = player_base
+    if player_base.is_team_captain {
+        gs.team_captains[player_base.team] = player_base.id
     }
 }
 

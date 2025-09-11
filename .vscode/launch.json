@@ -9,6 +9,15 @@
             "program": "${workspaceFolder}/build/debug.exe",
             "args": [],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "cppvsdbg",
+            "request": "launch",
+            "preLaunchTask": "Build-Test",
+            "name": "Test Debug",
+            "program": "${workspaceFolder}/build/debug.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}"
         }
     ]
 }
