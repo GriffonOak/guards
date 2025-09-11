@@ -846,7 +846,7 @@ xargatha_cards := []Card_Data {
         values      = #partial{.DEFENSE = 6, .MOVEMENT = 3},
         primary     = .SKILL,
         item        = .ATTACK,
-        text        = "If you are adjacent to an enemy minion,\nyou may retrieve a discarded card.",
+        text        = "If you are adjacent to an enemy unit,\nyou may retrieve a discarded card.",
         primary_effect = []Action {
             // Action {
             //     tooltip = "Choose a discarded Card_Data to retrieve.",

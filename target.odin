@@ -125,7 +125,7 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         out := false
         for &choice in &variant.choices {
             jump_index := &choice.jump_index
-            if jump_index.card_id == NULL_CARD_ID do jump_index.card_id = index.card_id
+            jump_index.card_id = index.card_id
             choice.valid = validate_action(gs, jump_index^)
             out ||= choice.valid
         }
