@@ -10,12 +10,15 @@ Within_Distance :: struct {
     max: Implicit_Quantity,
 }
 
+Adjacent := Within_Distance{Self{}, 1, 1}
+
 Closest_Spaces :: struct {
     origin: Implicit_Target,
 }
 
-Contains_Any :: Space_Flags
-Contains_All :: Space_Flags
+Contains_Any :: struct { flags: Space_Flags }
+Contains_No  :: struct { flags: Space_Flags }
+Contains_All :: struct { flags: Space_Flags }
 
 Is_Enemy_Unit :: struct {}
 Is_Friendly_Unit :: struct {}
@@ -35,7 +38,8 @@ Selection_Criterion :: union {
     Within_Distance,
     Closest_Spaces,  // Important to list this one last in any list of criteria
     Contains_Any,
-    // Contains_All,
+    Contains_No,
+    Contains_All,
     Is_Enemy_Unit,
     Is_Friendly_Unit,
     Is_Losing_Team_Unit,
@@ -295,7 +299,7 @@ respawn_action := []Action {
             num_targets = 1,
             criteria = {
                 Empty{},
-                Contains_Any({.HERO_SPAWNPOINT}),
+                Contains_Any{{.HERO_SPAWNPOINT}},
                 Is_Friendly_Spawnpoint{},
             },
         },
@@ -323,7 +327,7 @@ minion_removal_action := []Action {
         variant = Choose_Target_Action {
             num_targets = Minion_Difference{},
             criteria = {
-                Contains_Any({.MELEE_MINION, .RANGED_MINION}),
+                Contains_Any{{.MELEE_MINION, .RANGED_MINION}},
                 Is_Losing_Team_Unit{},
             },
         },
@@ -369,7 +373,7 @@ minion_outside_zone_action := []Action {  // Still need to handle the case where
         variant = Choose_Target_Action {
             num_targets = 1,
             criteria = {
-                Contains_Any(MINION_FLAGS),
+                Contains_Any{MINION_FLAGS},
                 Is_Friendly_Unit{},
                 Outside_Battle_Zone{},
             },

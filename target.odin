@@ -333,10 +333,16 @@ target_fulfills_criterion :: proc (
         return distance <= max_dist && distance >= min_dist
 
     case Contains_Any:
-
-        intersection := space.flags & selector
+        intersection := space.flags & selector.flags
         return intersection != {}
 
+    case Contains_All:
+        intersection := space.flags & selector.flags
+        return intersection == selector.flags
+    
+    case Contains_No:
+        intersection := space.flags & selector.flags
+        return intersection == {}
 
     // @Note these don't actually test whether a unit is present in the space, only that the teams are the same / different
     case Is_Enemy_Unit:         return get_my_player(gs).team != space.unit_team

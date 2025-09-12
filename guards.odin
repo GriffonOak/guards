@@ -17,8 +17,8 @@ _ :: os
 
 // Todo list
 // Better lobby
-// Other heroes / hero picker
 // Dodger
+// Card values refactor?
 // Refactor heroes "out of" players (allow for multiple heroes controlled by 1 player)
 // Test for xarg retrieval
 

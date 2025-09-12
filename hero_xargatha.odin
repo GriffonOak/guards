@@ -15,12 +15,8 @@ xargatha_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     criteria = {
-                        Within_Distance {
-                            origin = Self{},
-                            min = 1,
-                            max = 1,
-                        },
-                        Contains_Any(UNIT_FLAGS),
+                        Adjacent,
+                        Contains_Any{UNIT_FLAGS},
                         Is_Enemy_Unit{},
                     },
                 },
@@ -39,12 +35,8 @@ xargatha_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     criteria = {
-                        Within_Distance {
-                            origin = Self{},
-                            min = 1,
-                            max = 1,
-                        },
-                        Contains_Any({.HERO}),
+                        Adjacent,
+                        Contains_Any{{.HERO}},
                         Is_Enemy_Unit{},
                         Not_Previously_Targeted{},
                     },
@@ -77,7 +69,7 @@ xargatha_cards := []Card_Data {
                             min = 2,
                             max = Card_Reach{},
                         },
-                        Contains_Any(UNIT_FLAGS),
+                        Contains_Any{UNIT_FLAGS},
                         Is_Enemy_Unit{},
                     },
                 },
@@ -88,11 +80,7 @@ xargatha_cards := []Card_Data {
                     target = Previous_Choice{},
                     distance = 3,
                     destination_criteria = []Selection_Criterion {
-                        Within_Distance {
-                            origin = Self{},
-                            min = 1,
-                            max = 1,
-                        },
+                        Adjacent,
                     },
                 },
             },
@@ -112,12 +100,8 @@ xargatha_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     criteria = {
-                        Within_Distance {
-                            origin = Self{},
-                            min = 1,
-                            max = 1,
-                        },
-                        Contains_Any(UNIT_FLAGS),
+                        Adjacent,
+                        Contains_Any{UNIT_FLAGS},
                         Is_Enemy_Unit{},
                     },
                 },
@@ -129,12 +113,8 @@ xargatha_cards := []Card_Data {
                     strength = Sum {
                         Card_Value{kind=.ATTACK}, 
                         Count_Targets {
-                            Within_Distance {
-                                origin = Self{},
-                                min = 1,
-                                max = 1,
-                            },
-                            Contains_Any(UNIT_FLAGS),
+                            Adjacent,
+                            Contains_Any{UNIT_FLAGS},
                             Is_Enemy_Unit{},
                             Ignoring_Immunity{},
                         },
@@ -181,7 +161,7 @@ xargatha_cards := []Card_Data {
                             min = 1,
                             max = Card_Reach{},
                         },
-                        Contains_Any({.RANGED_MINION}),
+                        Contains_Any{{.RANGED_MINION}},
                         Is_Enemy_Unit{},
                     },
                 },
@@ -206,7 +186,7 @@ xargatha_cards := []Card_Data {
                             min = 1,
                             max = Card_Reach{},
                         },
-                        Contains_Any({.RANGED_MINION}),
+                        Contains_Any{{.RANGED_MINION}},
                         Is_Enemy_Unit{},
                     },
                 },
@@ -248,7 +228,7 @@ xargatha_cards := []Card_Data {
                                 1,
                                 Card_Reach{},
                             },
-                            Contains_Any({.HERO}),
+                            Contains_Any{{.HERO}},
                             Is_Enemy_Of{Card_Owner{}},
                         },
                     },
@@ -271,12 +251,8 @@ xargatha_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     criteria = {
-                        Within_Distance {
-                            origin = Self{},
-                            min = 1,
-                            max = 1,
-                        },
-                        Contains_Any(UNIT_FLAGS),
+                        Adjacent,
+                        Contains_Any{UNIT_FLAGS},
                         Is_Enemy_Unit{},
                     },
                 },
@@ -290,12 +266,8 @@ xargatha_cards := []Card_Data {
                         Product {
                             Sum {
                                 Count_Targets {
-                                    Within_Distance {
-                                        origin = Self{},
-                                        min = 1,
-                                        max = 1,
-                                    },
-                                    Contains_Any(UNIT_FLAGS),
+                                    Adjacent,
+                                    Contains_Any{UNIT_FLAGS},
                                     Is_Enemy_Unit{},
                                     Ignoring_Immunity{},
                                 },
@@ -331,18 +303,14 @@ xargatha_cards := []Card_Data {
                             max = Sum {
                                 Card_Reach{},
                                 Count_Targets {
-                                    Within_Distance {
-                                        origin = Self{},
-                                        min = 1,
-                                        max = 1,
-                                    },
-                                    Contains_Any(UNIT_FLAGS),
+                                    Adjacent,
+                                    Contains_Any{UNIT_FLAGS},
                                     Is_Enemy_Unit{},
                                     Ignoring_Immunity{},
                                 },
                             },
                         },
-                        Contains_Any(UNIT_FLAGS),
+                        Contains_Any{UNIT_FLAGS},
                         Is_Enemy_Unit{},
                     },
                 },
@@ -394,7 +362,7 @@ xargatha_cards := []Card_Data {
                             min = 1,
                             max = Card_Reach{},
                         },
-                        Contains_Any({.RANGED_MINION, .MELEE_MINION}),
+                        Contains_Any{{.RANGED_MINION, .MELEE_MINION}},
                         Is_Enemy_Unit{},
                     },
                 },
@@ -419,7 +387,7 @@ xargatha_cards := []Card_Data {
                             min = 1,
                             max = Card_Reach{},
                         },
-                        Contains_Any({.RANGED_MINION, .MELEE_MINION}),
+                        Contains_Any{{.RANGED_MINION, .MELEE_MINION}},
                         Is_Enemy_Unit{},
                     },
                 },
@@ -472,12 +440,8 @@ xargatha_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     criteria = {
-                        Within_Distance {
-                            origin = Self{},
-                            min = 1,
-                            max = 1,
-                        },
-                        Contains_Any({.MELEE_MINION}),
+                        Adjacent,
+                        Contains_Any{{.MELEE_MINION}},
                         Is_Enemy_Unit{},
                     },
                 },
@@ -522,13 +486,11 @@ xargatha_cards := []Card_Data {
         text        = "If you are adjacent to an enemy minion,\nyou may retrieve a discarded card.",\
         primary_effect = []Action {
             Action {
-                tooltip = "Choose a discarded Card_Data to retrieve.",
+                tooltip = "Choose a discarded card to retrieve.",
                 condition = Greater_Than {
                     Count_Targets {
-                        Within_Distance {
-                            Self{}, 1, 1,
-                        },
-                        Contains_Any(MINION_FLAGS),
+                        Adjacent,
+                        Contains_Any{MINION_FLAGS},
                         Ignoring_Immunity{},
                         Is_Enemy_Unit{},
                     },
@@ -561,12 +523,8 @@ xargatha_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     criteria = {
-                        Within_Distance {
-                            origin = Self{},
-                            min = 1,
-                            max = 1,
-                        },
-                        Contains_Any(UNIT_FLAGS),
+                        Adjacent,
+                        Contains_Any{UNIT_FLAGS},
                         Is_Enemy_Unit{},
                     },
                 },
@@ -580,12 +538,8 @@ xargatha_cards := []Card_Data {
                         Product {
                             Sum {
                                 Count_Targets {
-                                    Within_Distance {
-                                        origin = Self{},
-                                        min = 1,
-                                        max = 1,
-                                    },
-                                    Contains_Any(UNIT_FLAGS),
+                                    Adjacent,
+                                    Contains_Any{UNIT_FLAGS},
                                     Is_Enemy_Unit{},
                                     Ignoring_Immunity{},
                                 },
@@ -621,18 +575,14 @@ xargatha_cards := []Card_Data {
                             max = Sum {
                                 Card_Reach{},
                                 Count_Targets {
-                                    Within_Distance {
-                                        origin = Self{},
-                                        min = 1,
-                                        max = 1,
-                                    },
-                                    Contains_Any(UNIT_FLAGS),
+                                    Adjacent,
+                                    Contains_Any{UNIT_FLAGS},
                                     Is_Enemy_Unit{},
                                     Ignoring_Immunity{},
                                 },
                             },
                         },
-                        Contains_Any(UNIT_FLAGS),
+                        Contains_Any{UNIT_FLAGS},
                         Is_Enemy_Unit{},
                     },
                 },
@@ -655,18 +605,14 @@ xargatha_cards := []Card_Data {
                             max = Sum {
                                 Card_Reach{},
                                 Count_Targets {
-                                    Within_Distance {
-                                        origin = Self{},
-                                        min = 1,
-                                        max = 1,
-                                    },
-                                    Contains_Any(UNIT_FLAGS),
+                                    Adjacent,
+                                    Contains_Any{UNIT_FLAGS},
                                     Is_Enemy_Unit{},
                                     Ignoring_Immunity{},
                                 },
                             },
                         },
-                        Contains_Any({.HERO}),
+                        Contains_Any{{.HERO}},
                         Is_Enemy_Unit{},
                         Not_Previously_Targeted{},
                     },
@@ -719,7 +665,7 @@ xargatha_cards := []Card_Data {
                             min = 1,
                             max = Card_Reach{},
                         },
-                        Contains_Any(MINION_FLAGS),
+                        Contains_Any{MINION_FLAGS},
                         Is_Enemy_Unit{},
                         Ignoring_Immunity{},
                     },
@@ -745,7 +691,7 @@ xargatha_cards := []Card_Data {
                             min = 1,
                             max = Card_Reach{},
                         },
-                        Contains_Any(MINION_FLAGS),
+                        Contains_Any{MINION_FLAGS},
                         Is_Enemy_Unit{},
                         Ignoring_Immunity{},
                     },
@@ -795,16 +741,12 @@ xargatha_cards := []Card_Data {
                 variant = Halt_Action{},
             },
             Action {  // "Extra action" at end of round starts here
-                tooltip = "Defeat an enemy melee minion adjacent to you.",
+                tooltip = "Defeat an enemy melee or ranged minion adjacent to you.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     criteria = {
-                        Within_Distance {
-                            origin = Self{},
-                            min = 1,
-                            max = 1,
-                        },
-                        Contains_Any({.MELEE_MINION, .RANGED_MINION}),
+                        Adjacent,
+                        Contains_Any{{.MELEE_MINION, .RANGED_MINION}},
                         Is_Enemy_Unit{},
                     },
                 },
@@ -848,15 +790,27 @@ xargatha_cards := []Card_Data {
         item        = .ATTACK,
         text        = "If you are adjacent to an enemy unit,\nyou may retrieve a discarded card.",
         primary_effect = []Action {
-            // Action {
-            //     tooltip = "Choose a discarded Card_Data to retrieve.",
-            //     optional = true,
-            //     variant = Choose_Card_Action{},
-            // },
-            // Action {
-            //     tooltip = error_tooltip,
-            //     variant = Retrieve_Card_Action{},
-            // },
+            Action {
+                tooltip = "Choose a discarded card to retrieve.",
+                condition = Greater_Than {
+                    Count_Targets {
+                        Adjacent,
+                        Contains_Any{UNIT_FLAGS},
+                        Ignoring_Immunity{},
+                        Is_Enemy_Unit{},
+                    },
+                    0,
+                },
+                variant = Choose_Card_Action{
+                    criteria = {.DISCARDED},
+                },
+            },
+            Action {
+                tooltip = error_tooltip,
+                variant = Retrieve_Card_Action {
+                    card = Previous_Card_Choice{},
+                },
+            },
         },
     },
 }

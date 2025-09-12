@@ -27,6 +27,11 @@ Turn_Played :: struct {}
 
 Minion_Difference :: struct {}
 
+Ternary :: struct {
+    terms: []Implicit_Quantity,
+    condition: Implicit_Condition,
+}
+
 Implicit_Quantity :: union {
     int,
     Card_Reach,
@@ -35,6 +40,7 @@ Implicit_Quantity :: union {
     Count_Targets,
     Turn_Played,
     Minion_Difference,
+    Ternary,
 }
 
 
@@ -62,9 +68,7 @@ Implicit_Target_Slice :: union {
     Previous_Choices,
 }
 
-Greater_Than :: struct {
-    term_1, term_2: Implicit_Quantity,
-}
+Greater_Than :: []Implicit_Quantity
 
 And :: []Implicit_Condition
 
@@ -113,7 +117,7 @@ calculate_implicit_quantity :: proc(gs: ^Game_State, implicit_quantity: Implicit
         return value
 
     case Sum:
-        for summand in quantity do out += calculate_implicit_quantity(gs, summand, card_id)
+        for summand in quantity do out += calculate_implicit_quantity(gs, summand, card_id, loc)
 
     case Count_Targets:
         targets := make_arbitrary_targets(gs, quantity, card_id)
@@ -130,6 +134,13 @@ calculate_implicit_quantity :: proc(gs: ^Game_State, implicit_quantity: Implicit
     case Minion_Difference:
         return abs(gs.minion_counts[.RED] - gs.minion_counts[.BLUE])
 
+    case Ternary:
+        log.assert(len(quantity.terms) == 2, "Ternary operator that does not have 2 terms!", loc)
+        if calculate_implicit_condition(gs, quantity.condition, card_id, loc) {
+            return calculate_implicit_quantity(gs, quantity.terms[0], card_id, loc)
+        } else {
+            return calculate_implicit_quantity(gs, quantity.terms[1], card_id, loc)
+        }
     }
     return 
 }
@@ -184,7 +195,9 @@ calculate_implicit_condition :: proc (
     switch condition in implicit_condition {
     case bool: return condition
     // Check this
-    case Greater_Than: return calculate_implicit_quantity(gs, condition.term_1, card_id, loc) > calculate_implicit_quantity(gs, condition.term_2, card_id, loc)
+    case Greater_Than:
+        log.assert(len(condition) == 2, "Greater Than condition check that does not have 2 elements!", loc)
+        return calculate_implicit_quantity(gs, condition[0], card_id, loc) > calculate_implicit_quantity(gs, condition[1], card_id, loc)
     case Primary_Is_Not: 
         played_card, ok := find_played_card(gs)
         log.assert(ok, "Could not find the played card when checking for its primary type!")

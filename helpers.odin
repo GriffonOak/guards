@@ -162,7 +162,7 @@ calculate_minion_modifiers :: proc(gs: ^Game_State) -> int {
     minion_modifiers := 0
     player := get_my_player(gs)
 
-    adjacent_targets := make_arbitrary_targets(gs, {Within_Distance{Self{}, 1, 1}, Ignoring_Immunity{}})
+    adjacent_targets := make_arbitrary_targets(gs, {Adjacent, Ignoring_Immunity{}})
     adjacent_targets_iter := make_target_set_iterator(&adjacent_targets)
     for _, adjacent in target_set_iter_members(&adjacent_targets_iter) {
         space := gs.board[adjacent.x][adjacent.y]

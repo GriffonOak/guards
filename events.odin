@@ -17,7 +17,7 @@ Update_Player_Data_Event :: struct {
 
 Enter_Lobby_Event :: struct {}
 Change_Hero_Event :: struct {
-    hero_id: Hero_ID
+    hero_id: Hero_ID,
 }
 Begin_Game_Event :: struct {}
 

@@ -10,7 +10,41 @@ dodger_cards := []Card_Data {
         primary =       .ATTACK,
         reach =         Range(3),
         text =          "Choose one -\n* Target a unit adjacent to you.\n*If you are adjacent to an empty spawn point\nin the battle zone, target a unit in range",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = "Target valid unit.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    criteria = {
+                        Within_Distance {
+                            origin = Self{},
+                            min = 1,
+                            max = Ternary {
+                                {Card_Reach{}, 1},
+                                Greater_Than{ 
+                                    Count_Targets {
+                                        Adjacent,
+                                        Contains_No{OBSTACLE_FLAGS},
+                                        Contains_Any{SPAWNPOINT_FLAGS},
+                                        In_Battle_Zone{},
+                                    }, 0,
+                                },
+                                
+                            },
+                        },
+                        Contains_Any{UNIT_FLAGS},
+                        Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Waiting for opponent to defend...",
+                variant = Attack_Action {
+                    target = Previous_Choice{},
+                    strength = Card_Value{kind=.ATTACK},
+                },
+            },
+        },
     },
     Card_Data { name = "Death Trap",
         color =         .SILVER,
