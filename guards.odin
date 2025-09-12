@@ -9,8 +9,8 @@ import "core:log"
 import "core:os"
 import "core:mem"
 import "core:prof/spall"
-import "base:runtime"
-import "core:sync"
+// import "base:runtime"
+// import "core:sync"
 
 _ :: fmt
 _ :: mem
@@ -19,11 +19,11 @@ _ :: strings
 _ :: os
 
 // Todo list
-// Better lobby
 // Dodger
 // Card values refactor?
 // Refactor heroes "out of" players (allow for multiple heroes controlled by 1 player)
 // Test for xarg retrieval
+// Figure out why tests are so slow
 
 // Highlight chooseable cards for defense, & upgrading
 // Highlight items when hovering over upgrade options

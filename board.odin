@@ -377,7 +377,7 @@ render_board_to_texture :: proc(gs: ^Game_State, board_element: UI_Board_Element
         case Choice_Action:
             for choice in variant.choices {
                 jump_index := choice.jump_index
-                if jump_index.card_id == NULL_CARD_ID do jump_index.card_id = action_index.card_id
+                if jump_index.card_id == {} do jump_index.card_id = action_index.card_id
                 highlight_action_targets(gs, jump_index)
             }
             return
@@ -456,7 +456,7 @@ render_board_to_texture :: proc(gs: ^Game_State, board_element: UI_Board_Element
                 event, ok := button_element.event.(Resolve_Current_Action_Event)
                 if !ok do continue
                 next_index := event.jump_index.?
-                if next_index.card_id == NULL_CARD_ID do next_index.card_id = action_index.card_id
+                if next_index.card_id == {} do next_index.card_id = action_index.card_id
                 highlight_action_targets(gs, next_index)
             }
         }

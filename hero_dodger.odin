@@ -21,7 +21,7 @@ dodger_cards := []Card_Data {
                             min = 1,
                             max = Ternary {
                                 {Card_Reach{}, 1},
-                                Greater_Than{ 
+                                Greater_Than{
                                     Count_Targets {
                                         Adjacent,
                                         Contains_No{OBSTACLE_FLAGS},
@@ -53,7 +53,50 @@ dodger_cards := []Card_Data {
         primary =       .SKILL,
         reach =         Radius(4),
         text =          "An enemy hero in radius who is\nadjacent to an empty spawn point in\nthe battle zone discards a card, if able",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = "Target an enemy hero in radius adjacent to an empty spawn point",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    criteria = {
+                        Within_Distance {
+                            Self{},
+                            1,
+                            Card_Reach{},
+                        },
+                        Contains_Any{{.HERO}},
+                        Is_Enemy_Unit{},
+                        Fulfills_Condition {
+                            Greater_Than {
+                                Count_Targets {
+                                    Within_Distance {
+                                        min = 1, max = 1,
+                                    },
+                                    Contains_No{OBSTACLE_FLAGS},
+                                    Contains_Any{SPAWNPOINT_FLAGS},
+                                    In_Battle_Zone{},
+                                },
+                                0,
+                            },
+                        },
+                        // Nearby_At_Least {
+                        //     reach = 1, count = 1,
+                        //     criteria = {
+                        //         Contains_No{OBSTACLE_FLAGS},
+                        //         Contains_Any{SPAWNPOINT_FLAGS},
+                        //         In_Battle_Zone{},
+                        //     },
+                        // },
+                    },
+                },
+            },
+            Action {
+                tooltip = "Waiting for opponent to discard a card...",
+                variant = Force_Discard_Action {
+                    target = Previous_Choice{},
+                },
+            },
+        },
     },
     Card_Data { name = "Littlefinger of Death",
         color =         .RED,
@@ -63,7 +106,12 @@ dodger_cards := []Card_Data {
         primary =       .ATTACK,
         reach =         Range(2),
         text =          "Choose one -\n* Target a unit adjacent to you.\n*Target a hero in range who has one or\nmore cards in the discard.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = "Choose a valid target.",
+                variant = Choose_Target_Action{},
+            },
+        },
     },
     Card_Data { name = "Dark Ritual",
         color =         .GREEN,

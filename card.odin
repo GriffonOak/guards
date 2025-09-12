@@ -79,7 +79,7 @@ Card_ID :: struct {
 
 // @Note: The null card ID is understood to be invalid because it is a red card of tier 0, which does not exist.
 //        If refactoring the Card id, ensure the zero value stays invalid.
-NULL_CARD_ID :: Card_ID {}
+_NULL_CARD_ID :: Card_ID {}
 
 Card_Data :: struct {
     using id: Card_ID,
@@ -374,7 +374,7 @@ get_card_by_id :: proc(gs: ^Game_State, card_id: Card_ID) -> (card: ^Card, ok: b
 }
 
 get_card_data_by_id :: proc(gs: ^Game_State, card_id: Card_ID) -> (card: ^Card_Data, ok: bool) { // #optional_ok {
-    if card_id == NULL_CARD_ID do return nil, false
+    if card_id == {} do return nil, false
 
     // If a player is holding the card, return a pointer to that
     for &hero_card in hero_cards[card_id.hero_id] {

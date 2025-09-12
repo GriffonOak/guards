@@ -316,9 +316,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
                 action.targets = make_movement_targets(
                     gs,
-                    max_distance = calculate_implicit_quantity(gs, action_variant.distance, action_index.card_id) - action_variant.path.num_locked_spaces + 1,
+                    max_distance = calculate_implicit_quantity(gs, action_variant.distance, {card_id = action_index.card_id}) - action_variant.path.num_locked_spaces + 1,
                     origin = last_target,
-                    valid_destinations = resolve_movement_destinations(gs, action_variant.destination_criteria, action_index.card_id),
+                    valid_destinations = resolve_movement_destinations(gs, action_variant.destination_criteria, {card_id = action_index.card_id}),
                     flags = action_variant.flags,
                 )
 
@@ -334,7 +334,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             case Choose_Target_Action:
                 append(&action_variant.result, var.space)
                 action.targets[var.space.x][var.space.y].member = false
-                if len(action_variant.result) == calculate_implicit_quantity(gs, action_variant.num_targets, action_index.card_id) {
+                if len(action_variant.result) == calculate_implicit_quantity(gs, action_variant.num_targets, {card_id = action_index.card_id}) {
                     append(&gs.event_queue, Resolve_Current_Action_Event{})
                 } else if len(gs.side_button_manager.buttons) == 0 {
                     add_side_button(gs, "Cancel", Cancel_Event{})
@@ -471,9 +471,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 movement_val := action_variant.distance
                 action.targets = make_movement_targets(
                     gs,
-                    calculate_implicit_quantity(gs, movement_val, action_index.card_id),
-                    calculate_implicit_target(gs, action_variant.target, action_index.card_id),
-                    resolve_movement_destinations(gs, action_variant.destination_criteria, action_index.card_id),
+                    calculate_implicit_quantity(gs, movement_val, {card_id = action_index.card_id}),
+                    calculate_implicit_target(gs, action_variant.target, {card_id = action_index.card_id}),
+                    resolve_movement_destinations(gs, action_variant.destination_criteria, {card_id = action_index.card_id}),
                     action_variant.flags,
                 )
 
@@ -783,7 +783,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         case Choose_Target_Action:
             clear(&action_type.result)
-            if count_members(&action.targets) == calculate_implicit_quantity(gs, action_type.num_targets, action_index.card_id) && !action.optional {
+            if count_members(&action.targets) == calculate_implicit_quantity(gs, action_type.num_targets, {card_id = action_index.card_id}) && !action.optional {
                 iter := make_target_set_iterator(&action.targets)
                 for _, space in target_set_iter_members(&iter) {
                     append(&action_type.result, space)
@@ -810,9 +810,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             }
 
         case Attack_Action:
-            target := calculate_implicit_target(gs, action_type.target, action_index.card_id)
+            target := calculate_implicit_target(gs, action_type.target, {card_id = action_index.card_id})
             space := &gs.board[target.x][target.y]
-            attack_strength := calculate_implicit_quantity(gs, action_type.strength, action_index.card_id)
+            attack_strength := calculate_implicit_quantity(gs, action_type.strength, {card_id = action_index.card_id})
             log.infof("Attack strength: %v", attack_strength)
             // Here we assume the target must be an enemy. Enemy should always be in the selection flags for attacks.
             if MINION_FLAGS & space.flags != {} {
@@ -837,6 +837,18 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                     Resolve_Current_Action_Event{},
                 )
             }
+
+        case Force_Discard_Action:
+            target := calculate_implicit_target(gs, action_type.target, {card_id = action_index.card_id})
+            space := gs.board[target.x][target.y]
+            log.assert(.HERO in space.flags, "Forced a space without a hero to discard!")
+            owner := space.owner
+            become_interrupted (
+                gs,
+                owner,
+                Action_Index{sequence = .DISCARD_ABLE} if !action_type.or_is_defeated else Action_Index{sequence = .DISCARD_DEFEAT},
+                Resolve_Current_Action_Event{},
+            )
         
         case Add_Active_Effect_Action:
             effect_id := action_type.effect.id
@@ -850,7 +862,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             end_current_action_sequence(gs)
 
         case Minion_Defeat_Action:
-            target := calculate_implicit_target(gs, action_type.target, action_index.card_id)
+            target := calculate_implicit_target(gs, action_type.target, calc_context = {card_id = action_index.card_id})
             space := gs.board[target.x][target.y]
             if MINION_FLAGS & space.flags != {} {
                 if defeat_minion(gs, target) {  // Add a wave push interrupt if the minion defeated was the last one
@@ -881,8 +893,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             append(&gs.event_queue, Resolve_Current_Action_Event{action_type.jump_index})
             
         case Minion_Spawn_Action:
-            target := calculate_implicit_target(gs, action_type.location, NULL_CARD_ID)
-            spawnpoint := calculate_implicit_target(gs, action_type.spawnpoint, NULL_CARD_ID)
+            target := calculate_implicit_target(gs, action_type.location)
+            spawnpoint := calculate_implicit_target(gs, action_type.spawnpoint)
             space := gs.board[spawnpoint.x][spawnpoint.y]
             spawnpoint_flags := space.flags & (SPAWNPOINT_FLAGS - {.HERO_SPAWNPOINT})
             log.assert(spawnpoint_flags != {}, "Minion spawn action with invalid spawnpoint!!!")
@@ -900,6 +912,13 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         case Discard_Card_Action:
             card := calculate_implicit_card(gs, action_type.card)
             broadcast_game_event(gs, Card_Discarded_Event{card.id})
+            append(&gs.event_queue, Resolve_Current_Action_Event{})
+
+        case Defend_Action:
+            card := calculate_implicit_card(gs, action_type.card)
+            broadcast_game_event(gs, Card_Discarded_Event{card.id})
+
+            // @Defense: Here you would add an interrupt to perform the "defense action"
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
         case Retrieve_Card_Action:
@@ -922,7 +941,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             // We know that the player has chosen a single spawnpoint to respawn at by this point,
             // why do we need to go through all the trouble of recalculating it?
             // Shouldn't need the card ID here
-            respawn_point := calculate_implicit_target(gs, action_type.location, NULL_CARD_ID)
+            respawn_point := calculate_implicit_target(gs, action_type.location)
             broadcast_game_event(gs, Hero_Respawn_Event{gs.my_player_id, respawn_point})
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
@@ -967,7 +986,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         // Determine next action
         next_index := get_my_player(gs).hero.current_action_index
         if index, ok := var.jump_index.?; ok {
-            if index.card_id == NULL_CARD_ID do index.card_id = next_index.card_id
+            if index.card_id == {} do index.card_id = next_index.card_id
             next_index = index
         } else {
             next_index.index += 1
@@ -1072,7 +1091,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         for effect_kind, effect in gs.ongoing_active_effects {
             #partial switch timing in effect.timing {
             case Single_Turn:
-                if calculate_implicit_quantity(gs, timing, effect.parent_card_id) != gs.turn_counter {
+                if calculate_implicit_quantity(gs, timing, calc_context = {card_id = effect.parent_card_id}) != gs.turn_counter {
                     broadcast_game_event(gs, Remove_Active_Effect_Event{effect_kind})
                 }
             }

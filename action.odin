@@ -10,6 +10,15 @@ Within_Distance :: struct {
     max: Implicit_Quantity,
 }
 
+// Nearby_At_Least :: struct {
+//     reach, count: int,
+//     criteria: []Selection_Criterion,
+// }
+
+Fulfills_Condition :: struct {
+    condition: Implicit_Condition,
+}
+
 Adjacent := Within_Distance{Self{}, 1, 1}
 
 Closest_Spaces :: struct {
@@ -36,6 +45,7 @@ Empty :: struct {}
 
 Selection_Criterion :: union {
     Within_Distance,
+    Fulfills_Condition,
     Closest_Spaces,  // Important to list this one last in any list of criteria
     Contains_Any,
     Contains_No,
@@ -101,6 +111,11 @@ Attack_Action :: struct {
     strength: Implicit_Quantity,
 }
 
+Force_Discard_Action :: struct {
+    target: Implicit_Target,
+    or_is_defeated: bool,
+}
+
 Choice_Action :: struct {
     choices: []Choice,
     result: Action_Index,
@@ -137,6 +152,10 @@ Choose_Card_Action :: struct {
     result: Card_ID,
 }
 
+Defend_Action :: struct {
+    card: Implicit_Card,
+}
+
 Retrieve_Card_Action :: struct {
     card: Implicit_Card,
 }
@@ -159,12 +178,14 @@ Action_Variant :: union {
     Movement_Action,
     Fast_Travel_Action,
     Attack_Action,
+    Defend_Action,
     Clear_Action,
     Choose_Target_Action,
     Choice_Action,
     Add_Active_Effect_Action,
     Halt_Action,
     Choose_Card_Action,
+    Force_Discard_Action,
     Retrieve_Card_Action,
     Discard_Card_Action,
     Jump_Action,
@@ -198,11 +219,12 @@ Action_Sequence_ID :: enum {
 
     // Doesn't require Card ID
     HALT,
-    DIE,
     RESPAWN,
     MINION_REMOVAL,
     MINION_SPAWN,
     MINION_OUTSIDE_ZONE,
+    DISCARD_ABLE,
+    DISCARD_DEFEAT,
 }
 
 Action_Index :: struct {
@@ -266,12 +288,35 @@ basic_defense_action := []Action {
     Action {
         tooltip = "Choose a card to defend with. You may also choose to die.",
         optional = true,
-        skip_index = {sequence = .DIE},
+        skip_index = {index = 3},
         skip_name = "Die",
         variant = Choose_Card_Action {
             criteria = {
                 Card_State.IN_HAND,
                 Can_Defend{},
+            },
+        },
+    },
+    Action {
+        tooltip = error_tooltip,
+        variant = Defend_Action {
+            Previous_Card_Choice{},
+        },
+    },
+    Action {
+        variant = Halt_Action{},
+    },
+    Action {
+        variant = Get_Defeated_Action{},
+    },
+}
+
+discard_if_able_action := []Action {
+    Action {
+        tooltip = "Choose a card to discard.",
+        variant = Choose_Card_Action {
+            criteria = {
+                Card_State.IN_HAND,
             },
         },
     },
@@ -283,7 +328,27 @@ basic_defense_action := []Action {
     },
 }
 
-get_defeated_action := []Action {
+discard_or_defeated_action := []Action {
+    Action {
+        tooltip = "Choose a card to discard. You may also choose to die.",
+        optional = true,
+        skip_index = {index = 3},
+        skip_name = "Die",
+        variant = Choose_Card_Action {
+            criteria = {
+                Card_State.IN_HAND,
+            },
+        },
+    },
+    Action {
+        tooltip = error_tooltip,
+        variant = Discard_Card_Action {
+            Previous_Card_Choice{},
+        },
+    },
+    Action {
+        variant = Halt_Action{},
+    },
     Action {
         variant = Get_Defeated_Action{},
     },
@@ -391,9 +456,9 @@ minion_outside_zone_action := []Action {  // Still need to handle the case where
     },
 }
 
-resolve_movement_destinations :: proc(gs: ^Game_State, criteria: []Selection_Criterion, card_id: Card_ID) -> Maybe(Target_Set) {
+resolve_movement_destinations :: proc(gs: ^Game_State, criteria: []Selection_Criterion, calc_context: Calculation_Context = {}) -> Maybe(Target_Set) {
     if len(criteria) > 0 {
-        return make_arbitrary_targets(gs, criteria, card_id)
+        return make_arbitrary_targets(gs, criteria, calc_context)
     }
     return nil
 }
@@ -413,7 +478,6 @@ get_action_at_index :: proc(gs: ^Game_State, index: Action_Index, loc := #caller
         // log.assert(ok, "no played card!!?!?!?!?!", loc)
         action_sequence = card_data.primary_effect
     case .HALT:                 return nil
-    case .DIE:                  action_sequence = get_defeated_action
     case .RESPAWN:              action_sequence = respawn_action
     case .FIRST_CHOICE:         action_sequence = first_choice_action
     case .BASIC_MOVEMENT:       action_sequence = basic_movement_action
@@ -423,6 +487,8 @@ get_action_at_index :: proc(gs: ^Game_State, index: Action_Index, loc := #caller
     case .MINION_REMOVAL:       action_sequence = minion_removal_action
     case .MINION_SPAWN:         action_sequence = minion_spawn_action
     case .MINION_OUTSIDE_ZONE:  action_sequence = minion_outside_zone_action
+    case .DISCARD_ABLE:         action_sequence = discard_if_able_action
+    case .DISCARD_DEFEAT:       action_sequence = discard_or_defeated_action
     }
 
     if index.index < len(action_sequence) {

@@ -160,7 +160,7 @@ format_tooltip :: proc(gs: ^Game_State, tooltip: Tooltip) -> cstring {
         for arg in variant.arguments {
             switch arg_variant in arg {
             case Implicit_Quantity:
-                append(&args, calculate_implicit_quantity(gs, arg_variant, NULL_CARD_ID))
+                append(&args, calculate_implicit_quantity(gs, arg_variant))
             case Conditional_String_Argument:
                 append(&args, arg_variant.arg1 if calculate_implicit_condition(gs, arg_variant.condition) else arg_variant.arg2)
             case any: append(&args, arg_variant)
