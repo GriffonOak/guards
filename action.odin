@@ -4,65 +4,6 @@ import "core:log"
 
 _ :: log
 
-Within_Distance :: struct {
-    origin: Implicit_Target,
-    min: Implicit_Quantity,
-    max: Implicit_Quantity,
-}
-
-// Nearby_At_Least :: struct {
-//     reach, count: int,
-//     criteria: []Selection_Criterion,
-// }
-
-Fulfills_Condition :: struct {
-    condition: Implicit_Condition,
-}
-
-Adjacent := Within_Distance{Self{}, 1, 1}
-
-Closest_Spaces :: struct {
-    origin: Implicit_Target,
-}
-
-Contains_Any :: struct { flags: Space_Flags }
-Contains_No  :: struct { flags: Space_Flags }
-Contains_All :: struct { flags: Space_Flags }
-
-Is_Enemy_Unit :: struct {}
-Is_Friendly_Unit :: struct {}
-Is_Losing_Team_Unit :: struct {}
-Is_Enemy_Of :: struct {
-    target: Implicit_Target,
-}
-Is_Friendly_Spawnpoint :: struct {}
-Not_Previously_Targeted :: struct {}
-
-Ignoring_Immunity :: struct {}
-In_Battle_Zone :: struct {}
-Outside_Battle_Zone :: struct {}
-Empty :: struct {}
-
-Selection_Criterion :: union {
-    Within_Distance,
-    Fulfills_Condition,
-    Closest_Spaces,  // Important to list this one last in any list of criteria
-    Contains_Any,
-    Contains_No,
-    Contains_All,
-    Is_Enemy_Unit,
-    Is_Friendly_Unit,
-    Is_Losing_Team_Unit,
-    Is_Enemy_Of,
-    Is_Friendly_Spawnpoint,
-    Not_Previously_Targeted,
-    Ignoring_Immunity,
-    In_Battle_Zone,
-    Outside_Battle_Zone,
-    Empty,
-}
-
-
 
 Path :: struct {
     num_locked_spaces: int,
@@ -81,7 +22,7 @@ Movement_Flags :: bit_set[Movement_Flag]
 Movement_Action :: struct {
     target: Implicit_Target,
     distance: Implicit_Quantity,
-    destination_criteria: []Selection_Criterion,
+    destination_criteria: Selection_Criteria,
     flags: Movement_Flags,
 
     path: Path,
@@ -93,8 +34,14 @@ Fast_Travel_Action :: struct {
 
 Clear_Action :: struct {}
 
+Selection_Criteria :: struct {
+    origin: Implicit_Target,
+    conditions: []Implicit_Condition,
+    flags: Selection_Flags,
+}
+
 Choose_Target_Action :: struct {
-    criteria: []Selection_Criterion,
+    using criteria: Selection_Criteria,
     num_targets: Implicit_Quantity,
     result: [dynamic]Target,
     // result: Target
@@ -362,7 +309,7 @@ respawn_action := []Action {
         tooltip = "Choose a spawnpoint to respawn in. You may also stay dead.",
         variant = Choose_Target_Action {
             num_targets = 1,
-            criteria = {
+            conditions = {
                 Empty{},
                 Contains_Any{{.HERO_SPAWNPOINT}},
                 Is_Friendly_Spawnpoint{},
@@ -391,7 +338,7 @@ minion_removal_action := []Action {
         },
         variant = Choose_Target_Action {
             num_targets = Minion_Difference{},
-            criteria = {
+            conditions = {
                 Contains_Any{{.MELEE_MINION, .RANGED_MINION}},
                 Is_Losing_Team_Unit{},
             },
@@ -410,13 +357,14 @@ minion_spawn_action := []Action {
         condition = Blocked_Spawnpoints_Remain{},
         variant = Choose_Target_Action {
             num_targets = 1,
-            criteria = {
+            conditions = {
                 In_Battle_Zone{},
                 Empty{},
-                Closest_Spaces {
-                    origin = Top_Blocked_Spawnpoint{},
-                },
+                // Closest_Spaces {
+                //     origin = {Top_Blocked_Spawnpoint{}},
+                // },
             },
+            flags = {.CLOSEST},  // @Todo
         },
     },
     Action {
@@ -437,7 +385,7 @@ minion_outside_zone_action := []Action {  // Still need to handle the case where
         tooltip = "Choose which minion outside the zone to move.",
         variant = Choose_Target_Action {
             num_targets = 1,
-            criteria = {
+            conditions = {
                 Contains_Any{MINION_FLAGS},
                 Is_Friendly_Unit{},
                 Outside_Battle_Zone{},
@@ -448,16 +396,18 @@ minion_outside_zone_action := []Action {  // Still need to handle the case where
         tooltip = "Choose one of the closest spaces in the battle zone to move the minion to.",
         variant = Movement_Action {
             target = Previous_Choice{},
-            destination_criteria = []Selection_Criterion {
-                In_Battle_Zone{},
+            destination_criteria = {
+                conditions = {
+                    In_Battle_Zone{},
+                },
             },
             flags = {.SHORTEST_PATH},
         },
     },
 }
 
-resolve_movement_destinations :: proc(gs: ^Game_State, criteria: []Selection_Criterion, calc_context: Calculation_Context = {}) -> Maybe(Target_Set) {
-    if len(criteria) > 0 {
+resolve_movement_destinations :: proc(gs: ^Game_State, criteria: Selection_Criteria, calc_context: Calculation_Context = {}) -> Maybe(Target_Set) {
+    if len(criteria.conditions) > 0 {
         return make_arbitrary_targets(gs, criteria, calc_context)
     }
     return nil

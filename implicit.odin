@@ -10,7 +10,6 @@ Implicit_Card :: union {
 }
 
 
-
 Card_Reach :: struct {}
 
 Card_Value :: struct {
@@ -21,7 +20,7 @@ Sum :: []Implicit_Quantity
 
 Product :: []Implicit_Quantity
 
-Count_Targets :: []Selection_Criterion
+Count_Targets :: Selection_Criteria
 
 Turn_Played :: struct {}
 
@@ -29,7 +28,7 @@ Minion_Difference :: struct {}
 
 Ternary :: struct {
     terms: []Implicit_Quantity,
-    condition: Implicit_Condition,
+    condition: []Implicit_Condition,
 }
 
 Implicit_Quantity :: union {
@@ -45,7 +44,7 @@ Implicit_Quantity :: union {
 
 Calculation_Context :: struct {
     card_id: Card_ID,
-    target: Target,
+    origin, target: Target,
 }
 
 Self :: struct {}
@@ -83,6 +82,35 @@ Blocked_Spawnpoints_Remain :: struct {}
 
 Alive :: struct {}
 
+Within_Distance :: struct {
+    origin: []Implicit_Target,
+    bounds: []Implicit_Quantity,
+}
+
+Adjacent := Within_Distance{{Self{}}, {1, 1}}
+
+Closest_Spaces :: struct {
+    origin: []Implicit_Target,
+}
+
+Contains_Any :: struct { flags: Space_Flags }
+Contains_No  :: struct { flags: Space_Flags }
+Contains_All :: struct { flags: Space_Flags }
+
+Is_Enemy_Unit :: struct {}
+Is_Friendly_Unit :: struct {}
+Is_Losing_Team_Unit :: struct {}
+Is_Enemy_Of :: struct {
+    target: []Implicit_Target,
+}
+Is_Friendly_Spawnpoint :: struct {}
+Not_Previously_Targeted :: struct {}
+
+Ignoring_Immunity :: struct {}
+In_Battle_Zone :: struct {}
+Outside_Battle_Zone :: struct {}
+Empty :: struct {}
+
 Implicit_Condition :: union {
     bool,
     Greater_Than,
@@ -90,6 +118,21 @@ Implicit_Condition :: union {
     And,
     Blocked_Spawnpoints_Remain,
     Alive,
+    Within_Distance,
+    // Closest_Spaces,  // Important to list this one last in any list of criteria
+    Contains_Any,
+    Contains_No,
+    Contains_All,
+    Is_Enemy_Unit,
+    Is_Friendly_Unit,
+    Is_Losing_Team_Unit,
+    Is_Enemy_Of,
+    Is_Friendly_Spawnpoint,
+    // Not_Previously_Targeted,
+    // Ignoring_Immunity,
+    In_Battle_Zone,
+    Outside_Battle_Zone,
+    Empty,
 }
 
 
@@ -148,7 +191,8 @@ calculate_implicit_quantity :: proc(
 
     case Ternary:
         log.assert(len(quantity.terms) == 2, "Ternary operator that does not have 2 terms!", loc)
-        if calculate_implicit_condition(gs, quantity.condition, calc_context, loc) {
+        log.assert(len(quantity.condition) == 1, "Ternary operator that does not have 1 condition!", loc)
+        if calculate_implicit_condition(gs, quantity.condition[0], calc_context, loc) {
             return calculate_implicit_quantity(gs, quantity.terms[0], calc_context, loc)
         } else {
             return calculate_implicit_quantity(gs, quantity.terms[1], calc_context, loc)
@@ -210,6 +254,13 @@ calculate_implicit_condition :: proc (
     calc_context: Calculation_Context = {},
     loc := #caller_location
 ) -> bool {
+
+    space_ok := calc_context.target != {}
+    space: Space
+    if space_ok {
+        space = gs.board[calc_context.target.x][calc_context.target.y]
+    }
+
     switch condition in implicit_condition {
     case bool: return condition
     // Check this
@@ -230,6 +281,71 @@ calculate_implicit_condition :: proc (
         return len(gs.blocked_spawns[my_team]) > 0
     case Alive:
         return !get_my_player(gs).hero.dead
+
+    case Within_Distance:
+        log.assert(space_ok, "Invalid target!", loc)
+
+        log.assert(len(condition.origin) == 1, "Incorrect argument count for within distance condition", loc)
+        log.assert(len(condition.bounds) == 2, "Incorrect argument count for bounds", loc)
+
+        origin := calculate_implicit_target(gs, condition.origin[0], calc_context)
+        min_dist := calculate_implicit_quantity(gs, condition.bounds[0], calc_context)
+        max_dist := calculate_implicit_quantity(gs, condition.bounds[1], calc_context)
+
+        distance := calculate_hexagonal_distance(origin, calc_context.target)
+        return distance <= max_dist && distance >= min_dist
+
+    case Contains_Any:
+        log.assert(space_ok, "Invalid target!")
+        intersection := space.flags & condition.flags
+        return intersection != {}
+
+    case Contains_All:
+        log.assert(space_ok, "Invalid target!")
+        intersection := space.flags & condition.flags
+        return intersection == condition.flags
+    
+    case Contains_No:
+        log.assert(space_ok, "Invalid target!")
+        intersection := space.flags & condition.flags
+        return intersection == {}
+
+    // @Note these don't actually test whether a unit is present in the space, only that the teams are the same / different
+    case Is_Enemy_Unit:
+        log.assert(space_ok, "Invalid target!")
+        return get_my_player(gs).team != space.unit_team
+
+    case Is_Friendly_Unit:
+        log.assert(space_ok, "Invalid target!")
+        return get_my_player(gs).team == space.unit_team
+
+    case Is_Losing_Team_Unit:
+        log.assert(space_ok, "Invalid target!")
+        losing_team: Team = .RED if gs.minion_counts[.RED] < gs.minion_counts[.BLUE] else .BLUE
+        return losing_team == space.unit_team
+
+    case Is_Enemy_Of:
+        log.assert(space_ok, "Invalid target!")
+        log.assert(len(condition.target) == 1, "Incorrectly formatted term")
+        other_target := calculate_implicit_target(gs, condition.target[0], calc_context)
+        other_space := gs.board[other_target.x][other_target.y]
+        return other_space.unit_team != space.unit_team
+
+    case Is_Friendly_Spawnpoint:
+        log.assert(space_ok, "Invalid target!")
+        return get_my_player(gs).team == space.spawnpoint_team
+
+    case In_Battle_Zone:
+        log.assert(space_ok, "Invalid target!")
+        return space.region_id == gs.current_battle_zone
+
+    case Outside_Battle_Zone:
+        log.assert(space_ok, "Invalid target!")
+        return space.region_id != gs.current_battle_zone
+
+    case Empty:
+        log.assert(space_ok, "Invalid target!")
+        return space.flags & OBSTACLE_FLAGS == {}
     }
     return false
 }

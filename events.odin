@@ -479,7 +479,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
                 log.assert(len(gs.side_button_manager.buttons) > 0, "No side buttons!?")
                 top_button := gs.side_button_manager.buttons[len(gs.side_button_manager.buttons) - 1].variant.(UI_Button_Element)
-                if _, ok := top_button.event.(Resolve_Current_Action_Event); ok && len(action_variant.destination_criteria) != 0 {
+                if _, ok := top_button.event.(Resolve_Current_Action_Event); ok && len(action_variant.destination_criteria.conditions) != 0 {
                     pop_side_button(gs)
                 }
             case Choose_Target_Action:
@@ -777,7 +777,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         switch &action_type in action.variant {
         case Movement_Action:
             add_side_button(gs, "Reset move", Cancel_Event{})
-            if len(action_type.destination_criteria) == 0 {
+            if len(action_type.destination_criteria.conditions) == 0 {
                 add_side_button(gs, "Confirm move", Resolve_Current_Action_Event{})
             }
 

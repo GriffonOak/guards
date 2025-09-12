@@ -312,6 +312,7 @@ test_correct_upgrade_options :: proc(t: ^testing.T) {
         Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.PRIMARY, card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.GOLD, tier = 0, alternate = false}, index = 0}},
         Space_Hovered_Event{space = {0, 0}},
         Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.SILVER, tier = 0, alternate = false}, hovered = false, hidden = false, selected = true}},
+        Marker_Event{},
         Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.SILVER, tier = 0, alternate = false}},
         Space_Hovered_Event{space = {14, 7}},
         Space_Clicked_Event{space = {14, 7}},

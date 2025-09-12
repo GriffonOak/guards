@@ -12,25 +12,26 @@ dodger_cards := []Card_Data {
         text =          "Choose one -\n* Target a unit adjacent to you.\n*If you are adjacent to an empty spawn point\nin the battle zone, target a unit in range",
         primary_effect = []Action {
             Action {
-                tooltip = "Target valid unit.",
+                tooltip = "Target a valid unit.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
-                    criteria = {
+                    origin = Self{},
+                    conditions = {
                         Within_Distance {
-                            origin = Self{},
-                            min = 1,
-                            max = Ternary {
+                            bounds = {1, Ternary {
                                 {Card_Reach{}, 1},
-                                Greater_Than{
+                                {Greater_Than {
                                     Count_Targets {
-                                        Adjacent,
-                                        Contains_No{OBSTACLE_FLAGS},
-                                        Contains_Any{SPAWNPOINT_FLAGS},
-                                        In_Battle_Zone{},
+                                        origin = Self{},
+                                        conditions = {
+                                            Adjacent,
+                                            Contains_No{OBSTACLE_FLAGS},
+                                            Contains_Any{SPAWNPOINT_FLAGS},
+                                            In_Battle_Zone{},
+                                        },
                                     }, 0,
-                                },
-                                
-                            },
+                                }},
+                            }},
                         },
                         Contains_Any{UNIT_FLAGS},
                         Is_Enemy_Unit{},
@@ -58,27 +59,26 @@ dodger_cards := []Card_Data {
                 tooltip = "Target an enemy hero in radius adjacent to an empty spawn point",
                 variant = Choose_Target_Action {
                     num_targets = 1,
-                    criteria = {
-                        Within_Distance {
-                            Self{},
-                            1,
-                            Card_Reach{},
-                        },
-                        Contains_Any{{.HERO}},
-                        Is_Enemy_Unit{},
-                        Fulfills_Condition {
-                            Greater_Than {
-                                Count_Targets {
-                                    Within_Distance {
-                                        min = 1, max = 1,
-                                    },
-                                    Contains_No{OBSTACLE_FLAGS},
-                                    Contains_Any{SPAWNPOINT_FLAGS},
-                                    In_Battle_Zone{},
-                                },
-                                0,
-                            },
-                        },
+                    conditions = {
+                        // Within_Distance {
+                        //     origin = {Self{}},
+                        //     bounds = {1, Card_Reach{}},
+                        // },
+                        // Contains_Any{{.HERO}},
+                        // Is_Enemy_Unit{},
+                        // Fulfills_Condition {
+                        //     Greater_Than {
+                        //         Count_Targets {
+                        //             Within_Distance {
+                        //                 min = 1, max = 1,
+                        //             },
+                        //             Contains_No{OBSTACLE_FLAGS},
+                        //             Contains_Any{SPAWNPOINT_FLAGS},
+                        //             In_Battle_Zone{},
+                        //         },
+                        //         0,
+                        //     },
+                        // },
                         // Nearby_At_Least {
                         //     reach = 1, count = 1,
                         //     criteria = {

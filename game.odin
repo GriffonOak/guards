@@ -63,7 +63,7 @@ Active_Effect :: struct {
     using id: Active_Effect_ID,
 
     timing: Effect_Timing,
-    target_set: []Selection_Criterion,
+    target_set: Selection_Criteria,
 }
 
 Wave_Push_Interrupt :: struct {

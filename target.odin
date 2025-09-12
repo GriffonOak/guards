@@ -24,6 +24,14 @@ Target_Set_Iterator :: struct {
     set: ^Target_Set,
 }
 
+Selection_Flag :: enum {
+    NOT_PREVIOUSLY_TARGETED,
+    IGNORING_IMMUNITY,
+    CLOSEST,
+}
+
+Selection_Flags :: bit_set[Selection_Flag]
+
 index_target_set :: proc(set: ^Target_Set, index: Target) -> ^Target_Info {
     // if index.x < 0 || index.y < 0 || index.x >= GRID_WIDTH || index.y >= GRID_HEIGHT do return nil
     return &set[index.x][index.y]
@@ -319,89 +327,43 @@ make_clear_targets :: proc(gs: ^Game_State) -> (out: Target_Set) {
     return out
 }
 
-target_fulfills_criterion :: proc (
-    gs: ^Game_State,
-    target: Target,
-    criterion: Selection_Criterion,
-    calc_context: Calculation_Context = {},
-) -> bool {
-    space := gs.board[target.x][target.y]
-    calc_context := calc_context
-    calc_context.target = target
+// target_fulfills_criterion :: proc (
+//     gs: ^Game_State,
+//     target: Target,
+//     criterion: Implicit_Condition,
+//     calc_context: Calculation_Context = {},
+// ) -> bool {
+//     space := gs.board[target.x][target.y]
+//     calc_context := calc_context
+//     calc_context.target = target
 
-    switch selector in criterion {
-    case Within_Distance:
-
-        origin := calculate_implicit_target(gs, selector.origin, calc_context)
-        min_dist := calculate_implicit_quantity(gs, selector.min, calc_context)
-        max_dist := calculate_implicit_quantity(gs, selector.max, calc_context)
-
-        distance := calculate_hexagonal_distance(origin, target)
-        return distance <= max_dist && distance >= min_dist
+//     switch selector in criterion {
     
-    // case Nearby_At_Least:
-    //     dist_targets := make_arbitrary_targets(gs, { Within_Distance { target, 1, selector.reach } } )
-    //     other_targets := make_arbitrary_targets(gs, selector.criteria)
-    //     dist_iter := make_target_set_iterator(&dist_targets)
-    //     for info, dist_target in target_set_iter_members(&dist_iter) {
-    //         if !other_targets[dist_target.x][dist_target.y].member {
-    //             info.member = false
-    //         }
-    //     }
-    //     return count_members(&other_targets) >= selector.count
 
-    case Fulfills_Condition:
-
-
-    case Contains_Any:
-        intersection := space.flags & selector.flags
-        return intersection != {}
-
-    case Contains_All:
-        intersection := space.flags & selector.flags
-        return intersection == selector.flags
-    
-    case Contains_No:
-        intersection := space.flags & selector.flags
-        return intersection == {}
-
-    // @Note these don't actually test whether a unit is present in the space, only that the teams are the same / different
-    case Is_Enemy_Unit:         return get_my_player(gs).team != space.unit_team
-    case Is_Friendly_Unit:      return get_my_player(gs).team == space.unit_team
-    case Is_Losing_Team_Unit:
-        losing_team: Team = .RED if gs.minion_counts[.RED] < gs.minion_counts[.BLUE] else .BLUE
-        return losing_team == space.unit_team
-    case Is_Enemy_Of:
-        other_target := calculate_implicit_target(gs, selector.target, calc_context)
-        other_space := gs.board[other_target.x][other_target.y]
-        return other_space.unit_team != space.unit_team
-
-    case Is_Friendly_Spawnpoint: return get_my_player(gs).team == space.spawnpoint_team
-
-    case In_Battle_Zone:        return space.region_id == gs.current_battle_zone
-    case Outside_Battle_Zone:   return space.region_id != gs.current_battle_zone
-
-    case Empty: return space.flags & OBSTACLE_FLAGS == {}
-
-    case Ignoring_Immunity, Not_Previously_Targeted, Closest_Spaces:
-    }
-    return true
-}
+//     case Ignoring_Immunity, Not_Previously_Targeted, Closest_Spaces:
+//     }
+//     return true
+// }
 
 make_arbitrary_targets :: proc(
     gs: ^Game_State,
-    criteria: []Selection_Criterion,
+    criteria: Selection_Criteria,
     calc_context: Calculation_Context = {},
+    loc := #caller_location
 ) -> (out: Target_Set) {
 
-    if criteria == nil do return
+    if len(criteria.conditions) == 0 do return
+
+    calc_context := calc_context
 
     // Start with completely populated board (Inefficient!)
     // @Speed
     for x in 0..<GRID_WIDTH {
         for y in 0..<GRID_HEIGHT {
             target := Target{i8(x), i8(y)}
-            if target_fulfills_criterion(gs, target, criteria[0], calc_context) {
+            if target == {} do continue
+            calc_context.target = target
+            if calculate_implicit_condition(gs, criteria.conditions[0], calc_context, loc) {
                 out[target.x][target.y].member = true
             }
         }
@@ -409,49 +371,49 @@ make_arbitrary_targets :: proc(
 
     ignore_immunity := false
 
-    for criterion in criteria[1:] {
-        #partial switch variant in criterion {
-        case Not_Previously_Targeted:
-            previous_target := calculate_implicit_target(gs, Previous_Choice{}, calc_context)
-            out[previous_target.x][previous_target.y].member = false
+    for condition in criteria.conditions[1:] {
+        #partial switch variant in condition {
+        // case Not_Previously_Targeted:
+        //     previous_target := calculate_implicit_target(gs, Previous_Choice{}, calc_context)
+        //     out[previous_target.x][previous_target.y].member = false
 
-        case Ignoring_Immunity:
-            ignore_immunity = true
+        // case Ignoring_Immunity:
+        //     ignore_immunity = true
 
-        case Closest_Spaces:
-            // @Note: This should really just set a flag like Ignoring_Immunity, and then we pick this up at the end.
-            // context.allocator = context.temp_allocator
-            for dist := 1 ; true ; dist += 1 {
-                dist_targets := make_arbitrary_targets(
-                    gs,
-                    {
-                        Within_Distance {
-                            origin = variant.origin,
-                            min = dist,
-                            max = dist,
-                        },
-                    },
-                    calc_context,
-                )
-                overlap := false
-                dist_iter := make_target_set_iterator(&dist_targets)
-                for _, dist_target in target_set_iter_members(&dist_iter) {
-                    if out[dist_target.x][dist_target.y].member {
-                        overlap = true
-                        break
-                    }
-                }
-                if !overlap do continue
-                out_iter := make_target_set_iterator(&out)
-                for info, target in target_set_iter_members(&out_iter) {
-                    if !dist_targets[target.x][target.y].member do info.member = false
-                }
-                break
-            }
+        // case Closest_Spaces:
+        //     // @Note: This should really just set a flag like Ignoring_Immunity, and then we pick this up at the end.
+        //     // context.allocator = context.temp_allocator
+        //     for dist := 1 ; true ; dist += 1 {
+        //         dist_targets := make_arbitrary_targets(
+        //             gs,
+        //             {
+        //                 Within_Distance {
+        //                     origin = criterion.origin,
+        //                     bounds = {dist, dist},
+        //                 },
+        //             },
+        //             calc_context,
+        //         )
+        //         overlap := false
+        //         dist_iter := make_target_set_iterator(&dist_targets)
+        //         for _, dist_target in target_set_iter_members(&dist_iter) {
+        //             if out[dist_target.x][dist_target.y].member {
+        //                 overlap = true
+        //                 break
+        //             }
+        //         }
+        //         if !overlap do continue
+        //         out_iter := make_target_set_iterator(&out)
+        //         for info, target in target_set_iter_members(&out_iter) {
+        //             if !dist_targets[target.x][target.y].member do info.member = false
+        //         }
+        //         break
+        //     }
         case:
             out_iter := make_target_set_iterator(&out)
             for info, target in target_set_iter_members(&out_iter) {
-                if !target_fulfills_criterion(gs, target, criterion, calc_context) {
+                calc_context.target = target
+                if !calculate_implicit_condition(gs, condition, calc_context) {
                     info.member = false
                 }
             }
@@ -516,7 +478,6 @@ make_card_targets :: proc(
     criteria: []Card_Selection_Criterion,
     calc_context: Calculation_Context = {},
 ) -> (out: [dynamic]Card_ID) {
-    // @Note: At a later point, we probably have to consider cards from all heroes, as there are some actions that require choosing other players' cards
     for card in get_my_player(gs).hero.cards {
         if card_fulfills_criterion(gs, card, criteria[0], calc_context) {
             append(&out, card.id)
