@@ -16,6 +16,9 @@ Update_Player_Data_Event :: struct {
 }
 
 Enter_Lobby_Event :: struct {}
+Change_Hero_Event :: struct {
+    hero_id: Hero_ID
+}
 Begin_Game_Event :: struct {}
 
 Space_Hovered_Event :: struct {
@@ -156,6 +159,7 @@ Event :: union {
     Update_Player_Data_Event,
 
     Enter_Lobby_Event,
+    Change_Hero_Event,
     Begin_Game_Event,
     
     Space_Hovered_Event,
@@ -242,7 +246,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Enter_Lobby_Event:
         gs.stage = .IN_LOBBY
-        clear(&gs.ui_stack)
+        clear(&gs.ui_stack[.BUTTONS])
         if gs.is_host {
             gs.tooltip = "Wait for players to join, then begin the game."
             button_loc := (Vec2{WIDTH, HEIGHT} - SELECTION_BUTTON_SIZE) / 2
@@ -250,6 +254,20 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         } else {
             gs.tooltip = "Wait for the host to begin the game."
         }
+
+        button_loc := Vec2{WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, TOOLTIP_FONT_SIZE + BUTTON_PADDING}
+        for hero in Hero_ID {
+            log.infof("adding button")
+            add_generic_button(gs, {button_loc.x, button_loc.y, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}, hero_names[hero], Change_Hero_Event{hero})
+            button_loc.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+        }
+
+    case Change_Hero_Event:
+        log.assert(gs.stage == .IN_LOBBY, "Tried to change hero outside of lobby!")
+        player_base := get_my_player(gs).base
+        player_base.hero.id = var.hero_id
+
+        broadcast_game_event(gs, Update_Player_Data_Event{player_base})
 
     case Begin_Game_Event:
         begin_game(gs)
@@ -367,8 +385,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 hero.item_count += 1
                 
                 // Pop two card elements and a potential cancel button
-                pop(&gs.ui_stack)
-                pop(&gs.ui_stack)
+                pop(&gs.ui_stack[.CARDS])
+                pop(&gs.ui_stack[.CARDS])
                 clear_side_buttons(gs)
 
                 // Complete the upgrade
@@ -387,7 +405,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
     
                     // I shouldn't really be checking this through the ui stack like this tbh
                     // But I don't have a better way of seeing if an upgrade is happening. // @Cleanup?
-                    top_element := gs.ui_stack[len(gs.ui_stack) - 1]
+                    top_element := gs.ui_stack[.CARDS][len(gs.ui_stack[.CARDS]) - 1]
                     card_element, ok2 := top_element.variant.(UI_Card_Element)
                     if ok2 {
                         if _, ok3 := get_card_by_id(gs, card_element.card_id); !ok3 do break
@@ -414,7 +432,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                     for option_card in upgrade_options {
                         option_id := option_card
                         option_id.owner_id = gs.my_player_id
-                        append(&gs.ui_stack, UI_Element {
+                        append(&gs.ui_stack[.CARDS], UI_Element {
                             card_position_rect,
                             UI_Card_Element{
                                 card_id = option_id,
@@ -477,8 +495,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             }
 
         case .UPGRADING:
-            pop(&gs.ui_stack)
-            pop(&gs.ui_stack)
+            pop(&gs.ui_stack[.CARDS])
+            pop(&gs.ui_stack[.CARDS])
             clear_side_buttons(gs)
         }
 

@@ -16,20 +16,24 @@ _ :: strings
 _ :: os
 
 // Todo list
-// Finish implementing xargatha cards (retrieval blues)
-// Highlight chooseable cards for selection, defense, & upgrading
+// Better lobby
+// Other heroes / hero picker
+// Dodger
+// Refactor heroes "out of" players (allow for multiple heroes controlled by 1 player)
+// Test for xarg retrieval
+
+// Highlight chooseable cards for defense, & upgrading
 // Highlight items when hovering over upgrade options
+// Full deck viewer
 // Xargatha ult
 
 // Xargatha LITERALLY DONE after this point !!!!
 
 // Write UNIMPLEMENTED over unfinished cards
 
-// Some automated tests for things like xarg freeze would go hard
 // Toast, for a bit of flair & usability
 // basic animations?
-// Other heroes / hero picker
-// Lobby that isn't ass
+
 // Minions outside battle zone if path blocked
 // Snorri runes
 
@@ -118,7 +122,7 @@ main :: proc() {
     // input_queue = make([dynamic]Input_Event)
     // event_queue = make([dynamic]Event)
 
-    active_element_index: int = -1
+    active_element_index := UI_Index{index = -1}
 
     for color, index in Card_Color {
         // Add 100 to height here so the bounding rect goes offscreen
@@ -167,15 +171,20 @@ main :: proc() {
                 }
             }
 
-            next_active_element_index := -1
-            #reverse for &element, index in gs.ui_stack {
-                if element.consume_input(&gs, event, &element) {
-                    next_active_element_index = index
-                    break
+            next_active_element_index := UI_Index{index = -1}
+            for i := len(UI_Domain) - 1; i >= 0; i -= 1 {
+                domain := UI_Domain(i)
+                #reverse for &element, index in gs.ui_stack[domain] {
+                    if element.consume_input(&gs, event, &element) {
+                        next_active_element_index = {domain, index}
+                        break
+                    }
                 }
             }
-            if next_active_element_index != active_element_index && active_element_index >= 0 && active_element_index < len(gs.ui_stack){
-                active_element := &gs.ui_stack[active_element_index]
+            if next_active_element_index != active_element_index &&
+                    active_element_index.index >= 0 &&
+                    active_element_index.index < len(gs.ui_stack[active_element_index.domain]) {
+                active_element := &gs.ui_stack[active_element_index.domain][active_element_index.index]
                 active_element.consume_input(&gs, Input_Already_Consumed{}, active_element)
             }
             active_element_index = next_active_element_index
@@ -199,15 +208,17 @@ main :: proc() {
         rl.BeginDrawing()
 
         if gs.stage != .PRE_LOBBY && gs.stage != .IN_LOBBY {
-            render_board_to_texture(&gs, gs.ui_stack[0].variant.(UI_Board_Element))
+            render_board_to_texture(&gs, gs.ui_stack[.BOARD][0].variant.(UI_Board_Element))
         }
 
         rl.BeginTextureMode(window_texture)
 
         rl.ClearBackground(rl.BLACK)
 
-        for element in gs.ui_stack {
-            element.render(&gs, element)
+        for domain in UI_Domain {
+            for element in gs.ui_stack[domain] {
+                element.render(&gs, element)
+            }
         }
 
         if gs.stage == .IN_LOBBY {

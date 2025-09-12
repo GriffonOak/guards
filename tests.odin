@@ -242,7 +242,7 @@ test_xargatha_charm :: proc(t: ^testing.T) {
     maybe_action := get_action_at_index(&gs, second_choice.jump_index)
     testing.expect(t, maybe_action != nil)
 
-    minion_target_action, ok2 := &maybe_action.variant.(Choose_Target_Action)
+    _, ok2 := &maybe_action.variant.(Choose_Target_Action)
     testing.expect(t, ok2)
 
     targets_iter := make_target_set_iterator(&maybe_action.targets)

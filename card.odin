@@ -292,7 +292,7 @@ create_texture_for_card :: proc(card: ^Card_Data) {
 
     // Unimplemented warning
     if len(card.primary_effect) == 0 {
-        unimplemented_text: cstring = "UNIMPLEMENTADO"
+        unimplemented_text: cstring = "NO IMPLEMENTADO"
         unimplemented_dimensions := rl.MeasureTextEx(default_font, unimplemented_text, TITLE_FONT_SIZE, FONT_SPACING)
         rl.DrawTextEx(default_font, unimplemented_text, (CARD_TEXTURE_SIZE - unimplemented_dimensions) / 2, TITLE_FONT_SIZE, FONT_SPACING, rl.RED)
     }
@@ -415,7 +415,7 @@ find_upgrade_options :: proc(gs: ^Game_State, card_id: Card_ID) -> (out: [2]Card
 // }
 
 get_ui_card_slice :: proc(gs: ^Game_State, player_id: Player_ID) -> []UI_Element {
-    return gs.ui_stack[1 + 5 * player_id:][:5]
+    return gs.ui_stack[.CARDS][5 * player_id:][:5]
 }
 
 find_element_for_card :: proc(gs: ^Game_State, card_id: Card_ID) -> (^UI_Element, int) {

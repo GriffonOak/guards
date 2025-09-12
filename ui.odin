@@ -3,7 +3,16 @@ package guards
 import "core:fmt"
 import rl "vendor:raylib"
 
+UI_Domain :: enum {
+    BOARD,
+    CARDS,
+    BUTTONS,
+}
 
+UI_Index :: struct {
+    domain: UI_Domain,
+    index: int,
+}
 
 UI_Board_Element :: struct {
     hovered_space: Target,
@@ -174,7 +183,7 @@ render_tooltip :: proc(gs: ^Game_State) {
 
 
 add_generic_button :: proc(gs: ^Game_State, location: rl.Rectangle, text: cstring, event: Event, global: bool = false) {
-    append(&gs.ui_stack, UI_Element {
+    append(&gs.ui_stack[.BUTTONS], UI_Element {
         location, UI_Button_Element {
             event, text, false, global,
         },
@@ -185,29 +194,29 @@ add_generic_button :: proc(gs: ^Game_State, location: rl.Rectangle, text: cstrin
 
 add_side_button :: proc(gs: ^Game_State, text: cstring, event: Event, global: bool = false) {
     if len(gs.side_button_manager.buttons) == 0 {
-        gs.side_button_manager.first_button_index = len(gs.ui_stack)
+        gs.side_button_manager.first_button_index = len(gs.ui_stack[.BUTTONS])
     }
 
     add_generic_button(gs, gs.side_button_manager.button_location, text, event, global)
-    gs.side_button_manager.buttons = gs.ui_stack[gs.side_button_manager.first_button_index:][:len(gs.side_button_manager.buttons) + 1]
+    gs.side_button_manager.buttons = gs.ui_stack[.BUTTONS][gs.side_button_manager.first_button_index:][:len(gs.side_button_manager.buttons) + 1]
     gs.side_button_manager.button_location.y -= SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
 }
 
 pop_side_button :: proc(gs: ^Game_State) {
     if len(gs.side_button_manager.buttons) == 0 do return
-    pop(&gs.ui_stack)
-    gs.side_button_manager.buttons = gs.ui_stack[gs.side_button_manager.first_button_index:][:len(gs.side_button_manager.buttons) - 1]
+    pop(&gs.ui_stack[.BUTTONS])
+    gs.side_button_manager.buttons = gs.ui_stack[.BUTTONS][gs.side_button_manager.first_button_index:][:len(gs.side_button_manager.buttons) - 1]
     gs.side_button_manager.button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
 }
 
 clear_side_buttons :: proc(gs: ^Game_State) {
-    resize(&gs.ui_stack, len(gs.ui_stack) - len(gs.side_button_manager.buttons))
+    resize(&gs.ui_stack[.BUTTONS], len(gs.ui_stack[.BUTTONS]) - len(gs.side_button_manager.buttons))
     gs.side_button_manager.buttons = {}
     gs.side_button_manager.button_location = FIRST_SIDE_BUTTON_LOCATION
 }
 
 add_game_ui_elements :: proc(gs: ^Game_State) {
-    clear(&gs.ui_stack)
+    clear(&gs.ui_stack[.BUTTONS])
     gs.side_button_manager = Side_Button_Manager {
         buttons = {},
         first_button_index = 0,
@@ -219,7 +228,7 @@ add_game_ui_elements :: proc(gs: ^Game_State) {
         board_render_texture = rl.LoadRenderTexture(i32(BOARD_TEXTURE_SIZE.x), i32(BOARD_TEXTURE_SIZE.y))
     }
 
-    append(&gs.ui_stack, UI_Element {
+    append(&gs.ui_stack[.BOARD], UI_Element {
         BOARD_POSITION_RECT,
         UI_Board_Element{
             texture = board_render_texture,
@@ -233,7 +242,7 @@ add_game_ui_elements :: proc(gs: ^Game_State) {
 
         if player_id == gs.my_player_id {
             for card in player.hero.cards {
-                append(&gs.ui_stack, UI_Element{
+                append(&gs.ui_stack[.CARDS], UI_Element{
                     card_hand_position_rects[card.color],
                     UI_Card_Element{card_id = card.id},
                     card_input_proc,
@@ -242,7 +251,7 @@ add_game_ui_elements :: proc(gs: ^Game_State) {
             }
         } else {
             for card in player.hero.cards {
-                append(&gs.ui_stack, UI_Element {
+                append(&gs.ui_stack[.CARDS], UI_Element {
                     {},
                     UI_Card_Element{card_id = card.id},
                     card_input_proc,

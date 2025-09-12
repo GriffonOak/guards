@@ -138,7 +138,7 @@ Game_State :: struct {
     
     tooltip: Tooltip,
 
-    ui_stack: [dynamic]UI_Element,
+    ui_stack: [UI_Domain][dynamic]UI_Element,
 
     side_button_manager: Side_Button_Manager,
 
@@ -237,6 +237,7 @@ setup_hero_cards :: proc(gs: ^Game_State) {
     // Do the heroes!
     hero_cards = {
         .XARGATHA = xargatha_cards,
+        .DODGER   = dodger_cards,
     }
 
     for player_id in 0..<len(gs.players) {
@@ -309,7 +310,7 @@ remove_heavy_immunity :: proc(gs: ^Game_State, team: Team) {
 
 
 add_choose_host_ui_elements :: proc (gs: ^Game_State) {
-    clear(&gs.ui_stack)
+    clear(&gs.ui_stack[.BUTTONS])
     button_1_location := rl.Rectangle {
         (WIDTH - SELECTION_BUTTON_SIZE.x) / 2,
         (HEIGHT - BUTTON_PADDING) / 2 - SELECTION_BUTTON_SIZE.y,

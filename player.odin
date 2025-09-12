@@ -22,7 +22,13 @@ Player_Stage :: enum {
 
 Hero_ID :: enum {
     XARGATHA,
-    // DODGER,
+    DODGER,
+}
+
+@rodata
+hero_names := [Hero_ID]cstring {
+    .XARGATHA = "Xargatha",
+    .DODGER   = "Dodger",
 }
 
 hero_cards: [Hero_ID][]Card_Data
@@ -100,9 +106,8 @@ render_player_info_at_position :: proc(gs: ^Game_State, player_id: Player_ID, po
     next_pos := pos
     player := get_player_by_id(gs, player_id)
     context.allocator = context.temp_allocator
-    name, _ := reflect.enum_name_from_value(player.hero.id)
-    // hero_name := strings.clone_to_cstring(strings.to_ada_case(name))
-    hero_name := fmt.ctprintf("[%v%v] %v", get_username(gs, player.id), "!" if player.is_team_captain else "", strings.to_ada_case(name))
+    name := hero_names[player.hero.id]
+    hero_name := fmt.ctprintf("[%v%v] %v", get_username(gs, player.id), "!" if player.is_team_captain else "", name)
     
     rl.DrawTextEx(default_font, hero_name, next_pos, INFO_FONT_SIZE, FONT_SPACING, team_colors[player.team])
     next_pos.y += INFO_FONT_SIZE + TEXT_PADDING
