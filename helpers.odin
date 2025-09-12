@@ -8,6 +8,11 @@ import "core:log"
 
 
 
+breakpoint :: proc() {
+    // x: int
+    // x += 0
+}
+
 assert_variant :: proc(u: ^$U, $V: typeid, loc := #caller_location) -> ^V where intrinsics.type_is_union(U) && intrinsics.type_is_variant_of(U, V) {
     out, ok := &u.(V)
     log.assertf(ok, "Type assertion failed: %v to %v", u, typeid_of(V), loc = loc)

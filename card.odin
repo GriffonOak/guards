@@ -397,7 +397,9 @@ find_upgrade_options :: proc(gs: ^Game_State, card_id: Card_ID) -> (out: [2]Card
     for other_card, index in hero_cards[card_id.hero_id] {
         if other_card.color == card_id.color && other_card.tier == card_id.tier + 1 {
             out[0] = other_card.id
+            out[0].hero_id = card_id.hero_id  // Remember that the card data's hero id is not set by default
             out[1] = hero_cards[card_id.hero_id][index + 1].id
+            out[1].hero_id = card_id.hero_id  // Remember that the card data's hero id is not set by default
             ok = true
             return
         }

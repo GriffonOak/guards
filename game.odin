@@ -225,7 +225,7 @@ spawn_heroes_at_start :: proc(gs: ^Game_State) {
 }
 
 create_card_textures :: proc() {
-    for hero_deck in hero_cards {
+    for &hero_deck in hero_cards {
         for &card in hero_deck {
             create_texture_for_card(&card)
         }

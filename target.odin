@@ -119,6 +119,7 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
 
     case Choose_Target_Action:
         action.targets =  make_arbitrary_targets(gs, variant.criteria, index.card_id)
+        clear(&variant.result)
         return count_members(&action.targets) > 0
 
     case Choice_Action:
