@@ -4,6 +4,8 @@ import "core:testing"
 import "core:log"
 import "core:fmt"
 import "core:reflect"
+import "core:prof/spall"
+import "core:sync"
 
 _ :: fmt
 
@@ -345,6 +347,7 @@ test_correct_upgrade_options :: proc(t: ^testing.T) {
 
 @(test)
 test_choose_targets_purged :: proc(t: ^testing.T) {
+
     gs: Game_State
     setup_board(&gs)
 
