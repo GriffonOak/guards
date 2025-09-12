@@ -208,10 +208,10 @@ first_choice_action := []Action {
 basic_movement_action := []Action {
     {
         tooltip = player_movement_tooltip,
-        condition = And{Primary_Is_Not{.MOVEMENT}, Greater_Than{Card_Value{kind=.MOVEMENT}, 0}},
+        condition = And{Primary_Is_Not{.MOVEMENT}, Greater_Than{Card_Value{.MOVEMENT}, 0}},
         variant = Movement_Action {
             target   = Self{},
-            distance = Card_Value{kind=.MOVEMENT},
+            distance = Card_Value{.MOVEMENT},
         },
     },
 }
@@ -219,7 +219,7 @@ basic_movement_action := []Action {
 basic_fast_travel_action := []Action {
     Action {
         tooltip = "Choose a space to fast travel to.",
-        condition = Greater_Than{Card_Value{kind=.MOVEMENT}, 0},
+        condition = Greater_Than{Card_Value{.MOVEMENT}, 0},
         variant = Fast_Travel_Action{},
     },
 }
@@ -357,12 +357,10 @@ minion_spawn_action := []Action {
         condition = Blocked_Spawnpoints_Remain{},
         variant = Choose_Target_Action {
             num_targets = 1,
+            origin = Top_Blocked_Spawnpoint{},
             conditions = {
                 In_Battle_Zone{},
                 Empty{},
-                // Closest_Spaces {
-                //     origin = {Top_Blocked_Spawnpoint{}},
-                // },
             },
             flags = {.CLOSEST},  // @Todo
         },

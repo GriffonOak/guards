@@ -13,9 +13,10 @@ xargatha_cards := []Card_Data {
             Action {
                 tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
+                    origin = Self{},
                     num_targets = 1,
                     conditions = {
-                        Adjacent,
+                        Within_Distance{{1, 1}},
                         Contains_Any{UNIT_FLAGS},
                         Is_Enemy_Unit{},
                     },
@@ -25,7 +26,7 @@ xargatha_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previous_Choice{},
-                    strength = Card_Value{kind=.ATTACK},
+                    strength = Card_Value{.ATTACK},
                 },
             },
             Action {
@@ -34,8 +35,9 @@ xargatha_cards := []Card_Data {
                 skip_index = {sequence=.HALT},
                 variant = Choose_Target_Action {
                     num_targets = 1,
+                    origin = Self{},
                     conditions = {
-                        Adjacent,
+                        Within_Distance{{1, 1}},
                         Contains_Any{{.HERO}},
                         Is_Enemy_Unit{},
                     },
@@ -46,7 +48,7 @@ xargatha_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previous_Choice{},
-                    strength = Card_Value{kind=.ATTACK},
+                    strength = Card_Value{.ATTACK},
                 },
             },
         },
@@ -63,10 +65,10 @@ xargatha_cards := []Card_Data {
                 tooltip = "Target an enemy unit not adjacent to you and in range.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
+                    origin = Self{},
                     conditions = {
                         Within_Distance {
-                            origin = {Self{}},
-                            bounds = {2, Card_Reach{}},
+                            {2, Card_Reach{}},
                         },
                         Contains_Any{UNIT_FLAGS},
                         Is_Enemy_Unit{},
@@ -79,7 +81,7 @@ xargatha_cards := []Card_Data {
                     target = Previous_Choice{},
                     distance = 3,
                     destination_criteria = {
-                        conditions = {Adjacent},
+                        conditions = {Within_Distance{{1, 1}}},
                     },
                 },
             },
@@ -98,8 +100,9 @@ xargatha_cards := []Card_Data {
                 tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
+                    origin = Self{},
                     conditions = {
-                        Adjacent,
+                        Within_Distance{{1, 1}},
                         Contains_Any{UNIT_FLAGS},
                         Is_Enemy_Unit{},
                     },
@@ -110,10 +113,11 @@ xargatha_cards := []Card_Data {
                 variant = Attack_Action {
                     target = Previous_Choice{},
                     strength = Sum {
-                        Card_Value{kind=.ATTACK}, 
+                        Card_Value{.ATTACK}, 
                         Count_Targets {
+                            origin = Self{},
                             conditions = {
-                                Adjacent,
+                                Within_Distance{{1, 1}},
                                 Contains_Any{UNIT_FLAGS},
                                 Is_Enemy_Unit{},
                             },
@@ -147,7 +151,7 @@ xargatha_cards := []Card_Data {
                 tooltip = player_movement_tooltip,
                 variant = Movement_Action {
                     target = Self{},
-                    distance = Card_Value{kind=.MOVEMENT},
+                    distance = Card_Value{.MOVEMENT},
                 },
             },
             Action {  // 2
@@ -156,9 +160,9 @@ xargatha_cards := []Card_Data {
                 tooltip = "You may choose a ranged minion to move, or you may skip.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
+                    origin = Self{},
                     conditions = {
                         Within_Distance {
-                            origin = {Self{}},
                             bounds = {1, Card_Reach{}},
                         },
                         Contains_Any{{.RANGED_MINION}},
@@ -180,9 +184,9 @@ xargatha_cards := []Card_Data {
                 tooltip = "Choose a ranged minion to move.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
+                    origin = Self{},
                     conditions = {
                         Within_Distance {
-                            origin = {Self{}},
                             bounds = {1, Card_Reach{}},
                         },
                         Contains_Any{{.RANGED_MINION}},
@@ -201,7 +205,7 @@ xargatha_cards := []Card_Data {
                 tooltip = player_movement_tooltip,
                 variant = Movement_Action {
                     target = Self{},
-                    distance = Card_Value{kind=.MOVEMENT},
+                    distance = Card_Value{.MOVEMENT},
                 },
             },
         },
@@ -222,10 +226,10 @@ xargatha_cards := []Card_Data {
                         kind = .XARGATHA_FREEZE,
                         timing = Single_Turn(Sum{Turn_Played{}, 1}),
                         target_set = {
+                            origin = Card_Owner{},
                             conditions = {
                                 Within_Distance {
-                                    {Card_Owner{}},
-                                    {1, Card_Reach{}},
+                                    bounds = {1, Card_Reach{}},
                                 },
                                 Contains_Any{{.HERO}},
                                 Is_Enemy_Of{{Card_Owner{}}},
@@ -251,7 +255,7 @@ xargatha_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Adjacent,
+                        Within_Distance{{1, 1}},
                         Contains_Any{UNIT_FLAGS},
                         Is_Enemy_Unit{},
                     },
@@ -262,12 +266,13 @@ xargatha_cards := []Card_Data {
                 variant = Attack_Action {
                     target = Previous_Choice{},
                     strength = Sum {
-                        Card_Value{kind=.ATTACK},
+                        Card_Value{.ATTACK},
                         Product {
                             Sum {
                                 Count_Targets {
+                                    origin = Self{},
                                     conditions = {
-                                        Adjacent,
+                                        Within_Distance{{1, 1}},
                                         Contains_Any{UNIT_FLAGS},
                                         Is_Enemy_Unit{},
                                     },
@@ -300,12 +305,12 @@ xargatha_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Within_Distance {
-                            origin = {Self{}},
                             bounds = {1, Sum {
                                 Card_Reach{},
                                 Count_Targets {
+                                    origin = Self{},
                                     conditions = {
-                                        Adjacent,
+                                        Within_Distance{{1, 1}},
                                         Contains_Any{UNIT_FLAGS},
                                         Is_Enemy_Unit{},
                                     },
@@ -322,7 +327,7 @@ xargatha_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previous_Choice{},
-                    strength = Card_Value{kind=.ATTACK},
+                    strength = Card_Value{.ATTACK},
                 },
             },
         },
@@ -350,7 +355,7 @@ xargatha_cards := []Card_Data {
                 tooltip = player_movement_tooltip,
                 variant = Movement_Action {
                     target = Self{},
-                    distance = Card_Value{kind=.MOVEMENT},
+                    distance = Card_Value{.MOVEMENT},
                 },
             },
             Action {  // 2
@@ -361,7 +366,6 @@ xargatha_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Within_Distance {
-                            origin = {Self{}},
                             bounds = {1, Card_Reach{}},
                         },
                         Contains_Any{{.RANGED_MINION, .MELEE_MINION}},
@@ -385,7 +389,6 @@ xargatha_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Within_Distance {
-                            origin = {Self{}},
                             bounds = {1, Card_Reach{}},
                         },
                         Contains_Any{{.RANGED_MINION, .MELEE_MINION}},
@@ -404,7 +407,7 @@ xargatha_cards := []Card_Data {
                 tooltip = player_movement_tooltip,
                 variant = Movement_Action {
                     target = Self{},
-                    distance = Card_Value{kind=.MOVEMENT},
+                    distance = Card_Value{.MOVEMENT},
                 },
             },
         },
@@ -441,7 +444,7 @@ xargatha_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Adjacent,
+                        Within_Distance{{1, 1}},
                         Contains_Any{{.MELEE_MINION}},
                         Is_Enemy_Unit{},
                     },
@@ -471,6 +474,16 @@ xargatha_cards := []Card_Data {
                     effect = Active_Effect {
                         kind = .XARGATHA_FREEZE,
                         timing = Single_Turn(Sum{Turn_Played{}, 1}),
+                        target_set = {
+                            origin = Card_Owner{},
+                            conditions = {
+                                Within_Distance {
+                                    bounds = {1, Card_Reach{}},
+                                },
+                                Contains_Any{{.HERO}},
+                                Is_Enemy_Of{{Card_Owner{}}},
+                            },
+                        },
                     },
                 },
             },
@@ -490,8 +503,9 @@ xargatha_cards := []Card_Data {
                 tooltip = "Choose a discarded card to retrieve.",
                 condition = Greater_Than {
                     Count_Targets {
+                        origin = Self{},
                         conditions = {
-                            Adjacent,
+                            Within_Distance{{1, 1}},
                             Contains_Any{MINION_FLAGS},
                             Is_Enemy_Unit{},
                         },
@@ -526,7 +540,7 @@ xargatha_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Adjacent,
+                        Within_Distance{{1, 1}},
                         Contains_Any{UNIT_FLAGS},
                         Is_Enemy_Unit{},
                     },
@@ -537,12 +551,13 @@ xargatha_cards := []Card_Data {
                 variant = Attack_Action {
                     target = Previous_Choice{},
                     strength = Sum {
-                        Card_Value{kind=.ATTACK},
+                        Card_Value{.ATTACK},
                         Product {
                             Sum {
                                 Count_Targets {
+                                    origin = Self{},
                                     conditions = {
-                                        Adjacent,
+                                        Within_Distance{{1, 1}},
                                         Contains_Any{UNIT_FLAGS},
                                         Is_Enemy_Unit{},
                                     },
@@ -575,12 +590,12 @@ xargatha_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Within_Distance {
-                            origin = {Self{}},
                             bounds = {1, Sum {
                                 Card_Reach{},
                                 Count_Targets {
+                                    origin = Self{},
                                     conditions = {
-                                        Adjacent,
+                                        Within_Distance{{1, 1}},
                                         Contains_Any{UNIT_FLAGS},
                                         Is_Enemy_Unit{},
                                     },
@@ -597,7 +612,7 @@ xargatha_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previous_Choice{},
-                    strength = Card_Value{kind=.ATTACK},
+                    strength = Card_Value{.ATTACK},
                 },
             },
             Action {
@@ -606,12 +621,11 @@ xargatha_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Within_Distance {
-                            origin = {Self{}},
                             bounds = {1, Sum {
                                 Card_Reach{},
                                 Count_Targets {
                                     conditions = {
-                                        Adjacent,
+                                        Within_Distance{{1, 1}},
                                         Contains_Any{UNIT_FLAGS},
                                         Is_Enemy_Unit{},
                                     },
@@ -629,7 +643,7 @@ xargatha_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previous_Choice{},
-                    strength = Card_Value{kind=.ATTACK},
+                    strength = Card_Value{.ATTACK},
                 },
             },
         },
@@ -657,7 +671,7 @@ xargatha_cards := []Card_Data {
                 tooltip = player_movement_tooltip,
                 variant = Movement_Action {
                     target = Self{},
-                    distance = Card_Value{kind=.MOVEMENT},
+                    distance = Card_Value{.MOVEMENT},
                 },
             },
             Action {  // 2
@@ -668,7 +682,6 @@ xargatha_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Within_Distance {
-                            origin = {Self{}},
                             bounds = {1, Card_Reach{}},
                         },
                         Contains_Any{MINION_FLAGS},
@@ -693,7 +706,6 @@ xargatha_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Within_Distance {
-                            origin = {Self{}},
                             bounds = {1, Card_Reach{}},
                         },
                         Contains_Any{MINION_FLAGS},
@@ -713,7 +725,7 @@ xargatha_cards := []Card_Data {
                 tooltip = player_movement_tooltip,
                 variant = Movement_Action {
                     target = Self{},
-                    distance = Card_Value{kind=.MOVEMENT},
+                    distance = Card_Value{.MOVEMENT},
                 },
             },
         },
@@ -750,7 +762,7 @@ xargatha_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Adjacent,
+                        Within_Distance{{1, 1}},
                         Contains_Any{{.MELEE_MINION, .RANGED_MINION}},
                         Is_Enemy_Unit{},
                     },
@@ -800,7 +812,7 @@ xargatha_cards := []Card_Data {
                 condition = Greater_Than {
                     Count_Targets {
                         conditions = {
-                            Adjacent,
+                            Within_Distance{{1, 1}},
                             Contains_Any{UNIT_FLAGS},
                             Is_Enemy_Unit{},
                         },

@@ -11,38 +11,56 @@ dodger_cards := []Card_Data {
         reach =         Range(3),
         text =          "Choose one -\n* Target a unit adjacent to you.\n*If you are adjacent to an empty spawn point\nin the battle zone, target a unit in range",
         primary_effect = []Action {
-            Action {
-                tooltip = "Target a valid unit.",
+            Action {  // 0
+                tooltip = "Choose one",
+                variant = Choice_Action {
+                    choices = {
+                        {name = "Adjacent", jump_index = {index = 1}},
+                        {name = "In range", jump_index = {index = 4}},
+                    },
+                },
+            },
+            Action {  // 1
+                tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     origin = Self{},
                     conditions = {
                         Within_Distance {
-                            bounds = {1, Ternary {
-                                {Card_Reach{}, 1},
-                                {Greater_Than {
-                                    Count_Targets {
-                                        origin = Self{},
-                                        conditions = {
-                                            Adjacent,
-                                            Contains_No{OBSTACLE_FLAGS},
-                                            Contains_Any{SPAWNPOINT_FLAGS},
-                                            In_Battle_Zone{},
-                                        },
-                                    }, 0,
-                                }},
-                            }},
+                            bounds = {1, 1},
                         },
                         Contains_Any{UNIT_FLAGS},
                         Is_Enemy_Unit{},
                     },
                 },
             },
-            Action {
+            Action {  // 2
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previous_Choice{},
-                    strength = Card_Value{kind=.ATTACK},
+                    strength = Card_Value{.ATTACK},
+                },
+            },
+            Action { variant = Halt_Action {} },  // 3
+            Action {  // 4
+                tooltip = "Target a unit in range.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    origin = Self{},
+                    conditions = {
+                        Within_Distance {
+                            bounds = {1, Card_Reach{}},
+                        },
+                        Contains_Any{UNIT_FLAGS},
+                        Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {  // 5
+                tooltip = "Waiting for opponent to defend...",
+                variant = Attack_Action {
+                    target = Previous_Choice{},
+                    strength = Card_Value{.ATTACK},
                 },
             },
         },
@@ -59,34 +77,27 @@ dodger_cards := []Card_Data {
                 tooltip = "Target an enemy hero in radius adjacent to an empty spawn point",
                 variant = Choose_Target_Action {
                     num_targets = 1,
+                    origin = Self{},
                     conditions = {
-                        // Within_Distance {
-                        //     origin = {Self{}},
-                        //     bounds = {1, Card_Reach{}},
-                        // },
-                        // Contains_Any{{.HERO}},
-                        // Is_Enemy_Unit{},
-                        // Fulfills_Condition {
-                        //     Greater_Than {
-                        //         Count_Targets {
-                        //             Within_Distance {
-                        //                 min = 1, max = 1,
-                        //             },
-                        //             Contains_No{OBSTACLE_FLAGS},
-                        //             Contains_Any{SPAWNPOINT_FLAGS},
-                        //             In_Battle_Zone{},
-                        //         },
-                        //         0,
-                        //     },
-                        // },
-                        // Nearby_At_Least {
-                        //     reach = 1, count = 1,
-                        //     criteria = {
-                        //         Contains_No{OBSTACLE_FLAGS},
-                        //         Contains_Any{SPAWNPOINT_FLAGS},
-                        //         In_Battle_Zone{},
-                        //     },
-                        // },
+                        Within_Distance {
+                            bounds = {1, Card_Reach{}},
+                        },
+                        Contains_Any{{.HERO}},
+                        Is_Enemy_Unit{},
+                        Greater_Than {
+                            Count_Targets {
+                                origin = Stack_Target{},
+                                conditions = {
+                                    Within_Distance {
+                                        bounds ={1, 1},
+                                    },
+                                    Contains_No{OBSTACLE_FLAGS},
+                                    Contains_Any{SPAWNPOINT_FLAGS},
+                                    In_Battle_Zone{},
+                                },
+                            },
+                            0,
+                        },
                     },
                 },
             },

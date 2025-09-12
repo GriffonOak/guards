@@ -355,6 +355,9 @@ make_arbitrary_targets :: proc(
     if len(criteria.conditions) == 0 do return
 
     calc_context := calc_context
+    if criteria.origin != nil {
+        calc_context.origin = calculate_implicit_target(gs, criteria.origin, calc_context)
+    }
 
     // Start with completely populated board (Inefficient!)
     // @Speed

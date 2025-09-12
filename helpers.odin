@@ -167,7 +167,11 @@ calculate_minion_modifiers :: proc(gs: ^Game_State) -> int {
     minion_modifiers := 0
     player := get_my_player(gs)
 
-    adjacent_targets := make_arbitrary_targets(gs, {conditions = {Adjacent}, flags = {.IGNORING_IMMUNITY}})
+    adjacent_targets := make_arbitrary_targets(gs, {
+        origin = Self{},
+        conditions = {Within_Distance{{1, 1}}},
+        flags = {.IGNORING_IMMUNITY},
+    })
     adjacent_targets_iter := make_target_set_iterator(&adjacent_targets)
     for _, adjacent in target_set_iter_members(&adjacent_targets_iter) {
         space := gs.board[adjacent.x][adjacent.y]
@@ -179,7 +183,11 @@ calculate_minion_modifiers :: proc(gs: ^Game_State) -> int {
     log.infof("Melee & heavy modifier: %v", minion_modifiers)
 
     // Idk if the ranged minion would ever be immune but it doesn't hurt I guess
-    nearby_targets := make_arbitrary_targets(gs, {conditions = {Within_Distance{{Self{}}, {1, 2}}}, flags = {.IGNORING_IMMUNITY}})
+    nearby_targets := make_arbitrary_targets(gs, {
+        origin = Self{},
+        conditions = {Within_Distance{ bounds = {1, 2}}}, 
+        flags = {.IGNORING_IMMUNITY},
+    })
     nearby_targets_iter := make_target_set_iterator(&nearby_targets)
     for _, nearby in target_set_iter_members(&nearby_targets_iter) {
         space := gs.board[nearby.x][nearby.y]

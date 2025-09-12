@@ -47,6 +47,8 @@ Calculation_Context :: struct {
     origin, target: Target,
 }
 
+Stack_Target :: struct {}
+
 Self :: struct {}
 
 Previous_Choice :: struct {}
@@ -57,6 +59,7 @@ Card_Owner :: struct {}
 
 Implicit_Target :: union {
     Target,
+    Stack_Target,
     Self,
     Previous_Choice,
     Top_Blocked_Spawnpoint,
@@ -83,11 +86,11 @@ Blocked_Spawnpoints_Remain :: struct {}
 Alive :: struct {}
 
 Within_Distance :: struct {
-    origin: []Implicit_Target,
+    // _origin: Target,
     bounds: []Implicit_Quantity,
 }
 
-Adjacent := Within_Distance{{Self{}}, {1, 1}}
+// Adjacent := Within_Distance{bounds = {1, 1}}
 
 Closest_Spaces :: struct {
     origin: []Implicit_Target,
@@ -209,6 +212,9 @@ calculate_implicit_target :: proc(
 ) -> (out: Target) {
     switch target in implicit_target {
     case Target: out = target
+    case Stack_Target:
+        log.assert(calc_context.target != {}, "Invalid stack target!", loc)
+        return calc_context.target
     case Self: out = get_my_player(gs).hero.location
     case Previous_Choice:
         index := get_my_player(gs).hero.current_action_index
@@ -284,15 +290,16 @@ calculate_implicit_condition :: proc (
 
     case Within_Distance:
         log.assert(space_ok, "Invalid target!", loc)
+        origin_space_ok := calc_context.origin != {}
+        log.assert(origin_space_ok, "Invalid origin!")
 
-        log.assert(len(condition.origin) == 1, "Incorrect argument count for within distance condition", loc)
+        // log.assert(len(condition.origin) == 1, "Incorrect argument count for within distance condition", loc)
         log.assert(len(condition.bounds) == 2, "Incorrect argument count for bounds", loc)
 
-        origin := calculate_implicit_target(gs, condition.origin[0], calc_context)
         min_dist := calculate_implicit_quantity(gs, condition.bounds[0], calc_context)
         max_dist := calculate_implicit_quantity(gs, condition.bounds[1], calc_context)
 
-        distance := calculate_hexagonal_distance(origin, calc_context.target)
+        distance := calculate_hexagonal_distance(calc_context.origin, calc_context.target)
         return distance <= max_dist && distance >= min_dist
 
     case Contains_Any:

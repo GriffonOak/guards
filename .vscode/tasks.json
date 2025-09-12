@@ -21,7 +21,7 @@
         {
             "label": "build-test",
             "type": "shell",
-            "command": "odin build . -build-mode:test -debug -out:build/debug.exe -define:ODIN_TEST_THREADS=1 -define:ODIN_TEST_FANCY=false",
+            "command": "odin build . -build-mode:test -debug -out:build/debug.exe -define:ODIN_TEST_THREADS=1",
             "group": "build"
         },
         {
