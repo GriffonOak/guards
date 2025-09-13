@@ -112,7 +112,7 @@ Not_Previously_Targeted :: struct {}
 Ignoring_Immunity :: struct {}
 In_Battle_Zone :: struct {}
 Outside_Battle_Zone :: struct {}
-Empty :: struct {}
+Empty :: Contains_No{OBSTACLE_FLAGS}
 
 Implicit_Condition :: union {
     bool,
@@ -135,7 +135,6 @@ Implicit_Condition :: union {
     // Ignoring_Immunity,
     In_Battle_Zone,
     Outside_Battle_Zone,
-    Empty,
 }
 
 
@@ -146,9 +145,9 @@ calculate_implicit_quantity :: proc(
     calc_context: Calculation_Context = {},
     loc := #caller_location
 ) -> (out: int) {
+
     switch quantity in implicit_quantity {
     case int: return quantity
-
     case Card_Reach:
 
         log.assert(calc_context.card_id != {}, "Invalid card ID when calculating reach", loc)
@@ -185,9 +184,6 @@ calculate_implicit_quantity :: proc(
         card, ok := get_card_by_id(gs, calc_context.card_id)
         log.assert(ok, "Invalid card when trying to calculate turn played", loc)
         return card.turn_played
-
-    // case Current_Turn:
-    //     return gs.turn_counter
 
     case Minion_Difference:
         return abs(gs.minion_counts[.RED] - gs.minion_counts[.BLUE])
@@ -350,9 +346,6 @@ calculate_implicit_condition :: proc (
         log.assert(space_ok, "Invalid target!")
         return space.region_id != gs.current_battle_zone
 
-    case Empty:
-        log.assert(space_ok, "Invalid target!")
-        return space.flags & OBSTACLE_FLAGS == {}
     }
     return false
 }

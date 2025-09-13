@@ -105,13 +105,7 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
 
     switch &variant in action.variant {
     case Movement_Action:
-        action.targets = make_movement_targets(
-            gs,
-            calculate_implicit_quantity(gs, variant.distance, calc_context),
-            calculate_implicit_target(gs, variant.target, calc_context),
-            resolve_movement_destinations(gs, variant.destination_criteria, calc_context),
-            variant.flags,
-        )
+        action.targets = make_movement_targets(gs, variant.criteria, calc_context)
         origin := calculate_implicit_target(gs, variant.target, calc_context)
         clear(&variant.path.spaces)
         append(&variant.path.spaces, origin)
@@ -163,21 +157,16 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
 
 make_movement_targets :: proc (
     gs: ^Game_State,
-    max_distance: int,
-    origin: Target,
-    valid_destinations: Maybe(Target_Set) = nil,
-    flags: Movement_Flags = {},
-    allocator := context.allocator,
+    criteria: Movement_Criteria,
+    calc_context: Calculation_Context = {},
 ) -> (visited_set: Target_Set) {
 
-    context.allocator = allocator
-
     BIG_NUMBER :: 1e6
-    max_distance := max_distance
+    origin := calculate_implicit_target(gs, criteria.target, calc_context)
+    max_distance := calculate_implicit_quantity(gs, criteria.distance, calc_context)
+    valid_destinations, destinations_ok := make_arbitrary_targets(gs, criteria.destination_criteria, calc_context)
 
-    valid_destinations, destinations_ok := valid_destinations.?
-
-    if .SHORTEST_PATH in flags {
+    if .SHORTEST_PATH in criteria.flags {
         log.assert(destinations_ok, "Trying to calculate shortest path with no valid destination set given!")
         max_distance = BIG_NUMBER
     }
@@ -186,7 +175,7 @@ make_movement_targets :: proc (
     
     unvisited_set: Target_Set
 
-    unvisited_set[origin.x][origin.y] = {dist = 0, prev_loc = INVALID_TARGET, member = true, invalid = false}
+    unvisited_set[origin.x][origin.y] = {member = true}
 
     for count_members(&unvisited_set) > 0 {
         // find minimum
@@ -200,7 +189,7 @@ make_movement_targets :: proc (
             }
         }
 
-        if destinations_ok && .SHORTEST_PATH in flags && max_distance == BIG_NUMBER && valid_destinations[min_loc.x][min_loc.y].member {
+        if .SHORTEST_PATH in criteria.flags && max_distance == BIG_NUMBER && valid_destinations[min_loc.x][min_loc.y].member {
             // Shortest distance found!
             max_distance = min_info.dist
         }
@@ -228,7 +217,6 @@ make_movement_targets :: proc (
                 dist = next_dist,
                 prev_loc = min_loc,
                 member = true,
-                invalid = false,
             }
         }
 
@@ -250,10 +238,7 @@ make_movement_targets :: proc (
         for _, valid_endpoint in target_set_iter_members(&valid_destinations_iter) {
             if !visited_set[valid_endpoint.x][valid_endpoint.y].member do continue
             reachable_targets_from_endpoint := make_movement_targets(
-                gs,
-                max_distance,
-                valid_endpoint,
-                allocator = context.temp_allocator,
+                gs, {distance = max_distance, target = valid_endpoint},
             )
             visited_set_iter = make_target_set_iterator(&visited_set)
             for potential_info, potential_target in target_set_iter_members(&visited_set_iter) {
@@ -345,12 +330,12 @@ make_clear_targets :: proc(gs: ^Game_State) -> (out: Target_Set) {
 //     return true
 // }
 
-make_arbitrary_targets :: proc(
+make_arbitrary_targets :: proc (
     gs: ^Game_State,
     criteria: Selection_Criteria,
     calc_context: Calculation_Context = {},
     loc := #caller_location
-) -> (out: Target_Set) {
+) -> (out: Target_Set, ok: bool) #optional_ok {
 
     if len(criteria.conditions) == 0 do return
 
@@ -435,7 +420,7 @@ make_arbitrary_targets :: proc(
     }
 
 
-    return out
+    return out, true
 }
 
 

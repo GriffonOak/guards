@@ -91,7 +91,7 @@ dodger_cards := []Card_Data {
                                     Within_Distance {
                                         bounds ={1, 1},
                                     },
-                                    Contains_No{OBSTACLE_FLAGS},
+                                    Empty,
                                     Contains_Any{SPAWNPOINT_FLAGS},
                                     In_Battle_Zone{},
                                 },

@@ -310,17 +310,15 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 if len(action_variant.path.spaces) == action_variant.path.num_locked_spaces do break
 
                 action_variant.path.num_locked_spaces = len(action_variant.path.spaces)
-                last_target := action_variant.path.spaces[len(action_variant.path.spaces)-1]
                 
                 target_valid := !action.targets[var.space.x][var.space.y].invalid
 
-                action.targets = make_movement_targets(
-                    gs,
-                    max_distance = calculate_implicit_quantity(gs, action_variant.distance, {card_id = action_index.card_id}) - action_variant.path.num_locked_spaces + 1,
-                    origin = last_target,
-                    valid_destinations = resolve_movement_destinations(gs, action_variant.destination_criteria, {card_id = action_index.card_id}),
-                    flags = action_variant.flags,
-                )
+                calc_context := Calculation_Context{card_id = action_index.card_id}
+                criteria := action_variant.criteria
+                criteria.distance = calculate_implicit_quantity(gs, action_variant.distance, calc_context) - action_variant.path.num_locked_spaces + 1
+                criteria.target = action_variant.path.spaces[len(action_variant.path.spaces)-1]
+
+                action.targets = make_movement_targets(gs, criteria, calc_context)
 
                 log.assert(len(gs.side_button_manager.buttons) > 0, "No side buttons!?")
                 top_button := gs.side_button_manager.buttons[len(gs.side_button_manager.buttons) - 1].variant.(UI_Button_Element)
@@ -468,14 +466,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 action_variant.path.num_locked_spaces = 1
                 resize(&action_variant.path.spaces, 1)
 
-                movement_val := action_variant.distance
-                action.targets = make_movement_targets(
-                    gs,
-                    calculate_implicit_quantity(gs, movement_val, {card_id = action_index.card_id}),
-                    calculate_implicit_target(gs, action_variant.target, {card_id = action_index.card_id}),
-                    resolve_movement_destinations(gs, action_variant.destination_criteria, {card_id = action_index.card_id}),
-                    action_variant.flags,
-                )
+                action.targets = make_movement_targets(gs, action_variant.criteria)
 
                 log.assert(len(gs.side_button_manager.buttons) > 0, "No side buttons!?")
                 top_button := gs.side_button_manager.buttons[len(gs.side_button_manager.buttons) - 1].variant.(UI_Button_Element)

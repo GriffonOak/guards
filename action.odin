@@ -19,11 +19,15 @@ Movement_Flag :: enum {
 
 Movement_Flags :: bit_set[Movement_Flag]
 
-Movement_Action :: struct {
+Movement_Criteria :: struct {
     target: Implicit_Target,
     distance: Implicit_Quantity,
     destination_criteria: Selection_Criteria,
     flags: Movement_Flags,
+}
+
+Movement_Action :: struct {
+    using criteria: Movement_Criteria,
 
     path: Path,
 }
@@ -310,7 +314,7 @@ respawn_action := []Action {
         variant = Choose_Target_Action {
             num_targets = 1,
             conditions = {
-                Empty{},
+                Empty,
                 Contains_Any{{.HERO_SPAWNPOINT}},
                 Is_Friendly_Spawnpoint{},
             },
@@ -360,7 +364,7 @@ minion_spawn_action := []Action {
             origin = Top_Blocked_Spawnpoint{},
             conditions = {
                 In_Battle_Zone{},
-                Empty{},
+                Empty,
             },
             flags = {.CLOSEST},  // @Todo
         },
@@ -402,13 +406,6 @@ minion_outside_zone_action := []Action {  // Still need to handle the case where
             flags = {.SHORTEST_PATH},
         },
     },
-}
-
-resolve_movement_destinations :: proc(gs: ^Game_State, criteria: Selection_Criteria, calc_context: Calculation_Context = {}) -> Maybe(Target_Set) {
-    if len(criteria.conditions) > 0 {
-        return make_arbitrary_targets(gs, criteria, calc_context)
-    }
-    return nil
 }
 
 
