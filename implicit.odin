@@ -28,21 +28,25 @@ Minion_Difference :: struct {}
 
 Ternary :: struct {
     terms: []Implicit_Quantity,
-    condition: []Implicit_Condition,
+    condition: Implicit_Condition,
 }
 
-Count_Discarded_Cards :: struct {}
+Target_Count_Discarded_Cards :: struct {}
 
 Implicit_Quantity :: union {
     int,
-    Card_Reach,
-    Card_Value,
+    Minion_Difference,
     Sum,
     Count_Targets,
-    Card_Turn_Played,
-    Minion_Difference,
     Ternary,
-    Count_Discarded_Cards,
+
+    // Requires target in context (although maybe it shouldn't?)
+    Target_Count_Discarded_Cards,
+
+    // 
+    Card_Reach,
+    Card_Value,
+    Card_Turn_Played,
 }
 
 Calculation_Context :: struct {
@@ -66,6 +70,8 @@ Implicit_Target :: union {
     Self,
     Previous_Choice,
     Top_Blocked_Spawnpoint,
+
+    // Requires card in context
     Card_Owner,
 }
 
@@ -87,28 +93,28 @@ Blocked_Spawnpoints_Remain :: struct {}
 
 Alive :: struct {}
 
-Within_Distance :: struct {
+Target_Within_Distance :: struct {
     origin: Implicit_Target,
     bounds: []Implicit_Quantity,
 }
 
-Contains_Any :: struct { flags: Space_Flags }
-Contains_No  :: struct { flags: Space_Flags }
-Contains_All :: struct { flags: Space_Flags }
+Target_Contains_Any :: struct { flags: Space_Flags }
+Target_Contains_No  :: struct { flags: Space_Flags }
+Target_Contains_All :: struct { flags: Space_Flags }
 
-Is_Enemy_Unit :: struct {}
-Is_Friendly_Unit :: struct {}
-Is_Losing_Team_Unit :: struct {}
-Is_Enemy_Of :: struct {
+Target_Is_Enemy_Unit :: struct {}
+Target_Is_Friendly_Unit :: struct {}
+Target_Is_Losing_Team_Unit :: struct {}
+Target_Is_Enemy_Of :: struct {
     target: Implicit_Target,
 }
-Is_Friendly_Spawnpoint :: struct {}
+Target_Is_Friendly_Spawnpoint :: struct {}
 Not_Previously_Targeted :: struct {}
 
-In_Battle_Zone :: struct {}
-Outside_Battle_Zone :: struct {}
+Target_In_Battle_Zone :: struct {}
+Target_Outside_Battle_Zone :: struct {}
 
-Empty :: Contains_No{OBSTACLE_FLAGS}
+Empty :: Target_Contains_No{OBSTACLE_FLAGS}
 
 Card_Can_Defend :: struct{}
 
@@ -129,17 +135,17 @@ Implicit_Condition :: union {
     Alive,
 
     // Requires target in calc_context
-    Within_Distance,
-    Contains_Any,
-    Contains_No,
-    Contains_All,
-    Is_Enemy_Unit,
-    Is_Friendly_Unit,
-    Is_Losing_Team_Unit,
-    Is_Enemy_Of,
-    Is_Friendly_Spawnpoint,
-    In_Battle_Zone,
-    Outside_Battle_Zone,
+    Target_Within_Distance,
+    Target_Contains_Any,
+    Target_Contains_No,
+    Target_Contains_All,
+    Target_Is_Enemy_Unit,
+    Target_Is_Friendly_Unit,
+    Target_Is_Losing_Team_Unit,
+    Target_Is_Enemy_Of,
+    Target_Is_Friendly_Spawnpoint,
+    Target_In_Battle_Zone,
+    Target_Outside_Battle_Zone,
 
     // Requires card in calc context
     Card_Can_Defend,
@@ -200,14 +206,13 @@ calculate_implicit_quantity :: proc(
 
     case Ternary:
         log.assert(len(quantity.terms) == 2, "Ternary operator that does not have 2 terms!", loc)
-        log.assert(len(quantity.condition) == 1, "Ternary operator that does not have 1 condition!", loc)
-        if calculate_implicit_condition(gs, quantity.condition[0], calc_context, loc) {
+        if calculate_implicit_condition(gs, quantity.condition, calc_context, loc) {
             return calculate_implicit_quantity(gs, quantity.terms[0], calc_context, loc)
         } else {
             return calculate_implicit_quantity(gs, quantity.terms[1], calc_context, loc)
         }
 
-    case Count_Discarded_Cards:
+    case Target_Count_Discarded_Cards:
         log.assert(calc_context.target != {}, "Invalid target when trying to count discarded cards!")
         space := gs.board[calc_context.target.x][calc_context.target.y]
         if .HERO not_in space.flags do return
@@ -298,7 +303,7 @@ calculate_implicit_condition :: proc (
     case Alive:
         return !get_my_player(gs).hero.dead
 
-    case Within_Distance:
+    case Target_Within_Distance:
         log.assert(space_ok, "Invalid target!", loc)
         origin := calculate_implicit_target(gs, condition.origin, calc_context)
 
@@ -311,50 +316,50 @@ calculate_implicit_condition :: proc (
         distance := calculate_hexagonal_distance(origin, calc_context.target)
         return distance <= max_dist && distance >= min_dist
 
-    case Contains_Any:
+    case Target_Contains_Any:
         log.assert(space_ok, "Invalid target!")
         intersection := space.flags & condition.flags
         return intersection != {}
 
-    case Contains_All:
+    case Target_Contains_All:
         log.assert(space_ok, "Invalid target!")
         intersection := space.flags & condition.flags
         return intersection == condition.flags
     
-    case Contains_No:
+    case Target_Contains_No:
         log.assert(space_ok, "Invalid target!")
         intersection := space.flags & condition.flags
         return intersection == {}
 
     // @Note these don't actually test whether a unit is present in the space, only that the teams are the same / different
-    case Is_Enemy_Unit:
+    case Target_Is_Enemy_Unit:
         log.assert(space_ok, "Invalid target!")
         return get_my_player(gs).team != space.unit_team
 
-    case Is_Friendly_Unit:
+    case Target_Is_Friendly_Unit:
         log.assert(space_ok, "Invalid target!")
         return get_my_player(gs).team == space.unit_team
 
-    case Is_Losing_Team_Unit:
+    case Target_Is_Losing_Team_Unit:
         log.assert(space_ok, "Invalid target!")
         losing_team: Team = .RED if gs.minion_counts[.RED] < gs.minion_counts[.BLUE] else .BLUE
         return losing_team == space.unit_team
 
-    case Is_Enemy_Of:
+    case Target_Is_Enemy_Of:
         log.assert(space_ok, "Invalid target!")
         other_target := calculate_implicit_target(gs, condition.target, calc_context)
         other_space := gs.board[other_target.x][other_target.y]
         return other_space.unit_team != space.unit_team
 
-    case Is_Friendly_Spawnpoint:
+    case Target_Is_Friendly_Spawnpoint:
         log.assert(space_ok, "Invalid target!")
         return get_my_player(gs).team == space.spawnpoint_team
 
-    case In_Battle_Zone:
+    case Target_In_Battle_Zone:
         log.assert(space_ok, "Invalid target!")
         return space.region_id == gs.current_battle_zone
 
-    case Outside_Battle_Zone:
+    case Target_Outside_Battle_Zone:
         log.assert(space_ok, "Invalid target!")
         return space.region_id != gs.current_battle_zone
 

@@ -318,8 +318,8 @@ respawn_action := []Action {
             num_targets = 1,
             conditions = {
                 Empty,
-                Contains_Any{{.HERO_SPAWNPOINT}},
-                Is_Friendly_Spawnpoint{},
+                Target_Contains_Any{{.HERO_SPAWNPOINT}},
+                Target_Is_Friendly_Spawnpoint{},
             },
         },
     },
@@ -346,8 +346,8 @@ minion_removal_action := []Action {
         variant = Choose_Target_Action {
             num_targets = Minion_Difference{},
             conditions = {
-                Contains_Any{{.MELEE_MINION, .RANGED_MINION}},
-                Is_Losing_Team_Unit{},
+                Target_Contains_Any{{.MELEE_MINION, .RANGED_MINION}},
+                Target_Is_Losing_Team_Unit{},
             },
         },
     },
@@ -365,7 +365,7 @@ minion_spawn_action := []Action {
         variant = Choose_Target_Action {
             num_targets = 1,
             conditions = {
-                In_Battle_Zone{},
+                Target_In_Battle_Zone{},
                 Empty,
             },
             closest_to = Top_Blocked_Spawnpoint{},
@@ -390,9 +390,9 @@ minion_outside_zone_action := []Action {  // Still need to handle the case where
         variant = Choose_Target_Action {
             num_targets = 1,
             conditions = {
-                Contains_Any{MINION_FLAGS},
-                Is_Friendly_Unit{},
-                Outside_Battle_Zone{},
+                Target_Contains_Any{MINION_FLAGS},
+                Target_Is_Friendly_Unit{},
+                Target_Outside_Battle_Zone{},
             },
         },
     },
@@ -402,7 +402,7 @@ minion_outside_zone_action := []Action {  // Still need to handle the case where
             target = Previous_Choice{},
             destination_criteria = {
                 conditions = {
-                    In_Battle_Zone{},
+                    Target_In_Battle_Zone{},
                 },
             },
             flags = {.SHORTEST_PATH},

@@ -25,12 +25,12 @@ dodger_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Within_Distance {
+                        Target_Within_Distance {
                             origin = Self{},
                             bounds = {1, 1},
                         },
-                        Contains_Any{UNIT_FLAGS},
-                        Is_Enemy_Unit{},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
                     },
                 },
             },
@@ -47,22 +47,22 @@ dodger_cards := []Card_Data {
                 condition = Greater_Than {
                     Count_Targets {
                         conditions = {
-                            Within_Distance{Self{}, {1, 1}},
+                            Target_Within_Distance{Self{}, {1, 1}},
                             Empty,
-                            Contains_Any{SPAWNPOINT_FLAGS},
-                            In_Battle_Zone{},
+                            Target_Contains_Any{SPAWNPOINT_FLAGS},
+                            Target_In_Battle_Zone{},
                         },
                     }, 0,
                 },
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Within_Distance {
+                        Target_Within_Distance {
                             origin = Self{},
                             bounds = {1, Card_Reach{}},
                         },
-                        Contains_Any{UNIT_FLAGS},
-                        Is_Enemy_Unit{},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
                     },
                 },
             },
@@ -88,22 +88,22 @@ dodger_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Within_Distance {
+                        Target_Within_Distance {
                             origin = Self{},
                             bounds = {1, Card_Reach{}},
                         },
-                        Contains_Any{{.HERO}},
-                        Is_Enemy_Unit{},
+                        Target_Contains_Any{{.HERO}},
+                        Target_Is_Enemy_Unit{},
                         Greater_Than {
                             Count_Targets {
                                 conditions = {
-                                    Within_Distance {
+                                    Target_Within_Distance {
                                         origin = That_Target{},
                                         bounds = {1, 1},
                                     },
                                     Empty,
-                                    Contains_Any{SPAWNPOINT_FLAGS},
-                                    In_Battle_Zone{},
+                                    Target_Contains_Any{SPAWNPOINT_FLAGS},
+                                    Target_In_Battle_Zone{},
                                 },
                             },
                             0,
@@ -142,12 +142,12 @@ dodger_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Within_Distance {
+                        Target_Within_Distance {
                             origin = Self{},
                             bounds = {1, 1},
                         },
-                        Contains_Any{UNIT_FLAGS},
-                        Is_Enemy_Unit{},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
                     },
                 },
             },
@@ -164,14 +164,14 @@ dodger_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Within_Distance {
+                        Target_Within_Distance {
                             origin = Self{},
                             bounds = {1, Card_Reach{}},
                         },
-                        Contains_Any{{.HERO}},
-                        Is_Enemy_Unit{},
+                        Target_Contains_Any{{.HERO}},
+                        Target_Is_Enemy_Unit{},
                         Greater_Than{
-                            Count_Discarded_Cards{}, 0,
+                            Target_Count_Discarded_Cards{}, 0,
                         },
                     },
                 },
@@ -198,10 +198,10 @@ dodger_cards := []Card_Data {
                 condition = Greater_Than {
                     Count_Targets {
                         conditions = {
-                            Within_Distance{Self{}, {1, Card_Reach{}}},
+                            Target_Within_Distance{Self{}, {1, Card_Reach{}}},
                             Empty,
-                            Contains_Any{SPAWNPOINT_FLAGS},
-                            In_Battle_Zone{},
+                            Target_Contains_Any{SPAWNPOINT_FLAGS},
+                            Target_In_Battle_Zone{},
                         },
                     }, 1,
                 },
@@ -246,12 +246,12 @@ dodger_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Within_Distance {
+                        Target_Within_Distance {
                             origin = Self{},
                             bounds = {1, 1},
                         },
-                        Contains_Any{UNIT_FLAGS},
-                        Is_Enemy_Unit{},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
                     },
                 },
             },
@@ -268,14 +268,14 @@ dodger_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Within_Distance {
+                        Target_Within_Distance {
                             origin = Self{},
                             bounds = {1, Card_Reach{}},
                         },
-                        Contains_Any{{.HERO}},
-                        Is_Enemy_Unit{},
+                        Target_Contains_Any{{.HERO}},
+                        Target_Is_Enemy_Unit{},
                         Greater_Than{
-                            Count_Discarded_Cards{}, 0,
+                            Target_Count_Discarded_Cards{}, 0,
                         },
                     },
                 },
@@ -304,9 +304,9 @@ dodger_cards := []Card_Data {
                 tooltip = "Target a unit in range.",
                 variant = Choose_Target_Action {
                     conditions = {
-                        Within_Distance {Self{}, {1, Card_Reach{}}},
-                        Contains_Any{UNIT_FLAGS},
-                        Is_Enemy_Unit{},
+                        Target_Within_Distance {Self{}, {1, Card_Reach{}}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
                     },
                 },
             },
@@ -322,8 +322,8 @@ dodger_cards := []Card_Data {
                 skip_index = {sequence = .HALT},
                 variant = Choose_Target_Action {
                     conditions = {
-                        Within_Distance {Self{}, {1, 1}},
-                        Contains_Any{MINION_FLAGS},
+                        Target_Within_Distance {Self{}, {1, 1}},
+                        Target_Contains_Any{MINION_FLAGS},
                     },
                 },
             },
@@ -334,7 +334,7 @@ dodger_cards := []Card_Data {
                     distance = 1,
                     destination_criteria = {
                         conditions = {
-                            Within_Distance {Self{}, {2, 2}},
+                            Target_Within_Distance {Self{}, {2, 2}},
                         },
                     },
                 },
@@ -355,10 +355,10 @@ dodger_cards := []Card_Data {
                 condition = Greater_Than {
                     Count_Targets {
                         conditions = {
-                            Within_Distance{Self{}, {1, Card_Reach{}}},
+                            Target_Within_Distance{Self{}, {1, Card_Reach{}}},
                             Empty,
-                            Contains_Any{SPAWNPOINT_FLAGS},
-                            In_Battle_Zone{},
+                            Target_Contains_Any{SPAWNPOINT_FLAGS},
+                            Target_In_Battle_Zone{},
                         },
                     }, 1,
                 },
@@ -383,11 +383,11 @@ dodger_cards := []Card_Data {
                 // condition = Greater_Than { Total_Dead_Minions{My_Team{}}, 0 },  @Todo
                 variant = Choose_Target_Action {
                     conditions = {
-                        Within_Distance{Self{}, {1, 1}},
+                        Target_Within_Distance{Self{}, {1, 1}},
                         Empty,
-                        Contains_Any{SPAWNPOINT_FLAGS},
-                        In_Battle_Zone{},
-                        Is_Friendly_Spawnpoint{},
+                        Target_Contains_Any{SPAWNPOINT_FLAGS},
+                        Target_In_Battle_Zone{},
+                        Target_Is_Friendly_Spawnpoint{},
                     },
                 },
             },
