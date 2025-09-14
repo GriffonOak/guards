@@ -336,7 +336,7 @@ when !ODIN_TEST {
         if choose_card, ok2 := action.variant.(Choose_Card_Action); ok2 {
             available: bool 
             for card_id in choose_card.card_targets {
-                if card_data.id == card_id {
+                if card_element.card_id == card_id {
                     available = true
                     break
                 }

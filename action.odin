@@ -90,15 +90,9 @@ Minion_Spawn_Action :: struct {
     location, spawnpoint: Implicit_Target,
 }
 
-Can_Defend :: struct {}
-
-Card_Selection_Criterion :: union {
-    Can_Defend,
-    Card_State,
-}
 
 Choose_Card_Action :: struct {
-    criteria: []Card_Selection_Criterion,
+    criteria: []Implicit_Condition,
     card_targets: [dynamic]Card_ID,
     result: Card_ID,
 }
@@ -200,7 +194,6 @@ first_choice_tooltip: cstring : "Choose an action to take with your played card.
 
 first_choice_action := []Action {
     Action {
-        condition = Alive{},
         tooltip = first_choice_tooltip,
         variant = Choice_Action {
             choices = []Choice {
@@ -217,7 +210,7 @@ first_choice_action := []Action {
 basic_movement_action := []Action {
     {
         tooltip = player_movement_tooltip,
-        condition = And{Primary_Is_Not{.MOVEMENT}, Greater_Than{Card_Value{.MOVEMENT}, 0}},
+        condition = And{Card_Primary_Is_Not{.MOVEMENT}, Greater_Than{Card_Value{.MOVEMENT}, 0}},
         variant = Movement_Action {
             target   = Self{},
             distance = Card_Value{.MOVEMENT},
@@ -248,9 +241,14 @@ basic_defense_action := []Action {
         skip_name = "Die",
         variant = Choose_Card_Action {
             criteria = {
-                Card_State.IN_HAND,
-                Can_Defend{},
+                Card_State_Is{.IN_HAND},  // Apparently you can just discard anything, even if it can't defend...
             },
+        },
+    },
+    Action {
+        tooltip = error_tooltip,
+        variant = Discard_Card_Action {
+            Previous_Card_Choice{},
         },
     },
     Action {
@@ -272,7 +270,7 @@ discard_if_able_action := []Action {
         tooltip = "Choose a card to discard.",
         variant = Choose_Card_Action {
             criteria = {
-                Card_State.IN_HAND,
+                Card_State_Is{.IN_HAND},
             },
         },
     },
@@ -292,7 +290,7 @@ discard_or_defeated_action := []Action {
         skip_name = "Die",
         variant = Choose_Card_Action {
             criteria = {
-                Card_State.IN_HAND,
+                Card_State_Is{.IN_HAND},
             },
         },
     },

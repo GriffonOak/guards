@@ -220,7 +220,7 @@ xargatha_cards := []Card_Data {
                 variant = Add_Active_Effect_Action {
                     effect = Active_Effect {
                         kind = .XARGATHA_FREEZE,
-                        timing = Single_Turn(Sum{Turn_Played{}, 1}),
+                        timing = Single_Turn(Sum{Card_Turn_Played{}, 1}),
                         target_set = {
                             conditions = {
                                 Within_Distance {
@@ -228,7 +228,7 @@ xargatha_cards := []Card_Data {
                                     bounds = {1, Card_Reach{}},
                                 },
                                 Contains_Any{{.HERO}},
-                                Is_Enemy_Of{{Card_Owner{}}},
+                                Is_Enemy_Of{Card_Owner{}},
                             },
                         },
                     },
@@ -467,7 +467,7 @@ xargatha_cards := []Card_Data {
                 variant = Add_Active_Effect_Action {
                     effect = Active_Effect {
                         kind = .XARGATHA_FREEZE,
-                        timing = Single_Turn(Sum{Turn_Played{}, 1}),
+                        timing = Single_Turn(Sum{Card_Turn_Played{}, 1}),
                         target_set = {
                             conditions = {
                                 Within_Distance {
@@ -475,7 +475,7 @@ xargatha_cards := []Card_Data {
                                     bounds = {1, Card_Reach{}},
                                 },
                                 Contains_Any{{.HERO}},
-                                Is_Enemy_Of{{Card_Owner{}}},
+                                Is_Enemy_Of{Card_Owner{}},
                             },
                         },
                     },
@@ -507,7 +507,7 @@ xargatha_cards := []Card_Data {
                     0,
                 },
                 variant = Choose_Card_Action{
-                    criteria = {.DISCARDED},
+                    criteria = {Card_State_Is{.DISCARDED}},
                 },
             },
             Action {
@@ -782,7 +782,7 @@ xargatha_cards := []Card_Data {
                 variant = Add_Active_Effect_Action {
                     effect = Active_Effect {
                         kind = .XARGATHA_FREEZE,
-                        timing = Single_Turn(Sum{Turn_Played{}, 1}),
+                        timing = Single_Turn(Sum{Card_Turn_Played{}, 1}),
                     },
                 },
             },
@@ -812,7 +812,7 @@ xargatha_cards := []Card_Data {
                     0,
                 },
                 variant = Choose_Card_Action{
-                    criteria = {.DISCARDED},
+                    criteria = {Card_State_Is{.DISCARDED}},
                 },
             },
             Action {

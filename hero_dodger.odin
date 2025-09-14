@@ -380,7 +380,7 @@ dodger_cards := []Card_Data {
         primary_effect = []Action {
             Action {
                 tooltip = "Choose an empty friendly spawn point adjacent to you in the battle zone.",
-                condition = Greater_Than { Total_Dead_Minions{My_Team{}}, 0 },
+                // condition = Greater_Than { Total_Dead_Minions{My_Team{}}, 0 },  @Todo
                 variant = Choose_Target_Action {
                     conditions = {
                         Within_Distance{Self{}, {1, 1}},
@@ -391,10 +391,10 @@ dodger_cards := []Card_Data {
                     },
                 },
             },
-            Action {
-                tooltip = "Choose which type of minion to respawn",
-                variant = Choose_Minion_Type_Action {},  // ??????
-            },
+            // Action {
+            //     tooltip = "Choose which type of minion to respawn",
+            //     variant = Choose_Minion_Type_Action {},  // ??????
+            // },
             Action {
                 variant = Minion_Spawn_Action {
                     location = Previous_Choice{},

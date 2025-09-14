@@ -188,9 +188,9 @@ spawn_minions :: proc(gs: ^Game_State, zone: Region_ID) {
 
             if (space.flags - {.TOKEN}) & OBSTACLE_FLAGS != {} {
                 broadcast_game_event(gs, Minion_Blocked_Event{index})
-                continue
+            } else {
+                broadcast_game_event(gs, Minion_Spawn_Event{index, minion_to_spawn, space.spawnpoint_team})
             }
-            broadcast_game_event(gs, Minion_Spawn_Event{index, minion_to_spawn, space.spawnpoint_team})
         }
     }
     return

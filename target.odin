@@ -375,60 +375,23 @@ make_arbitrary_targets :: proc (
     return out, true
 }
 
-
-card_fulfills_criterion :: proc(
-    gs: ^Game_State,
-    card: Card,
-    criterion: Card_Selection_Criterion,
-    calc_context: Calculation_Context = {},
-    allocator := context.allocator
-) -> bool {
-    calc_context := calc_context
-    calc_context.card_id = card.id
-
-    switch variant in criterion {
-    case Card_State: return card.state == variant
-    case Can_Defend:
-        // Phew
-        // Find the attack first
-        attack_strength := -1e6
-        minion_modifiers := -1e6
-        search_interrupts: #reverse for expanded_interrupt in gs.interrupt_stack {
-            #partial switch interrupt_variant in expanded_interrupt.interrupt.variant {
-            case Attack_Interrupt:
-                attack_strength = interrupt_variant.strength
-                minion_modifiers = interrupt_variant.minion_modifiers
-                break search_interrupts
-            }
-        }
-        log.assert(attack_strength != -1e6, "No attack found in interrupt stack!!!!!" )
-
-        log.infof("Defending attack of %v, minions %v, card value %v", attack_strength, minion_modifiers)
-
-        // We do it this way so that defense items get calculated
-        defense_strength := calculate_implicit_quantity(gs, Card_Value{.DEFENSE}, calc_context)
-        return defense_strength + minion_modifiers >= attack_strength
-    }
-    log.assert(false, "non-returning switch case in card criterion checker")
-    return false
-}
-
 make_card_targets :: proc(
     gs: ^Game_State,
-    criteria: []Card_Selection_Criterion,
+    criteria: []Implicit_Condition,
     calc_context: Calculation_Context = {},
 ) -> (out: [dynamic]Card_ID) {
+    calc_context := calc_context
     for card in get_my_player(gs).hero.cards {
-        if card_fulfills_criterion(gs, card, criteria[0], calc_context) {
+        calc_context.card_id = card.id
+        if calculate_implicit_condition(gs, criteria[0], calc_context) {
             append(&out, card.id)
         }
     }
 
     for criterion in criteria [1:] {
         #reverse for card_id, index in out {
-            card, ok := get_card_by_id(gs, card_id)
-            log.assert(ok, "How would this even happen lol")
-            if !card_fulfills_criterion(gs, card^, criterion, calc_context) {
+            calc_context.card_id = card_id
+            if !calculate_implicit_condition(gs, criterion, calc_context) {
                 unordered_remove(&out, index)
             }
         }

@@ -19,7 +19,8 @@ _ :: strings
 _ :: os
 
 // Todo list
-// Dodger
+// Rename all the implicit stuff based on whether it needs cards or targets
+// Dodger  (Primary defense, choose minion type ????)
 // Card values refactor?
 // Refactor heroes "out of" players (allow for multiple heroes controlled by 1 player)
 // Test for xarg retrieval

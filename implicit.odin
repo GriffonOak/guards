@@ -22,7 +22,7 @@ Product :: []Implicit_Quantity
 
 Count_Targets :: Selection_Criteria
 
-Turn_Played :: struct {}
+Card_Turn_Played :: struct {}
 
 Minion_Difference :: struct {}
 
@@ -39,7 +39,7 @@ Implicit_Quantity :: union {
     Card_Value,
     Sum,
     Count_Targets,
-    Turn_Played,
+    Card_Turn_Played,
     Minion_Difference,
     Ternary,
     Count_Discarded_Cards,
@@ -76,13 +76,12 @@ Implicit_Target_Slice :: union {
     Previous_Choices,
 }
 
+
+/// IMPLICIT CONDITIONS
+
 Greater_Than :: []Implicit_Quantity
 
 And :: []Implicit_Condition
-
-Primary_Is_Not :: struct {
-    kind: Ability_Kind,
-}
 
 Blocked_Spawnpoints_Remain :: struct {}
 
@@ -93,12 +92,6 @@ Within_Distance :: struct {
     bounds: []Implicit_Quantity,
 }
 
-// Adjacent := Within_Distance{bounds = {1, 1}}
-
-Closest_Spaces :: struct {
-    origin: Implicit_Target,
-}
-
 Contains_Any :: struct { flags: Space_Flags }
 Contains_No  :: struct { flags: Space_Flags }
 Contains_All :: struct { flags: Space_Flags }
@@ -107,25 +100,36 @@ Is_Enemy_Unit :: struct {}
 Is_Friendly_Unit :: struct {}
 Is_Losing_Team_Unit :: struct {}
 Is_Enemy_Of :: struct {
-    target: []Implicit_Target,
+    target: Implicit_Target,
 }
 Is_Friendly_Spawnpoint :: struct {}
 Not_Previously_Targeted :: struct {}
 
-Ignoring_Immunity :: struct {}
 In_Battle_Zone :: struct {}
 Outside_Battle_Zone :: struct {}
+
 Empty :: Contains_No{OBSTACLE_FLAGS}
+
+Card_Can_Defend :: struct{}
+
+Card_State_Is :: struct {
+    state: Card_State,
+}
+
+Card_Primary_Is_Not :: struct {
+    kind: Ability_Kind,
+}
+
 
 Implicit_Condition :: union {
     bool,
     Greater_Than,
-    Primary_Is_Not,
     And,
     Blocked_Spawnpoints_Remain,
     Alive,
+
+    // Requires target in calc_context
     Within_Distance,
-    // Closest_Spaces,  // Important to list this one last in any list of criteria
     Contains_Any,
     Contains_No,
     Contains_All,
@@ -134,10 +138,13 @@ Implicit_Condition :: union {
     Is_Losing_Team_Unit,
     Is_Enemy_Of,
     Is_Friendly_Spawnpoint,
-    // Not_Previously_Targeted,
-    // Ignoring_Immunity,
     In_Battle_Zone,
     Outside_Battle_Zone,
+
+    // Requires card in calc context
+    Card_Can_Defend,
+    Card_State_Is,
+    Card_Primary_Is_Not,
 }
 
 
@@ -182,7 +189,7 @@ calculate_implicit_quantity :: proc(
         targets := make_arbitrary_targets(gs, quantity, calc_context)
         return count_members(&targets)
 
-    case Turn_Played:
+    case Card_Turn_Played:
         log.assert(calc_context.card_id != {}, "Invalid card when trying to calculate turn played", loc)
         card, ok := get_card_by_id(gs, calc_context.card_id)
         log.assert(ok, "Invalid card when trying to calculate turn played", loc)
@@ -281,11 +288,6 @@ calculate_implicit_condition :: proc (
     case Greater_Than:
         log.assert(len(condition) == 2, "Greater Than condition check that does not have 2 elements!", loc)
         return calculate_implicit_quantity(gs, condition[0], calc_context, loc) > calculate_implicit_quantity(gs, condition[1], calc_context, loc)
-    case Primary_Is_Not:
-        log.assert(calc_context.card_id != {}, "Could not find the played card when checking for its primary type!")
-        played_card_data, ok := get_card_data_by_id(gs, calc_context.card_id)
-        log.assert(ok, "Could not find the card data when checking for its primary type!")
-        return played_card_data.primary != condition.kind
     case And:
         out := true
         for extra_condition in condition do out &&= calculate_implicit_condition(gs, extra_condition, calc_context, loc)
@@ -340,8 +342,7 @@ calculate_implicit_condition :: proc (
 
     case Is_Enemy_Of:
         log.assert(space_ok, "Invalid target!")
-        log.assert(len(condition.target) == 1, "Incorrectly formatted term")
-        other_target := calculate_implicit_target(gs, condition.target[0], calc_context)
+        other_target := calculate_implicit_target(gs, condition.target, calc_context)
         other_space := gs.board[other_target.x][other_target.y]
         return other_space.unit_team != space.unit_team
 
@@ -357,6 +358,39 @@ calculate_implicit_condition :: proc (
         log.assert(space_ok, "Invalid target!")
         return space.region_id != gs.current_battle_zone
 
+
+    case Card_Primary_Is_Not:
+        log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
+        card_data, ok := get_card_data_by_id(gs, calc_context.card_id)
+        log.assert(ok, "Could not find the card data when checking for its primary type!", loc)
+        return card_data.primary != condition.kind
+
+    case Card_State_Is:
+        log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
+        card, ok := get_card_by_id(gs, calc_context.card_id)
+        log.assert(ok, "Could not find the card when checking for its state!", loc)
+        return card.state == condition.state
+
+    case Card_Can_Defend:
+        log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
+
+        attack_strength := -1e6
+        minion_modifiers := -1e6
+        search_interrupts: #reverse for expanded_interrupt in gs.interrupt_stack {
+            #partial switch interrupt_variant in expanded_interrupt.interrupt.variant {
+            case Attack_Interrupt:
+                attack_strength = interrupt_variant.strength
+                minion_modifiers = interrupt_variant.minion_modifiers
+                break search_interrupts
+            }
+        }
+        log.assert(attack_strength != -1e6, "No attack found in interrupt stack!!!!!", loc)
+
+        log.infof("Defending attack of %v, minions %v, card value %v", attack_strength, minion_modifiers)
+
+        // We do it this way so that defense items get calculated
+        defense_strength := calculate_implicit_quantity(gs, Card_Value{.DEFENSE}, calc_context)
+        return defense_strength + minion_modifiers >= attack_strength
     }
     return false
 }
