@@ -13,10 +13,9 @@ xargatha_cards := []Card_Data {
             Action {
                 tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
-                    origin = Self{},
                     num_targets = 1,
                     conditions = {
-                        Within_Distance{{1, 1}},
+                        Within_Distance{Self{}, {1, 1}},
                         Contains_Any{UNIT_FLAGS},
                         Is_Enemy_Unit{},
                     },
@@ -35,9 +34,8 @@ xargatha_cards := []Card_Data {
                 skip_index = {sequence=.HALT},
                 variant = Choose_Target_Action {
                     num_targets = 1,
-                    origin = Self{},
                     conditions = {
-                        Within_Distance{{1, 1}},
+                        Within_Distance{Self{}, {1, 1}},
                         Contains_Any{{.HERO}},
                         Is_Enemy_Unit{},
                     },
@@ -65,9 +63,9 @@ xargatha_cards := []Card_Data {
                 tooltip = "Target an enemy unit not adjacent to you and in range.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
-                    origin = Self{},
                     conditions = {
                         Within_Distance {
+                            Self{}, 
                             {2, Card_Reach{}},
                         },
                         Contains_Any{UNIT_FLAGS},
@@ -81,7 +79,7 @@ xargatha_cards := []Card_Data {
                     target = Previous_Choice{},
                     distance = 3,
                     destination_criteria = {
-                        conditions = {Within_Distance{{1, 1}}},
+                        conditions = {Within_Distance{Self{}, {1, 1}}},
                     },
                 },
             },
@@ -100,9 +98,8 @@ xargatha_cards := []Card_Data {
                 tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
-                    origin = Self{},
                     conditions = {
-                        Within_Distance{{1, 1}},
+                        Within_Distance{Self{}, {1, 1}},
                         Contains_Any{UNIT_FLAGS},
                         Is_Enemy_Unit{},
                     },
@@ -115,9 +112,8 @@ xargatha_cards := []Card_Data {
                     strength = Sum {
                         Card_Value{.ATTACK}, 
                         Count_Targets {
-                            origin = Self{},
                             conditions = {
-                                Within_Distance{{1, 1}},
+                                Within_Distance{Self{}, {1, 1}},
                                 Contains_Any{UNIT_FLAGS},
                                 Is_Enemy_Unit{},
                             },
@@ -160,9 +156,9 @@ xargatha_cards := []Card_Data {
                 tooltip = "You may choose a ranged minion to move, or you may skip.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
-                    origin = Self{},
                     conditions = {
                         Within_Distance {
+                            origin = Self{},
                             bounds = {1, Card_Reach{}},
                         },
                         Contains_Any{{.RANGED_MINION}},
@@ -184,9 +180,9 @@ xargatha_cards := []Card_Data {
                 tooltip = "Choose a ranged minion to move.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
-                    origin = Self{},
                     conditions = {
                         Within_Distance {
+                            origin = Self{},
                             bounds = {1, Card_Reach{}},
                         },
                         Contains_Any{{.RANGED_MINION}},
@@ -226,9 +222,9 @@ xargatha_cards := []Card_Data {
                         kind = .XARGATHA_FREEZE,
                         timing = Single_Turn(Sum{Turn_Played{}, 1}),
                         target_set = {
-                            origin = Card_Owner{},
                             conditions = {
                                 Within_Distance {
+                                    origin = Card_Owner{},
                                     bounds = {1, Card_Reach{}},
                                 },
                                 Contains_Any{{.HERO}},
@@ -255,7 +251,7 @@ xargatha_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Within_Distance{{1, 1}},
+                        Within_Distance{Self{}, {1, 1}},
                         Contains_Any{UNIT_FLAGS},
                         Is_Enemy_Unit{},
                     },
@@ -270,9 +266,8 @@ xargatha_cards := []Card_Data {
                         Product {
                             Sum {
                                 Count_Targets {
-                                    origin = Self{},
                                     conditions = {
-                                        Within_Distance{{1, 1}},
+                                        Within_Distance{Self{}, {1, 1}},
                                         Contains_Any{UNIT_FLAGS},
                                         Is_Enemy_Unit{},
                                     },
@@ -308,9 +303,8 @@ xargatha_cards := []Card_Data {
                             bounds = {1, Sum {
                                 Card_Reach{},
                                 Count_Targets {
-                                    origin = Self{},
                                     conditions = {
-                                        Within_Distance{{1, 1}},
+                                        Within_Distance{Self{}, {1, 1}},
                                         Contains_Any{UNIT_FLAGS},
                                         Is_Enemy_Unit{},
                                     },
@@ -444,7 +438,7 @@ xargatha_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Within_Distance{{1, 1}},
+                        Within_Distance{Self{}, {1, 1}},
                         Contains_Any{{.MELEE_MINION}},
                         Is_Enemy_Unit{},
                     },
@@ -475,9 +469,9 @@ xargatha_cards := []Card_Data {
                         kind = .XARGATHA_FREEZE,
                         timing = Single_Turn(Sum{Turn_Played{}, 1}),
                         target_set = {
-                            origin = Card_Owner{},
                             conditions = {
                                 Within_Distance {
+                                    origin = Card_Owner{},
                                     bounds = {1, Card_Reach{}},
                                 },
                                 Contains_Any{{.HERO}},
@@ -503,9 +497,8 @@ xargatha_cards := []Card_Data {
                 tooltip = "Choose a discarded card to retrieve.",
                 condition = Greater_Than {
                     Count_Targets {
-                        origin = Self{},
                         conditions = {
-                            Within_Distance{{1, 1}},
+                            Within_Distance{Self{}, {1, 1}},
                             Contains_Any{MINION_FLAGS},
                             Is_Enemy_Unit{},
                         },
@@ -540,7 +533,7 @@ xargatha_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Within_Distance{{1, 1}},
+                        Within_Distance{Self{}, {1, 1}},
                         Contains_Any{UNIT_FLAGS},
                         Is_Enemy_Unit{},
                     },
@@ -555,9 +548,8 @@ xargatha_cards := []Card_Data {
                         Product {
                             Sum {
                                 Count_Targets {
-                                    origin = Self{},
                                     conditions = {
-                                        Within_Distance{{1, 1}},
+                                        Within_Distance{Self{}, {1, 1}},
                                         Contains_Any{UNIT_FLAGS},
                                         Is_Enemy_Unit{},
                                     },
@@ -593,9 +585,8 @@ xargatha_cards := []Card_Data {
                             bounds = {1, Sum {
                                 Card_Reach{},
                                 Count_Targets {
-                                    origin = Self{},
                                     conditions = {
-                                        Within_Distance{{1, 1}},
+                                        Within_Distance{Self{}, {1, 1}},
                                         Contains_Any{UNIT_FLAGS},
                                         Is_Enemy_Unit{},
                                     },
@@ -625,7 +616,7 @@ xargatha_cards := []Card_Data {
                                 Card_Reach{},
                                 Count_Targets {
                                     conditions = {
-                                        Within_Distance{{1, 1}},
+                                        Within_Distance{Self{}, {1, 1}},
                                         Contains_Any{UNIT_FLAGS},
                                         Is_Enemy_Unit{},
                                     },
@@ -762,7 +753,7 @@ xargatha_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Within_Distance{{1, 1}},
+                        Within_Distance{Self{}, {1, 1}},
                         Contains_Any{{.MELEE_MINION, .RANGED_MINION}},
                         Is_Enemy_Unit{},
                     },
@@ -812,7 +803,7 @@ xargatha_cards := []Card_Data {
                 condition = Greater_Than {
                     Count_Targets {
                         conditions = {
-                            Within_Distance{{1, 1}},
+                            Within_Distance{Self{}, {1, 1}},
                             Contains_Any{UNIT_FLAGS},
                             Is_Enemy_Unit{},
                         },

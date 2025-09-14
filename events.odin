@@ -917,6 +917,12 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             broadcast_game_event(gs, Card_Retrieved_Event{card.id})
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
+        case Gain_Coins_Action:
+            gain := calculate_implicit_quantity(gs, action_type.gain)
+            player_base := get_my_player(gs).base
+            player_base.hero.coins += gain
+            broadcast_game_event(gs, Update_Player_Data_Event{player_base})
+
         case Get_Defeated_Action:
             // Here we assume the player who added the last interrupt is the one who kills us. This may not be correct always...
             // Would be nice to somehow store the defeater in the action itself

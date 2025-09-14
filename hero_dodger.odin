@@ -12,7 +12,7 @@ dodger_cards := []Card_Data {
         text =          "Choose one -\n* Target a unit adjacent to you.\n*If you are adjacent to an empty spawn point\nin the battle zone, target a unit in range",
         primary_effect = []Action {
             Action {  // 0
-                tooltip = "Choose one",
+                tooltip = "Choose one.",
                 variant = Choice_Action {
                     choices = {
                         {name = "Adjacent", jump_index = {index = 1}},
@@ -24,9 +24,9 @@ dodger_cards := []Card_Data {
                 tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
-                    origin = Self{},
                     conditions = {
                         Within_Distance {
+                            origin = Self{},
                             bounds = {1, 1},
                         },
                         Contains_Any{UNIT_FLAGS},
@@ -44,11 +44,21 @@ dodger_cards := []Card_Data {
             Action { variant = Halt_Action {} },  // 3
             Action {  // 4
                 tooltip = "Target a unit in range.",
+                condition = Greater_Than {
+                    Count_Targets {
+                        conditions = {
+                            Within_Distance{Self{}, {1, 1}},
+                            Empty,
+                            Contains_Any{SPAWNPOINT_FLAGS},
+                            In_Battle_Zone{},
+                        },
+                    }, 0,
+                },
                 variant = Choose_Target_Action {
                     num_targets = 1,
-                    origin = Self{},
                     conditions = {
                         Within_Distance {
+                            origin = Self{},
                             bounds = {1, Card_Reach{}},
                         },
                         Contains_Any{UNIT_FLAGS},
@@ -74,22 +84,22 @@ dodger_cards := []Card_Data {
         text =          "An enemy hero in radius who is\nadjacent to an empty spawn point in\nthe battle zone discards a card, if able",
         primary_effect = []Action {
             Action {
-                tooltip = "Target an enemy hero in radius adjacent to an empty spawn point",
+                tooltip = "Target an enemy hero in radius adjacent to an empty spawn point in the battle zone.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
-                    origin = Self{},
                     conditions = {
                         Within_Distance {
+                            origin = Self{},
                             bounds = {1, Card_Reach{}},
                         },
                         Contains_Any{{.HERO}},
                         Is_Enemy_Unit{},
                         Greater_Than {
                             Count_Targets {
-                                origin = Stack_Target{},
                                 conditions = {
                                     Within_Distance {
-                                        bounds ={1, 1},
+                                        origin = That_Target{},
+                                        bounds = {1, 1},
                                     },
                                     Empty,
                                     Contains_Any{SPAWNPOINT_FLAGS},
@@ -119,8 +129,59 @@ dodger_cards := []Card_Data {
         text =          "Choose one -\n* Target a unit adjacent to you.\n*Target a hero in range who has one or\nmore cards in the discard.",
         primary_effect = []Action {
             Action {
-                tooltip = "Choose a valid target.",
-                variant = Choose_Target_Action{},
+                tooltip = "Choose one:",
+                variant = Choice_Action{
+                    choices = {
+                        {name = "Adjacent", jump_index = {index = 1}},
+                        {name = "In range", jump_index = {index = 4}},
+                    },
+                },
+            },
+            Action {  // 1
+                tooltip = "Target a unit adjacent to you.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Within_Distance {
+                            origin = Self{},
+                            bounds = {1, 1},
+                        },
+                        Contains_Any{UNIT_FLAGS},
+                        Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {  // 2
+                tooltip = "Waiting for opponent to defend...",
+                variant = Attack_Action {
+                    target = Previous_Choice{},
+                    strength = Card_Value{.ATTACK},
+                },
+            },
+            Action { variant = Halt_Action {} },  // 3
+            Action {  // 4
+                tooltip = "Target a hero in range who has one or more cards in the discard.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Within_Distance {
+                            origin = Self{},
+                            bounds = {1, Card_Reach{}},
+                        },
+                        Contains_Any{{.HERO}},
+                        Is_Enemy_Unit{},
+                        Greater_Than{
+                            Count_Discarded_Cards{}, 0,
+                        },
+                    },
+                },
+            },
+            Action {  // 5
+                tooltip = "Waiting for opponent to defend...",
+                variant = Attack_Action {
+                    target = Previous_Choice{},
+                    strength = Card_Value{.ATTACK},
+                },
             },
         },
     },
@@ -132,9 +193,25 @@ dodger_cards := []Card_Data {
         primary =       .SKILL,
         reach =         Radius(3),
         text =          "If there are 2 or more empty spawn points\nin radius in the battle zone, gain 1 coin",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                condition = Greater_Than {
+                    Count_Targets {
+                        conditions = {
+                            Within_Distance{Self{}, {1, Card_Reach{}}},
+                            Empty,
+                            Contains_Any{SPAWNPOINT_FLAGS},
+                            In_Battle_Zone{},
+                        },
+                    }, 1,
+                },
+                variant = Gain_Coins_Action {
+                    gain = 1,
+                },
+            },
+        },
     },
-    Card_Data { name = "Shield of Decay",
+    Card_Data { name = "Shield of Decay",  // @Unimplemented
         color =         .BLUE,
         tier =          1,
         initiative =    10,
@@ -154,7 +231,63 @@ dodger_cards := []Card_Data {
         reach =         Range(3),
         item =          .INITIATIVE,
         text =          "Choose one -\n*Target a unit adjacent to you.\n*Target a hero in range who has one or\nmore cards in the discard.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = "Choose one:",
+                variant = Choice_Action{
+                    choices = {
+                        {name = "Adjacent", jump_index = {index = 1}},
+                        {name = "In range", jump_index = {index = 4}},
+                    },
+                },
+            },
+            Action {  // 1
+                tooltip = "Target a unit adjacent to you.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Within_Distance {
+                            origin = Self{},
+                            bounds = {1, 1},
+                        },
+                        Contains_Any{UNIT_FLAGS},
+                        Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {  // 2
+                tooltip = "Waiting for opponent to defend...",
+                variant = Attack_Action {
+                    target = Previous_Choice{},
+                    strength = Card_Value{.ATTACK},
+                },
+            },
+            Action { variant = Halt_Action {} },  // 3
+            Action {  // 4
+                tooltip = "Target a hero in range who has one or more cards in the discard.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Within_Distance {
+                            origin = Self{},
+                            bounds = {1, Card_Reach{}},
+                        },
+                        Contains_Any{{.HERO}},
+                        Is_Enemy_Unit{},
+                        Greater_Than{
+                            Count_Discarded_Cards{}, 0,
+                        },
+                    },
+                },
+            },
+            Action {  // 5
+                tooltip = "Waiting for opponent to defend...",
+                variant = Attack_Action {
+                    target = Previous_Choice{},
+                    strength = Card_Value{.ATTACK},
+                },
+            },
+        },
     },
     Card_Data { name = "Burning Skull",
         color =         .RED,
@@ -166,7 +299,47 @@ dodger_cards := []Card_Data {
         reach =         Range(2),
         item =          .DEFENSE,
         text =          "Target a unit in range. After the attack:\nMove up to 1 minion adjacent to you\n1 space, to a space not adjacent to you",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = "Target a unit in range.",
+                variant = Choose_Target_Action {
+                    conditions = {
+                        Within_Distance {Self{}, {1, Card_Reach{}}},
+                        Contains_Any{UNIT_FLAGS},
+                        Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {
+                variant = Attack_Action {
+                    target = Previous_Choice{},
+                    strength = Card_Value{.ATTACK},
+                },
+            },
+            Action {
+                tooltip = "You may target a minion adjacent to you, or you may skip.",
+                optional = true,
+                skip_index = {sequence = .HALT},
+                variant = Choose_Target_Action {
+                    conditions = {
+                        Within_Distance {Self{}, {1, 1}},
+                        Contains_Any{MINION_FLAGS},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Move the minion 1 space to a space not adjacent to you.",
+                variant = Movement_Action {
+                    target = Previous_Choice{},
+                    distance = 1,
+                    destination_criteria = {
+                        conditions = {
+                            Within_Distance {Self{}, {2, 2}},
+                        },
+                    },
+                },
+            },
+        },
     },
     Card_Data { name = "Darker Ritual",
         color =         .GREEN,
@@ -177,7 +350,23 @@ dodger_cards := []Card_Data {
         reach =         Radius(3),
         item =          .DEFENSE,
         text =          "If there are 2 or more empty spawn points\nin radius in the battle zone, gain 2 coins",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                condition = Greater_Than {
+                    Count_Targets {
+                        conditions = {
+                            Within_Distance{Self{}, {1, Card_Reach{}}},
+                            Empty,
+                            Contains_Any{SPAWNPOINT_FLAGS},
+                            In_Battle_Zone{},
+                        },
+                    }, 1,
+                },
+                variant = Gain_Coins_Action {
+                    gain = 2,
+                },
+            },
+        },
     },
     Card_Data { name = "Necromancy",
         color =         .GREEN,
@@ -188,7 +377,31 @@ dodger_cards := []Card_Data {
         primary =       .SKILL,
         item =          .ATTACK,
         text =          "Respawn a friendly minion in an empty friendly\nspawn point adjacent to you in the battle zone.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = "Choose an empty friendly spawn point adjacent to you in the battle zone.",
+                condition = Greater_Than { Total_Dead_Minions{My_Team{}}, 0 },
+                variant = Choose_Target_Action {
+                    conditions = {
+                        Within_Distance{Self{}, {1, 1}},
+                        Empty,
+                        Contains_Any{SPAWNPOINT_FLAGS},
+                        In_Battle_Zone{},
+                        Is_Friendly_Spawnpoint{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Choose which type of minion to respawn",
+                variant = Choose_Minion_Type_Action {},  // ??????
+            },
+            Action {
+                variant = Minion_Spawn_Action {
+                    location = Previous_Choice{},
+                    spawnpoint = Previous_Choice{},
+                },
+            },
+        },
     },
     Card_Data { name = "Vampiric Shield",
         color =         .BLUE,

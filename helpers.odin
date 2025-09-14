@@ -168,8 +168,7 @@ calculate_minion_modifiers :: proc(gs: ^Game_State) -> int {
     player := get_my_player(gs)
 
     adjacent_targets := make_arbitrary_targets(gs, {
-        origin = Self{},
-        conditions = {Within_Distance{{1, 1}}},
+        conditions = {Within_Distance{Self{}, {1, 1}}},
         flags = {.IGNORING_IMMUNITY},
     })
     adjacent_targets_iter := make_target_set_iterator(&adjacent_targets)
@@ -184,8 +183,7 @@ calculate_minion_modifiers :: proc(gs: ^Game_State) -> int {
 
     // Idk if the ranged minion would ever be immune but it doesn't hurt I guess
     nearby_targets := make_arbitrary_targets(gs, {
-        origin = Self{},
-        conditions = {Within_Distance{ bounds = {1, 2}}}, 
+        conditions = {Within_Distance{ origin = Self{}, bounds = {1, 2}}}, 
         flags = {.IGNORING_IMMUNITY},
     })
     nearby_targets_iter := make_target_set_iterator(&nearby_targets)

@@ -31,6 +31,8 @@ Ternary :: struct {
     condition: []Implicit_Condition,
 }
 
+Count_Discarded_Cards :: struct {}
+
 Implicit_Quantity :: union {
     int,
     Card_Reach,
@@ -40,14 +42,15 @@ Implicit_Quantity :: union {
     Turn_Played,
     Minion_Difference,
     Ternary,
+    Count_Discarded_Cards,
 }
 
 Calculation_Context :: struct {
     card_id: Card_ID,
-    origin, target: Target,
+    target, prev_target: Target,
 }
 
-Stack_Target :: struct {}
+That_Target :: struct {}
 
 Self :: struct {}
 
@@ -59,7 +62,7 @@ Card_Owner :: struct {}
 
 Implicit_Target :: union {
     Target,
-    Stack_Target,
+    That_Target,
     Self,
     Previous_Choice,
     Top_Blocked_Spawnpoint,
@@ -86,14 +89,14 @@ Blocked_Spawnpoints_Remain :: struct {}
 Alive :: struct {}
 
 Within_Distance :: struct {
-    // _origin: Target,
+    origin: Implicit_Target,
     bounds: []Implicit_Quantity,
 }
 
 // Adjacent := Within_Distance{bounds = {1, 1}}
 
 Closest_Spaces :: struct {
-    origin: []Implicit_Target,
+    origin: Implicit_Target,
 }
 
 Contains_Any :: struct { flags: Space_Flags }
@@ -196,6 +199,15 @@ calculate_implicit_quantity :: proc(
         } else {
             return calculate_implicit_quantity(gs, quantity.terms[1], calc_context, loc)
         }
+
+    case Count_Discarded_Cards:
+        log.assert(calc_context.target != {}, "Invalid target when trying to count discarded cards!")
+        space := gs.board[calc_context.target.x][calc_context.target.y]
+        if .HERO not_in space.flags do return
+        cards := get_player_by_id(gs, space.owner).hero.cards
+        for card in cards {
+            if card.state == .DISCARDED do out += 1
+        }
     }
     return 
 }
@@ -208,9 +220,9 @@ calculate_implicit_target :: proc(
 ) -> (out: Target) {
     switch target in implicit_target {
     case Target: out = target
-    case Stack_Target:
-        log.assert(calc_context.target != {}, "Invalid stack target!", loc)
-        return calc_context.target
+    case That_Target:
+        log.assert(calc_context.prev_target != {}, "Invalid stack target!", loc)
+        return calc_context.prev_target
     case Self: out = get_my_player(gs).hero.location
     case Previous_Choice:
         index := get_my_player(gs).hero.current_action_index
@@ -286,8 +298,7 @@ calculate_implicit_condition :: proc (
 
     case Within_Distance:
         log.assert(space_ok, "Invalid target!", loc)
-        origin_space_ok := calc_context.origin != {}
-        log.assert(origin_space_ok, "Invalid origin!")
+        origin := calculate_implicit_target(gs, condition.origin, calc_context)
 
         // log.assert(len(condition.origin) == 1, "Incorrect argument count for within distance condition", loc)
         log.assert(len(condition.bounds) == 2, "Incorrect argument count for bounds", loc)
@@ -295,7 +306,7 @@ calculate_implicit_condition :: proc (
         min_dist := calculate_implicit_quantity(gs, condition.bounds[0], calc_context)
         max_dist := calculate_implicit_quantity(gs, condition.bounds[1], calc_context)
 
-        distance := calculate_hexagonal_distance(calc_context.origin, calc_context.target)
+        distance := calculate_hexagonal_distance(origin, calc_context.target)
         return distance <= max_dist && distance >= min_dist
 
     case Contains_Any:

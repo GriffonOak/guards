@@ -27,7 +27,6 @@ Target_Set_Iterator :: struct {
 Selection_Flag :: enum {
     NOT_PREVIOUSLY_TARGETED,
     IGNORING_IMMUNITY,
-    CLOSEST,
 }
 
 Selection_Flags :: bit_set[Selection_Flag]
@@ -139,6 +138,9 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
     case Halt_Action, Attack_Action, Add_Active_Effect_Action, Minion_Defeat_Action, Minion_Removal_Action, Jump_Action, Minion_Spawn_Action, Get_Defeated_Action, Respawn_Action, Force_Discard_Action:
         return true
 
+    case Gain_Coins_Action:
+        return true
+
     case Choose_Card_Action:
         variant.card_targets = make_card_targets(gs, variant.criteria, calc_context)
         return len(variant.card_targets) > 0
@@ -225,47 +227,42 @@ make_movement_targets :: proc (
     }
 
     // See if we have a set of valid destinations first
-    if destinations_ok {
-        // first flag all nodes in the visited set as invalid (temporarily)
+    if !destinations_ok do return 
+
+    // Worry about valid destinations!
+
+    // Check all spaces in the visited set to see if they can be reached by one of the valid endpoints.
+    // If they can, they will be marked as invalid. Otherwise they will stay valid.
+    valid_destinations_iter := make_target_set_iterator(&valid_destinations)
+    for _, valid_endpoint in target_set_iter_members(&valid_destinations_iter) {
+        if !visited_set[valid_endpoint.x][valid_endpoint.y].member do continue
+        reachable_targets_from_endpoint := make_movement_targets(
+            gs, {distance = max_distance, target = valid_endpoint},
+        )
         visited_set_iter := make_target_set_iterator(&visited_set)
-        for info in target_set_iter_members(&visited_set_iter) {
-            info.invalid = true
+        for potential_info, potential_target in target_set_iter_members(&visited_set_iter) {
+            target_info := reachable_targets_from_endpoint[potential_target.x][potential_target.y]
+
+            if target_info.member && target_info.dist + potential_info.dist <= max_distance {
+                potential_info.invalid = true
+            } 
         }
-
-        // Check all spaces in the visited set to see if they can be reached by one of the valid endpoints.
-        // If they can, they will be marked as valid. Otherwise they will stay invalid.
-        valid_destinations_iter := make_target_set_iterator(&valid_destinations)
-        for _, valid_endpoint in target_set_iter_members(&valid_destinations_iter) {
-            if !visited_set[valid_endpoint.x][valid_endpoint.y].member do continue
-            reachable_targets_from_endpoint := make_movement_targets(
-                gs, {distance = max_distance, target = valid_endpoint},
-            )
-            visited_set_iter = make_target_set_iterator(&visited_set)
-            for potential_info, potential_target in target_set_iter_members(&visited_set_iter) {
-                target_info := reachable_targets_from_endpoint[potential_target.x][potential_target.y]
-
-                if target_info.member && target_info.dist + potential_info.dist <= max_distance {
-                    potential_info.invalid = false
-                } 
-            }
-        }
-
-        // Remove all unreachable spaces
-        visited_set_iter = make_target_set_iterator(&visited_set)
-        for info in target_set_iter_members(&visited_set_iter) {
-            if info.invalid do info.member = false
-        }
-
-        // Now the only spaces left in the visited set are those that can reach valid endpoints.
-        // We now flag the spaces as invalid if they are not in the destination set.
-        visited_set_iter = make_target_set_iterator(&visited_set)
-        for info, target in target_set_iter_members(&visited_set_iter) {
-            info.invalid = !valid_destinations[target.x][target.y].member
-        }
-
     }
 
-    return visited_set
+    // Remove all such marked unreachable spaces
+    visited_set_iter := make_target_set_iterator(&visited_set)
+    for info in target_set_iter_members(&visited_set_iter) {
+        if !info.invalid do info.member = false
+    }
+
+    // Now the only spaces left in the visited set are those that can reach valid endpoints.
+    // We now flag the spaces as invalid if they are not in the destination set.
+    visited_set_iter = make_target_set_iterator(&visited_set)
+    for info, target in target_set_iter_members(&visited_set_iter) {
+        info.invalid = !valid_destinations[target.x][target.y].member
+    }
+
+    return
 }
 
 make_fast_travel_targets :: proc(gs: ^Game_State) -> (out: Target_Set) {
@@ -312,24 +309,6 @@ make_clear_targets :: proc(gs: ^Game_State) -> (out: Target_Set) {
     return out
 }
 
-// target_fulfills_criterion :: proc (
-//     gs: ^Game_State,
-//     target: Target,
-//     criterion: Implicit_Condition,
-//     calc_context: Calculation_Context = {},
-// ) -> bool {
-//     space := gs.board[target.x][target.y]
-//     calc_context := calc_context
-//     calc_context.target = target
-
-//     switch selector in criterion {
-    
-
-//     case Ignoring_Immunity, Not_Previously_Targeted, Closest_Spaces:
-//     }
-//     return true
-// }
-
 make_arbitrary_targets :: proc (
     gs: ^Game_State,
     criteria: Selection_Criteria,
@@ -340,12 +319,7 @@ make_arbitrary_targets :: proc (
     if len(criteria.conditions) == 0 do return
 
     calc_context := calc_context
-    if criteria.origin != nil {
-        calc_context.origin = calculate_implicit_target(gs, criteria.origin, calc_context)
-    }
-
-    // Start with completely populated board (Inefficient!)
-    // @Speed
+    calc_context.prev_target = calc_context.target
     for x in 0..<GRID_WIDTH {
         for y in 0..<GRID_HEIGHT {
             target := Target{i8(x), i8(y)}
@@ -357,65 +331,43 @@ make_arbitrary_targets :: proc (
         }
     }
 
-    ignore_immunity := false
-
     for condition in criteria.conditions[1:] {
-        #partial switch variant in condition {
-        // case Not_Previously_Targeted:
-        //     previous_target := calculate_implicit_target(gs, Previous_Choice{}, calc_context)
-        //     out[previous_target.x][previous_target.y].member = false
-
-        // case Ignoring_Immunity:
-        //     ignore_immunity = true
-
-        // case Closest_Spaces:
-        //     // @Note: This should really just set a flag like Ignoring_Immunity, and then we pick this up at the end.
-        //     // context.allocator = context.temp_allocator
-        //     for dist := 1 ; true ; dist += 1 {
-        //         dist_targets := make_arbitrary_targets(
-        //             gs,
-        //             {
-        //                 Within_Distance {
-        //                     origin = criterion.origin,
-        //                     bounds = {dist, dist},
-        //                 },
-        //             },
-        //             calc_context,
-        //         )
-        //         overlap := false
-        //         dist_iter := make_target_set_iterator(&dist_targets)
-        //         for _, dist_target in target_set_iter_members(&dist_iter) {
-        //             if out[dist_target.x][dist_target.y].member {
-        //                 overlap = true
-        //                 break
-        //             }
-        //         }
-        //         if !overlap do continue
-        //         out_iter := make_target_set_iterator(&out)
-        //         for info, target in target_set_iter_members(&out_iter) {
-        //             if !dist_targets[target.x][target.y].member do info.member = false
-        //         }
-        //         break
-        //     }
-        case:
-            out_iter := make_target_set_iterator(&out)
-            for info, target in target_set_iter_members(&out_iter) {
-                calc_context.target = target
-                if !calculate_implicit_condition(gs, condition, calc_context) {
-                    info.member = false
-                }
+        out_iter := make_target_set_iterator(&out)
+        for info, target in target_set_iter_members(&out_iter) {
+            calc_context.target = target
+            if !calculate_implicit_condition(gs, condition, calc_context) {
+                info.member = false
             }
-
         }
     }
 
-    if !ignore_immunity {
+    if .NOT_PREVIOUSLY_TARGETED in criteria.flags {
+        previous_target := calculate_implicit_target(gs, Previous_Choice{}, calc_context)
+        out[previous_target.x][previous_target.y].member = false
+    }
+
+    if .IGNORING_IMMUNITY not_in criteria.flags {
         target_set_iter := make_target_set_iterator(&out)
         for info, target in target_set_iter_members(&target_set_iter) {
             space := gs.board[target.x][target.y]
             if space.flags & {.IMMUNE} != {} {
                 info.member = false
             }
+        }
+    }
+    
+    // Resolve "closest targets"
+    if criteria.closest_to != nil {
+        origin := calculate_implicit_target(gs, criteria.closest_to, calc_context, loc)
+        lowest_dist := 1e6
+        dist_iter := make_target_set_iterator(&out)
+        for info, target in target_set_iter_members(&dist_iter) {
+            info.dist = calculate_hexagonal_distance(origin, target)
+            if info.dist < lowest_dist do lowest_dist = info.dist
+        }
+        dist_iter = make_target_set_iterator(&out)
+        for info in target_set_iter_members(&dist_iter) {
+            if info.dist > lowest_dist do info.member = false
         }
     }
 

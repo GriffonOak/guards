@@ -39,8 +39,8 @@ Fast_Travel_Action :: struct {
 Clear_Action :: struct {}
 
 Selection_Criteria :: struct {
-    origin: Implicit_Target,
     conditions: []Implicit_Condition,
+    closest_to: Implicit_Target,
     flags: Selection_Flags,
 }
 
@@ -125,6 +125,10 @@ Respawn_Action :: struct {
     location: Implicit_Target,
 }
 
+Gain_Coins_Action :: struct {
+    gain: Implicit_Quantity,
+}
+
 Action_Variant :: union {
     Movement_Action,
     Fast_Travel_Action,
@@ -142,6 +146,7 @@ Action_Variant :: union {
     Jump_Action,
     Get_Defeated_Action,
     Respawn_Action,
+    Gain_Coins_Action,
 
     Minion_Removal_Action,
     Minion_Defeat_Action,
@@ -361,12 +366,11 @@ minion_spawn_action := []Action {
         condition = Blocked_Spawnpoints_Remain{},
         variant = Choose_Target_Action {
             num_targets = 1,
-            origin = Top_Blocked_Spawnpoint{},
             conditions = {
                 In_Battle_Zone{},
                 Empty,
             },
-            flags = {.CLOSEST},  // @Todo
+            closest_to = Top_Blocked_Spawnpoint{},
         },
     },
     Action {
