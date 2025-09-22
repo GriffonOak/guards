@@ -194,17 +194,11 @@ card_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, eleme
 
     card_element := assert_variant(&element.variant, UI_Card_Element)
 
-    if !check_outside_or_deselected(input, element^) {
-        card_element.hovered = false
-        return false
-    }
-
-    try_to_play: #partial switch var in input {
+    #partial switch var in input {
     case Mouse_Pressed_Event:
         append(&gs.event_queue, Card_Clicked_Event{card_element})
     }
 
-    card_element.hovered = true
     return true
 }
 
@@ -358,7 +352,7 @@ when !ODIN_TEST {
     if card_element.selected {
         rl.DrawRectangleLinesEx(element.bounding_rect, 8, rl.PURPLE)
     }
-    if card_element.hovered && !card_element.hidden {
+    if .HOVERED in element.flags && !card_element.hidden {
         rl.DrawTexturePro(card_data.texture, {0, 0, CARD_TEXTURE_SIZE.x, -CARD_TEXTURE_SIZE.y}, CARD_HOVER_POSITION_RECT, {}, 0, rl.WHITE)
         rl.DrawRectangleLinesEx(element.bounding_rect, 4, rl.WHITE)
         // rl.DrawRectangleLinesEx(CARD_HOVER_POSITION_RECT, 2, rl.RAYWHITE)

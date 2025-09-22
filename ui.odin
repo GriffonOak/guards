@@ -1,9 +1,13 @@
 package guards
 
 import "core:fmt"
+import "core:math"
+import "core:strings"
 import rl "vendor:raylib"
+import sa "core:container/small_array"
 
 UI_Domain :: enum {
+    NONE,
     BOARD,
     CARDS,
     BUTTONS,
@@ -21,7 +25,6 @@ UI_Board_Element :: struct {
 
 UI_Card_Element :: struct {
     card_id: Card_ID,
-    hovered: bool,  // @cleanup bit_set these??
     hidden: bool,
     selected: bool,
 }
@@ -29,28 +32,37 @@ UI_Card_Element :: struct {
 UI_Button_Element :: struct {
     event: Event,
     text: cstring,
-    hovered: bool,
     global: bool,
 }
 
-// UI_Text_Input_Element :: struct {
-//     text: strings.builder //?
-// }
+UI_Text_Box_Element :: struct {
+    field: sa.Small_Array(40, u8),
+    cursor_index: int,
+    last_click_time: f64,
+    default_string: cstring,
+}
 
 UI_Variant :: union {
     UI_Board_Element,
     UI_Card_Element,
     UI_Button_Element,
+    UI_Text_Box_Element,
 }
 
 UI_Input_Proc :: #type proc(^Game_State, Input_Event, ^UI_Element) -> bool
 UI_Render_Proc :: #type proc(^Game_State, UI_Element)
+
+UI_Element_Flag :: enum {
+    HOVERED,
+    ACTIVE,
+}
 
 UI_Element :: struct {
     bounding_rect: rl.Rectangle,
     variant: UI_Variant,
     consume_input: UI_Input_Proc,
     render: UI_Render_Proc,
+    flags: bit_set[UI_Element_Flag],
 }
 
 Side_Button_Manager :: struct {
@@ -84,6 +96,7 @@ Tooltip :: union {
 
 
 BUTTON_PADDING :: 10
+BUTTON_TEXT_PADDING :: 20
 TOOLTIP_FONT_SIZE :: 50
 
 SELECTION_BUTTON_SIZE :: Vec2{400, 100}
@@ -97,26 +110,8 @@ FIRST_SIDE_BUTTON_LOCATION :: rl.Rectangle {
 null_input_proc: UI_Input_Proc : proc(_: ^Game_State, _: Input_Event, _: ^UI_Element) -> bool { return false }
 null_render_proc: UI_Render_Proc : proc(_: ^Game_State, _: UI_Element) {}
 
-check_outside_or_deselected :: proc(input: Input_Event, element: UI_Element) -> bool {
-    #partial switch var in input {
-    case Mouse_Up_Event, Mouse_Down_Event, Mouse_Pressed_Event, Mouse_Motion_Event:
-when !ODIN_TEST {
-        if !rl.CheckCollisionPointRec(ui_state.mouse_pos, element.bounding_rect) {
-            return false
-        }
-}
-    case Input_Already_Consumed:
-        return false
-    }
-    return true
-}
-
 button_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, element: ^UI_Element)-> bool {
     button_element := assert_variant(&element.variant, UI_Button_Element)
-    if !check_outside_or_deselected(input, element^) {
-        button_element.hovered = false
-        return false
-    }
 
     #partial switch var in input {
     case Mouse_Pressed_Event:
@@ -125,30 +120,106 @@ button_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, ele
         } else {
             append(&gs.event_queue, button_element.event)
         }
+        return true
+    case Mouse_Motion_Event:
+        return true
     }
-
-    button_element.hovered = true
-    return true
+    return false
 }
 
 draw_button: UI_Render_Proc : proc(_: ^Game_State, element: UI_Element) {
     button_element := assert_variant_rdonly(element.variant, UI_Button_Element)
 
-    TEXT_PADDING :: 20
 when !ODIN_TEST {
     rl.DrawRectangleRec(element.bounding_rect, rl.GRAY)
     rl.DrawTextEx(
         default_font,
         button_element.text,
-        {element.bounding_rect.x + TEXT_PADDING, element.bounding_rect.y + TEXT_PADDING}, 
-        element.bounding_rect.height - 2 * TEXT_PADDING,
+        {element.bounding_rect.x + BUTTON_TEXT_PADDING, element.bounding_rect.y + BUTTON_TEXT_PADDING}, 
+        element.bounding_rect.height - 2 * BUTTON_TEXT_PADDING,
         FONT_SPACING,
         rl.BLACK,
     )
-    if button_element.hovered {
-        rl.DrawRectangleLinesEx(element.bounding_rect, TEXT_PADDING / 2, rl.WHITE)
+    if .HOVERED in element.flags {
+        rl.DrawRectangleLinesEx(element.bounding_rect, BUTTON_TEXT_PADDING / 2, rl.WHITE)
     }
 }
+}
+
+
+text_box_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, element: ^UI_Element) -> bool {
+    text_box_element := assert_variant(&element.variant, UI_Text_Box_Element)
+    font_size := element.bounding_rect.height - 2 * BUTTON_TEXT_PADDING
+    single_character_width := rl.MeasureTextEx(monospace_font, "_", font_size, 0).x
+
+    #partial switch var in input {
+    case Mouse_Pressed_Event:
+        index := int(math.round((var.pos.x - element.bounding_rect.x - BUTTON_TEXT_PADDING) / single_character_width))
+        index = clamp(index, 0, sa.len(text_box_element.field))
+        text_box_element.cursor_index = index
+        text_box_element.last_click_time = rl.GetTime()
+    case Key_Pressed_Event:
+        #partial switch var.key {
+        case (.ZERO)..=(.NINE), .PERIOD:
+            sa.inject_at(&text_box_element.field, u8(var.key), text_box_element.cursor_index)
+            text_box_element.cursor_index += 1
+        case .BACKSPACE:
+            if text_box_element.cursor_index <= 0 do break
+            sa.ordered_remove(&text_box_element.field, text_box_element.cursor_index - 1)
+            text_box_element.cursor_index -= 1
+        case .DELETE:
+            if text_box_element.cursor_index >= sa.len(text_box_element.field) do break
+            sa.ordered_remove(&text_box_element.field, text_box_element.cursor_index)
+        case .LEFT:
+            text_box_element.cursor_index -= 1
+            text_box_element.cursor_index = clamp(text_box_element.cursor_index, 0, sa.len(text_box_element.field))
+            text_box_element.last_click_time = rl.GetTime()
+        case .RIGHT:
+            text_box_element.cursor_index += 1
+            text_box_element.cursor_index = clamp(text_box_element.cursor_index, 0, sa.len(text_box_element.field))
+            text_box_element.last_click_time = rl.GetTime()
+        }
+    }
+        
+    return true
+}
+
+draw_text_box: UI_Render_Proc : proc(gs: ^Game_State, element: UI_Element) {
+
+    text_box_element := assert_variant_rdonly(element.variant, UI_Text_Box_Element)
+    rl.DrawRectangleLinesEx(element.bounding_rect, 4, rl.WHITE)
+    font_size := element.bounding_rect.height - 2 * BUTTON_TEXT_PADDING
+    single_character_width := rl.MeasureTextEx(monospace_font, "_", font_size, 0).x
+    text_color := rl.LIGHTGRAY
+    text := text_box_element.default_string
+
+    if .ACTIVE in element.flags || sa.len(text_box_element.field) > 0 {
+        text_color = rl.WHITE
+        text = strings.clone_to_cstring(string(sa.slice(&text_box_element.field)), context.temp_allocator)
+    }
+
+    rl.DrawTextEx(
+        monospace_font,
+        text,
+        {element.bounding_rect.x + BUTTON_TEXT_PADDING, element.bounding_rect.y + BUTTON_TEXT_PADDING}, 
+        font_size,
+        0,
+        text_color,
+    )
+
+    if .ACTIVE in element.flags {
+        CYCLE_TIME :: 1 // s
+        time := (rl.GetTime() - text_box_element.last_click_time) / CYCLE_TIME
+        time_remainder := (time - math.floor(time)) * CYCLE_TIME
+        if time_remainder < CYCLE_TIME / 2.0 {
+            cursor_x_position := element.bounding_rect.x + BUTTON_TEXT_PADDING + single_character_width * f32(text_box_element.cursor_index)
+            rl.DrawLineEx(
+                {cursor_x_position, element.bounding_rect.y + BUTTON_TEXT_PADDING},
+                {cursor_x_position, element.bounding_rect.y + element.bounding_rect.height - BUTTON_TEXT_PADDING},
+                4, rl.WHITE,
+            )
+        }
+    }
 }
 
 format_tooltip :: proc(gs: ^Game_State, tooltip: Tooltip) -> cstring {
@@ -185,10 +256,11 @@ render_tooltip :: proc(gs: ^Game_State) {
 add_generic_button :: proc(gs: ^Game_State, location: rl.Rectangle, text: cstring, event: Event, global: bool = false) {
     append(&gs.ui_stack[.BUTTONS], UI_Element {
         location, UI_Button_Element {
-            event, text, false, global,
+            event, text, global,
         },
         button_input_proc,
         draw_button,
+        {},
     })
 }
 
@@ -235,6 +307,7 @@ add_game_ui_elements :: proc(gs: ^Game_State) {
         },
         board_input_proc,
         draw_board,
+        {},
     })
 
     for player_id in 0..<len(gs.players) {
@@ -247,6 +320,7 @@ add_game_ui_elements :: proc(gs: ^Game_State) {
                     UI_Card_Element{card_id = card.id},
                     card_input_proc,
                     draw_card,
+                    {},
                 })
             }
         } else {
@@ -256,6 +330,7 @@ add_game_ui_elements :: proc(gs: ^Game_State) {
                     UI_Card_Element{card_id = card.id},
                     card_input_proc,
                     draw_card,
+                    {},
                 })
             }
         }

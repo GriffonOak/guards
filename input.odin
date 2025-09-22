@@ -11,13 +11,13 @@ import rl "vendor:raylib"
 Input_Event :: union {
     Mouse_Pressed_Event,
     Mouse_Motion_Event,
-    Mouse_Down_Event,
-    Mouse_Up_Event,
+    // Mouse_Down_Event,
+    // Mouse_Up_Event,
     // Mouse_Scroll_Event,
     // Key_Down_Event,
     // Key_Up_Event
     Key_Pressed_Event,
-    Input_Already_Consumed,
+    // Input_Already_Consumed,
 }
 
 Input_Already_Consumed :: struct{}
@@ -77,31 +77,33 @@ check_for_input_events :: proc(q: ^[dynamic]Input_Event) {
     // y := p.y
 
     for key := rl.GetKeyPressed(); key != .KEY_NULL; key = rl.GetKeyPressed() {
-        // ba.set(&ui_state.pressed_keys, cast(int) key)
+        ba.set(&ui_state.pressed_keys, cast(int) key)
         append(q, Key_Pressed_Event { key })
     }
 
-    // iterator := ba.make_iterator(&ui_state.pressed_keys)
-    // key_idx, ok := ba.iterate_by_set(&iterator)
-    // for ; ok ; key_idx, ok = ba.iterate_by_set(&iterator) {
-    //     key := cast(rl.KeyboardKey) key_idx
-    //     if !rl.IsKeyDown(key) {
-    //         ba.unset(&ui_state.pressed_keys, key_idx)
-    //         append(q, Key_Up_Event { key })
-    //     }
-    // }
+    iterator := ba.make_iterator(&ui_state.pressed_keys)
+    key_idx, ok := ba.iterate_by_set(&iterator)
+    for ; ok ; key_idx, ok = ba.iterate_by_set(&iterator) {
+        key := cast(rl.KeyboardKey) key_idx
+        if !rl.IsKeyDown(key) {
+            ba.unset(&ui_state.pressed_keys, key_idx)
+            // append(q, Key_Up_Event { key })
+        } else if rl.IsKeyPressedRepeat(key) {
+            append(q, Key_Pressed_Event { key })
+        }
+    }
 
     do_button_events :: proc(b: rl.MouseButton, p: Vec2, q: ^[dynamic]Input_Event) {
         if rl.IsMouseButtonPressed(b) {
             append(q, Mouse_Pressed_Event { p, b })
         }
-        if rl.IsMouseButtonDown(b) && b not_in ui_state.mouse_state {
-            ui_state.mouse_state += {b}
-            append(q, Mouse_Down_Event {p, b})
-        } else if rl.IsMouseButtonUp(b) && b in ui_state.mouse_state {
-            ui_state.mouse_state -= {b}
-            append(q, Mouse_Up_Event {p, b})
-        }
+        // if rl.IsMouseButtonDown(b) && b not_in ui_state.mouse_state {
+        //     ui_state.mouse_state += {b}
+        //     append(q, Mouse_Down_Event {p, b})
+        // } else if rl.IsMouseButtonUp(b) && b in ui_state.mouse_state {
+        //     ui_state.mouse_state -= {b}
+        //     append(q, Mouse_Up_Event {p, b})
+        // }
     }
     do_button_events(.LEFT, p, q)
     do_button_events(.RIGHT, p, q)

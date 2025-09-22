@@ -89,7 +89,9 @@ window_scale: f32 = 1 if window_size == .BIG else 2
 
 default_font: rl.Font
 
+monospace_font: rl.Font
 
+assets := #load_directory("assets")
 
 spall_ctx: spall.Context
 @(thread_local) spall_buffer: spall.Buffer
@@ -157,7 +159,8 @@ main :: proc() {
     // input_queue = make([dynamic]Input_Event)
     // event_queue = make([dynamic]Event)
 
-    active_element_index := UI_Index{index = -1}
+    active_element_index := UI_Index{}
+    hovered_element_index := UI_Index{}
 
     for color, index in Card_Color {
         // Add 100 to height here so the bounding rect goes offscreen
@@ -171,8 +174,14 @@ main :: proc() {
     rl.InitWindow(i32(WIDTH / window_scale), i32(HEIGHT / window_scale), "guards")
     defer rl.CloseWindow()
 
-    default_font = rl.LoadFontEx("Inter-VariableFont_opsz,wght.ttf", 200, nil, 0)
-    // default_font = rl.LoadFont("Inconsolata-Regular.ttf")
+    for file in assets {
+        switch file.name {
+        case "Inter-VariableFont.ttf":
+            default_font = rl.LoadFontFromMemory(".ttf", raw_data(file.data), i32(len(file.data)), 200, nil, 0)
+        case "Inconsolata-Regular.ttf":
+            monospace_font = rl.LoadFontFromMemory(".ttf", raw_data(file.data), i32(len(file.data)), 200, nil, 0)
+        }
+    }
 
     window_texture := rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT))
     rl.SetTextureFilter(window_texture.texture, .BILINEAR)
@@ -185,7 +194,7 @@ main :: proc() {
 
     setup_board(&gs)
 
-    add_choose_host_ui_elements(&gs)
+    add_pre_lobby_ui_elements(&gs)
 
     // append(&gs.event_queue, Toggle_Fullscreen_Event{})
     // begin_game()
@@ -203,26 +212,47 @@ main :: proc() {
                 case.MINUS: decrease_window_size()
                 case .F: toggle_fullscreen()
                 case .M: add_marker(&gs)
-                }
-            }
-
-            next_active_element_index := UI_Index{index = -1}
-            for i := len(UI_Domain) - 1; i >= 0; i -= 1 {
-                domain := UI_Domain(i)
-                #reverse for &element, index in gs.ui_stack[domain] {
-                    if element.consume_input(&gs, event, &element) {
-                        next_active_element_index = {domain, index}
-                        break
+                case: 
+                    if active_element_index.domain != .NONE && active_element_index.index < len(gs.ui_stack[active_element_index.domain]) {
+                        active_element := &gs.ui_stack[active_element_index.domain][active_element_index.index]
+                        active_element.consume_input(&gs, event, active_element)
                     }
                 }
+
+            case Mouse_Motion_Event:
+                // First "de-hover" the previous hovered element
+                if hovered_element_index.domain != .NONE && hovered_element_index.index < len(gs.ui_stack[hovered_element_index.domain]) {
+                    hovered_element := &gs.ui_stack[hovered_element_index.domain][hovered_element_index.index]
+                    hovered_element.flags -= {.HOVERED}
+                }
+                hovered_element_index = {}
+                for i := len(UI_Domain) - 1; i >= 0; i -= 1 {
+                    domain := UI_Domain(i)
+                    #reverse for &element, index in gs.ui_stack[domain] {
+                        when ODIN_TEST {
+                            continue
+                        } else {
+                            if !rl.CheckCollisionPointRec(var.pos, element.bounding_rect) do continue
+                        }
+                        if element.consume_input(&gs, event, &element) {
+                            element.flags += {.HOVERED}
+                            hovered_element_index = {domain, index}
+                            break
+                        }
+                    }
+                }
+            case Mouse_Pressed_Event:
+                if active_element_index.domain != .NONE && active_element_index.index < len(gs.ui_stack[active_element_index.domain]) {
+                    active_element := &gs.ui_stack[active_element_index.domain][active_element_index.index]
+                    active_element.flags -= {.ACTIVE}
+                }
+                active_element_index = hovered_element_index
+                if hovered_element_index != {} {
+                    active_element := &gs.ui_stack[active_element_index.domain][active_element_index.index]
+                    active_element.flags += {.ACTIVE}
+                    active_element.consume_input(&gs, event, active_element)
+                }
             }
-            if next_active_element_index != active_element_index &&
-                    active_element_index.index >= 0 &&
-                    active_element_index.index < len(gs.ui_stack[active_element_index.domain]) {
-                active_element := &gs.ui_stack[active_element_index.domain][active_element_index.index]
-                active_element.consume_input(&gs, Input_Already_Consumed{}, active_element)
-            }
-            active_element_index = next_active_element_index
         }
         clear(&input_queue)
 

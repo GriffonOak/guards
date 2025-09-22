@@ -3,12 +3,14 @@ package guards
 // This is a good file. It knows exactly what it is trying to do and does it extremely well.
 
 import "core:reflect"
+import sa "core:container/small_array"
 import "core:log"
 
 
 Marker_Event :: struct {}
 
-Join_Game_Chosen_Event :: struct {}
+Join_Network_Game_Chosen_Event :: struct {}
+Join_Local_Game_Chosen_Event :: struct {}
 Host_Game_Chosen_Event :: struct {}
 
 Update_Player_Data_Event :: struct {
@@ -153,7 +155,8 @@ Event :: union {
 
     Marker_Event,
 
-    Join_Game_Chosen_Event,
+    Join_Network_Game_Chosen_Event,
+    // Join_Local_Game_Chosen_Event,
     Host_Game_Chosen_Event,
 
     Update_Player_Data_Event,
@@ -228,10 +231,17 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
     case Marker_Event:
         return
 
-    case Join_Game_Chosen_Event:
-        if join_local_game(gs) {
+    case Join_Network_Game_Chosen_Event:
+        text_box := &gs.ui_stack[.BUTTONS][0].variant.(UI_Text_Box_Element)
+        ip := string(sa.slice(&text_box.field))
+        if join_game(gs, ip) {
             append(&gs.event_queue, Enter_Lobby_Event{})
         }
+
+    // case Join_Local_Game_Chosen_Event:
+    //     if join_game(gs) {
+    //         append(&gs.event_queue, Enter_Lobby_Event{})
+    //     }
 
     case Host_Game_Chosen_Event:
         if begin_hosting_local_game(gs) {
@@ -437,6 +447,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                             },
                             card_input_proc,
                             draw_card,
+                            {},
                         }) 
                         card_position_rect.x += BUTTON_PADDING + card_element_width
                     }  

@@ -68,10 +68,13 @@ send_network_packet_socket :: proc(socket: net.TCP_Socket, net_event: Network_Pa
 
 
 
-join_local_game :: proc(gs: ^Game_State) -> bool {
+join_game :: proc(gs: ^Game_State, ip: string = "") -> bool {
 
     gs.is_host = false
-    local_address, _ := net.parse_ip4_address(MY_ADDRESS)
+    ip := ip
+    if ip == "" do ip = LOOPBACK_ADDRESS
+    local_address, ok := net.parse_ip4_address(ip)
+    if !ok do return false
 
 	socket, err := net.dial_tcp_from_address_and_port(local_address, GUARDS_PORT)
 	if err != nil {

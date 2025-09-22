@@ -244,15 +244,13 @@ board_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, elem
         }
     }
 
-    if !check_outside_or_deselected(input, element^) {
-        board_element.hovered_space = INVALID_TARGET
-        return false
-    }
+    board_element.hovered_space = INVALID_TARGET
 
     output = true
 
     #partial switch var in input {
     case Mouse_Pressed_Event:
+        if board_element.hovered_space == INVALID_TARGET do break
         append(&gs.event_queue, Space_Clicked_Event{board_element.hovered_space})
     case Mouse_Motion_Event:
         mouse_within_board := ui_state.mouse_pos - {element.bounding_rect.x, element.bounding_rect.y}
@@ -273,9 +271,7 @@ board_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, elem
         }
         if closest_idx.x >= 0 &&  .TERRAIN not_in gs.board[closest_idx.x][closest_idx.y].flags {
             board_element.hovered_space = closest_idx
-        } else {
-            board_element.hovered_space = INVALID_TARGET
-        }
+        } 
     }
 
     return
@@ -452,7 +448,7 @@ render_board_to_texture :: proc(gs: ^Game_State, board_element: UI_Board_Element
             // See if any side buttons are hovered
             for &ui_element in gs.side_button_manager.buttons {
                 button_element := assert_variant(&ui_element.variant, UI_Button_Element)
-                if !button_element.hovered do continue
+                if .HOVERED not_in ui_element.flags do continue
                 event, ok := button_element.event.(Resolve_Current_Action_Event)
                 if !ok do continue
                 next_index := event.jump_index.?

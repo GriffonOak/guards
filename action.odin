@@ -17,13 +17,12 @@ Movement_Flag :: enum {
     // etc...
 }
 
-Movement_Flags :: bit_set[Movement_Flag]
 
 Movement_Criteria :: struct {
     target: Implicit_Target,
     distance: Implicit_Quantity,
     destination_criteria: Selection_Criteria,
-    flags: Movement_Flags,
+    flags: bit_set[Movement_Flag],
 }
 
 Movement_Action :: struct {
@@ -97,15 +96,15 @@ Choose_Card_Action :: struct {
     result: Card_ID,
 }
 
-Defense_Flag :: enum {
-    BLOCK,
-    IGNORE_MINION_MODIFIERS,
-}
-Defense_Flags :: bit_set[Defense_Flag]
+// Defense_Flag :: enum {
+//     BLOCK,
+//     IGNORE_MINION_MODIFIERS,
+// }
+// Defense_Flags :: bit_set[Defense_Flag]
 
-Defense_Stats :: struct {
+// Defense_Stats :: struct {
 
-}
+// }
 
 Defend_Action :: struct {
     strength: Implicit_Quantity,
