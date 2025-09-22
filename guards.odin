@@ -32,13 +32,15 @@ _ :: os
 
 // Xargatha LITERALLY DONE after this point !!!!
 
-// Write UNIMPLEMENTED over unfinished cards
-
 // Toast, for a bit of flair & usability
 // basic animations?
 
+// Enter IP for joining games
+
 // Minions outside battle zone if path blocked
 // Snorri runes
+
+// Experiment with putting spall stuff in @init and @fini procs for test profiling
 
 
 // Ideas
@@ -50,9 +52,14 @@ _ :: os
 // Always send team captain the minion removal event and just skip the choose step if there are more minions to remove than exist
 // Model wave push as an action sequence to obviate the need for interrupt_variant
 
-// Lower priority, but minion removal when there is only a player on one team seems to be not defined
 
 
+
+@init
+startup :: proc() {
+    log.infof("This ran at the start!")
+    fmt.println("This ran at the start!")
+}
 
 Window_Size :: enum {
     SMALL,

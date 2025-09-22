@@ -48,7 +48,7 @@ dodger_cards := []Card_Data {
                     Count_Targets {
                         conditions = {
                             Target_Within_Distance{Self{}, {1, 1}},
-                            Empty,
+                            Target_Empty,
                             Target_Contains_Any{SPAWNPOINT_FLAGS},
                             Target_In_Battle_Zone{},
                         },
@@ -101,7 +101,7 @@ dodger_cards := []Card_Data {
                                         origin = That_Target{},
                                         bounds = {1, 1},
                                     },
-                                    Empty,
+                                    Target_Empty,
                                     Target_Contains_Any{SPAWNPOINT_FLAGS},
                                     Target_In_Battle_Zone{},
                                 },
@@ -199,7 +199,7 @@ dodger_cards := []Card_Data {
                     Count_Targets {
                         conditions = {
                             Target_Within_Distance{Self{}, {1, Card_Reach{}}},
-                            Empty,
+                            Target_Empty,
                             Target_Contains_Any{SPAWNPOINT_FLAGS},
                             Target_In_Battle_Zone{},
                         },
@@ -211,7 +211,7 @@ dodger_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Shield of Decay",  // @Unimplemented
+    Card_Data { name = "Shield of Decay",
         color =         .BLUE,
         tier =          1,
         initiative =    10,
@@ -220,7 +220,31 @@ dodger_cards := []Card_Data {
         primary_sign =  .PLUS,
         reach =         Radius(2),
         text =          "+2 Defense if there are 2 or more empty\nspawn points in radius in the battle zone.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                variant = Defend_Action {
+                    strength = Sum {
+                        Card_Value{.DEFENSE},
+                        Minion_Modifiers{},
+                        Ternary {
+                            {2, 0},
+                            Greater_Than {
+                                Count_Targets {
+                                    conditions = {
+                                        Target_Within_Distance {
+                                            Self{}, {1, Card_Reach{}},
+                                        },
+                                        Target_Empty,
+                                        Target_Contains_Any{SPAWNPOINT_FLAGS},
+                                        Target_In_Battle_Zone{},
+                                    },
+                                }, 1,
+                            },
+                        },
+                    },
+                },
+            },
+        },
     },
     Card_Data { name = "Finger of Death",
         color =         .RED,
@@ -356,7 +380,7 @@ dodger_cards := []Card_Data {
                     Count_Targets {
                         conditions = {
                             Target_Within_Distance{Self{}, {1, Card_Reach{}}},
-                            Empty,
+                            Target_Empty,
                             Target_Contains_Any{SPAWNPOINT_FLAGS},
                             Target_In_Battle_Zone{},
                         },
@@ -368,7 +392,7 @@ dodger_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Necromancy",
+    Card_Data { name = "Necromancy",  // @Unimplemented
         color =         .GREEN,
         tier =          2,
         alternate =     true,
@@ -378,44 +402,68 @@ dodger_cards := []Card_Data {
         item =          .ATTACK,
         text =          "Respawn a friendly minion in an empty friendly\nspawn point adjacent to you in the battle zone.",
         primary_effect = []Action {
-            Action {
-                tooltip = "Choose an empty friendly spawn point adjacent to you in the battle zone.",
-                // condition = Greater_Than { Total_Dead_Minions{My_Team{}}, 0 },  @Todo
-                variant = Choose_Target_Action {
-                    conditions = {
-                        Target_Within_Distance{Self{}, {1, 1}},
-                        Empty,
-                        Target_Contains_Any{SPAWNPOINT_FLAGS},
-                        Target_In_Battle_Zone{},
-                        Target_Is_Friendly_Spawnpoint{},
-                    },
-                },
-            },
+            // Action {
+            //     tooltip = "Choose an empty friendly spawn point adjacent to you in the battle zone.",
+            //     // condition = Greater_Than { Total_Dead_Minions{My_Team{}}, 0 },  @Todo
+            //     variant = Choose_Target_Action {
+            //         conditions = {
+            //             Target_Within_Distance{Self{}, {1, 1}},
+            //             Target_Empty,
+            //             Target_Contains_Any{SPAWNPOINT_FLAGS},
+            //             Target_In_Battle_Zone{},
+            //             Target_Is_Friendly_Spawnpoint{},
+            //         },
+            //     },
+            // },
             // Action {
             //     tooltip = "Choose which type of minion to respawn",
             //     variant = Choose_Minion_Type_Action {},  // ??????
             // },
-            Action {
-                variant = Minion_Spawn_Action {
-                    location = Previous_Choice{},
-                    spawnpoint = Previous_Choice{},
-                },
-            },
+            // Action {
+            //     variant = Minion_Spawn_Action {
+            //         location = Previous_Choice{},
+            //         spawnpoint = Previous_Choice{},
+            //     },
+            // },
         },
     },
     Card_Data { name = "Vampiric Shield",
         color =         .BLUE,
         tier =          2,
         initiative =    10,
-        values =        #partial{.DEFENSE = 0, .MOVEMENT = 3},
+        values =        #partial{.DEFENSE = 0, .MOVEMENT = 3},  // @Todo find out what this actually is
         primary =       .DEFENSE,
         primary_sign =  .PLUS,
         reach =         Radius(2),
         item =          .INITIATIVE,
         text =          "+2 Defense if there are 2 or more empty\nspawn points in radius in the battle zone.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                variant = Defend_Action {
+                    strength = Sum {
+                        Card_Value{.DEFENSE},
+                        Minion_Modifiers{},
+                        Ternary {
+                            {2, 0},
+                            Greater_Than {
+                                Count_Targets {
+                                    conditions = {
+                                        Target_Within_Distance {
+                                            Self{}, {1, Card_Reach{}},
+                                        },
+                                        Target_Empty,
+                                        Target_Contains_Any{SPAWNPOINT_FLAGS},
+                                        Target_In_Battle_Zone{},
+                                    },
+                                }, 1,
+                            },
+                        },
+                    },
+                },
+            },
+        },
     },
-    Card_Data { name = "Weakness",
+    Card_Data { name = "Weakness",  // @Unimplemented
         color =         .BLUE,
         tier =          2,
         alternate =     true,
@@ -459,7 +507,9 @@ dodger_cards := []Card_Data {
         reach =         Radius(3),
         item =          .DEFENSE,
         text =          "If there are 2 or more empty spawn points in\nradius in the battle zone, gain 2 coins. If you\nhave your Ultimate, gain an Attack item.\n(Use any spare card from the box with the corresponding icon.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            
+        },
     },
     Card_Data { name = "Necromastery",
         color =         .GREEN,

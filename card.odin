@@ -373,7 +373,7 @@ get_card_by_id :: proc(gs: ^Game_State, card_id: Card_ID) -> (card: ^Card, ok: b
     return player_card, true
 }
 
-get_card_data_by_id :: proc(gs: ^Game_State, card_id: Card_ID) -> (card: ^Card_Data, ok: bool) { // #optional_ok {
+get_card_data_by_id :: proc(_gs: ^Game_State, card_id: Card_ID) -> (card: ^Card_Data, ok: bool) { // #optional_ok {
     if card_id == {} do return nil, false
 
     // If a player is holding the card, return a pointer to that

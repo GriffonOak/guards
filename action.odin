@@ -97,20 +97,31 @@ Choose_Card_Action :: struct {
     result: Card_ID,
 }
 
+Defense_Flag :: enum {
+    BLOCK,
+    IGNORE_MINION_MODIFIERS,
+}
+Defense_Flags :: bit_set[Defense_Flag]
+
+Defense_Stats :: struct {
+
+}
+
 Defend_Action :: struct {
-    card: Implicit_Card,
+    strength: Implicit_Quantity,
+    block_condition: Implicit_Condition,
 }
 
 Retrieve_Card_Action :: struct {
-    card: Implicit_Card,
+    card: Implicit_Card_ID,
 }
 
 Discard_Card_Action :: struct {
-    card: Implicit_Card,
+    card: Implicit_Card_ID,
 }
 
 Jump_Action :: struct {
-    jump_index: Action_Index,
+    jump_index: Implicit_Action_Index,
 }
 
 Get_Defeated_Action :: struct {}
@@ -164,11 +175,11 @@ Action_Sequence_ID :: enum {
     BASIC_FAST_TRAVEL,
     BASIC_CLEAR,
     BASIC_DEFENSE,
-
     FIRST_CHOICE,
 
     // Doesn't require Card ID
     HALT,
+    DIE,
     RESPAWN,
     MINION_REMOVAL,
     MINION_SPAWN,
@@ -234,10 +245,10 @@ basic_clear_action := []Action {
 }
 
 basic_defense_action := []Action {
-    Action {
+    Action {  // 0
         tooltip = "Choose a card to defend with. You may also choose to die.",
         optional = true,
-        skip_index = {index = 3},
+        skip_index = {sequence = .DIE},
         skip_name = "Die",
         variant = Choose_Card_Action {
             criteria = {
@@ -245,21 +256,30 @@ basic_defense_action := []Action {
             },
         },
     },
-    Action {
+    Action {  // 1
         tooltip = error_tooltip,
         variant = Discard_Card_Action {
             Previous_Card_Choice{},
         },
     },
-    Action {
+    Action {  // 2
         tooltip = error_tooltip,
-        variant = Defend_Action {
-            Previous_Card_Choice{},
+        variant = Jump_Action {
+            jump_index = Card_Defense_Index{},
         },
     },
-    Action {
-        variant = Halt_Action{},
+    Action {  // 3
+        tooltip = error_tooltip,
+        variant = Defend_Action {
+            strength = Sum {
+                Card_Value{.DEFENSE},
+                Minion_Modifiers{},
+            },
+        },
     },
+}
+
+die_action := []Action {
     Action {
         variant = Get_Defeated_Action{},
     },
@@ -317,7 +337,7 @@ respawn_action := []Action {
         variant = Choose_Target_Action {
             num_targets = 1,
             conditions = {
-                Empty,
+                Target_Empty,
                 Target_Contains_Any{{.HERO_SPAWNPOINT}},
                 Target_Is_Friendly_Spawnpoint{},
             },
@@ -366,7 +386,7 @@ minion_spawn_action := []Action {
             num_targets = 1,
             conditions = {
                 Target_In_Battle_Zone{},
-                Empty,
+                Target_Empty,
             },
             closest_to = Top_Blocked_Spawnpoint{},
         },
@@ -379,7 +399,7 @@ minion_spawn_action := []Action {
     },
     Action {
         variant = Jump_Action {
-            jump_index = {sequence = .MINION_SPAWN, index = 0},
+            jump_index = Action_Index{sequence = .MINION_SPAWN},
         },
     },
 }
@@ -425,6 +445,7 @@ get_action_at_index :: proc(gs: ^Game_State, index: Action_Index, loc := #caller
         // log.assert(ok, "no played card!!?!?!?!?!", loc)
         action_sequence = card_data.primary_effect
     case .HALT:                 return nil
+    case .DIE:                  action_sequence = die_action
     case .RESPAWN:              action_sequence = respawn_action
     case .FIRST_CHOICE:         action_sequence = first_choice_action
     case .BASIC_MOVEMENT:       action_sequence = basic_movement_action

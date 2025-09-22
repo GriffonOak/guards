@@ -72,7 +72,7 @@ Wave_Push_Interrupt :: struct {
 
 Attack_Interrupt :: struct {
     strength: int,
-    minion_modifiers: int,
+    // minion_modifiers: int,
 }
 
 Interrupt_Variant :: union {
@@ -120,6 +120,7 @@ Game_State :: struct {
     my_player_id: Player_ID,
     team_captains: [Team]Player_ID,
     minion_counts: [Team]int,
+    dead_minions: [Team][dynamic]Space_Flag,
     life_counters: [Team]int,
     confirmed_players: int,
     // resolved_players: int,

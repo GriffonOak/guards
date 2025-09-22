@@ -203,3 +203,24 @@ add_marker :: proc(gs: ^Game_State) {
         append(&gs.event_queue, Marker_Event{})
     }
 }
+
+// can_defend :: proc(defense_strength: Implicit_Quantity, flags: Defense_Flags) -> bool{
+//     log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
+
+//     attack_strength := -1e6
+//     minion_modifiers := -1e6
+//     search_interrupts: #reverse for expanded_interrupt in gs.interrupt_stack {
+//         #partial switch interrupt_variant in expanded_interrupt.interrupt.variant {
+//         case Attack_Interrupt:
+//             attack_strength = interrupt_variant.strength
+//             break search_interrupts
+//         }
+//     }
+//     log.assert(attack_strength != -1e6, "No attack found in interrupt stack!!!!!", loc)
+
+//     log.infof("Defending attack of %v, minions %v, card value %v", attack_strength, minion_modifiers)
+
+//     // We do it this way so that defense items get calculated
+//     defense_strength := calculate_implicit_quantity(gs, Card_Value{.DEFENSE}, calc_context)
+//     return defense_strength + minion_modifiers >= attack_strength
+// }

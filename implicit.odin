@@ -4,7 +4,7 @@ import "core:log"
 
 Previous_Card_Choice :: struct {}
 
-Implicit_Card :: union {
+Implicit_Card_ID :: union {
     Card_ID,
     Previous_Card_Choice,
 }
@@ -26,6 +26,8 @@ Card_Turn_Played :: struct {}
 
 Minion_Difference :: struct {}
 
+Minion_Modifiers :: struct {}
+
 Ternary :: struct {
     terms: []Implicit_Quantity,
     condition: Implicit_Condition,
@@ -36,6 +38,7 @@ Target_Count_Discarded_Cards :: struct {}
 Implicit_Quantity :: union {
     int,
     Minion_Difference,
+    Minion_Modifiers,
     Sum,
     Count_Targets,
     Ternary,
@@ -114,9 +117,11 @@ Not_Previously_Targeted :: struct {}
 Target_In_Battle_Zone :: struct {}
 Target_Outside_Battle_Zone :: struct {}
 
-Empty :: Target_Contains_No{OBSTACLE_FLAGS}
+Target_Empty :: Target_Contains_No{OBSTACLE_FLAGS}
 
-Card_Can_Defend :: struct{}
+// Card_Can_Defend :: struct{
+//     strength: int,
+// }
 
 Card_State_Is :: struct {
     state: Card_State,
@@ -148,9 +153,18 @@ Implicit_Condition :: union {
     Target_Outside_Battle_Zone,
 
     // Requires card in calc context
-    Card_Can_Defend,
+    // Card_Can_Defend,
     Card_State_Is,
     Card_Primary_Is_Not,
+}
+
+Card_Defense_Index :: struct {
+    card_id: Implicit_Card_ID,
+}
+
+Implicit_Action_Index :: union {
+    Action_Index,
+    Card_Defense_Index,
 }
 
 
@@ -220,6 +234,11 @@ calculate_implicit_quantity :: proc(
         for card in cards {
             if card.state == .DISCARDED do out += 1
         }
+
+    case Minion_Modifiers: 
+        return calculate_minion_modifiers(gs)
+
+
     }
     return 
 }
@@ -376,49 +395,65 @@ calculate_implicit_condition :: proc (
         log.assert(ok, "Could not find the card when checking for its state!", loc)
         return card.state == condition.state
 
-    case Card_Can_Defend:
-        log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
+    // case Card_Can_Defend:
+        // log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
 
-        attack_strength := -1e6
-        minion_modifiers := -1e6
-        search_interrupts: #reverse for expanded_interrupt in gs.interrupt_stack {
-            #partial switch interrupt_variant in expanded_interrupt.interrupt.variant {
-            case Attack_Interrupt:
-                attack_strength = interrupt_variant.strength
-                minion_modifiers = interrupt_variant.minion_modifiers
-                break search_interrupts
-            }
-        }
-        log.assert(attack_strength != -1e6, "No attack found in interrupt stack!!!!!", loc)
+        // attack_strength := -1e6
+        // minion_modifiers := -1e6
+        // search_interrupts: #reverse for expanded_interrupt in gs.interrupt_stack {
+        //     #partial switch interrupt_variant in expanded_interrupt.interrupt.variant {
+        //     case Attack_Interrupt:
+        //         attack_strength = interrupt_variant.strength
+        //         minion_modifiers = interrupt_variant.minion_modifiers
+        //         break search_interrupts
+        //     }
+        // }
+        // log.assert(attack_strength != -1e6, "No attack found in interrupt stack!!!!!", loc)
 
-        log.infof("Defending attack of %v, minions %v, card value %v", attack_strength, minion_modifiers)
+        // log.infof("Defending attack of %v, minions %v, card value %v", attack_strength, minion_modifiers)
 
-        // We do it this way so that defense items get calculated
-        defense_strength := calculate_implicit_quantity(gs, Card_Value{.DEFENSE}, calc_context)
-        return defense_strength + minion_modifiers >= attack_strength
+        // // We do it this way so that defense items get calculated
+        // defense_strength := calculate_implicit_quantity(gs, Card_Value{.DEFENSE}, calc_context)
+        // return defense_strength + minion_modifiers >= attack_strength
     }
     return false
 }
 
-calculate_implicit_card :: proc(gs: ^Game_State, implicit_card: Implicit_Card) -> ^Card {
-    switch card in implicit_card {
+calculate_implicit_card_id :: proc(gs: ^Game_State, implicit_card_id: Implicit_Card_ID) -> Card_ID {
+    switch card_id in implicit_card_id {
     case Card_ID:
-        card_pointer, ok := get_card_by_id(gs, card)
-        log.assert(ok, "Can't find card by ID")
-        return card_pointer
+        return card_id
     case Previous_Card_Choice:
         index := get_my_player(gs).hero.current_action_index
         index.index -= 1
         for ; true; index.index -= 1 {
             action := get_action_at_index(gs, index)
             if variant, ok := action.variant.(Choose_Card_Action); ok {
-                card, ok2 := get_card_by_id(gs, variant.result)
-                log.assert(ok2, "Previous choice of card was not valid!!!!!!")
-                return card
+                return variant.result
             }
         }
     }
     played_card, ok := find_played_card(gs)
     log.assert(ok, "Could not find played card when calculating an implicit card")
     return played_card  // Default to returning the played card
+}
+
+calculate_implicit_action_index :: proc(gs: ^Game_State, implicit_index: Implicit_Action_Index, calc_context: Calculation_Context = {}) -> Action_Index {
+    switch index in implicit_index {
+    case Action_Index:
+        return index
+    case Card_Defense_Index:
+        card_id := calculate_implicit_card_id(gs, index.card_id)
+        card_data, ok := get_card_data_by_id(gs, card_id)
+        log.assert(ok, "Invalid card ID!!")
+        #partial switch card_data.primary {
+        case .DEFENSE: 
+            return Action_Index{.PRIMARY, card_id, 0}
+        case .DEFENSE_SKILL:
+            log.assert(false, "TODO")  // @Todo
+            return {}
+        }
+        return {.BASIC_DEFENSE, card_id, 3}  // @Magic: index of Defense_Action in basic_defense_action
+    }
+    return {}
 }

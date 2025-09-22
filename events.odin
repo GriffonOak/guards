@@ -618,7 +618,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             case Wave_Push_Interrupt:
                 broadcast_game_event(gs, Begin_Wave_Push_Event{interrupt_variant.pushing_team})
             case Attack_Interrupt:
-                interrupt_variant.minion_modifiers = calculate_minion_modifiers(gs)
                 // @Todo need to do attacks now
                 get_my_player(gs).hero.current_action_index = {sequence = .BASIC_DEFENSE, index = 0}
                 append(&gs.event_queue, Begin_Next_Action_Event{})
@@ -746,6 +745,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
     case Begin_Next_Action_Event:
 
         action_index := get_my_player(gs).hero.current_action_index
+        calc_context := Calculation_Context{card_id = action_index.card_id}
         action := get_action_at_index(gs, action_index)
 
         skip_index := action.skip_index
@@ -774,7 +774,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         case Choose_Target_Action:
             clear(&action_type.result)
-            if count_members(&action.targets) == calculate_implicit_quantity(gs, action_type.num_targets, {card_id = action_index.card_id}) && !action.optional {
+            if count_members(&action.targets) == calculate_implicit_quantity(gs, action_type.num_targets, calc_context) && !action.optional {
                 iter := make_target_set_iterator(&action.targets)
                 for _, space in target_set_iter_members(&iter) {
                     append(&action_type.result, space)
@@ -801,9 +801,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             }
 
         case Attack_Action:
-            target := calculate_implicit_target(gs, action_type.target, {card_id = action_index.card_id})
+            target := calculate_implicit_target(gs, action_type.target, calc_context)
             space := &gs.board[target.x][target.y]
-            attack_strength := calculate_implicit_quantity(gs, action_type.strength, {card_id = action_index.card_id})
+            attack_strength := calculate_implicit_quantity(gs, action_type.strength, calc_context)
             log.infof("Attack strength: %v", attack_strength)
             // Here we assume the target must be an enemy. Enemy should always be in the selection flags for attacks.
             if MINION_FLAGS & space.flags != {} {
@@ -830,7 +830,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             }
 
         case Force_Discard_Action:
-            target := calculate_implicit_target(gs, action_type.target, {card_id = action_index.card_id})
+            target := calculate_implicit_target(gs, action_type.target, calc_context)
             space := gs.board[target.x][target.y]
             log.assert(.HERO in space.flags, "Forced a space without a hero to discard!")
             owner := space.owner
@@ -853,7 +853,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             end_current_action_sequence(gs)
 
         case Minion_Defeat_Action:
-            target := calculate_implicit_target(gs, action_type.target, calc_context = {card_id = action_index.card_id})
+            target := calculate_implicit_target(gs, action_type.target, calc_context)
             space := gs.board[target.x][target.y]
             if MINION_FLAGS & space.flags != {} {
                 if defeat_minion(gs, target) {  // Add a wave push interrupt if the minion defeated was the last one
@@ -879,13 +879,13 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
             
         case Jump_Action:
-            jump_index := action_type.jump_index
-            jump_index.card_id = action_index.card_id
-            append(&gs.event_queue, Resolve_Current_Action_Event{action_type.jump_index})
+            jump_index := calculate_implicit_action_index(gs, action_type.jump_index)
+            // jump_index.card_id = action_index.card_id
+            append(&gs.event_queue, Resolve_Current_Action_Event{jump_index})
             
         case Minion_Spawn_Action:
-            target := calculate_implicit_target(gs, action_type.location)
-            spawnpoint := calculate_implicit_target(gs, action_type.spawnpoint)
+            target := calculate_implicit_target(gs, action_type.location, calc_context)
+            spawnpoint := calculate_implicit_target(gs, action_type.spawnpoint, calc_context)
             space := gs.board[spawnpoint.x][spawnpoint.y]
             spawnpoint_flags := space.flags & (SPAWNPOINT_FLAGS - {.HERO_SPAWNPOINT})
             log.assert(spawnpoint_flags != {}, "Minion spawn action with invalid spawnpoint!!!")
@@ -901,24 +901,40 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             append(&gs.event_queue, Resolve_Current_Action_Event{})
             
         case Discard_Card_Action:
-            card := calculate_implicit_card(gs, action_type.card)
-            broadcast_game_event(gs, Card_Discarded_Event{card.id})
+            card_id := calculate_implicit_card_id(gs, action_type.card)
+            broadcast_game_event(gs, Card_Discarded_Event{card_id})
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
         case Defend_Action:
-            card := calculate_implicit_card(gs, action_type.card)
-            broadcast_game_event(gs, Card_Discarded_Event{card.id})
+            can_defend: bool
+            if action_type.block_condition != nil do can_defend = calculate_implicit_condition(gs, action_type.block_condition, calc_context)
+            else {
+                attack_strength := -1e6
+                search_interrupts: #reverse for expanded_interrupt in gs.interrupt_stack {
+                    #partial switch interrupt_variant in expanded_interrupt.interrupt.variant {
+                    case Attack_Interrupt:
+                        attack_strength = interrupt_variant.strength
+                        break search_interrupts
+                    }
+                }
+                log.assert(attack_strength != -1e6, "No attack found in interrupt stack!!!!!")
 
+                // We do it this way so that defense items get calculated
+                defense_strength := calculate_implicit_quantity(gs, action_type.strength, calc_context)
+                can_defend = defense_strength >= attack_strength
+            }
+            if can_defend do append(&gs.event_queue, Resolve_Current_Action_Event{})
+            else do append(&gs.event_queue, Resolve_Current_Action_Event{Action_Index{sequence = .DIE}})
             // @Defense: Here you would add an interrupt to perform the "defense action"
-            append(&gs.event_queue, Resolve_Current_Action_Event{})
+            
 
         case Retrieve_Card_Action:
-            card := calculate_implicit_card(gs, action_type.card)
-            broadcast_game_event(gs, Card_Retrieved_Event{card.id})
+            card_id := calculate_implicit_card_id(gs, action_type.card)
+            broadcast_game_event(gs, Card_Retrieved_Event{card_id})
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
         case Gain_Coins_Action:
-            gain := calculate_implicit_quantity(gs, action_type.gain)
+            gain := calculate_implicit_quantity(gs, action_type.gain, calc_context)
             player_base := get_my_player(gs).base
             player_base.hero.coins += gain
             broadcast_game_event(gs, Update_Player_Data_Event{player_base})
@@ -938,7 +954,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             // We know that the player has chosen a single spawnpoint to respawn at by this point,
             // why do we need to go through all the trouble of recalculating it?
             // Shouldn't need the card ID here
-            respawn_point := calculate_implicit_target(gs, action_type.location)
+            respawn_point := calculate_implicit_target(gs, action_type.location, calc_context)
             broadcast_game_event(gs, Hero_Respawn_Event{gs.my_player_id, respawn_point})
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 

@@ -6,7 +6,7 @@ import "core:fmt"
 import "core:strconv"
 
 
-hero_name := "Dodger"
+hero_name :: "Swift"
 
 NUM_CARDS :: 17
 cards: [NUM_CARDS]Card
@@ -63,7 +63,7 @@ main :: proc() {
         text_slice := tokens[13:]
         text := strings.join(text_slice, ",")
         if text[0] == '\"' {
-            text = text[1:len(text)-2]
+            text = text[1:len(text)-1]
         }
         card.text = text
         // card.text, _ = strings.replace(text, "\\n", "\n", -1)
