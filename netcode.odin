@@ -67,24 +67,31 @@ send_network_packet_socket :: proc(socket: net.TCP_Socket, net_event: Network_Pa
 }
 
 
+Parse_Error :: struct {}
+Dial_Error :: struct {}
 
-join_game :: proc(gs: ^Game_State, ip: string = "") -> bool {
+Join_Game_Error :: union {
+    Parse_Error,
+    Dial_Error,
+}
+
+
+join_game :: proc(gs: ^Game_State, ip: string = "") -> Join_Game_Error {
 
     gs.is_host = false
     ip := ip
     if ip == "" do ip = LOOPBACK_ADDRESS
     local_address, ok := net.parse_ip4_address(ip)
-    if !ok do return false
+    if !ok do return Parse_Error{}
 
 	socket, err := net.dial_tcp_from_address_and_port(local_address, GUARDS_PORT)
 	if err != nil {
-		fmt.println("Failed to connect to server")
-		return false
+		return Dial_Error{}
 	}
 
     gs.host_socket = socket
     add_socket_listener(gs, socket)
-    return true
+    return nil
 }
 
 @(test)

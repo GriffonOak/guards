@@ -93,11 +93,19 @@ Tooltip :: union {
     Formatted_String,
 }
 
+Toast :: struct {
+    _text_buf: [50]u8,
+    start_time, duration: f64,
+}
+
 
 
 BUTTON_PADDING :: 10
 BUTTON_TEXT_PADDING :: 20
 TOOLTIP_FONT_SIZE :: 50
+
+TOAST_TEXT_PADDING :: 10
+TOAST_FONT_SIZE :: 40
 
 SELECTION_BUTTON_SIZE :: Vec2{400, 100}
 FIRST_SIDE_BUTTON_LOCATION :: rl.Rectangle {
@@ -363,4 +371,35 @@ toggle_fullscreen :: proc() {
         rl.SetWindowSize(WIDTH / 2, HEIGHT / 2)
         window_scale = 2
     }
+}
+
+add_toast :: proc(gs: ^Game_State, text: string, duration: f64) {
+    toast := Toast{duration = duration}
+    new_string := string(text)
+    copy(toast._text_buf[:], new_string[:])
+    toast.start_time = rl.GetTime()
+    append(&gs.toasts, toast)
+}
+
+draw_toast :: proc(toast: ^Toast) {
+    t := (rl.GetTime() - toast.start_time) / toast.duration
+    if t > 1 do return
+    text := cstring(raw_data(toast._text_buf[:]))
+
+    alpha := u8((1 - t) * 255)
+
+    background_color := rl.WHITE
+    background_color.a = alpha
+    text_color := rl.BLACK
+    text_color.a = alpha
+
+    text_size := rl.MeasureTextEx(default_font, text, TOAST_FONT_SIZE, 0)
+    rect_size := text_size + 2 * TOAST_TEXT_PADDING
+
+    text_position := (Vec2{WIDTH, HEIGHT} - text_size) / 2
+    text_position.y += 100 * f32(t)
+    rect_position := text_position - TOAST_TEXT_PADDING
+
+    rl.DrawRectangleV(rect_position, rect_size, background_color)
+    rl.DrawTextEx(default_font, text, text_position, TOAST_FONT_SIZE, 0, text_color)
 }

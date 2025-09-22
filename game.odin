@@ -140,6 +140,7 @@ Game_State :: struct {
     tooltip: Tooltip,
 
     ui_stack: [UI_Domain][dynamic]UI_Element,
+    toasts: [dynamic]Toast,
 
     side_button_manager: Side_Button_Manager,
 

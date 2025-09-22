@@ -1,5 +1,6 @@
 package guards
 
+import "core:time"
 
 import rl "vendor:raylib"
 import "core:fmt"
@@ -298,6 +299,14 @@ main :: proc() {
             render_player_info(&gs)
         }
         render_tooltip(&gs)
+
+        #reverse for &toast, index in gs.toasts {
+            if rl.GetTime() > toast.start_time + toast.duration {
+                ordered_remove(&gs.toasts, index)
+            } else {
+                draw_toast(&toast)
+            }
+        }
 
         rl.EndTextureMode()
 
