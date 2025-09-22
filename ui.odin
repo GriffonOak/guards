@@ -5,6 +5,7 @@ import "core:math"
 import "core:strings"
 import rl "vendor:raylib"
 import sa "core:container/small_array"
+import ba "core:container/bit_array"
 
 UI_Domain :: enum {
     NONE,
@@ -169,8 +170,9 @@ text_box_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, e
     case Key_Pressed_Event:
         #partial switch var.key {
         case (.ZERO)..=(.NINE), .PERIOD:
-            sa.inject_at(&text_box_element.field, u8(var.key), text_box_element.cursor_index)
-            text_box_element.cursor_index += 1
+            if sa.inject_at(&text_box_element.field, u8(var.key), text_box_element.cursor_index) {
+                text_box_element.cursor_index += 1
+            }
         case .BACKSPACE:
             if text_box_element.cursor_index <= 0 do break
             sa.ordered_remove(&text_box_element.field, text_box_element.cursor_index - 1)
@@ -186,6 +188,15 @@ text_box_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, e
             text_box_element.cursor_index += 1
             text_box_element.cursor_index = clamp(text_box_element.cursor_index, 0, sa.len(text_box_element.field))
             text_box_element.last_click_time = rl.GetTime()
+        case .V:
+            if !ba.get(&ui_state.pressed_keys, uint(rl.KeyboardKey.LEFT_CONTROL)) && !ba.get(&ui_state.pressed_keys, uint(rl.KeyboardKey.RIGHT_CONTROL)) do break
+            clipboard := cast([^]u8) rl.GetClipboardText()
+            for i := 0 ; clipboard[i] != 0; i += 1 {
+                if !sa.inject_at(&text_box_element.field, clipboard[i], text_box_element.cursor_index) {
+                    break
+                }
+                text_box_element.cursor_index += 1
+            }
         }
     }
         

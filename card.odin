@@ -401,15 +401,6 @@ find_upgrade_options :: proc(gs: ^Game_State, card_id: Card_ID) -> (out: [2]Card
     return
 }
 
-// make_card_id :: proc(card: Card, player_id: Player_ID) -> Card_ID {
-//     return Card_ID {
-//         player_id,
-//         card.color,
-//         card.tier,
-//         card.alternate,
-//     }
-// }
-
 get_ui_card_slice :: proc(gs: ^Game_State, player_id: Player_ID) -> []UI_Element {
     return gs.ui_stack[.CARDS][5 * player_id:][:5]
 }

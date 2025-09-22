@@ -234,7 +234,7 @@ setup_board :: proc(gs: ^Game_State) {
     setup_spawnpoints(gs)
 }
 
-board_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, element: ^UI_Element) -> (output: bool = false) {
+board_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, element: ^UI_Element) -> bool {
 
     board_element := assert_variant(&element.variant, UI_Board_Element)
     prev_hovered_space := board_element.hovered_space
@@ -244,15 +244,12 @@ board_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, elem
         }
     }
 
-    board_element.hovered_space = INVALID_TARGET
-
-    output = true
-
     #partial switch var in input {
     case Mouse_Pressed_Event:
-        if board_element.hovered_space == INVALID_TARGET do break
+        if .HOVERED not_in element.flags || board_element.hovered_space == INVALID_TARGET do break
         append(&gs.event_queue, Space_Clicked_Event{board_element.hovered_space})
     case Mouse_Motion_Event:
+        board_element.hovered_space = INVALID_TARGET
         mouse_within_board := ui_state.mouse_pos - {element.bounding_rect.x, element.bounding_rect.y}
 
         mouse_within_board *= BOARD_TEXTURE_SIZE / {element.bounding_rect.width, element.bounding_rect.height}
@@ -274,12 +271,13 @@ board_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, elem
         } 
     }
 
-    return
+    return true
 }
 
-render_board_to_texture :: proc(gs: ^Game_State, board_element: UI_Board_Element) {
+render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
     context.allocator = context.temp_allocator
 
+    board_element := assert_variant_rdonly(element.variant, UI_Board_Element)
     rl.BeginTextureMode(board_element.texture)
 
     rl.ClearBackground(WATER_COLOR)
@@ -353,7 +351,7 @@ render_board_to_texture :: proc(gs: ^Game_State, board_element: UI_Board_Element
     }
 
     space_pos: Vec2
-    if board_element.hovered_space != INVALID_TARGET {
+    if .HOVERED not_in element.flags || board_element.hovered_space != INVALID_TARGET {
         space_pos = gs.board[board_element.hovered_space.x][board_element.hovered_space.y].position
         // rl.DrawRing(pos, VERTICAL_SPACING * 0.45, VERTICAL_SPACING * 0.5, 0, 360, 100, rl.WHITE)
         rl.DrawPolyLinesEx(space_pos, 6, VERTICAL_SPACING * (1 / math.sqrt_f32(3) + 0.05), 0, VERTICAL_SPACING * 0.05, rl.WHITE)
@@ -432,7 +430,7 @@ render_board_to_texture :: proc(gs: ^Game_State, board_element: UI_Board_Element
         action := get_action_at_index(gs, action_index)
         #partial switch variant in action.variant {
         case Fast_Travel_Action:
-            if board_element.hovered_space == INVALID_TARGET do break
+            if .HOVERED not_in element.flags || board_element.hovered_space == INVALID_TARGET do break
             if index_target_set(&action.targets, board_element.hovered_space).member {
                 player_loc := get_my_player(gs).hero.location
                 player_pos := gs.board[player_loc.x][player_loc.y].position

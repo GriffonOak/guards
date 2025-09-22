@@ -18,6 +18,7 @@ _ :: mem
 _ :: math
 _ :: strings
 _ :: os
+_ :: time
 
 // Todo list
 // Dodger  (Primary defense, choose minion type ????)
@@ -210,7 +211,7 @@ main :: proc() {
             case Key_Pressed_Event:
                 #partial switch var.key {
                 case .EQUAL: increase_window_size()
-                case.MINUS: decrease_window_size()
+                case .MINUS: decrease_window_size()
                 case .F: toggle_fullscreen()
                 case .M: add_marker(&gs)
                 case: 
@@ -224,10 +225,13 @@ main :: proc() {
                 // First "de-hover" the previous hovered element
                 if hovered_element_index.domain != .NONE && hovered_element_index.index < len(gs.ui_stack[hovered_element_index.domain]) {
                     hovered_element := &gs.ui_stack[hovered_element_index.domain][hovered_element_index.index]
+                    if _, ok := hovered_element.variant.(UI_Card_Element); ok {
+                        breakpoint()
+                    }
                     hovered_element.flags -= {.HOVERED}
                 }
                 hovered_element_index = {}
-                for i := len(UI_Domain) - 1; i >= 0; i -= 1 {
+                ui_search: for i := len(UI_Domain) - 1; i >= 0; i -= 1 {
                     domain := UI_Domain(i)
                     #reverse for &element, index in gs.ui_stack[domain] {
                         when ODIN_TEST {
@@ -238,7 +242,7 @@ main :: proc() {
                         if element.consume_input(&gs, event, &element) {
                             element.flags += {.HOVERED}
                             hovered_element_index = {domain, index}
-                            break
+                            break ui_search
                         }
                     }
                 }
@@ -274,7 +278,7 @@ main :: proc() {
         rl.BeginDrawing()
 
         if gs.stage != .PRE_LOBBY && gs.stage != .IN_LOBBY {
-            render_board_to_texture(&gs, gs.ui_stack[.BOARD][0].variant.(UI_Board_Element))
+            render_board_to_texture(&gs, gs.ui_stack[.BOARD][0])
         }
 
         rl.BeginTextureMode(window_texture)

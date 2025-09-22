@@ -235,9 +235,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         text_box := &gs.ui_stack[.BUTTONS][0].variant.(UI_Text_Box_Element)
         ip := string(sa.slice(&text_box.field))
         switch error in join_game(gs, ip) {
-            case nil: append(&gs.event_queue, Enter_Lobby_Event{})
-            case Parse_Error: add_toast(gs, "Unable to parse IP address.", 2)
-            case Dial_Error: add_toast(gs, "Could not connect to IP address.", 2)
+        case nil: append(&gs.event_queue, Enter_Lobby_Event{})
+        case Parse_Error: add_toast(gs, "Unable to parse IP address.", 2)
+        case Dial_Error: add_toast(gs, "Could not connect to IP address.", 2)
         }
 
     // case Join_Local_Game_Chosen_Event:
