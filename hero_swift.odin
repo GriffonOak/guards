@@ -50,6 +50,7 @@ swift_cards := []Card_Data {
         text =          "Move 2 spaces in a straight line, ignoring\nobstacles; if this card is already resolved as\nyou perform this action, may repeat once.",
         primary_effect = []Action {
             Action {
+                tooltip = "Move 2 spaces in a straight line, ignoring obstacles.",
                 variant = Movement_Action {
                     target = Self{},
                     min_distance = 2,
@@ -58,6 +59,7 @@ swift_cards := []Card_Data {
                 },
             },
             Action {
+                tooltip = "You may repeat once.",
                 condition = Card_State_Is{.RESOLVED},
                 optional = true,
                 skip_index = {sequence = .HALT},
@@ -78,7 +80,27 @@ swift_cards := []Card_Data {
         primary =       .ATTACK,
         reach =         Range(4),
         text =          "Target a unit at maximum range,\nand in a straight line.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = "Target a unit at maximum range, and in a straight line.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {Card_Reach{}, Card_Reach{}}},
+                        Target_In_Straight_Line_With{Self{}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Waiting for opponent to defend...",
+                variant = Attack_Action {
+                    target = Previous_Choice{},
+                    strength = Card_Value{.ATTACK},
+                },
+            },
+        },
     },
     Card_Data { name = "Suppress",
         color =         .GREEN,
@@ -88,7 +110,31 @@ swift_cards := []Card_Data {
         primary =       .SKILL,
         reach =         Radius(3),
         text =          "An enemy hero in radius who is not\nadjacent to terrain discards a card, if able.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = "Target an enemy hero in radius not adjacent to terrain.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Reach{}}},
+                        Target_Contains_Any{{.HERO}},
+                        Target_Is_Enemy_Unit{},
+                        Greater_Than{1, Count_Targets{
+                            conditions = {
+                                Target_Within_Distance{That_Target{}, {1, 1}},
+                                Target_Contains_Any{{.TERRAIN}},
+                            },
+                        }},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Waiting for opponent to discard...",
+                variant = Force_Discard_Action {
+                    target = Previous_Choice{},
+                },
+            },
+        },
     },
     Card_Data { name = "Steam Jump",
         color =         .BLUE,
@@ -98,7 +144,50 @@ swift_cards := []Card_Data {
         primary =       .SKILL,
         reach =         Radius(3),
         text =          "Place yourself into a space in a straight line\nin radius. Push an enemy unit\nadjacent to you up to 1 space.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = "Place yourself into a space in a straight line\nin radius.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Reach{}}},
+                        Target_Empty,
+                        Target_In_Straight_Line_With{Self{}},
+                    },
+                },
+            },
+            Action {
+                tooltip = error_tooltip,
+                variant = Place_Action {
+                    source = Self{},
+                    destination = Previous_Choice{},
+                },
+            },
+            Action {
+                tooltip = "Target an enemy unit adjacent to you.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Choose how many spaces to push the unit.",
+                variant = Choose_Quantity_Action {
+                    bounds = {0, 1},
+                },
+            },
+            Action {
+                variant = Push_Action {
+                    origin = Self{},
+                    target = Previous_Choice{},
+                    num_spaces = Previous_Quantity_Choice{},
+                },
+            },
+        },
     },
     Card_Data { name = "Prepared Shot",
         color =         .RED,

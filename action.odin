@@ -134,6 +134,20 @@ Gain_Coins_Action :: struct {
     gain: Implicit_Quantity,
 }
 
+Place_Action :: struct {
+    source, destination: Implicit_Target,
+}
+
+Choose_Quantity_Action :: struct {
+    bounds: []Implicit_Quantity,
+    result: int,
+}
+
+Push_Action :: struct {
+    origin, target: Implicit_Target,
+    num_spaces: Implicit_Quantity,
+}
+
 Action_Variant :: union {
     Movement_Action,
     Fast_Travel_Action,
@@ -152,6 +166,9 @@ Action_Variant :: union {
     Get_Defeated_Action,
     Respawn_Action,
     Gain_Coins_Action,
+    Place_Action,
+    Choose_Quantity_Action,
+    Push_Action,
 
     Minion_Removal_Action,
     Minion_Defeat_Action,
@@ -164,8 +181,8 @@ Action :: struct {
     condition: Implicit_Condition,
     skip_index: Action_Index,
     skip_name: cstring,
-    variant: Action_Variant,
     targets: Target_Set,
+    variant: Action_Variant,
 }
 
 Action_Sequence_ID :: enum {

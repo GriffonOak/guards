@@ -36,6 +36,8 @@ Ternary :: struct {
     condition: Implicit_Condition,
 }
 
+Previous_Quantity_Choice :: struct {}
+
 Target_Count_Discarded_Cards :: struct {}
 
 Implicit_Quantity :: union {
@@ -45,11 +47,12 @@ Implicit_Quantity :: union {
     Sum,
     Count_Targets,
     Ternary,
+    Previous_Quantity_Choice,
 
     // Requires target in context (although maybe it shouldn't?)
     Target_Count_Discarded_Cards,
 
-    // 
+    // Requires card in context
     Card_Reach,
     Card_Value,
     Card_Turn_Played,
@@ -235,6 +238,16 @@ calculate_implicit_quantity :: proc(
             return calculate_implicit_quantity(gs, quantity.terms[0], calc_context, loc)
         } else {
             return calculate_implicit_quantity(gs, quantity.terms[1], calc_context, loc)
+        }
+
+    case Previous_Quantity_Choice:
+        index := get_my_player(gs).hero.current_action_index
+        index.index -= 1
+        for ; true; index.index -= 1 {
+            action := get_action_at_index(gs, index)
+            if variant, ok := action.variant.(Choose_Quantity_Action); ok {
+                return variant.result
+            }
         }
 
     case Target_Count_Discarded_Cards:

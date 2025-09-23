@@ -91,6 +91,13 @@ calculate_hexagonal_distance :: proc(a, b: Target) -> int {
     }
 }
 
+get_norm_direction :: proc(a, b: Target) -> Target {
+    if a == b do return {}
+    direction := transmute([2]i8) (b - a)
+    norm_direction := direction / max(abs(direction.x), abs(direction.y))
+    return transmute([2]u8) norm_direction
+}
+
 get_first_set_bit :: proc(bs: bit_set[$T]) -> Maybe(T) where intrinsics.type_is_enum(T) {
     for enum_type in T {
         if enum_type in bs do return enum_type

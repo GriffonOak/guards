@@ -84,6 +84,10 @@ Card_Retrieved_Event :: struct {
     card_id: Card_ID,
 }
 
+Quantity_Chosen_Event :: struct {
+    quantity: int,
+}
+
 Begin_Resolution_Stage_Event :: struct{}
 
 Resolve_Same_Team_Tied_Event :: struct {
@@ -187,6 +191,8 @@ Event :: union {
     Add_Active_Effect_Event,
     Remove_Active_Effect_Event,
 
+    Quantity_Chosen_Event,
+
     Begin_Interrupt_Event,
     Resolve_Interrupt_Event,
 
@@ -239,11 +245,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         case Parse_Error: add_toast(gs, "Unable to parse IP address.", 2)
         case Dial_Error: add_toast(gs, "Could not connect to IP address.", 2)
         }
-
-    // case Join_Local_Game_Chosen_Event:
-    //     if join_game(gs) {
-    //         append(&gs.event_queue, Enter_Lobby_Event{})
-    //     }
 
     case Host_Game_Chosen_Event:
         if begin_hosting_local_game(gs) {
@@ -325,12 +326,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 calc_context := Calculation_Context{card_id = action_index.card_id}
                 action.targets = make_movement_targets(gs, action_variant.criteria, calc_context)
                 append(&gs.event_queue, Begin_Next_Action_Event{})
-
-                // if _, ok := top_button.event.(Cancel_Event); ok && target_valid {
-                //     add_side_button(gs, "Confirm move", Resolve_Current_Action_Event{})
-                // } else if _, ok2 := top_button.event.(Resolve_Current_Action_Event); ok2 && !target_valid {
-                //     pop_side_button(gs)
-                // }
 
             case Choose_Target_Action:
                 append(&action_variant.result, var.space)
@@ -600,6 +595,12 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
     case Remove_Active_Effect_Event:
         delete_key(&gs.ongoing_active_effects, var.effect_kind)
 
+    case Quantity_Chosen_Event:
+        action := get_current_action(gs)
+        cqa := &action.variant.(Choose_Quantity_Action)
+        cqa.result = var.quantity
+        append(&gs.event_queue, Resolve_Current_Action_Event{})
+
     case Begin_Interrupt_Event:
         interrupt := var.interrupt
         if interrupt.interrupted_player != gs.my_player_id {  // The interruptee should already have added to their own interrupt stack in become_interrupted
@@ -809,6 +810,38 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 append(&gs.event_queue, Resolve_Current_Action_Event{most_recent_choice})
             }
 
+        case Choose_Quantity_Action:
+            log.assert(len(action_type.bounds) == 2, "Improperly formatted choose quantity")
+            lower_bound := calculate_implicit_quantity(gs, action_type.bounds[0], calc_context)
+            upper_bound := calculate_implicit_quantity(gs, action_type.bounds[1], calc_context)
+            for quantity in lower_bound..=upper_bound {
+                add_side_button(gs, number_names[quantity], Quantity_Chosen_Event{quantity})
+            }
+
+        case Push_Action:
+            origin := calculate_implicit_target(gs, action_type.origin, calc_context)
+            target := calculate_implicit_target(gs, action_type.target, calc_context)
+            num_spaces := calculate_implicit_quantity(gs, action_type.num_spaces, calc_context)
+
+            calc_context.target = target
+            // This shouldn't really happen
+            if !calculate_implicit_condition(gs, Target_In_Straight_Line_With{origin}, calc_context) {
+                log.info("Invalid push????")
+                break
+            }
+            
+            direction := get_norm_direction(origin, target)
+            latest_valid_target := target
+            for _ in 0..<num_spaces {
+                next_target := latest_valid_target + direction
+                space := gs.board[next_target.x][next_target.y]
+                if OBSTACLE_FLAGS & space.flags != {} do break
+                latest_valid_target = next_target
+            }
+
+            broadcast_game_event(gs, Unit_Translocation_Event{target, latest_valid_target})
+            append(&gs.event_queue, Resolve_Current_Action_Event{})
+
         case Attack_Action:
             target := calculate_implicit_target(gs, action_type.target, calc_context)
             space := &gs.board[target.x][target.y]
@@ -947,6 +980,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             player_base := get_my_player(gs).base
             player_base.hero.coins += gain
             broadcast_game_event(gs, Update_Player_Data_Event{player_base})
+            append(&gs.event_queue, Resolve_Current_Action_Event{})
 
         case Get_Defeated_Action:
             // Here we assume the player who added the last interrupt is the one who kills us. This may not be correct always...
@@ -965,6 +999,12 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             // Shouldn't need the card ID here
             respawn_point := calculate_implicit_target(gs, action_type.location, calc_context)
             broadcast_game_event(gs, Hero_Respawn_Event{gs.my_player_id, respawn_point})
+            append(&gs.event_queue, Resolve_Current_Action_Event{})
+
+        case Place_Action:
+            source := calculate_implicit_target(gs, action_type.source, calc_context)
+            destination := calculate_implicit_target(gs, action_type.destination, calc_context)
+            broadcast_game_event(gs, Unit_Translocation_Event{source, destination})
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
         case Fast_Travel_Action, Clear_Action, Choose_Card_Action:

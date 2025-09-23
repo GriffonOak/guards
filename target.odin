@@ -114,8 +114,9 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
     switch &variant in action.variant {
     case Movement_Action:
         // clear(&variant.path.spaces)
-        if len(variant.path.spaces) == 0 {
-            origin := calculate_implicit_target(gs, variant.target, calc_context)
+        origin := calculate_implicit_target(gs, variant.target, calc_context)
+        if len(variant.path.spaces) == 0 || variant.path.spaces[0] != origin {
+            clear(&variant.path.spaces)
             append(&variant.path.spaces, origin)
             variant.path.num_locked_spaces = 1
         }
@@ -166,6 +167,15 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         return true
 
     case Defend_Action:
+        return true
+
+    case Place_Action:
+        return true
+
+    case Choose_Quantity_Action:
+        return true
+
+    case Push_Action:
         return true
 
     case Retrieve_Card_Action:
@@ -244,11 +254,7 @@ make_movement_targets :: proc (
                     // calc_context := calc_context
                     // calc_context.target = next_loc
                     // if !calculate_implicit_condition(gs, Target_In_Straight_Line_With{origin}, calc_context) do continue
-                    if min_loc != origin {
-                        direction := transmute([2]i8) (min_loc - origin)
-                        norm_direction := direction / max(abs(direction.x), abs(direction.y))
-                        if transmute([2]u8) norm_direction != vector do continue
-                    }
+                    if get_norm_direction(origin, min_loc) != vector do continue
                 }  
                 if .IGNORING_OBSTACLES not_in criteria.flags && OBSTACLE_FLAGS & gs.board[next_loc.x][next_loc.y].flags != {} do continue
                 if visited_set[next_loc.x][next_loc.y].member do continue

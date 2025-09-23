@@ -32,6 +32,20 @@ hero_names := [Hero_ID]cstring {
     .SWIFT      = "Swift",
 }
 
+number_names := [?]cstring {
+    "0", 
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+}
+
 hero_cards: [Hero_ID][]Card_Data
 
 
