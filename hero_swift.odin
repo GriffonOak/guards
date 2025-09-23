@@ -57,6 +57,17 @@ swift_cards := []Card_Data {
                     flags = {.IGNORING_OBSTACLES, .STRAIGHT_LINE},
                 },
             },
+            Action {
+                condition = Card_State_Is{.RESOLVED},
+                optional = true,
+                skip_index = {sequence = .HALT},
+                variant = Movement_Action {
+                    target = Self{},
+                    min_distance = 2,
+                    max_distance = 2,
+                    flags = {.IGNORING_OBSTACLES, .STRAIGHT_LINE},
+                },
+            },
         },
     },
     Card_Data { name = "Snipe",

@@ -757,15 +757,16 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         gs.tooltip = action.tooltip
         log.infof("ACTION: %v", reflect.union_variant_typeid(action.variant))
 
+        clear_side_buttons(gs)
         if !validate_action(gs, action_index) {
             if action.optional {
                 append(&gs.event_queue, Resolve_Current_Action_Event{skip_index})
             } else {
                 end_current_action_sequence(gs)
             }
+            break
         }
 
-        clear_side_buttons(gs)
         if action.optional {
             add_side_button(gs, "Skip" if action.skip_name == nil else action.skip_name, Resolve_Current_Action_Event{skip_index})
         }
