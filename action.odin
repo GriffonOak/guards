@@ -12,23 +12,24 @@ Path :: struct {
 
 Movement_Flag :: enum {
     SHORTEST_PATH,
-    // IGNORING_OBSTACLES,
-    // STRAIGHT_LINE,
+    IGNORING_OBSTACLES,
+    STRAIGHT_LINE,
     // etc...
 }
 
 
 Movement_Criteria :: struct {
-    target: Implicit_Target,
-    distance: Implicit_Quantity,
+    min_distance: Implicit_Quantity,
+    max_distance: Implicit_Quantity,
     destination_criteria: Selection_Criteria,
     flags: bit_set[Movement_Flag],
+    path: Path,
 }
 
 Movement_Action :: struct {
+    target: Implicit_Target,
     using criteria: Movement_Criteria,
 
-    path: Path,
 }
 
 Fast_Travel_Action :: struct {
@@ -185,6 +186,8 @@ Action_Sequence_ID :: enum {
     MINION_OUTSIDE_ZONE,
     DISCARD_ABLE,
     DISCARD_DEFEAT,
+
+    INVALID,
 }
 
 Action_Index :: struct {
@@ -223,7 +226,7 @@ basic_movement_action := []Action {
         condition = And{Card_Primary_Is_Not{.MOVEMENT}, Greater_Than{Card_Value{.MOVEMENT}, 0}},
         variant = Movement_Action {
             target   = Self{},
-            distance = Card_Value{.MOVEMENT},
+            max_distance = Card_Value{.MOVEMENT},
         },
     },
 }
@@ -456,6 +459,8 @@ get_action_at_index :: proc(gs: ^Game_State, index: Action_Index, loc := #caller
     case .MINION_OUTSIDE_ZONE:  action_sequence = minion_outside_zone_action
     case .DISCARD_ABLE:         action_sequence = discard_if_able_action
     case .DISCARD_DEFEAT:       action_sequence = discard_or_defeated_action
+
+    case .INVALID:              return nil
     }
 
     if index.index < len(action_sequence) {

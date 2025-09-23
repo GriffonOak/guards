@@ -4,9 +4,12 @@ import "core:log"
 
 Previous_Card_Choice :: struct {}
 
+Rightmost_Resolved_Card :: struct {}
+
 Implicit_Card_ID :: union {
     Card_ID,
     Previous_Card_Choice,
+    Rightmost_Resolved_Card,
 }
 
 
@@ -101,6 +104,10 @@ Target_Within_Distance :: struct {
     bounds: []Implicit_Quantity,
 }
 
+Target_In_Straight_Line_With :: struct {
+    origin: Implicit_Target,
+}
+
 Target_Contains_Any :: struct { flags: Space_Flags }
 Target_Contains_No  :: struct { flags: Space_Flags }
 Target_Contains_All :: struct { flags: Space_Flags }
@@ -151,6 +158,7 @@ Implicit_Condition :: union {
     Target_Is_Friendly_Spawnpoint,
     Target_In_Battle_Zone,
     Target_Outside_Battle_Zone,
+    Target_In_Straight_Line_With,
 
     // Requires card in calc context
     // Card_Can_Defend,
@@ -158,13 +166,16 @@ Implicit_Condition :: union {
     Card_Primary_Is_Not,
 }
 
-Card_Defense_Index :: struct {
-    card_id: Implicit_Card_ID,
+Card_Defense_Index :: struct {}
+
+Other_Card_Primary :: struct {
+    implicit_card_id: Implicit_Card_ID,
 }
 
 Implicit_Action_Index :: union {
     Action_Index,
     Card_Defense_Index,
+    Other_Card_Primary,
 }
 
 
@@ -237,7 +248,6 @@ calculate_implicit_quantity :: proc(
 
     case Minion_Modifiers: 
         return calculate_minion_modifiers(gs)
-
 
     }
     return 
@@ -382,6 +392,12 @@ calculate_implicit_condition :: proc (
         log.assert(space_ok, "Invalid target!")
         return space.region_id != gs.current_battle_zone
 
+    case Target_In_Straight_Line_With:
+        log.assert(space_ok, "Invalid target!")
+        origin := calculate_implicit_target(gs, condition.origin, calc_context)
+
+        delta := calc_context.target - origin
+        return delta.x == 0 || delta.y == 0 || delta.x == - delta.y
 
     case Card_Primary_Is_Not:
         log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
@@ -432,6 +448,17 @@ calculate_implicit_card_id :: proc(gs: ^Game_State, implicit_card_id: Implicit_C
                 return variant.result
             }
         }
+    case Rightmost_Resolved_Card:
+        out: Card_ID
+        highest_turn := -1
+        cards := get_my_player(gs).hero.cards
+        for card in cards {
+            if card.state == .RESOLVED && card.turn_played > highest_turn {
+                out = card.id
+                highest_turn = card.turn_played
+            }
+        }
+        return out
     }
     played_card, ok := find_played_card(gs)
     log.assert(ok, "Could not find played card when calculating an implicit card")
@@ -443,17 +470,20 @@ calculate_implicit_action_index :: proc(gs: ^Game_State, implicit_index: Implici
     case Action_Index:
         return index
     case Card_Defense_Index:
-        card_id := calculate_implicit_card_id(gs, index.card_id)
-        card_data, ok := get_card_data_by_id(gs, card_id)
+        card_data, ok := get_card_data_by_id(gs, calc_context.card_id)
         log.assert(ok, "Invalid card ID!!")
         #partial switch card_data.primary {
         case .DEFENSE: 
-            return Action_Index{.PRIMARY, card_id, 0}
+            return Action_Index{.PRIMARY, calc_context.card_id, 0}
         case .DEFENSE_SKILL:
             log.assert(false, "TODO")  // @Todo
             return {}
         }
-        return {.BASIC_DEFENSE, card_id, 3}  // @Magic: index of Defense_Action in basic_defense_action
+        return {.BASIC_DEFENSE, calc_context.card_id, 3}  // @Magic: index of Defense_Action in basic_defense_action
+    case Other_Card_Primary:
+        other_card_id := calculate_implicit_card_id(gs, index.implicit_card_id)
+        if other_card_id == {} do return {sequence = .INVALID}
+        return {sequence = .PRIMARY, card_id = other_card_id, index = 0}
     }
     return {}
 }

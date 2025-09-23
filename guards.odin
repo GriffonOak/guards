@@ -110,6 +110,7 @@ spall_ctx: spall.Context
 
 
 main :: proc() {
+    fmt.println(size_of(Target_Info))
 
     // spall_ctx = spall.context_create("trace_test.spall")
 	// defer spall.context_destroy(&spall_ctx)
@@ -225,8 +226,8 @@ main :: proc() {
                 // First "de-hover" the previous hovered element
                 if hovered_element_index.domain != .NONE && hovered_element_index.index < len(gs.ui_stack[hovered_element_index.domain]) {
                     hovered_element := &gs.ui_stack[hovered_element_index.domain][hovered_element_index.index]
-                    if _, ok := hovered_element.variant.(UI_Card_Element); ok {
-                        breakpoint()
+                    if board_element, ok := &hovered_element.variant.(UI_Board_Element); ok {
+                        board_element.hovered_space = INVALID_TARGET
                     }
                     hovered_element.flags -= {.HOVERED}
                 }

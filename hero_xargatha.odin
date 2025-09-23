@@ -77,7 +77,7 @@ xargatha_cards := []Card_Data {
                 tooltip = "Move the target up to 3 spaces to a space adjacent to you.",
                 variant = Movement_Action {
                     target = Previous_Choice{},
-                    distance = 3,
+                    max_distance = 3,
                     destination_criteria = {
                         conditions = {Target_Within_Distance{Self{}, {1, 1}}},
                     },
@@ -147,7 +147,7 @@ xargatha_cards := []Card_Data {
                 tooltip = player_movement_tooltip,
                 variant = Movement_Action {
                     target = Self{},
-                    distance = Card_Value{.MOVEMENT},
+                    max_distance = Card_Value{.MOVEMENT},
                 },
             },
             Action {  // 2
@@ -170,7 +170,7 @@ xargatha_cards := []Card_Data {
                 tooltip = "Move the ranged minion up to 2 spaces.",
                 variant = Movement_Action {
                     target = Previous_Choice{},
-                    distance = 2,
+                    max_distance = 2,
                 },
             },
             Action {  // 4
@@ -194,14 +194,14 @@ xargatha_cards := []Card_Data {
                 tooltip = "Move the ranged minion up to 2 spaces.",
                 variant = Movement_Action {
                     target = Previous_Choice{},
-                    distance = 2,
+                    max_distance = 2,
                 },
             },
             Action {  // 7
                 tooltip = player_movement_tooltip,
                 variant = Movement_Action {
                     target = Self{},
-                    distance = Card_Value{.MOVEMENT},
+                    max_distance = Card_Value{.MOVEMENT},
                 },
             },
         },
@@ -349,7 +349,7 @@ xargatha_cards := []Card_Data {
                 tooltip = player_movement_tooltip,
                 variant = Movement_Action {
                     target = Self{},
-                    distance = Card_Value{.MOVEMENT},
+                    max_distance = Card_Value{.MOVEMENT},
                 },
             },
             Action {  // 2
@@ -371,7 +371,7 @@ xargatha_cards := []Card_Data {
                 tooltip = "Move the minion up to 2 spaces.",
                 variant = Movement_Action {
                     target = Previous_Choice{},
-                    distance = 2,
+                    max_distance = 2,
                 },
             },
             Action {  // 4
@@ -394,14 +394,14 @@ xargatha_cards := []Card_Data {
                 tooltip = "Move the minion up to 2 spaces.",
                 variant = Movement_Action {
                     target = Previous_Choice{},
-                    distance = 2,
+                    max_distance = 2,
                 },
             },
             Action {  // 7
                 tooltip = player_movement_tooltip,
                 variant = Movement_Action {
                     target = Self{},
-                    distance = Card_Value{.MOVEMENT},
+                    max_distance = Card_Value{.MOVEMENT},
                 },
             },
         },
@@ -653,8 +653,8 @@ xargatha_cards := []Card_Data {
                 tooltip = "You may either move yourself or a minion.",
                 variant = Choice_Action {
                     choices = {
-                        {name = "Move self",    jump_index = {index=1}},
-                        {name = "Move minion",  jump_index = {index=5}},
+                        {name = "Move self",    jump_index = Action_Index{index=1}},
+                        {name = "Move minion",  jump_index = Action_Index{index=5}},
                     },
                 },
             },
@@ -662,7 +662,7 @@ xargatha_cards := []Card_Data {
                 tooltip = player_movement_tooltip,
                 variant = Movement_Action {
                     target = Self{},
-                    distance = Card_Value{.MOVEMENT},
+                    max_distance = Card_Value{.MOVEMENT},
                 },
             },
             Action {  // 2
@@ -685,7 +685,7 @@ xargatha_cards := []Card_Data {
                 tooltip = "Move the minion up to 2 spaces.",
                 variant = Movement_Action {
                     target = Previous_Choice{},
-                    distance = 2,
+                    max_distance = 2,
                 },
             },
             Action {  // 4
@@ -709,14 +709,14 @@ xargatha_cards := []Card_Data {
                 tooltip = "Move the minion up to 2 spaces.",
                 variant = Movement_Action {
                     target = Previous_Choice{},
-                    distance = 2,
+                    max_distance = 2,
                 },
             },
             Action {  // 7
                 tooltip = player_movement_tooltip,
                 variant = Movement_Action {
                     target = Self{},
-                    distance = Card_Value{.MOVEMENT},
+                    max_distance = Card_Value{.MOVEMENT},
                 },
             },
         },

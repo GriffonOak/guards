@@ -22,12 +22,14 @@ Player_Stage :: enum {
 Hero_ID :: enum {
     XARGATHA,
     DODGER,
+    SWIFT,
 }
 
 @rodata
 hero_names := [Hero_ID]cstring {
-    .XARGATHA = "Xargatha",
-    .DODGER   = "Dodger",
+    .XARGATHA   = "Xargatha",
+    .DODGER     = "Dodger",
+    .SWIFT      = "Swift",
 }
 
 hero_cards: [Hero_ID][]Card_Data

@@ -192,7 +192,7 @@ setup_terrain :: proc(gs: ^Game_State) {
     for x_idx in 0..<GRID_WIDTH {
         for y_idx in 0..<GRID_HEIGHT {
             if x_idx == 0 || y_idx == 0 || x_idx + y_idx <= 8 {
-                set_terrain_symmetric(gs, Target{i8(x_idx), i8(y_idx)})
+                set_terrain_symmetric(gs, Target{u8(x_idx), u8(y_idx)})
             }
         }
     }
@@ -261,12 +261,12 @@ board_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, elem
                 diff := (mouse_within_board - space.position)
                 dist := diff.x * diff.x + diff.y * diff.y
                 if dist < closest_dist && dist < VERTICAL_SPACING * VERTICAL_SPACING * 0.5 {
-                    closest_idx = {i8(x), i8(y)}
+                    closest_idx = {u8(x), u8(y)}
                     closest_dist = dist
                 }
             }
         }
-        if closest_idx.x >= 0 &&  .TERRAIN not_in gs.board[closest_idx.x][closest_idx.y].flags {
+        if closest_idx != INVALID_TARGET  {
             board_element.hovered_space = closest_idx
         } 
     }
@@ -375,6 +375,11 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
                 highlight_action_targets(gs, jump_index)
             }
             return
+
+        case Jump_Action:
+            jump_index := calculate_implicit_action_index(gs, variant.jump_index, {card_id = action_index.card_id})
+            if jump_index.card_id == {} do jump_index.card_id = action_index.card_id
+            highlight_action_targets(gs, jump_index)
         case Movement_Action:
             origin = variant.path.spaces[variant.path.num_locked_spaces - 1]
 

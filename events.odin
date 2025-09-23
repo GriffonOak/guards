@@ -299,7 +299,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 starting_space := action_variant.path.spaces[action_variant.path.num_locked_spaces - 1]
 
                 current_space := var.space
-                for ; current_space != starting_space; current_space = action.targets[current_space.x][current_space.y].prev_loc {
+                for ; current_space != starting_space; current_space = {action.targets[current_space.x][current_space.y].prev_x, action.targets[current_space.x][current_space.y].prev_y} {
                     inject_at(&action_variant.path.spaces, action_variant.path.num_locked_spaces, current_space)
                 }
             }
@@ -322,24 +322,15 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 if len(action_variant.path.spaces) == action_variant.path.num_locked_spaces do break
 
                 action_variant.path.num_locked_spaces = len(action_variant.path.spaces)
-                
-                target_valid := !action.targets[var.space.x][var.space.y].invalid
-
                 calc_context := Calculation_Context{card_id = action_index.card_id}
-                criteria := action_variant.criteria
-                criteria.distance = calculate_implicit_quantity(gs, action_variant.distance, calc_context) - action_variant.path.num_locked_spaces + 1
-                criteria.target = action_variant.path.spaces[len(action_variant.path.spaces)-1]
+                action.targets = make_movement_targets(gs, action_variant.criteria, calc_context)
+                append(&gs.event_queue, Begin_Next_Action_Event{})
 
-                action.targets = make_movement_targets(gs, criteria, calc_context)
-
-                log.assert(len(gs.side_button_manager.buttons) > 0, "No side buttons!?")
-                top_button := gs.side_button_manager.buttons[len(gs.side_button_manager.buttons) - 1].variant.(UI_Button_Element)
-
-                if _, ok := top_button.event.(Cancel_Event); ok && target_valid {
-                    add_side_button(gs, "Confirm move", Resolve_Current_Action_Event{})
-                } else if _, ok2 := top_button.event.(Resolve_Current_Action_Event); ok2 && !target_valid {
-                    pop_side_button(gs)
-                }
+                // if _, ok := top_button.event.(Cancel_Event); ok && target_valid {
+                //     add_side_button(gs, "Confirm move", Resolve_Current_Action_Event{})
+                // } else if _, ok2 := top_button.event.(Resolve_Current_Action_Event); ok2 && !target_valid {
+                //     pop_side_button(gs)
+                // }
 
             case Choose_Target_Action:
                 append(&action_variant.result, var.space)
@@ -479,7 +470,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 action_variant.path.num_locked_spaces = 1
                 resize(&action_variant.path.spaces, 1)
 
-                action.targets = make_movement_targets(gs, action_variant.criteria)
+                action.targets = make_movement_targets(gs, action_variant.criteria, {card_id = action_index.card_id})
 
                 log.assert(len(gs.side_button_manager.buttons) > 0, "No side buttons!?")
                 top_button := gs.side_button_manager.buttons[len(gs.side_button_manager.buttons) - 1].variant.(UI_Button_Element)
@@ -774,6 +765,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             }
         }
 
+        clear_side_buttons(gs)
         if action.optional {
             add_side_button(gs, "Skip" if action.skip_name == nil else action.skip_name, Resolve_Current_Action_Event{skip_index})
         }
@@ -781,7 +773,10 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         switch &action_type in action.variant {
         case Movement_Action:
             add_side_button(gs, "Reset move", Cancel_Event{})
-            if len(action_type.destination_criteria.conditions) == 0 {
+
+            top_space := action_type.path.spaces[len(action_type.path.spaces) - 1]
+            target_valid := !action.targets[top_space.x][top_space.y].invalid
+            if target_valid {
                 add_side_button(gs, "Confirm move", Resolve_Current_Action_Event{})
             }
 
@@ -802,7 +797,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             for choice in action_type.choices {
                 if choice.valid {
                     jump_index := choice.jump_index
-                    jump_index.card_id = action_index.card_id
+                    if jump_index.card_id == {} do jump_index.card_id = action_index.card_id
                     add_side_button(gs, choice.name, Resolve_Current_Action_Event{jump_index})
                     choices_added += 1
                     most_recent_choice = jump_index
@@ -892,7 +887,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
             
         case Jump_Action:
-            jump_index := calculate_implicit_action_index(gs, action_type.jump_index)
+            jump_index := calculate_implicit_action_index(gs, action_type.jump_index, calc_context)
             // jump_index.card_id = action_index.card_id
             append(&gs.event_queue, Resolve_Current_Action_Event{jump_index})
             

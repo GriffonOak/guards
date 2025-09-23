@@ -162,14 +162,16 @@ team_colors := [Team]rl.Color{
     .BLUE = {22, 147, 255, 255},
 }
 
+// Directed_Target :: [2]i8
+
 @rodata
 direction_vectors := [Direction]Target {
     .NORTH = {0, 1},
     .NORTH_EAST = {1, 0},
-    .SOUTH_EAST = {1, -1},
-    .SOUTH = {0, -1},
-    .SOUTH_WEST = {-1, 0},
-    .NORTH_WEST = {-1, 1},
+    .SOUTH_EAST = {1, max(u8)},
+    .SOUTH = {0, max(u8)},
+    .SOUTH_WEST = {max(u8), 0},
+    .NORTH_WEST = {max(u8), 1},
 }
 
 // lamayo
@@ -238,8 +240,9 @@ setup_hero_cards :: proc(gs: ^Game_State) {
 
     // Do the heroes!
     hero_cards = {
-        .XARGATHA = xargatha_cards,
-        .DODGER   = dodger_cards,
+        .XARGATHA   = xargatha_cards,
+        .DODGER     = dodger_cards,
+        .SWIFT      = swift_cards,
     }
 
     for player_id in 0..<len(gs.players) {

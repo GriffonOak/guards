@@ -83,7 +83,7 @@ translocate_unit :: proc(gs: ^Game_State, src, dest: Target) {
 }
 
 calculate_hexagonal_distance :: proc(a, b: Target) -> int {
-    diff := a - b
+    diff := transmute([2]i8) a - transmute([2]i8) b
     if diff.x * diff.y <= 0 {
         return int(max(abs(diff.x), abs(diff.y)))
     } else {

@@ -355,7 +355,7 @@ dodger_cards := []Card_Data {
                 tooltip = "Move the minion 1 space to a space not adjacent to you.",
                 variant = Movement_Action {
                     target = Previous_Choice{},
-                    distance = 1,
+                    max_distance = 1,
                     destination_criteria = {
                         conditions = {
                             Target_Within_Distance {Self{}, {2, 2}},
