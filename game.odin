@@ -6,6 +6,9 @@ import "core:math/rand"
 import "core:log"
 import "core:net"
 import "core:sync"
+import "core:strings"
+import "core:reflect"
+import "core:fmt"
 
 _ :: rand
 
@@ -249,7 +252,26 @@ setup_hero_cards :: proc(gs: ^Game_State) {
         player := get_player_by_id(gs, player_id)
         hero_id := player.hero.id
 
-        for &card in hero_cards[hero_id][:5] {
+        for &card, index in hero_cards[hero_id] {
+            if card.background_image == {} {
+                enum_name, ok := reflect.enum_name_from_value(card.color)
+                enum_name = strings.to_lower(enum_name, context.temp_allocator)
+                card_filename := fmt.tprintf(
+                    "%v_t%v_%v%v.png",
+                    strings.to_lower(string(hero_names[hero_id]), context.temp_allocator),
+                    card.tier,
+                    enum_name,
+                    "_alt" if card.alternate else "",
+                )
+                fmt.println(card_filename)
+                for file in assets {
+                    if file.name == card_filename {
+                        card.background_image = rl.LoadTextureFromImage(rl.LoadImageFromMemory(".png", raw_data(file.data), i32(len(file.data))))
+                        fmt.printfln("Loaded swift card! %v", card_filename)
+                    }
+                }
+            }
+            if index >= 5 do continue
             player_card := &player.hero.cards[card.color]
             player_card.id = card.id
             player_card.state = .IN_HAND

@@ -97,6 +97,7 @@ Card_Data :: struct {
     // !!This cannot be sent over the network !!!!
     primary_effect: []Action,
     texture: rl.Texture2D,
+    background_image: rl.Texture2D,
 }
 
 Card :: struct {
@@ -214,8 +215,12 @@ create_texture_for_card :: proc(card: ^Card_Data) {
 
     rl.BeginTextureMode(render_texture)
 
-    rl.ClearBackground(rl.RAYWHITE)
-
+    if card.background_image != {} {
+        rl.DrawTexturePro(card.background_image, {0, 0, 500, 700}, {0, 0, 500, 700}, {}, 0, rl.WHITE)
+    } else {
+        rl.ClearBackground(rl.DARKBLUE / 2)
+    }
+    
     // Secondaries ribbon & initiative
     rl.DrawRectangleRec({0, 0, COLORED_BAND_WIDTH, CARD_TEXTURE_SIZE.y / 2}, card_color_values[card.color])
 
@@ -230,8 +235,11 @@ create_texture_for_card :: proc(card: ^Card_Data) {
 
     // Name
     name_length_px := rl.MeasureTextEx(default_font, card.name, TITLE_FONT_SIZE, FONT_SPACING).x
-    name_offset := COLORED_BAND_WIDTH + (CARD_TEXTURE_SIZE.x - COLORED_BAND_WIDTH - name_length_px) / 2
-    rl.DrawTextEx(default_font, card.name, {name_offset, TEXT_PADDING}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+    name_offset := (CARD_TEXTURE_SIZE.x + COLORED_BAND_WIDTH - name_length_px) / 2
+    name_rect := rl.Rectangle{name_offset - 2 * TEXT_PADDING, 2 * TEXT_PADDING, name_length_px + 4 * TEXT_PADDING, COLORED_BAND_WIDTH + 2 * TEXT_PADDING}
+    rl.DrawRectangleRounded(name_rect, 0.5, 20, rl.WHITE)
+    rl.DrawRectangleRoundedLinesEx(name_rect, 0.5, 20, TEXT_PADDING, rl.BLACK)
+    rl.DrawTextEx(default_font, card.name, {name_rect.x, name_rect.y} + 2 * TEXT_PADDING, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
 
 
     // Tier
@@ -258,11 +266,14 @@ create_texture_for_card :: proc(card: ^Card_Data) {
 
     // Primary & its value & sign
     primary_value := card.values[card.primary]
+    primary_value_loc := Vec2{TEXT_PADDING, y_offset - text_dimensions.y - TITLE_FONT_SIZE}
+    rl.DrawRectangleV({0, primary_value_loc.y - TEXT_PADDING}, CARD_TEXTURE_SIZE, rl.WHITE)
+    rl.DrawLineEx({0, primary_value_loc.y - TEXT_PADDING}, {CARD_TEXTURE_SIZE.x, primary_value_loc.y - TEXT_PADDING}, TEXT_PADDING, rl.BLACK)
     switch card.primary {
     case .ATTACK, .DEFENSE, .MOVEMENT, .DEFENSE_SKILL:
-        rl.DrawTextEx(default_font, fmt.ctprintf("%s%d%s", ability_initials[card.primary], primary_value, PLUS_SIGN if card.primary_sign == .PLUS else ""), {TEXT_PADDING, y_offset - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+        rl.DrawTextEx(default_font, fmt.ctprintf("%s%d%s", ability_initials[card.primary], primary_value, PLUS_SIGN if card.primary_sign == .PLUS else ""), primary_value_loc, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     case .SKILL:
-        rl.DrawTextEx(default_font, fmt.ctprintf("%s", ability_initials[card.primary]), {TEXT_PADDING, y_offset - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+        rl.DrawTextEx(default_font, fmt.ctprintf("%s", ability_initials[card.primary]), primary_value_loc, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     }
 
     // Reach & sign
@@ -270,7 +281,7 @@ create_texture_for_card :: proc(card: ^Card_Data) {
         _, is_radius := card.reach.(Radius)
         reach_string := fmt.ctprintf("%s%d%s", "Rd" if is_radius else "Rn", card.reach, PLUS_SIGN if card.reach_sign == .PLUS else "")
         reach_dimensions := rl.MeasureTextEx(default_font, reach_string, TITLE_FONT_SIZE, FONT_SPACING).x
-        rl.DrawTextEx(default_font, reach_string, {CARD_TEXTURE_SIZE.x - reach_dimensions - TEXT_PADDING, y_offset - text_dimensions.y - TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+        rl.DrawTextEx(default_font, reach_string, {CARD_TEXTURE_SIZE.x - reach_dimensions - TEXT_PADDING, primary_value_loc.y}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     }
 
     // Body text
