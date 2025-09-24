@@ -126,6 +126,7 @@ Game_State :: struct {
     minion_counts: [Team]int,
     dead_minions: [Team][dynamic]Space_Flag,
     life_counters: [Team]int,
+    heroes_defeated_this_round: int,
     confirmed_players: int,
     // resolved_players: int,
     upgraded_players: int,
@@ -247,6 +248,7 @@ setup_hero_cards :: proc(gs: ^Game_State) {
         .XARGATHA   = xargatha_cards,
         .DODGER     = dodger_cards,
         .SWIFT      = swift_cards,
+        .BROGAN     = brogan_cards,
     }
 
     for player_id in 0..<len(gs.players) {

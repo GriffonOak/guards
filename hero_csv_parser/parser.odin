@@ -6,7 +6,7 @@ import "core:fmt"
 import "core:strconv"
 
 
-hero_name :: "Swift"
+hero_name :: "Brogan"
 
 NUM_CARDS :: 17
 cards: [NUM_CARDS]Card
@@ -37,6 +37,14 @@ main :: proc() {
     in_file, ok := os.read_entire_file(input_filename)
     assert(ok)
     lines := strings.split(string(in_file), "\r\n")
+
+    ult_line := lines[22]
+    ult_line_tokens := strings.split(ult_line, "\"")
+    if len(ult_line_tokens) == 1 {
+        ult_line_tokens = strings.split(ult_line, ",")
+    }
+    ult_text := ult_line_tokens[1]
+    
 
     card_lines := lines[4:][:NUM_CARDS]
 
@@ -100,6 +108,8 @@ main :: proc() {
     fmt.sbprintfln(&builder, "package guards")
     fmt.sbprintfln(&builder, "")
     fmt.sbprintfln(&builder, "/// %v", strings.to_upper(hero_name))
+    fmt.sbprintfln(&builder, "")
+    fmt.sbprintfln(&builder, "//  Ult: %v", ult_text)
     fmt.sbprintfln(&builder, "")
     fmt.sbprintfln(&builder, "%v_cards := []Card_Data {{", strings.to_lower(hero_name))
     for card in cards {

@@ -26,7 +26,7 @@ xargatha_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     strength = Card_Value{.ATTACK},
                 },
             },
@@ -46,7 +46,7 @@ xargatha_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     strength = Card_Value{.ATTACK},
                 },
             },
@@ -77,7 +77,7 @@ xargatha_cards := []Card_Data {
             Action {
                 tooltip = "Move the target up to 3 spaces to a space adjacent to you.",
                 variant = Movement_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     max_distance = 3,
                     destination_criteria = {
                         conditions = {Target_Within_Distance{Self{}, {1, 1}}},
@@ -109,7 +109,7 @@ xargatha_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     strength = Sum {
                         Card_Value{.ATTACK}, 
                         Count_Targets {
@@ -169,7 +169,7 @@ xargatha_cards := []Card_Data {
             Action {  // 3
                 tooltip = "Move the ranged minion up to 2 spaces.",
                 variant = Movement_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     max_distance = 2,
                 },
             },
@@ -193,7 +193,7 @@ xargatha_cards := []Card_Data {
             Action {  // 6
                 tooltip = "Move the ranged minion up to 2 spaces.",
                 variant = Movement_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     max_distance = 2,
                 },
             },
@@ -260,7 +260,7 @@ xargatha_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     strength = Sum {
                         Card_Value{.ATTACK},
                         Product {
@@ -320,7 +320,7 @@ xargatha_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     strength = Card_Value{.ATTACK},
                 },
             },
@@ -369,7 +369,7 @@ xargatha_cards := []Card_Data {
             Action {  // 3
                 tooltip = "Move the minion up to 2 spaces.",
                 variant = Movement_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     max_distance = 2,
                 },
             },
@@ -392,7 +392,7 @@ xargatha_cards := []Card_Data {
             Action {  // 6
                 tooltip = "Move the minion up to 2 spaces.",
                 variant = Movement_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     max_distance = 2,
                 },
             },
@@ -446,7 +446,7 @@ xargatha_cards := []Card_Data {
             Action {
                 tooltip = error_tooltip,
                 variant = Minion_Defeat_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                 },
             },
         },
@@ -506,7 +506,10 @@ xargatha_cards := []Card_Data {
                     0,
                 },
                 variant = Choose_Card_Action{
-                    criteria = {Card_State_Is{.DISCARDED}},
+                    criteria = {
+                        Card_Owner_Is{Self{}},
+                        Card_State_Is{.DISCARDED},
+                    },
                 },
             },
             Action {
@@ -541,7 +544,7 @@ xargatha_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     strength = Sum {
                         Card_Value{.ATTACK},
                         Product {
@@ -601,7 +604,7 @@ xargatha_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     strength = Card_Value{.ATTACK},
                 },
             },
@@ -632,7 +635,7 @@ xargatha_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     strength = Card_Value{.ATTACK},
                 },
             },
@@ -682,7 +685,7 @@ xargatha_cards := []Card_Data {
             Action {  // 3
                 tooltip = "Move the minion up to 2 spaces.",
                 variant = Movement_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     max_distance = 2,
                 },
             },
@@ -706,7 +709,7 @@ xargatha_cards := []Card_Data {
             Action {  // 6
                 tooltip = "Move the minion up to 2 spaces.",
                 variant = Movement_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     max_distance = 2,
                 },
             },
@@ -760,7 +763,7 @@ xargatha_cards := []Card_Data {
             Action {
                 tooltip = error_tooltip,
                 variant = Minion_Defeat_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                 },
             },
         },
@@ -810,7 +813,10 @@ xargatha_cards := []Card_Data {
                     0,
                 },
                 variant = Choose_Card_Action{
-                    criteria = {Card_State_Is{.DISCARDED}},
+                    criteria = {
+                        Card_Owner_Is{Self{}},
+                        Card_State_Is{.DISCARDED},
+                    },
                 },
             },
             Action {

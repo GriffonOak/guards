@@ -132,6 +132,7 @@ Respawn_Action :: struct {
 }
 
 Gain_Coins_Action :: struct {
+    target: Implicit_Target,
     gain: Implicit_Quantity,
 }
 
@@ -247,7 +248,7 @@ first_choice_action := []Action {
 basic_movement_action := []Action {
     {
         tooltip = player_movement_tooltip,
-        condition = And{Card_Primary_Is_Not{.MOVEMENT}, Greater_Than{Card_Value{.MOVEMENT}, 0}},
+        condition = And{Not{Card_Primary_Is{.MOVEMENT}}, Greater_Than{Card_Value{.MOVEMENT}, 0}},
         variant = Movement_Action {
             target   = Self{},
             max_distance = Card_Value{.MOVEMENT},
@@ -370,7 +371,7 @@ respawn_action := []Action {
     },
     Action {
         variant = Respawn_Action {
-            location = Previous_Choice{},
+            location = Previously_Chosen_Target{},
         },
     },
 }
@@ -418,7 +419,7 @@ minion_spawn_action := []Action {
     },
     Action {
         variant = Minion_Spawn_Action {
-            location = Previous_Choice{},
+            location = Previously_Chosen_Target{},
             spawnpoint = Top_Blocked_Spawnpoint{},
         },
     },
@@ -444,7 +445,7 @@ minion_outside_zone_action := []Action {  // Still need to handle the case where
     Action {
         tooltip = "Choose one of the closest spaces in the battle zone to move the minion to.",
         variant = Movement_Action {
-            target = Previous_Choice{},
+            target = Previously_Chosen_Target{},
             destination_criteria = {
                 conditions = {
                     Target_In_Battle_Zone{},

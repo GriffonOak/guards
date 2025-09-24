@@ -39,7 +39,7 @@ dodger_cards := []Card_Data {
             Action {  // 2
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     strength = Card_Value{.ATTACK},
                 },
             },
@@ -71,7 +71,7 @@ dodger_cards := []Card_Data {
             Action {  // 5
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     strength = Card_Value{.ATTACK},
                 },
             },
@@ -100,7 +100,7 @@ dodger_cards := []Card_Data {
                             Count_Targets {
                                 conditions = {
                                     Target_Within_Distance {
-                                        origin = That_Target{},
+                                        origin = Previous_Target{},
                                         bounds = {1, 1},
                                     },
                                     Target_Empty,
@@ -116,7 +116,7 @@ dodger_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for opponent to discard a card...",
                 variant = Force_Discard_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                 },
             },
         },
@@ -156,7 +156,7 @@ dodger_cards := []Card_Data {
             Action {  // 2
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     strength = Card_Value{.ATTACK},
                 },
             },
@@ -173,7 +173,10 @@ dodger_cards := []Card_Data {
                         Target_Contains_Any{{.HERO}},
                         Target_Is_Enemy_Unit{},
                         Greater_Than{
-                            Target_Count_Discarded_Cards{}, 0,
+                            Count_Card_Targets{
+                                Card_Owner_Is{Current_Target{}},
+                                Card_State_Is{.DISCARDED},
+                            }, 0,
                         },
                     },
                 },
@@ -181,7 +184,7 @@ dodger_cards := []Card_Data {
             Action {  // 5
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     strength = Card_Value{.ATTACK},
                 },
             },
@@ -208,6 +211,7 @@ dodger_cards := []Card_Data {
                     }, 1,
                 },
                 variant = Gain_Coins_Action {
+                    target = Self{},
                     gain = 1,
                 },
             },
@@ -284,7 +288,7 @@ dodger_cards := []Card_Data {
             Action {  // 2
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     strength = Card_Value{.ATTACK},
                 },
             },
@@ -301,7 +305,10 @@ dodger_cards := []Card_Data {
                         Target_Contains_Any{{.HERO}},
                         Target_Is_Enemy_Unit{},
                         Greater_Than{
-                            Target_Count_Discarded_Cards{}, 0,
+                            Count_Card_Targets{
+                                Card_Owner_Is{Current_Target{}},
+                                Card_State_Is{.DISCARDED},
+                            }, 0,
                         },
                     },
                 },
@@ -309,7 +316,7 @@ dodger_cards := []Card_Data {
             Action {  // 5
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     strength = Card_Value{.ATTACK},
                 },
             },
@@ -338,7 +345,7 @@ dodger_cards := []Card_Data {
             },
             Action {
                 variant = Attack_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     strength = Card_Value{.ATTACK},
                 },
             },
@@ -355,7 +362,7 @@ dodger_cards := []Card_Data {
             Action {
                 tooltip = "Move the minion 1 space to a space not adjacent to you.",
                 variant = Movement_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     max_distance = 1,
                     destination_criteria = {
                         conditions = {
@@ -388,6 +395,7 @@ dodger_cards := []Card_Data {
                     }, 1,
                 },
                 variant = Gain_Coins_Action {
+                    target = Self{},
                     gain = 2,
                 },
             },
@@ -511,7 +519,7 @@ dodger_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for the opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     strength = Card_Value{.ATTACK},
                 },
             },
@@ -528,7 +536,7 @@ dodger_cards := []Card_Data {
             Action {
                 tooltip = "Move the minion 1 space to a space not adjacent to you.",
                 variant = Movement_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     max_distance = 1,
                     destination_criteria = {
                         conditions = {
@@ -550,7 +558,7 @@ dodger_cards := []Card_Data {
             Action {
                 tooltip = "Move the minion 1 space to a space not adjacent to you.",
                 variant = Movement_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     max_distance = 1,
                     destination_criteria = {
                         conditions = {

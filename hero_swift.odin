@@ -39,7 +39,7 @@ swift_cards := []Card_Data {
             Action {  // 3
                 tooltip = error_tooltip,
                 variant = Minion_Defeat_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                 },
             },
         },
@@ -97,7 +97,7 @@ swift_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     strength = Card_Value{.ATTACK},
                 },
             },
@@ -122,7 +122,7 @@ swift_cards := []Card_Data {
                         Target_Is_Enemy_Unit{},
                         Greater_Than{1, Count_Targets{
                             conditions = {
-                                Target_Within_Distance{That_Target{}, {1, 1}},
+                                Target_Within_Distance{Previous_Target{}, {1, 1}},
                                 Target_Contains_Any{{.TERRAIN}},
                             },
                         }},
@@ -132,7 +132,7 @@ swift_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for opponent to discard...",
                 variant = Force_Discard_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                 },
             },
         },
@@ -161,7 +161,7 @@ swift_cards := []Card_Data {
                 tooltip = error_tooltip,
                 variant = Place_Action {
                     source = Self{},
-                    destination = Previous_Choice{},
+                    destination = Previously_Chosen_Target{},
                 },
             },
             Action {
@@ -215,7 +215,7 @@ swift_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     strength = Card_Value{.ATTACK},
                 },
             },
@@ -249,7 +249,7 @@ swift_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Previous_Choice{}, {1, 1}},
+                        Target_Within_Distance{Previously_Chosen_Target{}, {1, 1}},
                         Target_Contains_Any{{.HERO}},
                         Target_Is_Enemy_Unit{},
                     },
@@ -258,13 +258,13 @@ swift_cards := []Card_Data {
             Action {  // 2
                 tooltip = "Waiting for opponent to discard...",
                 variant = Force_Discard_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                 },
             },
             Action {  // 3
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{skips = 1},
+                    target = Previously_Chosen_Target{skips = 1},
                     strength = Card_Value{.ATTACK},
                 },
             },
@@ -290,7 +290,7 @@ swift_cards := []Card_Data {
                         Target_Is_Enemy_Unit{},
                         Greater_Than{1, Count_Targets{
                             conditions = {
-                                Target_Within_Distance{That_Target{}, {1, 1}},
+                                Target_Within_Distance{Previous_Target{}, {1, 1}},
                                 Target_Contains_Any{{.TERRAIN}},
                             },
                         }},
@@ -300,7 +300,7 @@ swift_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for opponent to discard...",
                 variant = Force_Discard_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                 },
             },
         },
@@ -342,7 +342,7 @@ swift_cards := []Card_Data {
                 tooltip = error_tooltip,
                 variant = Place_Action {
                     source = Self{},
-                    destination = Previous_Choice{},
+                    destination = Previously_Chosen_Target{},
                 },
             },
             Action {
@@ -414,7 +414,7 @@ swift_cards := []Card_Data {
                 tooltip = error_tooltip,
                 variant = Place_Action {
                     source = Self{},
-                    destination = Previous_Choice{},
+                    destination = Previously_Chosen_Target{},
                 },
             },
         },
@@ -444,7 +444,7 @@ swift_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     strength = Card_Value{.ATTACK},
                 },
             },
@@ -478,7 +478,7 @@ swift_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Previous_Choice{}, {1, 1}},
+                        Target_Within_Distance{Previously_Chosen_Target{}, {1, 1}},
                         Target_Contains_Any{{.HERO}},
                         Target_Is_Enemy_Unit{},
                     },
@@ -487,14 +487,14 @@ swift_cards := []Card_Data {
             Action {  // 2
                 tooltip = "Waiting for opponent to discard...",
                 variant = Force_Discard_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     or_is_defeated = true,
                 },
             },
             Action {  // 3
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previous_Choice{skips = 1},
+                    target = Previously_Chosen_Target{skips = 1},
                     strength = Card_Value{.ATTACK},
                 },
             },
@@ -520,7 +520,7 @@ swift_cards := []Card_Data {
                         Target_Is_Enemy_Unit{},
                         Greater_Than{1, Count_Targets{
                             conditions = {
-                                Target_Within_Distance{That_Target{}, {1, 1}},
+                                Target_Within_Distance{Previous_Target{}, {1, 1}},
                                 Target_Contains_Any{{.TERRAIN}},
                             },
                         }},
@@ -530,7 +530,7 @@ swift_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for opponent to discard...",
                 variant = Force_Discard_Action {
-                    target = Previous_Choice{},
+                    target = Previously_Chosen_Target{},
                     or_is_defeated = true,
                 },
             },
@@ -573,7 +573,7 @@ swift_cards := []Card_Data {
                 tooltip = error_tooltip,
                 variant = Place_Action {
                     source = Self{},
-                    destination = Previous_Choice{},
+                    destination = Previously_Chosen_Target{},
                 },
             },
             Action {
@@ -646,7 +646,7 @@ swift_cards := []Card_Data {
                 tooltip = error_tooltip,
                 variant = Place_Action {
                     source = Self{},
-                    destination = Previous_Choice{},
+                    destination = Previously_Chosen_Target{},
                 },
             },
             Action {

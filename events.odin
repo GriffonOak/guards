@@ -544,6 +544,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         defeated_hero := &defeated.hero
         defeated_hero.dead = true
         defeater := get_player_by_id(gs, var.defeater)
+        gs.heroes_defeated_this_round += 1
 
         if defeated_card, ok := find_played_card(gs, var.defeated); ok {
             if var.defeated == gs.my_player_id && len(gs.interrupt_stack) > 0 {
@@ -757,17 +758,14 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         action := get_action_at_index(gs, action_index)
 
         skip_index := action.skip_index
+        if skip_index == {} do skip_index = {sequence = .HALT}
     
         gs.tooltip = action.tooltip
         log.infof("ACTION: %v", reflect.union_variant_typeid(action.variant))
 
         clear_side_buttons(gs)
         if !validate_action(gs, action_index) {
-            if skip_index != {} {
-                append(&gs.event_queue, Resolve_Current_Action_Event{skip_index})
-            } else {
-                end_current_action_sequence(gs)
-            }
+            append(&gs.event_queue, Resolve_Current_Action_Event{skip_index})
             break
         }
 
@@ -983,8 +981,13 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
         case Gain_Coins_Action:
+            target := calculate_implicit_target(gs, action_type.target, calc_context)
             gain := calculate_implicit_quantity(gs, action_type.gain, calc_context)
-            player_base := get_my_player(gs).base
+
+            space := &gs.board[target.x][target.y]
+            log.assert(.HERO in space.flags, "Tried to give coins to a space without a hero!")
+
+            player_base := get_player_by_id(gs, space.owner).base
             player_base.hero.coins += gain
             broadcast_game_event(gs, Update_Player_Data_Event{player_base})
             append(&gs.event_queue, Resolve_Current_Action_Event{})
@@ -1317,6 +1320,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         if gs.upgraded_players == len(gs.players) {
             broadcast_game_event(gs, Update_Player_Data_Event{get_my_player(gs).base})
             gs.turn_counter = 0
+            gs.heroes_defeated_this_round = 0
             if gs.is_host {
                 broadcast_game_event(gs, Begin_Card_Selection_Event{})
             }

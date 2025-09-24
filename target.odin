@@ -251,10 +251,9 @@ make_movement_targets :: proc (
 
             {   // Validate next location
                 if .STRAIGHT_LINE in criteria.flags {
-                    // calc_context := calc_context
-                    // calc_context.target = next_loc
-                    // if !calculate_implicit_condition(gs, Target_In_Straight_Line_With{origin}, calc_context) do continue
-                    if get_norm_direction(origin, min_loc) != vector do continue
+                    calc_context := calc_context
+                    calc_context.target = next_loc
+                    if !calculate_implicit_condition(gs, Target_In_Straight_Line_With{origin}, calc_context) do continue
                 }  
                 if .IGNORING_OBSTACLES not_in criteria.flags && OBSTACLE_FLAGS & gs.board[next_loc.x][next_loc.y].flags != {} do continue
                 if visited_set[next_loc.x][next_loc.y].member do continue
@@ -430,7 +429,7 @@ make_arbitrary_targets :: proc (
     }
 
     if .NOT_PREVIOUSLY_TARGETED in criteria.flags {
-        previous_target := calculate_implicit_target(gs, Previous_Choice{}, calc_context)
+        previous_target := calculate_implicit_target(gs, Previously_Chosen_Target{}, calc_context)
         out[previous_target.x][previous_target.y].member = false
     }
 
@@ -469,10 +468,12 @@ make_card_targets :: proc(
     calc_context: Calculation_Context = {},
 ) -> (out: [dynamic]Card_ID) {
     calc_context := calc_context
-    for card in get_my_player(gs).hero.cards {
-        calc_context.card_id = card.id
-        if calculate_implicit_condition(gs, criteria[0], calc_context) {
-            append(&out, card.id)
+    for player in gs.players {
+        for card in player.hero.cards {
+            calc_context.card_id = card.id
+            if calculate_implicit_condition(gs, criteria[0], calc_context) {
+                append(&out, card.id)
+            }
         }
     }
 

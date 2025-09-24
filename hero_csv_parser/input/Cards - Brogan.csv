@@ -1,0 +1,24 @@
+,,Gold / Silver cards should be tier 0,,,,,,,,e.g. Range(3) or Radius(4),,,Replace line break with \n pls
+,,,"The ""Alt path"" card, the one different from the starting card of the same color",,,,,,Leave blank if unsigned,,Leave blank if unsigned,,
+,,,,,,,,,,leave blank if n/a,,Blank if n/a,
+Name,Color,Tier,Alternate?,Initiative,Attack Value,Defense Value,Movement Value,Primary Kind,Primary Sign,Reach,Reach Sign,Item Kind,Text
+Brutal Jab,BLUE,1,FALSE,8,,5,2,SKILL,,,,,You may move 1 space. Push an enemy unit\nor a token adjacent to you up to 1 space.
+Mighty Punch,BLUE,2,FALSE,9,,6,2,SKILL,,,,INITIATIVE,You may move 1 space. Push an enemy unit\nor a token adjacent to you up to 2 spaces.
+Shield Bash,BLUE,2,TRUE,9,,6,2,SKILL,,,,ATTACK,"An enemy hero adjacent to you who\nhas played an attack card this turn\ndiscards a card, if able."
+Savage Kick,BLUE,3,FALSE,9,,6,2,SKILL,,,,INITIATIVE,Move up to 2 spaces. Push an enemy unit\nor a token adjacent to you up to 2 spaces.
+Counterattack,BLUE,3,TRUE,9,,6,2,SKILL,,,,RANGE,"An enemy hero adjacent to you who\nhas played an attack card this turn\ndiscards a card, or is defeated."
+Onslaught,GOLD,0,FALSE,11,4,3,1,ATTACK,,,,,"Target a unit adjacent to you. After the attack:\nMove into the space it occupied, if able."
+Shield,GREEN,1,FALSE,6,,4,2,SKILL,,,,,"This round: When any friendly minion in radius\nis defeated you may discard a silver card.\nIf you do, the minion is not removed.\n(The enemy hero still gains the coins for defeating the minion.)"
+Bolster,GREEN,2,FALSE,5,,5,2,SKILL,,Radius(2),,ATTACK,"This round: When any friendly minion in radius\nis defeated you may discard a silver card.\nIf you do, the minion is not removed."
+War Drummer,GREEN,2,TRUE,5,,5,2,SKILL,,Range(4),,DEFENSE,"A friendly hero in range gains 1 coin;\nif any hero was defeated this round,\nthat friendly hero gains 3 coins instead."
+Fortify,GREEN,3,FALSE,5,,5,2,SKILL,,Radius(2),,ATTACK,"This round: when any friendly minion in radius\nis defeated you may discard a basic card.\nIf you do, the minion is not removed."
+Master Skald,GREEN,3,TRUE,5,,5,2,SKILL,,Range(4),,DEFENSE,"A friendly hero in range gains 2 coins;\nif any hero was defeated this round,\nthat friendly hero gains 4 coins instead."
+Mad Dash,RED,1,FALSE,7,6,7,3,ATTACK,,,,,"Before the attack: Move 2 spaces in\na straight line to a space adjacent to\an enemy unit, then target that unit.\n(If you cannot make this move, you cannot attack.)"
+Bullrush,RED,2,FALSE,7,6,8,3,ATTACK,,,,ATTACK,"Before the attack: Move 2 or 3 spaces in\na straight line to a space adjacent to an\nenemy unit, then target that unit."
+Throwing Axe,RED,2,TRUE,7,3,7,4,ATTACK,,Range(2),,DEFENSE,"Choose one -\n*Target a unit adjacent to you.\n*You may discard a card;\nif you do, target a unit in range."
+Furious Charge,RED,3,FALSE,8,7,8,3,ATTACK,,,,MOVEMENT,"Before the attack: Move 2, 3, or 4 spaces\n in a straight line to a space adjacent to an\nenemy unit, then target that unit."
+Throwing Spear,RED,3,TRUE,8,4,7,4,ATTACK,,Range(2),,RADIUS,"Choose one -\n*Target a unit adjacent to you.\n*You may discard a card. If you have a card\nin the discard, target a unit in range."
+Bulwark,SILVER,0,FALSE,12,,4,,SKILL,,Radius(4),,,"You may retrieve a discarded card.\nThis turn: You and friendly units in radius\ncannot be moved, pushed, swapped\nor placed by enemy heroes."
+,,,,,,,,,,,,,
+Ultimate:,"During minion battle you count as a heavy\nminion; if you would be removed, lose the push instead.",,,,,,,,,,,,
+,"^ Just write it out above, I'll deal with it separately",,,,,,,,,,,,

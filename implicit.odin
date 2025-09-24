@@ -2,6 +2,13 @@ package guards
 
 import "core:log"
 
+My_Player_ID :: struct {}
+
+Implicit_Player_ID :: union {
+    Player_ID,
+    My_Player_ID,
+}
+
 Previous_Card_Choice :: struct {}
 
 Rightmost_Resolved_Card :: struct {}
@@ -19,17 +26,20 @@ Card_Value :: struct {
     kind: Ability_Kind,
 }
 
-Sum :: []Implicit_Quantity
-
-Product :: []Implicit_Quantity
+Sum     :: distinct []Implicit_Quantity
+Product :: distinct []Implicit_Quantity
 
 Count_Targets :: Selection_Criteria
+
+Count_Card_Targets :: distinct []Implicit_Condition
 
 Card_Turn_Played :: struct {}
 
 Minion_Difference :: struct {}
 
 Minion_Modifiers :: struct {}
+
+Heroes_Defeated_This_Round :: struct {}
 
 Ternary :: struct {
     terms: []Implicit_Quantity,
@@ -38,19 +48,20 @@ Ternary :: struct {
 
 Previous_Quantity_Choice :: struct {}
 
-Target_Count_Discarded_Cards :: struct {}
+Current_Turn :: struct {}
 
 Implicit_Quantity :: union {
     int,
     Minion_Difference,
     Minion_Modifiers,
+    Heroes_Defeated_This_Round,
     Sum,
+    Product,
     Count_Targets,
+    Count_Card_Targets,
     Ternary,
     Previous_Quantity_Choice,
-
-    // Requires target in context (although maybe it shouldn't?)
-    Target_Count_Discarded_Cards,
+    Current_Turn,
 
     // Requires card in context
     Card_Reach,
@@ -63,11 +74,13 @@ Calculation_Context :: struct {
     target, prev_target: Target,
 }
 
-That_Target :: struct {}
+// Absolutely atrocious naming scheme
+Current_Target :: struct{}
+Previous_Target :: struct {}
 
 Self :: struct {}
 
-Previous_Choice :: struct {
+Previously_Chosen_Target :: struct {
     skips: int,
 }
 
@@ -77,9 +90,10 @@ Card_Owner :: struct {}
 
 Implicit_Target :: union {
     Target,
-    That_Target,
     Self,
-    Previous_Choice,
+    Current_Target,
+    Previous_Target,
+    Previously_Chosen_Target,
     Top_Blocked_Spawnpoint,
 
     // Requires card in context
@@ -96,9 +110,11 @@ Implicit_Target_Slice :: union {
 
 /// IMPLICIT CONDITIONS
 
-Greater_Than :: []Implicit_Quantity
+Greater_Than :: distinct []Implicit_Quantity
+Equal        :: distinct []Implicit_Quantity
 
 And :: distinct []Implicit_Condition
+Or  :: distinct []Implicit_Condition
 Not :: distinct []Implicit_Condition
 
 Blocked_Spawnpoints_Remain :: struct {}
@@ -114,6 +130,10 @@ Target_In_Straight_Line_With :: struct {
     origin: Implicit_Target,
 }
 
+Target_Is :: struct {
+    target: Implicit_Target,
+}
+
 Target_Contains_Any :: struct { flags: Space_Flags }
 Target_Contains_No  :: struct { flags: Space_Flags }
 Target_Contains_All :: struct { flags: Space_Flags }
@@ -125,7 +145,6 @@ Target_Is_Enemy_Of :: struct {
     target: Implicit_Target,
 }
 Target_Is_Friendly_Spawnpoint :: struct {}
-Not_Previously_Targeted :: struct {}
 
 Target_In_Battle_Zone :: struct {}
 Target_Outside_Battle_Zone :: struct {}
@@ -140,15 +159,21 @@ Card_State_Is :: struct {
     state: Card_State,
 }
 
-Card_Primary_Is_Not :: struct {
+Card_Primary_Is :: struct {
     kind: Ability_Kind,
+}
+
+Card_Owner_Is :: struct {
+    owner: Implicit_Target,
 }
 
 
 Implicit_Condition :: union {
     bool,
     Greater_Than,
+    Equal,
     And,
+    Or,
     Not,
     Blocked_Spawnpoints_Remain,
     Alive,
@@ -166,11 +191,13 @@ Implicit_Condition :: union {
     Target_In_Battle_Zone,
     Target_Outside_Battle_Zone,
     Target_In_Straight_Line_With,
+    Target_Is,
 
     // Requires card in calc context
     // Card_Can_Defend,
     Card_State_Is,
-    Card_Primary_Is_Not,
+    Card_Primary_Is,
+    Card_Owner_Is,
 }
 
 Card_Defense_Index :: struct {}
@@ -222,10 +249,19 @@ calculate_implicit_quantity :: proc(
 
     case Sum:
         for summand in quantity do out += calculate_implicit_quantity(gs, summand, calc_context, loc)
+    
+    case Product:
+        out = 1
+        for multiplier in quantity do out *= calculate_implicit_quantity(gs, multiplier, calc_context, loc)
 
     case Count_Targets:
         targets := make_arbitrary_targets(gs, quantity, calc_context)
         return count_members(&targets)
+
+    case Count_Card_Targets:
+        targets := make_card_targets(gs, cast([]Implicit_Condition) quantity, calc_context)
+        out = len(targets)
+        delete(targets)
 
     case Card_Turn_Played:
         log.assert(calc_context.card_id != {}, "Invalid card when trying to calculate turn played", loc)
@@ -254,17 +290,14 @@ calculate_implicit_quantity :: proc(
             }
         }
 
-    case Target_Count_Discarded_Cards:
-        log.assert(calc_context.target != {}, "Invalid target when trying to count discarded cards!")
-        space := gs.board[calc_context.target.x][calc_context.target.y]
-        if .HERO not_in space.flags do return
-        cards := get_player_by_id(gs, space.owner).hero.cards
-        for card in cards {
-            if card.state == .DISCARDED do out += 1
-        }
-
     case Minion_Modifiers: 
         return calculate_minion_modifiers(gs)
+
+    case Heroes_Defeated_This_Round:
+        return gs.heroes_defeated_this_round
+
+    case Current_Turn:
+        return gs.turn_counter
 
     }
     return 
@@ -278,11 +311,14 @@ calculate_implicit_target :: proc(
 ) -> (out: Target) {
     switch target in implicit_target {
     case Target: out = target
-    case That_Target:
+    case Current_Target: 
+        log.assert(calc_context.target != {}, "Invalid stack target!", loc)
+        return calc_context.target
+    case Previous_Target:
         log.assert(calc_context.prev_target != {}, "Invalid stack target!", loc)
         return calc_context.prev_target
     case Self: out = get_my_player(gs).hero.location
-    case Previous_Choice:
+    case Previously_Chosen_Target:
         skips := target.skips
         index := get_my_player(gs).hero.current_action_index
         index.index -= 1
@@ -347,9 +383,16 @@ calculate_implicit_condition :: proc (
     case Greater_Than:
         log.assert(len(condition) == 2, "Greater Than condition check that does not have 2 elements!", loc)
         return calculate_implicit_quantity(gs, condition[0], calc_context, loc) > calculate_implicit_quantity(gs, condition[1], calc_context, loc)
+    case Equal:
+        log.assert(len(condition) == 2, "Equal condition check that does not have 2 elements!", loc)
+        return calculate_implicit_quantity(gs, condition[0], calc_context, loc) == calculate_implicit_quantity(gs, condition[1], calc_context, loc)
     case And:
         out := true
         for extra_condition in condition do out &&= calculate_implicit_condition(gs, extra_condition, calc_context, loc)
+        return out
+    case Or:
+        out := false
+        for extra_condition in condition do out ||= calculate_implicit_condition(gs, extra_condition, calc_context, loc)
         return out
     case Not:
         log.assert(len(condition) == 1, "Improperly formatted not statement!", loc)
@@ -427,17 +470,32 @@ calculate_implicit_condition :: proc (
         delta := calc_context.target - origin
         return delta.x == 0 || delta.y == 0 || delta.x == - delta.y
 
-    case Card_Primary_Is_Not:
+    case Target_Is:
+        log.assert(space_ok, "Invalid target!")
+        target := calculate_implicit_target(gs, condition.target, calc_context)
+        return calc_context.target == target
+
+    case Card_Primary_Is:
         log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
         card_data, ok := get_card_data_by_id(gs, calc_context.card_id)
         log.assert(ok, "Could not find the card data when checking for its primary type!", loc)
-        return card_data.primary != condition.kind
+        return card_data.primary == condition.kind
 
     case Card_State_Is:
         log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
         card, ok := get_card_by_id(gs, calc_context.card_id)
         log.assert(ok, "Could not find the card when checking for its state!", loc)
         return card.state == condition.state
+
+    case Card_Owner_Is:
+        log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
+        card, ok := get_card_by_id(gs, calc_context.card_id)
+        log.assert(ok, "Could not find the card when checking for its owner!", loc)
+        // player_id := calculate_implicit_player_id(condition.owner, calc_context, loc)
+        player_location := calculate_implicit_target(gs, condition.owner, calc_context)
+        player_space := gs.board[player_location.x][player_location.y]
+        return player_space.owner == card.owner_id
+
 
     // case Card_Can_Defend:
         // log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
@@ -515,3 +573,12 @@ calculate_implicit_action_index :: proc(gs: ^Game_State, implicit_index: Implici
     }
     return {}
 }
+
+// calculate_implicit_player_id :: proc(
+//     gs: ^Game_State,
+//     implicit_player_id: Implicit_Player_ID,
+//     calc_context: Calculation_Context,
+//     loc := #caller_location
+// ) -> Player_ID {
+
+// }
