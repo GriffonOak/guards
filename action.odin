@@ -46,6 +46,7 @@ Selection_Criteria :: struct {
 
 Choose_Target_Action :: struct {
     using criteria: Selection_Criteria,
+    up_to: bool,
     num_targets: Implicit_Quantity,
     result: [dynamic]Target,
     // result: Target
@@ -144,7 +145,8 @@ Choose_Quantity_Action :: struct {
 }
 
 Push_Action :: struct {
-    origin, target: Implicit_Target,
+    origin: Implicit_Target,
+    targets: Implicit_Target_Slice,
     num_spaces: Implicit_Quantity,
 }
 
@@ -179,6 +181,11 @@ Action :: struct {
     tooltip: Tooltip,
     optional: bool,
     condition: Implicit_Condition,
+
+    // I'm redoing this slightly to allow skipping non-optional actions.
+    // Now the action will always jump to the skip index if impossible, even if the action is non-optional.
+    // This has a nice knock-on effect as now optional actions with no given skip index
+    // will halt if they are impossible.
     skip_index: Action_Index,
     skip_name: cstring,
     targets: Target_Set,
@@ -350,7 +357,6 @@ discard_or_defeated_action := []Action {
 respawn_action := []Action {
     Action {
         optional = true,
-        skip_index = {sequence = .HALT},
         skip_name = "Stay dead",
         tooltip = "Choose a spawnpoint to respawn in. You may also stay dead.",
         variant = Choose_Target_Action {

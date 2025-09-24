@@ -2,6 +2,8 @@ package guards
 
 /// DODGER
 
+// "While you are performing an action, all spaces\ncount as if they were in the battle zone and\nhad a friendly minion spawn point."
+
 dodger_cards := []Card_Data {
     Card_Data { name = "Dread Razor",
         color =         .GOLD,
@@ -343,7 +345,6 @@ dodger_cards := []Card_Data {
             Action {
                 tooltip = "You may target a minion adjacent to you, or you may skip.",
                 optional = true,
-                skip_index = {sequence = .HALT},
                 variant = Choose_Target_Action {
                     conditions = {
                         Target_Within_Distance {Self{}, {1, 1}},
@@ -475,7 +476,7 @@ dodger_cards := []Card_Data {
         text =          "This turn: Enemy heroes\nin radius have -4 Attack.\n(They can still attack, even with a negative attack value.",
         primary_effect = []Action {},
     },
-    Card_Data { name = "Middlefinger of Death",
+    Card_Data { name = "Middlefinger of Death",  // @Unimplemented
         color =         .RED,
         tier =          3,
         initiative =    10,
@@ -496,9 +497,71 @@ dodger_cards := []Card_Data {
         reach =         Range(2),
         item =          .RADIUS,
         text =          "Target a unit in range. After the attack:\nMove up to 2 minions adjacent to you\n1 space, to spaces not adjacent to you",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = "Target a unit in range.",
+                variant = Choose_Target_Action {
+                    conditions = {
+                        Target_Within_Distance {Self{}, {1, Card_Reach{}}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Waiting for the opponent to defend...",
+                variant = Attack_Action {
+                    target = Previous_Choice{},
+                    strength = Card_Value{.ATTACK},
+                },
+            },
+            Action {
+                tooltip = "You may target a minion adjacent to you, or you may skip.",
+                optional = true,
+                variant = Choose_Target_Action {
+                    conditions = {
+                        Target_Within_Distance {Self{}, {1, 1}},
+                        Target_Contains_Any{MINION_FLAGS},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Move the minion 1 space to a space not adjacent to you.",
+                variant = Movement_Action {
+                    target = Previous_Choice{},
+                    max_distance = 1,
+                    destination_criteria = {
+                        conditions = {
+                            Target_Within_Distance {Self{}, {2, 2}},
+                        },
+                    },
+                },
+            },
+            Action {
+                tooltip = "You may target a minion adjacent to you, or you may skip.",
+                optional = true,
+                variant = Choose_Target_Action {
+                    conditions = {
+                        Target_Within_Distance {Self{}, {1, 1}},
+                        Target_Contains_Any{MINION_FLAGS},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Move the minion 1 space to a space not adjacent to you.",
+                variant = Movement_Action {
+                    target = Previous_Choice{},
+                    max_distance = 1,
+                    destination_criteria = {
+                        conditions = {
+                            Target_Within_Distance {Self{}, {2, 2}},
+                        },
+                    },
+                },
+            },
+        },
     },
-    Card_Data { name = "Darkest Ritual",
+    Card_Data { name = "Darkest Ritual",  // @Unimplemented
         color =         .GREEN,
         tier =          3,
         initiative =    2,
@@ -511,7 +574,7 @@ dodger_cards := []Card_Data {
             
         },
     },
-    Card_Data { name = "Necromastery",
+    Card_Data { name = "Necromastery",  // @Unimplemented
         color =         .GREEN,
         tier =          3,
         alternate =     true,
@@ -535,7 +598,7 @@ dodger_cards := []Card_Data {
         text =          "+4 Defense if there are 2 or more empty\nspawn points in radius in the battle zone.",
         primary_effect = []Action {},
     },
-    Card_Data { name = "Enfeeblement",
+    Card_Data { name = "Enfeeblement",  // @Unimplemented
         color =         .BLUE,
         tier =          3,
         alternate =     true,

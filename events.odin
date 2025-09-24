@@ -328,12 +328,15 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 append(&gs.event_queue, Begin_Next_Action_Event{})
 
             case Choose_Target_Action:
-                append(&action_variant.result, var.space)
-                action.targets[var.space.x][var.space.y].member = false
-                if len(action_variant.result) == calculate_implicit_quantity(gs, action_variant.num_targets, {card_id = action_index.card_id}) {
-                    append(&gs.event_queue, Resolve_Current_Action_Event{})
-                } else if len(gs.side_button_manager.buttons) == 0 {
-                    add_side_button(gs, "Cancel", Cancel_Event{})
+                num_targets := calculate_implicit_quantity(gs, action_variant.num_targets, {card_id = action_index.card_id})
+                if len(action_variant.result) < num_targets {
+                    append(&action_variant.result, var.space)
+                    action.targets[var.space.x][var.space.y].member = false
+                    if len(action_variant.result) == num_targets && !action_variant.up_to {
+                        append(&gs.event_queue, Resolve_Current_Action_Event{})
+                    } else if len(action_variant.result) == 0 {
+                        add_side_button(gs, "Cancel", Cancel_Event{})
+                    }
                 }
 
             }
@@ -760,7 +763,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         clear_side_buttons(gs)
         if !validate_action(gs, action_index) {
-            if action.optional {
+            if skip_index != {} {
                 append(&gs.event_queue, Resolve_Current_Action_Event{skip_index})
             } else {
                 end_current_action_sequence(gs)
@@ -784,7 +787,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         case Choose_Target_Action:
             clear(&action_type.result)
-            if count_members(&action.targets) == calculate_implicit_quantity(gs, action_type.num_targets, calc_context) && !action.optional {
+            if action_type.up_to {
+                add_side_button(gs, "Confirm", Resolve_Current_Action_Event{})
+            } else if count_members(&action.targets) == calculate_implicit_quantity(gs, action_type.num_targets, calc_context) && !action.optional {
                 iter := make_target_set_iterator(&action.targets)
                 for _, space in target_set_iter_members(&iter) {
                     append(&action_type.result, space)
@@ -820,26 +825,28 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         case Push_Action:
             origin := calculate_implicit_target(gs, action_type.origin, calc_context)
-            target := calculate_implicit_target(gs, action_type.target, calc_context)
+            targets := calculate_implicit_target_slice(gs, action_type.targets, calc_context)
             num_spaces := calculate_implicit_quantity(gs, action_type.num_spaces, calc_context)
 
-            calc_context.target = target
-            // This shouldn't really happen
-            if !calculate_implicit_condition(gs, Target_In_Straight_Line_With{origin}, calc_context) {
-                log.info("Invalid push????")
-                break
+            for target in targets {
+                calc_context.target = target
+                // This shouldn't really happen
+                if !calculate_implicit_condition(gs, Target_In_Straight_Line_With{origin}, calc_context) {
+                    log.info("Invalid push????")
+                    continue
+                }
+                
+                direction := get_norm_direction(origin, target)
+                latest_valid_target := target
+                for _ in 0..<num_spaces {
+                    next_target := latest_valid_target + direction
+                    space := gs.board[next_target.x][next_target.y]
+                    if OBSTACLE_FLAGS & space.flags != {} do break
+                    latest_valid_target = next_target
+                }
+    
+                broadcast_game_event(gs, Unit_Translocation_Event{target, latest_valid_target})
             }
-            
-            direction := get_norm_direction(origin, target)
-            latest_valid_target := target
-            for _ in 0..<num_spaces {
-                next_target := latest_valid_target + direction
-                space := gs.board[next_target.x][next_target.y]
-                if OBSTACLE_FLAGS & space.flags != {} do break
-                latest_valid_target = next_target
-            }
-
-            broadcast_game_event(gs, Unit_Translocation_Event{target, latest_valid_target})
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
         case Attack_Action:

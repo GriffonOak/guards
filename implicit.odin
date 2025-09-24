@@ -67,7 +67,9 @@ That_Target :: struct {}
 
 Self :: struct {}
 
-Previous_Choice :: struct {}
+Previous_Choice :: struct {
+    skips: int,
+}
 
 Top_Blocked_Spawnpoint :: struct {}
 
@@ -96,7 +98,8 @@ Implicit_Target_Slice :: union {
 
 Greater_Than :: []Implicit_Quantity
 
-And :: []Implicit_Condition
+And :: distinct []Implicit_Condition
+Not :: distinct []Implicit_Condition
 
 Blocked_Spawnpoints_Remain :: struct {}
 
@@ -146,6 +149,7 @@ Implicit_Condition :: union {
     bool,
     Greater_Than,
     And,
+    Not,
     Blocked_Spawnpoints_Remain,
     Alive,
 
@@ -279,13 +283,17 @@ calculate_implicit_target :: proc(
         return calc_context.prev_target
     case Self: out = get_my_player(gs).hero.location
     case Previous_Choice:
+        skips := target.skips
         index := get_my_player(gs).hero.current_action_index
         index.index -= 1
         for ; true; index.index -= 1 {
             action := get_action_at_index(gs, index)
             if variant, ok := action.variant.(Choose_Target_Action); ok {
-                out = variant.result[0]
-                return
+                if skips == 0 {
+                    return variant.result[0]
+                } else {
+                    skips -= 1
+                }                
             }
         }
     case Top_Blocked_Spawnpoint:
@@ -300,7 +308,11 @@ calculate_implicit_target :: proc(
     return
 }
 
-calculate_implicit_target_slice :: proc(gs: ^Game_State, implicit_slice: Implicit_Target_Slice) -> []Target {
+calculate_implicit_target_slice :: proc(
+    gs: ^Game_State,
+    implicit_slice: Implicit_Target_Slice,
+    calc_context: Calculation_Context = {}
+) -> []Target {
     switch slice in implicit_slice {
     case []Target: return slice
     case Previous_Choices:
@@ -339,6 +351,9 @@ calculate_implicit_condition :: proc (
         out := true
         for extra_condition in condition do out &&= calculate_implicit_condition(gs, extra_condition, calc_context, loc)
         return out
+    case Not:
+        log.assert(len(condition) == 1, "Improperly formatted not statement!", loc)
+        return !calculate_implicit_condition(gs, condition[0], calc_context, loc)
     case Blocked_Spawnpoints_Remain:
         my_team := get_my_player(gs).team
         return len(gs.blocked_spawns[my_team]) > 0

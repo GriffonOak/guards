@@ -1,6 +1,8 @@
 package guards
 
-// XARGATHA
+/// XARGATHA
+
+// Ult: +1 ini & movement for each enemy unit you are adjacent to. You may move through obstacles.
 
 xargatha_cards := []Card_Data {
     Card_Data { name = "Cleave",
@@ -31,7 +33,6 @@ xargatha_cards := []Card_Data {
             Action {
                 tooltip = "May repeat once on a different enemy hero.",
                 optional = true,
-                skip_index = {sequence=.HALT},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -152,7 +153,6 @@ xargatha_cards := []Card_Data {
             },
             Action {  // 2
                 optional = true,
-                skip_index = {sequence=.HALT},
                 tooltip = "You may choose a ranged minion to move, or you may skip.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
@@ -206,7 +206,7 @@ xargatha_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Stone Gaze",
+    Card_Data { name = "Stone Gaze",  // @Incomplete: "count as terrain"
         color       = .BLUE,
         initiative  = 9,
         tier        = 1,
@@ -354,7 +354,6 @@ xargatha_cards := []Card_Data {
             },
             Action {  // 2
                 optional = true,
-                skip_index = {sequence=.HALT},
                 tooltip = "You may choose a ranged or melee minion to move, or you may skip.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
@@ -452,7 +451,7 @@ xargatha_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Petrifying Stare",
+    Card_Data { name = "Petrifying Stare",  // @Incomplete: "count as terrain"
         color       = .BLUE,
         initiative  = 10,
         tier        = 2,
@@ -667,7 +666,6 @@ xargatha_cards := []Card_Data {
             },
             Action {  // 2
                 optional = true,
-                skip_index = {sequence=.HALT},
                 tooltip = "You may choose a minion to move, or you may skip.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
@@ -767,7 +765,7 @@ xargatha_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Turn Into Statues",
+    Card_Data { name = "Turn Into Statues",  // @Incomplete: "count as terrain"
         color       = .BLUE,
         initiative  = 10,
         tier        = 3,

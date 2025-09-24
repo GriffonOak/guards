@@ -39,6 +39,7 @@ Active_Effect_Kind :: enum {
     NONE,
     XARGATHA_FREEZE,
     XARGATHA_DEFEAT,
+    SWIFT_DELAYED_JUMP,
 }
 
 End_Of_Turn :: struct {
@@ -254,7 +255,7 @@ setup_hero_cards :: proc(gs: ^Game_State) {
 
         for &card, index in hero_cards[hero_id] {
             if card.background_image == {} {
-                enum_name, ok := reflect.enum_name_from_value(card.color)
+                enum_name, _ := reflect.enum_name_from_value(card.color)
                 enum_name = strings.to_lower(enum_name, context.temp_allocator)
                 card_filename := fmt.tprintf(
                     "%v_t%v_%v%v.png",
