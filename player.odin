@@ -109,7 +109,7 @@ render_player_info :: proc(gs: ^Game_State) {
     }
 }
 
-count_hero_items :: proc(gs: ^Game_State, hero: Hero, kind: Item_Kind) -> (out: int) {
+count_hero_items :: proc(gs: ^Game_State, hero: Hero, kind: Card_Value_Kind) -> (out: int) {
     for item_index in 0..<hero.item_count {
         card_id := hero.items[item_index]
         card_data, ok := get_card_data_by_id(gs, card_id)
@@ -140,7 +140,7 @@ render_player_info_at_position :: proc(gs: ^Game_State, player_id: Player_ID, po
     next_pos = pos
     next_pos.x += 250 // @Magic
 
-    for kind, index in Item_Kind {
+    for kind, index in Card_Value_Kind {
         initial := item_initials[kind]
         item_string := fmt.ctprintf("+%v%v", count_hero_items(gs, player.hero, kind), initial)
         rl.DrawTextEx(default_font, item_string, next_pos, INFO_FONT_SIZE, FONT_SPACING, rl.WHITE)

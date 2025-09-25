@@ -7,8 +7,7 @@ package guards
 xargatha_cards := []Card_Data {
     Card_Data { name = "Cleave",
         color       = .GOLD,
-        initiative  = 11,
-        values      = #partial{.ATTACK = 4, .DEFENSE = 2, .MOVEMENT = 1},
+        values      = #partial{.INITIATIVE = 11, .ATTACK = 4, .DEFENSE = 2, .MOVEMENT = 1},
         primary     = .ATTACK,
         text        = "Target a unit adjacent to you.\nAfter the attack: May repeat once\non a different enemy hero.",
         primary_effect = []Action {
@@ -54,10 +53,8 @@ xargatha_cards := []Card_Data {
     },
     Card_Data { name = "Siren's Call",
         color       = .SILVER,
-        initiative  = 3,
-        values      = #partial{.DEFENSE = 3},
+        values      = #partial{.INITIATIVE = 3, .DEFENSE = 3, .RANGE = 3},
         primary     = .SKILL,
-        reach       = Range(3),
         text        = "Target an enemy unit not adjacent to you\nand in range; if able, move the target\nup to 3 spaces to a space adjacent to you.",
         primary_effect = []Action {
             Action { 
@@ -67,7 +64,7 @@ xargatha_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance {
                             Self{}, 
-                            {2, Card_Reach{}},
+                            {2, Card_Value{.RANGE}},
                         },
                         Target_Contains_Any{UNIT_FLAGS},
                         Target_Is_Enemy_Unit{},
@@ -88,9 +85,8 @@ xargatha_cards := []Card_Data {
     },
     Card_Data { name = "Threatening Slash",
         color       = .RED,
-        initiative  = 7,
         tier        = 1,
-        values      = #partial{.ATTACK = 5, .DEFENSE = 6, .MOVEMENT = 5},
+        values      = #partial{.INITIATIVE = 7, .ATTACK = 5, .DEFENSE = 6, .MOVEMENT = 5},
         primary     = .ATTACK,
         primary_sign = .PLUS,
         text        = "Target a unit adjacent to you. +1 Attack\nfor each other enemy unit adjacent to you.",
@@ -128,11 +124,9 @@ xargatha_cards := []Card_Data {
     },
     Card_Data { name = "Charm",
         color       = .GREEN,
-        initiative  = 5,
         tier        = 1,
-        values      = #partial{.MOVEMENT = 2, .DEFENSE = 3},
+        values      = #partial{.INITIATIVE = 5, .MOVEMENT = 2, .DEFENSE = 3, .RADIUS = 2},
         primary     = .MOVEMENT,
-        reach       = Radius(2),
         text        = "Before or after movement, you may\nmove an enemy ranged minion\nin radius up to 2 spaces.",
         primary_effect = []Action {
             Action {  // 0
@@ -159,7 +153,7 @@ xargatha_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance {
                             origin = Self{},
-                            bounds = {1, Card_Reach{}},
+                            bounds = {1, Card_Value{.RADIUS}},
                         },
                         Target_Contains_Any{{.RANGED_MINION}},
                         Target_Is_Enemy_Unit{},
@@ -183,7 +177,7 @@ xargatha_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance {
                             origin = Self{},
-                            bounds = {1, Card_Reach{}},
+                            bounds = {1, Card_Value{.RADIUS}},
                         },
                         Target_Contains_Any{{.RANGED_MINION}},
                         Target_Is_Enemy_Unit{},
@@ -208,11 +202,9 @@ xargatha_cards := []Card_Data {
     },
     Card_Data { name = "Stone Gaze",  // @Incomplete: "count as terrain"
         color       = .BLUE,
-        initiative  = 9,
         tier        = 1,
-        values      = #partial{.DEFENSE = 5, .MOVEMENT = 3},
+        values      = #partial{.INITIATIVE = 9, .DEFENSE = 5, .MOVEMENT = 3, .RADIUS = 2},
         primary     = .SKILL,
-        reach       = Radius(2),
         text        = "Next turn: Enemy heroes in radius count\nas both heroes and terrain, and cannot\nperform movement actions.",
         primary_effect = []Action {
             Action {
@@ -225,7 +217,7 @@ xargatha_cards := []Card_Data {
                             conditions = {
                                 Target_Within_Distance {
                                     origin = Card_Owner{},
-                                    bounds = {1, Card_Reach{}},
+                                    bounds = {1, Card_Value{.RADIUS}},
                                 },
                                 Target_Contains_Any{{.HERO}},
                                 Target_Is_Enemy_Of{Card_Owner{}},
@@ -238,9 +230,8 @@ xargatha_cards := []Card_Data {
     },
     Card_Data { name = "Deadly Swipe",
         color       = .RED,
-        initiative  = 8,
         tier        = 2,
-        values      = #partial{.ATTACK = 5, .DEFENSE = 7, .MOVEMENT = 5},
+        values      = #partial{.INITIATIVE = 8, .ATTACK = 5, .DEFENSE = 7, .MOVEMENT = 5},
         primary     = .ATTACK,
         primary_sign = .PLUS,
         item        = .INITIATIVE,
@@ -284,12 +275,10 @@ xargatha_cards := []Card_Data {
     },
     Card_Data { name = "Long Thrust",
         color       = .RED,
-        initiative  = 8,
         tier        = 2,
         alternate   = true,
-        values      = #partial{.ATTACK = 3, .DEFENSE = 4, .MOVEMENT = 4},
+        values      = #partial{.INITIATIVE = 8, .ATTACK = 3, .DEFENSE = 4, .MOVEMENT = 4, .RANGE = 1},
         primary     = .ATTACK,
-        reach       = Range(1),
         reach_sign  = .PLUS,
         item        = .DEFENSE,
         text        = "Target a unit in range. +1 Range\nfor each enemy unit adjacent to you.",
@@ -301,7 +290,7 @@ xargatha_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance {
                             bounds = {1, Sum {
-                                Card_Reach{},
+                                Card_Value{.RANGE},
                                 Count_Targets {
                                     conditions = {
                                         Target_Within_Distance{Self{}, {1, 1}},
@@ -328,11 +317,9 @@ xargatha_cards := []Card_Data {
     },
     Card_Data { name = "Control",
         color       = .GREEN,
-        initiative  = 4,
         tier        = 2,
-        values      = #partial{.DEFENSE = 3, .MOVEMENT = 2},
+        values      = #partial{.INITIATIVE = 4, .DEFENSE = 3, .MOVEMENT = 2, .RADIUS = 2},
         primary     = .MOVEMENT,
-        reach       = Radius(2),
         item        = .ATTACK,
         text        = "Before or after movement, you may move\nan enemy ranged or melee minion\nin radius up to 2 spaces.",
         primary_effect = []Action {
@@ -359,7 +346,7 @@ xargatha_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance {
-                            bounds = {1, Card_Reach{}},
+                            bounds = {1, Card_Value{.RADIUS}},
                         },
                         Target_Contains_Any{{.RANGED_MINION, .MELEE_MINION}},
                         Target_Is_Enemy_Unit{},
@@ -382,7 +369,7 @@ xargatha_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance {
-                            bounds = {1, Card_Reach{}},
+                            bounds = {1, Card_Value{.RADIUS}},
                         },
                         Target_Contains_Any{{.RANGED_MINION, .MELEE_MINION}},
                         Target_Is_Enemy_Unit{},
@@ -407,10 +394,9 @@ xargatha_cards := []Card_Data {
     },
     Card_Data { name = "Constrict",
         color       = .GREEN,
-        initiative  = 4,
         tier        = 2,
         alternate   = true,
-        values      = #partial{.DEFENSE = 3, .MOVEMENT = 2},
+        values      = #partial{.INITIATIVE = 4, .DEFENSE = 3, .MOVEMENT = 2},
         primary     = .SKILL,
         item        = .INITIATIVE,
         text        = "End of round: Defeat an enemy\nmelee minion adjacent to you.",
@@ -453,11 +439,9 @@ xargatha_cards := []Card_Data {
     },
     Card_Data { name = "Petrifying Stare",  // @Incomplete: "count as terrain"
         color       = .BLUE,
-        initiative  = 10,
         tier        = 2,
-        values      = #partial{.DEFENSE = 6, .MOVEMENT = 3},
+        values      = #partial{.INITIATIVE = 10, .DEFENSE = 6, .MOVEMENT = 3, .RADIUS = 3},
         primary     = .SKILL,
-        reach       = Radius(3),
         item        = .DEFENSE,
         text        = "Next turn: Enemy heroes in radius count\nas both heroes and terrain, and cannot\nperform movement actions.",
         primary_effect = []Action {
@@ -471,7 +455,7 @@ xargatha_cards := []Card_Data {
                             conditions = {
                                 Target_Within_Distance {
                                     origin = Card_Owner{},
-                                    bounds = {1, Card_Reach{}},
+                                    bounds = {1, Card_Value{.RADIUS}},
                                 },
                                 Target_Contains_Any{{.HERO}},
                                 Target_Is_Enemy_Of{Card_Owner{}},
@@ -484,10 +468,9 @@ xargatha_cards := []Card_Data {
     },
     Card_Data { name = "Fresh Converts",
         color       = .BLUE,
-        initiative  = 10,
         tier        = 2,
         alternate   = true,
-        values      = #partial{.DEFENSE = 6, .MOVEMENT = 3},
+        values      = #partial{.INITIATIVE = 10, .DEFENSE = 6, .MOVEMENT = 3},
         primary     = .SKILL,
         item        = .ATTACK,
         text        = "If you are adjacent to an enemy minion,\nyou may retrieve a discarded card.",\
@@ -522,9 +505,8 @@ xargatha_cards := []Card_Data {
     },
     Card_Data { name = "Lethal Spin",  // @Todo check wording
         color       = .RED,
-        initiative  = 8,
         tier        = 3,
-        values      = #partial{.ATTACK = 5, .DEFENSE = 7, .MOVEMENT = 5},
+        values      = #partial{.INITIATIVE = 8, .ATTACK = 5, .DEFENSE = 7, .MOVEMENT = 5},
         primary     = .ATTACK,
         primary_sign = .PLUS,
         item        = .RADIUS,
@@ -568,12 +550,10 @@ xargatha_cards := []Card_Data {
     },
     Card_Data { name = "Rapid Thrusts",
         color       = .RED,
-        initiative  = 8,
         tier        = 2,
         alternate   = true,
-        values      = #partial{.ATTACK = 3, .DEFENSE = 4, .MOVEMENT = 4},
+        values      = #partial{.INITIATIVE = 8, .ATTACK = 3, .DEFENSE = 4, .MOVEMENT = 4, .RANGE = 1},
         primary     = .ATTACK,
-        reach       = Range(1),
         reach_sign  = .PLUS,
         item        = .DEFENSE,
         text        = "Target a unit in range. +1 Range\nfor each enemy unit adjacent to you.",
@@ -585,7 +565,7 @@ xargatha_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance {
                             bounds = {1, Sum {
-                                Card_Reach{},
+                                Card_Value{.RANGE},
                                 Count_Targets {
                                     conditions = {
                                         Target_Within_Distance{Self{}, {1, 1}},
@@ -615,7 +595,7 @@ xargatha_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance {
                             bounds = {1, Sum {
-                                Card_Reach{},
+                                Card_Value{.RANGE},
                                 Count_Targets {
                                     conditions = {
                                         Target_Within_Distance{Self{}, {1, 1}},
@@ -643,11 +623,9 @@ xargatha_cards := []Card_Data {
     },
     Card_Data { name = "Dominate",
         color       = .GREEN,
-        initiative  = 4,
         tier        = 3,
-        values      = #partial{.DEFENSE = 3, .MOVEMENT = 2},
+        values      = #partial{.INITIATIVE = 4, .DEFENSE = 3, .MOVEMENT = 2, .RADIUS = 2},
         primary     = .MOVEMENT,
-        reach       = Radius(2),
         item        = .ATTACK,
         text        = "Before or after movement, you may move\nan enemy minion in radius up to 2 spaces;\nignore heavy minion immunity.",
         primary_effect = []Action {
@@ -674,7 +652,7 @@ xargatha_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance {
-                            bounds = {1, Card_Reach{}},
+                            bounds = {1, Card_Value{.RADIUS}},
                         },
                         Target_Contains_Any{MINION_FLAGS},
                         Target_Is_Enemy_Unit{},
@@ -698,7 +676,7 @@ xargatha_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance {
-                            bounds = {1, Card_Reach{}},
+                            bounds = {1, Card_Value{.RADIUS}},
                         },
                         Target_Contains_Any{MINION_FLAGS},
                         Target_Is_Enemy_Unit{},
@@ -724,10 +702,9 @@ xargatha_cards := []Card_Data {
     },
     Card_Data { name = "Final Embrace",
         color       = .GREEN,
-        initiative  = 4,
         tier        = 3,
         alternate   = true,
-        values      = #partial{.DEFENSE = 3, .MOVEMENT = 2},
+        values      = #partial{.INITIATIVE = 4, .DEFENSE = 3, .MOVEMENT = 2},
         primary     = .SKILL,
         item        = .INITIATIVE,
         text        = "End of round: Defeat an enemy\nmelee or ranged minion adjacent to you.",  // @Todo check wording here
@@ -770,11 +747,9 @@ xargatha_cards := []Card_Data {
     },
     Card_Data { name = "Turn Into Statues",  // @Incomplete: "count as terrain"
         color       = .BLUE,
-        initiative  = 10,
         tier        = 3,
-        values      = #partial{.DEFENSE = 6, .MOVEMENT = 3},
+        values      = #partial{.INITIATIVE = 10, .DEFENSE = 6, .MOVEMENT = 3, .RADIUS = 4},
         primary     = .SKILL,
-        reach       = Radius(4),
         item        = .DEFENSE,
         text        = "Next turn: Enemy heroes in radius count\nas both heroes and terrain, and cannot\nperform movement actions.",
         primary_effect = []Action {
@@ -791,10 +766,9 @@ xargatha_cards := []Card_Data {
     },
     Card_Data { name = "Devoted Followers",  // @incomplete, @Todo check wording
         color       = .BLUE,
-        initiative  = 10,
         tier        = 2,
         alternate   = true,
-        values      = #partial{.DEFENSE = 6, .MOVEMENT = 3},
+        values      = #partial{.INITIATIVE = 10, .DEFENSE = 6, .MOVEMENT = 3},
         primary     = .SKILL,
         item        = .ATTACK,
         text        = "If you are adjacent to an enemy unit,\nyou may retrieve a discarded card.",

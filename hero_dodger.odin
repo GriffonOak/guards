@@ -7,10 +7,8 @@ package guards
 dodger_cards := []Card_Data {
     Card_Data { name = "Dread Razor",
         color =         .GOLD,
-        initiative =    12,
-        values =        #partial{.DEFENSE = 1, .ATTACK = 2, .MOVEMENT = 1},
+        values =        #partial{.INITIATIVE = 12, .DEFENSE = 1, .ATTACK = 2, .MOVEMENT = 1, .RANGE = 3},
         primary =       .ATTACK,
-        reach =         Range(3),
         text =          "Choose one -\n* Target a unit adjacent to you.\n*If you are adjacent to an empty spawn point\nin the battle zone, target a unit in range",
         primary_effect = []Action {
             Action {  // 0
@@ -61,7 +59,7 @@ dodger_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance {
                             origin = Self{},
-                            bounds = {1, Card_Reach{}},
+                            bounds = {1, Card_Value{.RANGE}},
                         },
                         Target_Contains_Any{UNIT_FLAGS},
                         Target_Is_Enemy_Unit{},
@@ -79,10 +77,8 @@ dodger_cards := []Card_Data {
     },
     Card_Data { name = "Death Trap",
         color =         .SILVER,
-        initiative =    7,
-        values =        #partial{.DEFENSE = 1},
+        values =        #partial{.INITIATIVE = 7, .DEFENSE = 1, .RADIUS = 4},
         primary =       .SKILL,
-        reach =         Radius(4),
         text =          "An enemy hero in radius who is\nadjacent to an empty spawn point in\nthe battle zone discards a card, if able",
         primary_effect = []Action {
             Action {
@@ -92,7 +88,7 @@ dodger_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance {
                             origin = Self{},
-                            bounds = {1, Card_Reach{}},
+                            bounds = {1, Card_Value{.RADIUS}},
                         },
                         Target_Contains_Any{{.HERO}},
                         Target_Is_Enemy_Unit{},
@@ -124,10 +120,8 @@ dodger_cards := []Card_Data {
     Card_Data { name = "Littlefinger of Death",
         color =         .RED,
         tier =          1,
-        initiative =    9,
-        values =        #partial{.DEFENSE = 5, .ATTACK = 4, .MOVEMENT = 4},
+        values =        #partial{.INITIATIVE = 9, .DEFENSE = 5, .ATTACK = 4, .MOVEMENT = 4, .RANGE = 2},
         primary =       .ATTACK,
-        reach =         Range(2),
         text =          "Choose one -\n* Target a unit adjacent to you.\n*Target a hero in range who has one or\nmore cards in the discard.",
         primary_effect = []Action {
             Action {
@@ -168,7 +162,7 @@ dodger_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance {
                             origin = Self{},
-                            bounds = {1, Card_Reach{}},
+                            bounds = {1, Card_Value{.RANGE}},
                         },
                         Target_Contains_Any{{.HERO}},
                         Target_Is_Enemy_Unit{},
@@ -193,17 +187,15 @@ dodger_cards := []Card_Data {
     Card_Data { name = "Dark Ritual",
         color =         .GREEN,
         tier =          1,
-        initiative =    3,
-        values =        #partial{.DEFENSE = 2, .MOVEMENT = 2},
+        values =        #partial{.INITIATIVE = 3, .DEFENSE = 2, .MOVEMENT = 2, .RADIUS = 3},
         primary =       .SKILL,
-        reach =         Radius(3),
         text =          "If there are 2 or more empty spawn points\nin radius in the battle zone, gain 1 coin",
         primary_effect = []Action {
             Action {
                 condition = Greater_Than {
                     Count_Targets {
                         conditions = {
-                            Target_Within_Distance{Self{}, {1, Card_Reach{}}},
+                            Target_Within_Distance{Self{}, {1, Card_Value{.RADIUS}}},
                             Target_Empty,
                             Target_Contains_Any{SPAWNPOINT_FLAGS},
                             Target_In_Battle_Zone{},
@@ -220,11 +212,9 @@ dodger_cards := []Card_Data {
     Card_Data { name = "Shield of Decay",
         color =         .BLUE,
         tier =          1,
-        initiative =    10,
-        values =        #partial{.DEFENSE = 3, .MOVEMENT = 3},
+        values =        #partial{.INITIATIVE = 10, .DEFENSE = 3, .MOVEMENT = 3, .RADIUS = 2},
         primary =       .DEFENSE,
         primary_sign =  .PLUS,
-        reach =         Radius(2),
         text =          "+2 Defense if there are 2 or more empty\nspawn points in radius in the battle zone.",
         primary_effect = []Action {
             Action {
@@ -238,7 +228,7 @@ dodger_cards := []Card_Data {
                                 Count_Targets {
                                     conditions = {
                                         Target_Within_Distance {
-                                            Self{}, {1, Card_Reach{}},
+                                            Self{}, {1, Card_Value{.RADIUS}},
                                         },
                                         Target_Empty,
                                         Target_Contains_Any{SPAWNPOINT_FLAGS},
@@ -255,10 +245,8 @@ dodger_cards := []Card_Data {
     Card_Data { name = "Finger of Death",
         color =         .RED,
         tier =          2,
-        initiative =    9,
-        values =        #partial{.DEFENSE = 6, .ATTACK = 4, .MOVEMENT = 4},
+        values =        #partial{.INITIATIVE = 9, .DEFENSE = 6, .ATTACK = 4, .MOVEMENT = 4, .RANGE = 3},
         primary =       .ATTACK,
-        reach =         Range(3),
         item =          .INITIATIVE,
         text =          "Choose one -\n*Target a unit adjacent to you.\n*Target a hero in range who has one or\nmore cards in the discard.",
         primary_effect = []Action {
@@ -300,7 +288,7 @@ dodger_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance {
                             origin = Self{},
-                            bounds = {1, Card_Reach{}},
+                            bounds = {1, Card_Value{.RANGE}},
                         },
                         Target_Contains_Any{{.HERO}},
                         Target_Is_Enemy_Unit{},
@@ -326,10 +314,8 @@ dodger_cards := []Card_Data {
         color =         .RED,
         tier =          2,
         alternate =     true,
-        initiative =    9,
-        values =        #partial{.DEFENSE = 5, .ATTACK = 3, .MOVEMENT = 4},
+        values =        #partial{.INITIATIVE = 9, .DEFENSE = 5, .ATTACK = 3, .MOVEMENT = 4, .RANGE = 2},
         primary =       .ATTACK,
-        reach =         Range(2),
         item =          .DEFENSE,
         text =          "Target a unit in range. After the attack:\nMove up to 1 minion adjacent to you\n1 space, to a space not adjacent to you",
         primary_effect = []Action {
@@ -337,7 +323,7 @@ dodger_cards := []Card_Data {
                 tooltip = "Target a unit in range.",
                 variant = Choose_Target_Action {
                     conditions = {
-                        Target_Within_Distance {Self{}, {1, Card_Reach{}}},
+                        Target_Within_Distance {Self{}, {1, Card_Value{.RANGE}}},
                         Target_Contains_Any{UNIT_FLAGS},
                         Target_Is_Enemy_Unit{},
                     },
@@ -377,10 +363,8 @@ dodger_cards := []Card_Data {
     Card_Data { name = "Darker Ritual",
         color =         .GREEN,
         tier =          2,
-        initiative =    3,
-        values =        #partial{.DEFENSE = 2, .MOVEMENT = 2},
+        values =        #partial{.INITIATIVE = 3, .DEFENSE = 2, .MOVEMENT = 2, .RADIUS = 3},
         primary =       .SKILL,
-        reach =         Radius(3),
         item =          .DEFENSE,
         text =          "If there are 2 or more empty spawn points\nin radius in the battle zone, gain 2 coins",
         primary_effect = []Action {
@@ -388,7 +372,7 @@ dodger_cards := []Card_Data {
                 condition = Greater_Than {
                     Count_Targets {
                         conditions = {
-                            Target_Within_Distance{Self{}, {1, Card_Reach{}}},
+                            Target_Within_Distance{Self{}, {1, Card_Value{.RADIUS}}},
                             Target_Empty,
                             Target_Contains_Any{SPAWNPOINT_FLAGS},
                             Target_In_Battle_Zone{},
@@ -406,8 +390,7 @@ dodger_cards := []Card_Data {
         color =         .GREEN,
         tier =          2,
         alternate =     true,
-        initiative =    3,
-        values =        #partial{.DEFENSE = 2, .MOVEMENT = 2},
+        values =        #partial{.INITIATIVE = 3, .DEFENSE = 2, .MOVEMENT = 2},
         primary =       .SKILL,
         item =          .ATTACK,
         text =          "Respawn a friendly minion in an empty friendly\nspawn point adjacent to you in the battle zone.",
@@ -440,11 +423,9 @@ dodger_cards := []Card_Data {
     Card_Data { name = "Vampiric Shield",
         color =         .BLUE,
         tier =          2,
-        initiative =    10,
-        values =        #partial{.DEFENSE = 0, .MOVEMENT = 3},  // @Todo find out what this actually is
+        values =        #partial{.INITIATIVE = 10, .DEFENSE = 0, .MOVEMENT = 3, .RADIUS = 2},  // @Todo find out what this actually is
         primary =       .DEFENSE,
         primary_sign =  .PLUS,
-        reach =         Radius(2),
         item =          .INITIATIVE,
         text =          "+2 Defense if there are 2 or more empty\nspawn points in radius in the battle zone.",
         primary_effect = []Action {
@@ -459,7 +440,7 @@ dodger_cards := []Card_Data {
                                 Count_Targets {
                                     conditions = {
                                         Target_Within_Distance {
-                                            Self{}, {1, Card_Reach{}},
+                                            Self{}, {1, Card_Value{.RADIUS}},
                                         },
                                         Target_Empty,
                                         Target_Contains_Any{SPAWNPOINT_FLAGS},
@@ -477,10 +458,8 @@ dodger_cards := []Card_Data {
         color =         .BLUE,
         tier =          2,
         alternate =     true,
-        initiative =    10,
-        values =        #partial{.DEFENSE = 4, .MOVEMENT = 3},
+        values =        #partial{.INITIATIVE = 10, .DEFENSE = 4, .MOVEMENT = 3, .RADIUS = 4},
         primary =       .SKILL,
-        reach =         Radius(4),
         item =          .ATTACK,
         text =          "This turn: Enemy heroes\nin radius have -4 Attack.\n(They can still attack, even with a negative attack value.",
         primary_effect = []Action {},
@@ -488,10 +467,8 @@ dodger_cards := []Card_Data {
     Card_Data { name = "Middlefinger of Death",  // @Unimplemented
         color =         .RED,
         tier =          3,
-        initiative =    10,
-        values =        #partial{.DEFENSE = 6, .ATTACK = 5, .MOVEMENT = 4},
+        values =        #partial{.INITIATIVE = 10, .DEFENSE = 6, .ATTACK = 5, .MOVEMENT = 4, .RANGE = 3},
         primary =       .ATTACK,
-        reach =         Range(3),
         item =          .MOVEMENT,
         text =          "Choose one, or both, on different targets -\n*Target a unit adjacent to you.\nTarget a hero in range who has one or\nmore cards in the discard",
         primary_effect = []Action {},
@@ -500,10 +477,8 @@ dodger_cards := []Card_Data {
         color =         .RED,
         tier =          3,
         alternate =     true,
-        initiative =    10,
-        values =        #partial{.DEFENSE = 5, .ATTACK = 4, .MOVEMENT = 4},
+        values =        #partial{.INITIATIVE = 10, .DEFENSE = 5, .ATTACK = 4, .MOVEMENT = 4, .RANGE = 2},
         primary =       .ATTACK,
-        reach =         Range(2),
         item =          .RADIUS,
         text =          "Target a unit in range. After the attack:\nMove up to 2 minions adjacent to you\n1 space, to spaces not adjacent to you",
         primary_effect = []Action {
@@ -511,7 +486,7 @@ dodger_cards := []Card_Data {
                 tooltip = "Target a unit in range.",
                 variant = Choose_Target_Action {
                     conditions = {
-                        Target_Within_Distance {Self{}, {1, Card_Reach{}}},
+                        Target_Within_Distance {Self{}, {1, Card_Value{.RANGE}}},
                         Target_Contains_Any{UNIT_FLAGS},
                         Target_Is_Enemy_Unit{},
                     },
@@ -573,10 +548,8 @@ dodger_cards := []Card_Data {
     Card_Data { name = "Darkest Ritual",  // @Unimplemented
         color =         .GREEN,
         tier =          3,
-        initiative =    2,
-        values =        #partial{.DEFENSE = 3, .MOVEMENT = 2},
+        values =        #partial{.INITIATIVE = 2, .DEFENSE = 3, .MOVEMENT = 2, .RADIUS = 3},
         primary =       .SKILL,
-        reach =         Radius(3),
         item =          .DEFENSE,
         text =          "If there are 2 or more empty spawn points in\nradius in the battle zone, gain 2 coins. If you\nhave your Ultimate, gain an Attack item.\n(Use any spare card from the box with the corresponding icon.",
         primary_effect = []Action {
@@ -587,10 +560,8 @@ dodger_cards := []Card_Data {
         color =         .GREEN,
         tier =          3,
         alternate =     true,
-        initiative =    2,
-        values =        #partial{.DEFENSE = 3, .MOVEMENT = 2},
+        values =        #partial{.INITIATIVE = 2, .DEFENSE = 3, .MOVEMENT = 2, .RADIUS = 1},
         primary =       .SKILL,
-        reach =         Radius(1),
         item =          .RANGE,
         text =          "Respawn a friendly minion in an empty friendly\nspawn point in radius in the battle zone.",
         primary_effect = []Action {},
@@ -598,11 +569,9 @@ dodger_cards := []Card_Data {
     Card_Data { name = "Aegis of Doom",
         color =         .BLUE,
         tier =          3,
-        initiative =    11,
-        values =        #partial{.DEFENSE = 0, .MOVEMENT = 3},
+        values =        #partial{.INITIATIVE = 11, .DEFENSE = 0, .MOVEMENT = 3, .RADIUS = 2},
         primary =       .DEFENSE,
         primary_sign =  .PLUS,
-        reach =         Radius(2),
         item =          .INITIATIVE,
         text =          "+4 Defense if there are 2 or more empty\nspawn points in radius in the battle zone.",
         primary_effect = []Action {},
@@ -611,10 +580,8 @@ dodger_cards := []Card_Data {
         color =         .BLUE,
         tier =          3,
         alternate =     true,
-        initiative =    11,
-        values =        #partial{.DEFENSE = 4, .MOVEMENT = 3},
+        values =        #partial{.INITIATIVE = 11, .DEFENSE = 4, .MOVEMENT = 3, .RADIUS = 4},
         primary =       .SKILL,
-        reach =         Radius(4),
         item =          .ATTACK,
         text =          "This turn: Enemy heroes\nin radius have -6 Attack and cannot repeat actions.",
         primary_effect = []Action {},

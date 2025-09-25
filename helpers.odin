@@ -131,10 +131,8 @@ get_next_turn_event :: proc(gs: ^Game_State) -> Event {
     for player, player_id in gs.players {
         player_card, ok := find_played_card(gs, player_id)
         if !ok do continue
-        player_card_data, ok2 := get_card_data_by_id(gs, player_card)
-        log.assert(ok2, "Could not find card data!")
 
-        effective_initiative := player_card_data.initiative + count_hero_items(gs, get_player_by_id(gs, player_id).hero, .INITIATIVE)
+        effective_initiative := calculate_implicit_quantity(gs, Card_Value{.INITIATIVE}, {card_id = player_card.id})
     
         if effective_initiative > highest_initiative {
             highest_initiative = effective_initiative

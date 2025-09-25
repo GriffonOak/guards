@@ -20,10 +20,8 @@ Implicit_Card_ID :: union {
 }
 
 
-Card_Reach :: struct {}
-
 Card_Value :: struct {
-    kind: Ability_Kind,
+    kind: Card_Value_Kind,
 }
 
 Sum     :: distinct []Implicit_Quantity
@@ -64,7 +62,6 @@ Implicit_Quantity :: union {
     Current_Turn,
 
     // Requires card in context
-    Card_Reach,
     Card_Value,
     Card_Turn_Played,
 }
@@ -160,7 +157,7 @@ Card_State_Is :: struct {
 }
 
 Card_Primary_Is :: struct {
-    kind: Ability_Kind,
+    kind: Primary_Kind,
 }
 
 Card_Owner_Is :: struct {
@@ -223,16 +220,6 @@ calculate_implicit_quantity :: proc(
 
     switch quantity in implicit_quantity {
     case int: return quantity
-    case Card_Reach:
-
-        log.assert(calc_context.card_id != {}, "Invalid card ID when calculating reach", loc)
-        card_data, ok := get_card_data_by_id(gs, calc_context.card_id)
-        log.assert(ok, "Invalid card ID when calculating reach", loc)
-        switch reach in card_data.reach {
-        case Range:out = int(reach) + count_hero_items(gs, get_player_by_id(gs, calc_context.card_id.owner_id).hero, .RANGE)
-        case Radius: out = int(reach) + count_hero_items(gs, get_player_by_id(gs, calc_context.card_id.owner_id).hero, .RADIUS)
-        case: log.assert(false, "tried to calculate nil card reach!", loc)
-        } 
 
     case Card_Value:
         log.assert(calc_context.card_id != {}, "Invalid card ID when calculating value", loc)
@@ -240,11 +227,7 @@ calculate_implicit_quantity :: proc(
         log.assert(ok, "Invalid card ID when calculating value", loc)
         hero := get_player_by_id(gs, calc_context.card_id.owner_id).hero
         value := card_data.values[quantity.kind]
-        #partial switch quantity.kind {
-        case .ATTACK: value += count_hero_items(gs, hero, .ATTACK)
-        case .DEFENSE: value += count_hero_items(gs, hero, .DEFENSE)
-        case .MOVEMENT: value += count_hero_items(gs, hero, .MOVEMENT)
-        }
+        value += count_hero_items(gs, hero, quantity.kind)
         return value
 
     case Sum:

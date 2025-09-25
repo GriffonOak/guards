@@ -114,22 +114,29 @@ main :: proc() {
     fmt.sbprintfln(&builder, "%v_cards := []Card_Data {{", strings.to_lower(hero_name))
     for card in cards {
         fmt.sbprintfln(&builder, "\tCard_Data {{ name = \"%v\",", card.name)
-        fmt.sbprintfln(&builder, "\t\tcolor =\t\t\t.%v,", card.color)
-        if card.tier > 0 do fmt.sbprintfln(&builder, "\t\ttier =\t\t\t%v,", card.tier)
-        if card.alternate do fmt.sbprintfln(&builder, "\t\talternate =\t\ttrue,")
-        fmt.sbprintfln(&builder, "\t\tinitiative =\t%v,", card.initiative)
-
-        fmt.sbprintf(&builder, "\t\tvalues =\t\t#partial{{")
-        fmt.sbprintf(&builder, ".DEFENSE = %v", card.defense_value)
+        fmt.sbprintfln(&builder, "\t\tcolor\t\t\t= .%v,", card.color)
+        if card.tier > 0 do fmt.sbprintfln(&builder, "\t\ttier\t\t\t= %v,", card.tier)
+        if card.alternate do fmt.sbprintfln(&builder, "\t\talternate\t\t= true,")
+        
+        fmt.sbprintf(&builder, "\t\tvalues\t\t\t= #partial{{")
+        fmt.sbprintf(&builder, ".INITIATIVE = %v", card.initiative)
+        fmt.sbprintf(&builder, ", .DEFENSE = %v", card.defense_value)
         if card.attack_value > 0 do fmt.sbprintf(&builder, ", .ATTACK = %v", card.attack_value)
         if card.movement_value > 0 do fmt.sbprintf(&builder, ", .MOVEMENT = %v", card.movement_value)
+        if card.reach != "" {
+            if strings.starts_with(card.reach, "Range(") {
+                fmt.sbprintf(&builder, ", .RANGE = %v", card.reach[6:len(card.reach)-1])
+            }
+            if strings.starts_with(card.reach, "Radius(") {
+                fmt.sbprintf(&builder, ", .RADIUS = %v", card.reach[7:len(card.reach)-1])
+            }
+        }
         fmt.sbprintfln(&builder, "}},")
-        fmt.sbprintfln(&builder, "\t\tprimary =\t\t.%v,", card.primary)
-        if card.primary_sign != "" do fmt.sbprintfln(&builder, "\t\tprimary_sign =\t.%v,", card.primary_sign)
-        if card.reach != "" do fmt.sbprintfln(&builder, "\t\treach =\t\t\t%v,", card.reach)
-        if card.reach_sign != "" do fmt.sbprintfln(&builder, "\t\treach_sign =\t.%v,", card.reach_sign)
-        if card.item != "" do fmt.sbprintfln(&builder, "\t\titem =\t\t\t.%v,", card.item)
-        fmt.sbprintfln(&builder, "\t\ttext =\t\t\t\"%v\",", card.text)
+        fmt.sbprintfln(&builder, "\t\tprimary\t\t\t= .%v,", card.primary)
+        if card.primary_sign != "" do fmt.sbprintfln(&builder, "\t\tprimary_sign\t= .%v,", card.primary_sign)
+        if card.reach_sign != "" do fmt.sbprintfln(&builder, "\t\treach_sign\t= .%v,", card.reach_sign)
+        if card.item != "" do fmt.sbprintfln(&builder, "\t\titem\t\t\t= .%v,", card.item)
+        fmt.sbprintfln(&builder, "\t\ttext\t\t\t= \"%v\",", card.text)
         fmt.sbprintfln(&builder, "\t\tprimary_effect = []Action {{}},")
 
 

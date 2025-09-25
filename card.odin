@@ -5,6 +5,7 @@ import "core:strings"
 import "core:fmt"
 import "core:math"
 import "core:log"
+import "core:reflect"
 
 
 
@@ -26,7 +27,7 @@ Card_State :: enum {
 }
 
 // I philosophically dislike this enum
-Ability_Kind :: enum {
+Primary_Kind :: enum {
     // NONE,
     ATTACK,
     SKILL,
@@ -35,7 +36,7 @@ Ability_Kind :: enum {
     MOVEMENT,
 }
 
-Item_Kind :: enum {
+Card_Value_Kind :: enum {
     ATTACK,
     DEFENSE,
     INITIATIVE,
@@ -44,21 +45,13 @@ Item_Kind :: enum {
     RADIUS,
 }
 
-item_initials: [Item_Kind]cstring = {
+item_initials: [Card_Value_Kind]cstring = {
     .ATTACK = "A",
     .DEFENSE = "D",
     .INITIATIVE = "I",
     .RANGE = "Rn",
     .MOVEMENT = "M",
     .RADIUS = "Ra",
-}
-
-Range  :: distinct int
-Radius :: distinct int
-
-Action_Reach :: union {
-    Range,
-    Radius,
 }
 
 PLUS_SIGN: cstring : "+"
@@ -85,13 +78,11 @@ Card_Data :: struct {
     using id: Card_ID,
 
     name: cstring,
-    initiative: int,
-    values: [Ability_Kind]int,
-    primary: Ability_Kind,
+    values: [Card_Value_Kind]int,
+    primary: Primary_Kind,
     primary_sign: Sign,
-    reach: Action_Reach,
     reach_sign: Sign,
-    item: Item_Kind,
+    item: Card_Value_Kind,
     text: string,
 
     // !!This cannot be sent over the network !!!!
@@ -170,7 +161,7 @@ CARD_PLAYED_POSITION_RECT :: rl.Rectangle{BOARD_POSITION_RECT.width - PLAYED_CAR
 
 
 @rodata
-ability_initials := [Ability_Kind]string {
+primary_initials := [Primary_Kind]string {
     .ATTACK = "A",
     .SKILL = "S",
     .DEFENSE = "D",
@@ -224,11 +215,26 @@ create_texture_for_card :: proc(card: ^Card_Data) {
     // Secondaries ribbon & initiative
     rl.DrawRectangleRec({0, 0, COLORED_BAND_WIDTH, CARD_TEXTURE_SIZE.y / 2}, card_color_values[card.color])
 
-    rl.DrawTextEx(default_font, fmt.ctprintf("I%d", card.initiative), {TEXT_PADDING, TEXT_PADDING}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+    rl.DrawTextEx(default_font, fmt.ctprintf("I%d", card.values[.INITIATIVE]), {TEXT_PADDING, TEXT_PADDING}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     secondaries_index := 1
-    for val, ability in card.values {
-        if val == 0 || ability == card.primary do continue
-        rl.DrawTextEx(default_font, fmt.ctprintf("%s%d", ability_initials[ability], val), {TEXT_PADDING, TEXT_PADDING + f32(secondaries_index) * TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+    primary_to_value := [Primary_Kind]Card_Value_Kind {
+        .ATTACK = .ATTACK,
+        .SKILL = .ATTACK, // Presumably the attack value will be 0 for skills
+        .MOVEMENT = .MOVEMENT,
+        .DEFENSE = .DEFENSE,
+        .DEFENSE_SKILL = .DEFENSE,
+    }
+
+    for value, value_kind in card.values {
+        if (
+            value == 0 ||
+            value_kind == primary_to_value[card.primary] ||
+            value_kind == .INITIATIVE ||
+            value_kind == .RANGE ||
+            value_kind == .RADIUS
+        ) { continue }
+        value_name, _ := reflect.enum_name_from_value(value_kind)
+        rl.DrawTextEx(default_font, fmt.ctprintf("%s%d", value_name[:1], value), {TEXT_PADDING, TEXT_PADDING + f32(secondaries_index) * TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
         secondaries_index += 1
     }
     
@@ -265,21 +271,17 @@ create_texture_for_card :: proc(card: ^Card_Data) {
     text_dimensions := rl.MeasureTextEx(default_font, text_cstring, TEXT_FONT_SIZE, FONT_SPACING)
 
     // Primary & its value & sign
-    primary_value := card.values[card.primary]
+    primary_value := card.values[primary_to_value[card.primary]]
+    primary_value_string := fmt.ctprintf("%d", primary_value) if primary_value > 0 else ""
     primary_value_loc := Vec2{TEXT_PADDING, y_offset - text_dimensions.y - TITLE_FONT_SIZE}
     rl.DrawRectangleV({0, primary_value_loc.y - TEXT_PADDING}, CARD_TEXTURE_SIZE, rl.WHITE)
     rl.DrawLineEx({0, primary_value_loc.y - TEXT_PADDING}, {CARD_TEXTURE_SIZE.x, primary_value_loc.y - TEXT_PADDING}, TEXT_PADDING, rl.BLACK)
-    switch card.primary {
-    case .ATTACK, .DEFENSE, .MOVEMENT, .DEFENSE_SKILL:
-        rl.DrawTextEx(default_font, fmt.ctprintf("%s%d%s", ability_initials[card.primary], primary_value, PLUS_SIGN if card.primary_sign == .PLUS else ""), primary_value_loc, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
-    case .SKILL:
-        rl.DrawTextEx(default_font, fmt.ctprintf("%s", ability_initials[card.primary]), primary_value_loc, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
-    }
+    rl.DrawTextEx(default_font, fmt.ctprintf("%s%s%s", primary_initials[card.primary], primary_value_string, PLUS_SIGN if card.primary_sign == .PLUS else ""), primary_value_loc, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
 
     // Reach & sign
-    if card.reach != nil {
-        _, is_radius := card.reach.(Radius)
-        reach_string := fmt.ctprintf("%s%d%s", "Rd" if is_radius else "Rn", card.reach, PLUS_SIGN if card.reach_sign == .PLUS else "")
+    card_reach, is_radius := (card.values[.RADIUS] if card.values[.RADIUS] > 0 else card.values[.RANGE]), card.values[.RADIUS] > 0
+    if card_reach > 0 {
+        reach_string := fmt.ctprintf("%s%d%s", "Rd" if is_radius else "Rn", card_reach, PLUS_SIGN if card.reach_sign == .PLUS else "")
         reach_dimensions := rl.MeasureTextEx(default_font, reach_string, TITLE_FONT_SIZE, FONT_SPACING).x
         rl.DrawTextEx(default_font, reach_string, {CARD_TEXTURE_SIZE.x - reach_dimensions - TEXT_PADDING, primary_value_loc.y}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     }
