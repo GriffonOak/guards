@@ -143,6 +143,7 @@ brogan_cards := []Card_Data {
                 skip_index = {index = 1},
                 variant = Movement_Action {
                     target = Self{},
+                    min_distance = 1,
                     max_distance = 1,
                 },
             },
@@ -323,6 +324,7 @@ brogan_cards := []Card_Data {
             Action {
                 tooltip = "Target a friendly hero in range.",
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Reach{}}},
                         Target_Contains_Any{{.HERO}},
@@ -357,6 +359,7 @@ brogan_cards := []Card_Data {
                 skip_index = {index = 1},
                 variant = Movement_Action {
                     target = Self{},
+                    min_distance = 1,
                     max_distance = 1,
                 },
             },
@@ -404,6 +407,7 @@ brogan_cards := []Card_Data {
             Action {
                 tooltip = "Target an enemy hero adjacent to you who has played an attack card.",
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
                         Target_Contains_Any{{.HERO}},
@@ -579,6 +583,7 @@ brogan_cards := []Card_Data {
             Action {
                 tooltip = "Target a friendly hero in range.",
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Reach{}}},
                         Target_Contains_Any{{.HERO}},
@@ -658,6 +663,7 @@ brogan_cards := []Card_Data {
             Action {
                 tooltip = "Target an enemy hero adjacent to you who has played an attack card.",
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
                         Target_Contains_Any{{.HERO}},

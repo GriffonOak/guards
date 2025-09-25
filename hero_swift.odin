@@ -29,6 +29,7 @@ swift_cards := []Card_Data {
             Action {  // 2
                 tooltip = "Defeat a minion adjacent to you.",
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     conditions = {
                         Target_Within_Distance {Self{}, {1, 1}},
                         Target_Contains_Any{MINION_FLAGS},

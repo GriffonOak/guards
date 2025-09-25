@@ -1,0 +1,24 @@
+,,Gold / Silver cards should be tier 0,,,,,,,,e.g. Range(3) or Radius(4),,,Replace line break with \n pls
+,,,"The ""Alt path"" card, the one different from the starting card of the same color",,,,,,Leave blank if unsigned,,Leave blank if unsigned,,
+,,,,,,,,,,leave blank if n/a,,Blank if n/a,
+Name,Color,Tier,Alternate?,Initiative,Attack Value,Defense Value,Movement Value,Primary Kind,Primary Sign,Reach,Reach Sign,Item Kind,Text
+Dodge,BLUE,1,FALSE,10,,,3,DEFENSE,,,,,Block a ranged attack.
+Sidestep,BLUE,2,FALSE,11,,,3,DEFENSE,,,,ATTACK,Block a ranged attack.\nYou may move 1 space.
+Parry,BLUE,2,TRUE,11,,,3,DEFENSE,,,,DEFENSE,"Block a non-ranged attack.\nThe attacker discards a card, if able."
+Evade,BLUE,3,FALSE,11,,,3,DEFENSE,,,,ATTACK,Block a ranged attack.\nYou may move 1 space. You may retrieve\nyour resolved or discarded basic skill card.
+Riposte,BLUE,3,TRUE,11,,,3,DEFENSE,,,,RANGE,"Block a non-ranged attack.\nThe attacker discards a card, or is defeated."
+Blink Strike,GOLD,0,FALSE,13,3,1,1,ATTACK,,,,,"Before the attack: Move 2 spaces in a straight\nline through an enemy unit: target that unit.\nIf you cannot make this move, you cannot attack.)"
+Light-Fingered,GREEN,1,FALSE,2,,1,3,SKILL,,,,,"You may move 1 space.\nTake 1 coin from an enemy hero adjacent\nto you; if you do, you may move 1 space."
+Pick Pocket,GREEN,2,FALSE,2,,1,3,SKILL,,,,ATTACK,"Move up to 2 spaces.\nTake 1 coin from an enemy hero adjacent\nto you; if you do, you may move 1 space."
+Poisoned Dagger,GREEN,2,TRUE,2,,1,3,SKILL,,Range(3),,INITIATIVE,"Give a hero in range a Poison marker.\nThe hero with a poison marker has\n-1 Initiative, -1 Attack and -1 Defense."
+Master Thief,GREEN,3,FALSE,1,,2,3,SKILL,,,,MOVEMENT,"Move up to 2 spaces. Take 1 or 2 coins\nfrom an enemy hero adjacent to you;\nif you do, you may move 2 spaces."
+Poisoned Dart,GREEN,3,TRUE,1,,2,3,SKILL,,Range(3),,INITIATIVE,"Give a hero in range a Poison marker.\nThe hero with a poison marker has\n-2 Initiative, -2 Attack and -2 Defense."
+Hit and Run,RED,1,FALSE,9,3,3,4,ATTACK,,,,,Target a unit adjacent to you.\nAfter the attack: You may move 1 space.
+Combat Reflexes,RED,2,FALSE,9,4,3,4,ATTACK,,,,INITIATIVE,"Before the attack: You may move 1 space.\nTarget a unit adjacent to you.\nAfter the attack: If you did not move before\nthe attack, you may move 1 space."
+Backstab,RED,2,TRUE,9,5,5,5,ATTACK,PLUS,,,DEFENSE,"Target a unit adjacent to you; if a friendly\nunit is adjacent to the target, +2 Attack.\nA ""friendly unit"" is another hero or a minion on your team.)"
+Leaping Strike,RED,3,FALSE,10,4,4,4,ATTACK,,,,RADIUS,Before the attack: You may move 1 space.\nTarget a unit adjacent to you.\nAfter the attack: You may move 1 space.
+Backstab with a Ballista,RED,3,TRUE,10,5,6,5,ATTACK,PLUS,Range(1),,DEFENSE,"Target a unit in range;\nif a friendly unit is adjacent to the target\n+2 Attack, and the target cannot\nperform a primary action to defend."
+Blend into Shadows,SILVER,0,FALSE,6,,2,,SKILL,,Radius(2),,,"If you are adjacent to terrain, place yourself\ninto a space in radius; if you do, Next turn:\nYou are immune to enemy attack actions."
+,,,,,,,,,,,,,
+Ultimate:,"After you perform a basic action, you may\nrepeat it once; if you repeat an attack\naction, you cannot target the same unit.",,,,,,,,,,,,
+,"^ Just write it out above, I'll deal with it separately",,,,,,,,,,,,
