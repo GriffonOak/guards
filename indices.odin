@@ -4,8 +4,8 @@ package guards
 // Auto-generated
 
 zone_indices := [Region_ID][]Target {
-	.NONE = {},
-	.RED_JUNGLE = {
+	.None = {},
+	.Red_Jungle = {
 		{
 			2,
 			13,
@@ -67,7 +67,7 @@ zone_indices := [Region_ID][]Target {
 			17,
 		},
 	},
-	.RED_BASE = {
+	.Red_Throne = {
 		{
 			1,
 			11,
@@ -145,7 +145,7 @@ zone_indices := [Region_ID][]Target {
 			10,
 		},
 	},
-	.RED_BEACH = {
+	.Red_Beach = {
 		{
 			5,
 			5,
@@ -311,7 +311,7 @@ zone_indices := [Region_ID][]Target {
 			3,
 		},
 	},
-	.CENTRE = {
+	.Centre = {
 		{
 			5,
 			12,
@@ -553,7 +553,7 @@ zone_indices := [Region_ID][]Target {
 			14,
 		},
 	},
-	.BLUE_BEACH = {
+	.Blue_Beach = {
 		{
 			15,
 			14,
@@ -719,7 +719,7 @@ zone_indices := [Region_ID][]Target {
 			16,
 		},
 	},
-	.BLUE_BASE = {
+	.Blue_Throne = {
 		{
 			19,
 			8,
@@ -797,7 +797,7 @@ zone_indices := [Region_ID][]Target {
 			9,
 		},
 	},
-	.BLUE_JUNGLE = {
+	.Blue_Jungle = {
 		{
 			18,
 			6,

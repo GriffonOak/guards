@@ -8,7 +8,7 @@ import sa "core:container/small_array"
 import ba "core:container/bit_array"
 
 UI_Domain :: enum {
-    NONE,
+    None,
     BOARD,
     CARDS,
     BUTTONS,

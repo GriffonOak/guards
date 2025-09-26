@@ -22,8 +22,8 @@ Direction :: enum {
 }
 
 Team :: enum {
-    RED,
-    BLUE,
+    Red,
+    Blue,
 }
 
 Game_Stage :: enum {
@@ -36,7 +36,7 @@ Game_Stage :: enum {
 }
 
 Active_Effect_Kind :: enum {
-    NONE,
+    None,
     XARGATHA_FREEZE,
     XARGATHA_DEFEAT,
     SWIFT_DELAYED_JUMP,
@@ -74,8 +74,13 @@ Wave_Push_Interrupt :: struct {
     pushing_team: Team,
 }
 
+Attack_Flag :: enum {
+    Ranged,
+}
+
 Attack_Interrupt :: struct {
     strength: int,
+    flags: bit_set[Attack_Flag],
     // minion_modifiers: int,
 }
 
@@ -163,8 +168,8 @@ Game_State :: struct {
 
 @rodata
 team_colors := [Team]rl.Color{
-    .RED  = {237, 92, 2, 255},
-    .BLUE = {22, 147, 255, 255},
+    .Red  = {237, 92, 2, 255},
+    .Blue = {22, 147, 255, 255},
 }
 
 // Directed_Target :: [2]i8
@@ -188,14 +193,14 @@ num_life_counters := [?]int {
 spawn_minions :: proc(gs: ^Game_State, zone: Region_ID) {
     for index in zone_indices[zone] {
         space := &gs.board[index.x][index.y]
-        spawnpoint_flags := space.flags & (SPAWNPOINT_FLAGS - {.HERO_SPAWNPOINT})
+        spawnpoint_flags := space.flags & (SPAWNPOINT_FLAGS - {.Hero_Spawnpoint})
         if spawnpoint_flags != {} {
             spawnpoint_type := get_first_set_bit(spawnpoint_flags).?
 
             minion_to_spawn := spawnpoint_to_minion[spawnpoint_type]
-            // if minion_to_spawn == .MELEE_MINION && space.spawnpoint_team == .RED do continue
+            // if minion_to_spawn == .Melee_Minion && space.spawnpoint_team == .Red do continue
 
-            if (space.flags - {.TOKEN}) & OBSTACLE_FLAGS != {} {
+            if (space.flags - {.Token}) & OBSTACLE_FLAGS != {} {
                 broadcast_game_event(gs, Minion_Blocked_Event{index})
             } else {
                 broadcast_game_event(gs, Minion_Spawn_Event{index, minion_to_spawn, space.spawnpoint_team})
@@ -211,10 +216,10 @@ spawn_heroes_at_start :: proc(gs: ^Game_State) {
         team := player.team
         spawnpoint_marker := spawnpoints[num_spawns[team]]
         num_spawns[team] += 1
-        log.assert(spawnpoint_marker.spawnpoint_flag == .HERO_SPAWNPOINT)
+        log.assert(spawnpoint_marker.spawnpoint_flag == .Hero_Spawnpoint)
         spawnpoint_space: ^Space
 
-        if team == .BLUE {
+        if team == .Blue {
             spawnpoint_space = get_symmetric_space(gs, spawnpoint_marker.loc)
             player.hero.location = {GRID_WIDTH, GRID_HEIGHT} - spawnpoint_marker.loc - 1
         } else {
@@ -222,7 +227,7 @@ spawn_heroes_at_start :: proc(gs: ^Game_State) {
             player.hero.location = spawnpoint_marker.loc
         }
 
-        spawnpoint_space.flags += {.HERO}
+        spawnpoint_space.flags += {.Hero}
         spawnpoint_space.unit_team = team
         spawnpoint_space.hero_id = player.hero.id
         spawnpoint_space.owner = player_id
@@ -278,7 +283,7 @@ setup_hero_cards :: proc(gs: ^Game_State) {
             if index >= 5 do continue
             player_card := &player.hero.cards[card.color]
             player_card.id = card.id
-            player_card.state = .IN_HAND
+            player_card.state = .In_Hand
             player_card.hero_id = hero_id
             player_card.owner_id = player_id
         }
@@ -290,18 +295,18 @@ when !ODIN_TEST {
 }
 
 begin_game :: proc(gs: ^Game_State) {
-    gs.current_battle_zone = .CENTRE
+    gs.current_battle_zone = .Centre
     gs.wave_counters = 5
-    gs.life_counters[.RED] = 6
-    gs.life_counters[.BLUE] = 6
+    gs.life_counters[.Red] = 6
+    gs.life_counters[.Blue] = 6
 
     spawn_heroes_at_start(gs)
 
     setup_hero_cards(gs)
 
     if gs.is_host {
-        // tiebreaker: Team = .RED if rand.int31_max(2) == 0 else .BLUE
-        tiebreaker: Team = .RED
+        // tiebreaker: Team = .Red if rand.int31_max(2) == 0 else .Blue
+        tiebreaker: Team = .Red
         broadcast_game_event(gs, Update_Tiebreaker_Event{tiebreaker})
         spawn_minions(gs, gs.current_battle_zone)
     }
@@ -333,8 +338,8 @@ remove_heavy_immunity :: proc(gs: ^Game_State, team: Team) {
     zone := zone_indices[gs.current_battle_zone]
     for target in zone {
         space := &gs.board[target.x][target.y]
-        if space.flags & {.HEAVY_MINION} != {} {
-            space.flags -= {.IMMUNE}
+        if space.flags & {.Heavy_Minion} != {} {
+            space.flags -= {.Immune}
         }
     }
 }

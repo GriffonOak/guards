@@ -350,7 +350,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         case .SELECTING:
             log.assert(card_ok, "Card element clicked with no card associated!")
             #partial switch card.state {
-            case .IN_HAND:
+            case .In_Hand:
 
                 if selected_element, ok2 := find_selected_card_element(gs); ok2 {
                     selected_card_element := &selected_element.variant.(UI_Card_Element)
@@ -392,7 +392,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 append(&gs.event_queue, Begin_Next_Upgrade_Event{})
             } else {
                 #partial switch card.state {
-                case .IN_HAND:
+                case .In_Hand:
                     if card.tier == 0 do break
                     // Ensure clicked card is able to be upgraded
                     lowest_tier: int = 1e6
@@ -504,7 +504,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         dest_space.unit_team = src_space.unit_team
         dest_space.hero_id = src_space.hero_id
 
-        if .HERO in src_transient_flags {
+        if .Hero in src_transient_flags {
             dest_space.owner = src_space.owner
             get_player_by_id(gs, dest_space.owner).hero.location = var.dest
         }
@@ -515,7 +515,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         log.assert(space.flags & MINION_FLAGS != {}, "Tried to defeat a minion in a space with no minions!")
         minion_team := space.unit_team
 
-        if .HEAVY_MINION in minion {
+        if .Heavy_Minion in minion {
             log.assert(gs.minion_counts[minion_team] == 1, "Heavy minion defeated with an invalid number of minions left!")
             get_player_by_id(gs, var.defeating_player).hero.coins += 4
         } else {
@@ -539,17 +539,17 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Minion_Spawn_Event:
         space := &gs.board[var.target.x][var.target.y]
-        space.flags -= {.TOKEN}
+        space.flags -= {.Token}
         space.flags += {var.minion_type}
-        if var.minion_type == .HEAVY_MINION {
-            space.flags += {.IMMUNE}
+        if var.minion_type == .Heavy_Minion {
+            space.flags += {.Immune}
         }
         space.unit_team = var.team
         gs.minion_counts[var.team] += 1
 
     case Minion_Blocked_Event:
         space := &gs.board[var.target.x][var.target.y]
-        log.assert(space.flags & (SPAWNPOINT_FLAGS - {.HERO_SPAWNPOINT}) != {}, "Minion spawn blocked at non-spawnpoint!")
+        log.assert(space.flags & (SPAWNPOINT_FLAGS - {.Hero_Spawnpoint}) != {}, "Minion spawn blocked at non-spawnpoint!")
         append(&gs.blocked_spawns[space.spawnpoint_team], var.target)
 
     case Hero_Defeated_Event:
@@ -561,14 +561,14 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         if defeated_card, ok := find_played_card(gs, var.defeated); ok {
             if var.defeated == gs.my_player_id && len(gs.interrupt_stack) > 0 {
-                gs.interrupt_stack[0].previous_stage = .RESOLVED
+                gs.interrupt_stack[0].previous_stage = .Resolved
             } else { 
-                defeated.stage = .RESOLVED
+                defeated.stage = .Resolved
             }
             resolve_card(gs, defeated_card)
         }        
 
-        gs.board[defeated_hero.location.x][defeated_hero.location.y].flags -= {.HERO}
+        gs.board[defeated_hero.location.x][defeated_hero.location.y].flags -= {.Hero}
 
         for &player in gs.players {
             if player.team == defeater.team {
@@ -589,7 +589,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         player := get_player_by_id(gs, var.respawner)
         player.hero.location = var.location
         player.hero.dead = false
-        gs.board[var.location.x][var.location.y].flags += {.HERO}
+        gs.board[var.location.x][var.location.y].flags += {.Hero}
         gs.board[var.location.x][var.location.y].hero_id = player.hero.id
         gs.board[var.location.x][var.location.y].unit_team = player.team
         gs.board[var.location.x][var.location.y].owner = var.respawner
@@ -641,7 +641,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 broadcast_game_event(gs, Begin_Wave_Push_Event{interrupt_variant.pushing_team})
             case Attack_Interrupt:
                 // @Todo need to do attacks now
-                get_my_player(gs).hero.current_action_index = {sequence = .BASIC_DEFENSE, index = 0}
+                get_my_player(gs).hero.current_action_index = {sequence = .Basic_Defense, index = 0}
                 append(&gs.event_queue, Begin_Next_Action_Event{})
             }
         } else {
@@ -671,7 +671,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         hand_card: Maybe(Card_ID) = nil
 
         for card in get_my_player(gs).hero.cards {
-            if card.state == .IN_HAND {
+            if card.state == .In_Hand {
                 hand_card_count += 1
                 hand_card = card.id
             }
@@ -750,13 +750,13 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         card, ok := find_played_card(gs)
         log.assert(ok, "No played card when player begins their resolution!")
 
-        get_my_player(gs).hero.current_action_index = {card_id = card.id, sequence=.FIRST_CHOICE}
+        get_my_player(gs).hero.current_action_index = {card_id = card.id, sequence=.First_Choice}
 
         if get_my_player(gs).hero.dead {
             become_interrupted (
                 gs,
                 gs.my_player_id,
-                Action_Index{sequence = .RESPAWN, index = 0},
+                Action_Index{sequence = .Respawn, index = 0},
                 Begin_Next_Action_Event{},
             )
             break
@@ -776,7 +776,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         action := get_action_at_index(gs, action_index)
 
         skip_index := action.skip_index
-        if skip_index == {} do skip_index = {sequence = .HALT}
+        if skip_index == {} do skip_index = {sequence = .Halt}
     
         gs.tooltip = action.tooltip
         log.infof("ACTION: %v", reflect.union_variant_typeid(action.variant))
@@ -871,6 +871,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         case Attack_Action:
             target := calculate_implicit_target(gs, action_type.target, calc_context)
             space := &gs.board[target.x][target.y]
+            card_data, ok := get_card_data_by_id(gs, action_index.card_id)
+            log.assert(ok, "Could not get data for attacker's card!!")
             attack_strength := calculate_implicit_quantity(gs, action_type.strength, calc_context)
             log.infof("Attack strength: %v", attack_strength)
             // Here we assume the target must be an enemy. Enemy should always be in the selection flags for attacks.
@@ -892,6 +894,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                     owner,
                     Attack_Interrupt {
                         strength = attack_strength,
+                        flags = action_type.flags + ({.Ranged} if card_data.values[.RANGE] > 0 else {}),
                     },
                     Resolve_Current_Action_Event{},
                 )
@@ -900,12 +903,12 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         case Force_Discard_Action:
             target := calculate_implicit_target(gs, action_type.target, calc_context)
             space := gs.board[target.x][target.y]
-            log.assert(.HERO in space.flags, "Forced a space without a hero to discard!")
+            log.assert(.Hero in space.flags, "Forced a space without a hero to discard!")
             owner := space.owner
             become_interrupted (
                 gs,
                 owner,
-                Action_Index{sequence = .DISCARD_ABLE} if !action_type.or_is_defeated else Action_Index{sequence = .DISCARD_DEFEAT},
+                Action_Index{sequence = .Discard_If_Able} if !action_type.or_is_defeated else Action_Index{sequence = .Discard_Or_Die},
                 Resolve_Current_Action_Event{},
             )
         
@@ -955,7 +958,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             target := calculate_implicit_target(gs, action_type.location, calc_context)
             spawnpoint := calculate_implicit_target(gs, action_type.spawnpoint, calc_context)
             space := gs.board[spawnpoint.x][spawnpoint.y]
-            spawnpoint_flags := space.flags & (SPAWNPOINT_FLAGS - {.HERO_SPAWNPOINT})
+            spawnpoint_flags := space.flags & (SPAWNPOINT_FLAGS - {.Hero_Spawnpoint})
             log.assert(spawnpoint_flags != {}, "Minion spawn action with invalid spawnpoint!!!")
             spawnpoint_type := get_first_set_bit(spawnpoint_flags).?
             minion_type := spawnpoint_to_minion[spawnpoint_type]
@@ -992,7 +995,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 can_defend = defense_strength >= attack_strength
             }
             if can_defend do append(&gs.event_queue, Resolve_Current_Action_Event{})
-            else do append(&gs.event_queue, Resolve_Current_Action_Event{Action_Index{sequence = .DIE}})
+            else do append(&gs.event_queue, Resolve_Current_Action_Event{Action_Index{sequence = .Die}})
             // @Defense: Here you would add an interrupt to perform the "defense action"
             
 
@@ -1006,7 +1009,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             gain := calculate_implicit_quantity(gs, action_type.gain, calc_context)
 
             space := &gs.board[target.x][target.y]
-            log.assert(.HERO in space.flags, "Tried to give coins to a space without a hero!")
+            log.assert(.Hero in space.flags, "Tried to give coins to a space without a hero!")
 
             player_base := get_player_by_id(gs, space.owner).base
             player_base.hero.coins += gain
@@ -1085,7 +1088,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             next_index.index += 1
         }
 
-        if next_index.sequence == .HALT || get_action_at_index(gs, next_index) == nil {
+        if next_index.sequence == .Halt || get_action_at_index(gs, next_index) == nil {
             end_current_action_sequence(gs)
             break
         }
@@ -1097,7 +1100,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         clear_side_buttons(gs)
 
         // This is to ensure that if a player's state changes mid-interrupt, only the underlying "base state" changes, rather than all the froth on top.
-        gs.players[var.player_id].stage = .RESOLVED
+        gs.players[var.player_id].stage = .Resolved
 
 
         card, ok := find_played_card(gs, var.player_id)
@@ -1124,7 +1127,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         needs_interrupt: [Team]bool
 
         check_spaces: for region_id in Region_ID{
-            if region_id == .NONE || region_id == gs.current_battle_zone do continue
+            if region_id == .None || region_id == gs.current_battle_zone do continue
             for index in zone_indices[region_id] {
                 space := gs.board[index.x][index.y]
                 if space.flags & MINION_FLAGS != {} {
@@ -1138,14 +1141,14 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             become_interrupted (
                 gs,
                 gs.team_captains[gs.tiebreaker_coin],
-                Action_Index{sequence = .MINION_OUTSIDE_ZONE, index = 0},
+                Action_Index{sequence = .Minion_Outside_Zone, index = 0},
                 Check_Minions_Outside_Zone_Event{},
             )
         } else if non_tb_team := get_enemy_team(gs.tiebreaker_coin); needs_interrupt[non_tb_team] {
             become_interrupted (
                 gs,
                 gs.team_captains[non_tb_team],
-                Action_Index{sequence = .MINION_OUTSIDE_ZONE, index = 0},
+                Action_Index{sequence = .Minion_Outside_Zone, index = 0},
                 Check_Minions_Outside_Zone_Event{},
             )
         } else {
@@ -1221,11 +1224,11 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         if !gs.is_host do break
 
-        minion_difference := gs.minion_counts[.RED] - gs.minion_counts[.BLUE]
-        // pushing_team := .RED if minion_difference > 0 else .BLUE
+        minion_difference := gs.minion_counts[.Red] - gs.minion_counts[.Blue]
+        // pushing_team := .Red if minion_difference > 0 else .Blue
         // pushed_team := get_enemy_team(pushing_team)
         if abs(minion_difference) > 0 {
-            pushing_team: Team = .RED if minion_difference > 0 else .BLUE
+            pushing_team: Team = .Red if minion_difference > 0 else .Blue
             pushed_team := get_enemy_team(pushing_team)
             if abs(minion_difference) >= gs.minion_counts[pushed_team] {
                 become_interrupted (
@@ -1238,7 +1241,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 become_interrupted (
                     gs,
                     gs.team_captains[pushed_team],
-                    Action_Index{sequence = .MINION_REMOVAL, index = 0},
+                    Action_Index{sequence = .Minion_Removal, index = 0},
                     End_Minion_Battle_Event{},
                 )
             }
@@ -1262,9 +1265,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         prev_battle_zone := gs.current_battle_zone
 
-        gs.current_battle_zone += Region_ID(1) if var.pushing_team == .RED else Region_ID(-1)
+        gs.current_battle_zone += Region_ID(1) if var.pushing_team == .Red else Region_ID(-1)
 
-        if gs.wave_counters == 0 || gs.current_battle_zone == .RED_BASE || gs.current_battle_zone == .BLUE_BASE {
+        if gs.wave_counters == 0 || gs.current_battle_zone == .Red_Throne || gs.current_battle_zone == .Blue_Throne {
             // Win on base push or last push
             append(&gs.event_queue, Game_Over_Event{var.pushing_team})
             break
@@ -1276,8 +1279,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             space.flags -= MINION_FLAGS
         }
 
-        gs.minion_counts[.RED] = 0
-        gs.minion_counts[.BLUE] = 0
+        gs.minion_counts[.Red] = 0
+        gs.minion_counts[.Blue] = 0
 
         for &array in gs.blocked_spawns {
             clear(&array)
@@ -1295,7 +1298,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             become_interrupted (
                 gs,
                 gs.team_captains[var.team],
-                Action_Index{sequence = .MINION_SPAWN, index = 0},
+                Action_Index{sequence = .Minion_Spawn, index = 0},
                 next_event,
             )
         } else {

@@ -11,9 +11,9 @@ Path :: struct {
 }
 
 Movement_Flag :: enum {
-    SHORTEST_PATH,
-    IGNORING_OBSTACLES,
-    STRAIGHT_LINE,
+    Shortest_Path,
+    Ignoring_Obstacles,
+    Straight_Line,
     // etc...
 }
 
@@ -61,6 +61,7 @@ Choice :: struct {
 Attack_Action :: struct {
     target: Implicit_Target,
     strength: Implicit_Quantity,
+    flags: bit_set[Attack_Flag],
 }
 
 Force_Discard_Action :: struct {
@@ -195,24 +196,24 @@ Action :: struct {
 
 Action_Sequence_ID :: enum {
     // Requires Card ID
-    PRIMARY,
-    BASIC_MOVEMENT,
-    BASIC_FAST_TRAVEL,
-    BASIC_CLEAR,
-    BASIC_DEFENSE,
-    FIRST_CHOICE,
+    Primary,
+    Basic_Movement,
+    Basic_Fast_Travel,
+    Basic_Clear,
+    Basic_Defense,
+    First_Choice,
 
     // Doesn't require Card ID
-    HALT,
-    DIE,
-    RESPAWN,
-    MINION_REMOVAL,
-    MINION_SPAWN,
-    MINION_OUTSIDE_ZONE,
-    DISCARD_ABLE,
-    DISCARD_DEFEAT,
+    Halt,
+    Die,
+    Respawn,
+    Minion_Removal,
+    Minion_Spawn,
+    Minion_Outside_Zone,
+    Discard_If_Able,
+    Discard_Or_Die,
 
-    INVALID,
+    Invalid,
 }
 
 Action_Index :: struct {
@@ -235,11 +236,11 @@ first_choice_action := []Action {
         tooltip = first_choice_tooltip,
         variant = Choice_Action {
             choices = []Choice {
-                {name = "Primary",      jump_index = {sequence=.PRIMARY}},
-                {name = "Movement",     jump_index = {sequence=.BASIC_MOVEMENT}},
-                {name = "Fast Travel",  jump_index = {sequence=.BASIC_FAST_TRAVEL}},
-                {name = "Clear",        jump_index = {sequence=.BASIC_CLEAR}},
-                {name = "Hold",         jump_index = {sequence=.HALT}},
+                {name = "Primary",      jump_index = {sequence=.Primary}},
+                {name = "Movement",     jump_index = {sequence=.Basic_Movement}},
+                {name = "Fast Travel",  jump_index = {sequence=.Basic_Fast_Travel}},
+                {name = "Clear",        jump_index = {sequence=.Basic_Clear}},
+                {name = "Hold",         jump_index = {sequence=.Halt}},
             },
         },
     },
@@ -275,11 +276,11 @@ basic_defense_action := []Action {
     Action {  // 0
         tooltip = "Choose a card to defend with. You may also choose to die.",
         optional = true,
-        skip_index = {sequence = .DIE},
+        skip_index = {sequence = .Die},
         skip_name = "Die",
         variant = Choose_Card_Action {
             criteria = {
-                Card_State_Is{.IN_HAND},  // Apparently you can just discard anything, even if it can't defend...
+                Card_State_Is{.In_Hand},  // Apparently you can just discard anything, even if it can't defend...
             },
         },
     },
@@ -317,7 +318,7 @@ discard_if_able_action := []Action {
         tooltip = "Choose a card to discard.",
         variant = Choose_Card_Action {
             criteria = {
-                Card_State_Is{.IN_HAND},
+                Card_State_Is{.In_Hand},
             },
         },
     },
@@ -337,7 +338,7 @@ discard_or_defeated_action := []Action {
         skip_name = "Die",
         variant = Choose_Card_Action {
             criteria = {
-                Card_State_Is{.IN_HAND},
+                Card_State_Is{.In_Hand},
             },
         },
     },
@@ -364,7 +365,7 @@ respawn_action := []Action {
             num_targets = 1,
             conditions = {
                 Target_Empty,
-                Target_Contains_Any{{.HERO_SPAWNPOINT}},
+                Target_Contains_Any{{.Hero_Spawnpoint}},
                 Target_Is_Friendly_Spawnpoint{},
             },
         },
@@ -392,7 +393,7 @@ minion_removal_action := []Action {
         variant = Choose_Target_Action {
             num_targets = Minion_Difference{},
             conditions = {
-                Target_Contains_Any{{.MELEE_MINION, .RANGED_MINION}},
+                Target_Contains_Any{{.Melee_Minion, .Ranged_Minion}},
                 Target_Is_Losing_Team_Unit{},
             },
         },
@@ -425,7 +426,7 @@ minion_spawn_action := []Action {
     },
     Action {
         variant = Jump_Action {
-            jump_index = Action_Index{sequence = .MINION_SPAWN},
+            jump_index = Action_Index{sequence = .Minion_Spawn},
         },
     },
 }
@@ -451,7 +452,7 @@ minion_outside_zone_action := []Action {  // Still need to handle the case where
                     Target_In_Battle_Zone{},
                 },
             },
-            flags = {.SHORTEST_PATH},
+            flags = {.Shortest_Path},
         },
     },
 }
@@ -465,26 +466,26 @@ get_action_at_index :: proc(gs: ^Game_State, index: Action_Index, loc := #caller
     action_sequence: []Action
 
     switch index.sequence {
-    case .PRIMARY:
+    case .Primary:
         card_data, ok := get_card_data_by_id(gs, index.card_id)
         if !ok do return nil
         // log.assert(ok, "no played card!!?!?!?!?!", loc)
         action_sequence = card_data.primary_effect
-    case .HALT:                 return nil
-    case .DIE:                  action_sequence = die_action
-    case .RESPAWN:              action_sequence = respawn_action
-    case .FIRST_CHOICE:         action_sequence = first_choice_action
-    case .BASIC_MOVEMENT:       action_sequence = basic_movement_action
-    case .BASIC_FAST_TRAVEL:    action_sequence = basic_fast_travel_action
-    case .BASIC_CLEAR:          action_sequence = basic_clear_action
-    case .BASIC_DEFENSE:        action_sequence = basic_defense_action
-    case .MINION_REMOVAL:       action_sequence = minion_removal_action
-    case .MINION_SPAWN:         action_sequence = minion_spawn_action
-    case .MINION_OUTSIDE_ZONE:  action_sequence = minion_outside_zone_action
-    case .DISCARD_ABLE:         action_sequence = discard_if_able_action
-    case .DISCARD_DEFEAT:       action_sequence = discard_or_defeated_action
+    case .Halt:                 return nil
+    case .Die:                  action_sequence = die_action
+    case .Respawn:              action_sequence = respawn_action
+    case .First_Choice:         action_sequence = first_choice_action
+    case .Basic_Movement:       action_sequence = basic_movement_action
+    case .Basic_Fast_Travel:    action_sequence = basic_fast_travel_action
+    case .Basic_Clear:          action_sequence = basic_clear_action
+    case .Basic_Defense:        action_sequence = basic_defense_action
+    case .Minion_Removal:       action_sequence = minion_removal_action
+    case .Minion_Spawn:         action_sequence = minion_spawn_action
+    case .Minion_Outside_Zone:  action_sequence = minion_outside_zone_action
+    case .Discard_If_Able:         action_sequence = discard_if_able_action
+    case .Discard_Or_Die:       action_sequence = discard_or_defeated_action
 
-    case .INVALID:              return nil
+    case .Invalid:              return nil
     }
 
     if index.index < len(action_sequence) {

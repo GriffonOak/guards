@@ -6,7 +6,7 @@ package guards
 
 brogan_cards := []Card_Data {
     Card_Data { name = "Onslaught",
-        color =         .GOLD,
+        color =         .Gold,
         values =        #partial{.INITIATIVE = 11, .DEFENSE = 3, .ATTACK = 4, .MOVEMENT = 1},
         primary =       .ATTACK,
         text =          "Target a unit adjacent to you. After the attack:\nMove into the space it occupied, if able.",
@@ -45,7 +45,7 @@ brogan_cards := []Card_Data {
         },
     },
     Card_Data { name = "Bulwark",  // @Incomplete
-        color =         .SILVER,
+        color =         .Silver,
         values =        #partial{.INITIATIVE = 12, .DEFENSE = 4, .RADIUS = 4},
         primary =       .SKILL,
         text =          "You may retrieve a discarded card.\nThis turn: You and friendly units in radius\ncannot be moved, pushed, swapped\nor placed by enemy heroes.",
@@ -55,7 +55,7 @@ brogan_cards := []Card_Data {
                 variant = Choose_Card_Action{
                     criteria = {
                         Card_Owner_Is{Self{}},
-                        Card_State_Is{.DISCARDED},
+                        Card_State_Is{.Discarded},
                     },
                 },
             },
@@ -68,7 +68,7 @@ brogan_cards := []Card_Data {
         },
     },
     Card_Data { name = "Mad Dash",
-        color =         .RED,
+        color =         .Red,
         tier =          1,
         values =        #partial{.INITIATIVE = 7, .DEFENSE = 7, .ATTACK = 6, .MOVEMENT = 3},
         primary =       .ATTACK,
@@ -93,7 +93,7 @@ brogan_cards := []Card_Data {
                             },
                         },
                     },
-                    flags = {.STRAIGHT_LINE},
+                    flags = {.Straight_Line},
                 },
             },
             Action {
@@ -117,7 +117,7 @@ brogan_cards := []Card_Data {
         },
     },
     Card_Data { name = "Shield",  // @Unimplemented.
-        color =         .GREEN,
+        color =         .Green,
         tier =          1,
         values =        #partial{.INITIATIVE = 6, .DEFENSE = 4, .MOVEMENT = 2},
         primary =       .SKILL,
@@ -125,7 +125,7 @@ brogan_cards := []Card_Data {
         primary_effect = []Action {},
     },
     Card_Data { name = "Brutal Jab",
-        color =         .BLUE,
+        color =         .Blue,
         tier =          1,
         values =        #partial{.INITIATIVE = 8, .DEFENSE = 5, .MOVEMENT = 2},
         primary =       .SKILL,
@@ -152,7 +152,7 @@ brogan_cards := []Card_Data {
                                 Target_Contains_Any{UNIT_FLAGS},
                                 Target_Is_Enemy_Unit{},
                             },
-                            Target_Contains_Any{{.TOKEN}},
+                            Target_Contains_Any{{.Token}},
                         },
                     },
                 },
@@ -173,7 +173,7 @@ brogan_cards := []Card_Data {
         },
     },
     Card_Data { name = "Bullrush",
-        color =         .RED,
+        color =         .Red,
         tier =          2,
         values =        #partial{.INITIATIVE = 7, .DEFENSE = 8, .ATTACK = 6, .MOVEMENT = 3},
         primary =       .ATTACK,
@@ -199,7 +199,7 @@ brogan_cards := []Card_Data {
                             },
                         },
                     },
-                    flags = {.STRAIGHT_LINE},
+                    flags = {.Straight_Line},
                 },
             },
             Action {
@@ -223,7 +223,7 @@ brogan_cards := []Card_Data {
         },
     },
     Card_Data { name = "Throwing Axe",
-        color =         .RED,
+        color =         .Red,
         tier =          2,
         alternate =     true,
         values =        #partial{.INITIATIVE = 7, .DEFENSE = 7, .ATTACK = 3, .MOVEMENT = 4, .RANGE = 2},
@@ -266,7 +266,7 @@ brogan_cards := []Card_Data {
                 optional = true,
                 variant = Choose_Card_Action {
                     criteria = {
-                        Card_State_Is{.IN_HAND},
+                        Card_State_Is{.In_Hand},
                     },
                 },
             },
@@ -291,7 +291,7 @@ brogan_cards := []Card_Data {
         },
     },
     Card_Data { name = "Bolster",  // @Unimplemented
-        color =         .GREEN,
+        color =         .Green,
         tier =          2,
         values =        #partial{.INITIATIVE = 5, .DEFENSE = 5, .MOVEMENT = 2, .RADIUS = 2},
         primary =       .SKILL,
@@ -300,7 +300,7 @@ brogan_cards := []Card_Data {
         primary_effect = []Action {},
     },
     Card_Data { name = "War Drummer",
-        color =         .GREEN,
+        color =         .Green,
         tier =          2,
         alternate =     true,
         values =        #partial{.INITIATIVE = 5, .DEFENSE = 5, .MOVEMENT = 2, .RANGE = 4},
@@ -314,7 +314,7 @@ brogan_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.RANGE}}},
-                        Target_Contains_Any{{.HERO}},
+                        Target_Contains_Any{{.Hero}},
                         Target_Is_Friendly_Unit{},
                     },
                 },
@@ -332,7 +332,7 @@ brogan_cards := []Card_Data {
         },
     },
     Card_Data { name = "Mighty Punch",
-        color =         .BLUE,
+        color =         .Blue,
         tier =          2,
         values =        #partial{.INITIATIVE = 9, .DEFENSE = 6, .MOVEMENT = 2},
         primary =       .SKILL,
@@ -360,7 +360,7 @@ brogan_cards := []Card_Data {
                                 Target_Contains_Any{UNIT_FLAGS},
                                 Target_Is_Enemy_Unit{},
                             },
-                            Target_Contains_Any{{.TOKEN}},
+                            Target_Contains_Any{{.Token}},
                         },
                     },
                 },
@@ -381,7 +381,7 @@ brogan_cards := []Card_Data {
         },
     },
     Card_Data { name = "Shield Bash",
-        color =         .BLUE,
+        color =         .Blue,
         tier =          2,
         alternate =     true,
         values =        #partial{.INITIATIVE = 9, .DEFENSE = 6, .MOVEMENT = 2},
@@ -395,7 +395,7 @@ brogan_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
-                        Target_Contains_Any{{.HERO}},
+                        Target_Contains_Any{{.Hero}},
                         Target_Is_Enemy_Unit{},
                         Greater_Than {
                             Count_Card_Targets {
@@ -416,7 +416,7 @@ brogan_cards := []Card_Data {
         },
     },
     Card_Data { name = "Furious Charge",
-        color =         .RED,
+        color =         .Red,
         tier =          3,
         values =        #partial{.INITIATIVE = 8, .DEFENSE = 8, .ATTACK = 7, .MOVEMENT = 3},
         primary =       .ATTACK,
@@ -442,7 +442,7 @@ brogan_cards := []Card_Data {
                             },
                         },
                     },
-                    flags = {.STRAIGHT_LINE},
+                    flags = {.Straight_Line},
                 },
             },
             Action {
@@ -466,7 +466,7 @@ brogan_cards := []Card_Data {
         },
     },
     Card_Data { name = "Throwing Spear",
-        color =         .RED,
+        color =         .Red,
         tier =          3,
         alternate =     true,
         values =        #partial{.INITIATIVE = 8, .DEFENSE = 7, .ATTACK = 4, .MOVEMENT = 4, .RANGE = 2},
@@ -510,7 +510,7 @@ brogan_cards := []Card_Data {
                 skip_index = {index = 5},
                 variant = Choose_Card_Action {
                     criteria = {
-                        Card_State_Is{.IN_HAND},
+                        Card_State_Is{.In_Hand},
                     },
                 },
             },
@@ -519,7 +519,7 @@ brogan_cards := []Card_Data {
                 condition = Greater_Than {
                     Count_Card_Targets{
                         Card_Owner_Is{Self{}},
-                        Card_State_Is{.DISCARDED},
+                        Card_State_Is{.Discarded},
                     }, 0,
                 },
                 variant = Choose_Target_Action {
@@ -541,7 +541,7 @@ brogan_cards := []Card_Data {
         },
     },
     Card_Data { name = "Fortify",  // @Unimplemented
-        color =         .GREEN,
+        color =         .Green,
         tier =          3,
         values =        #partial{.INITIATIVE = 5, .DEFENSE = 5, .MOVEMENT = 2, .RADIUS = 2},
         primary =       .SKILL,
@@ -550,7 +550,7 @@ brogan_cards := []Card_Data {
         primary_effect = []Action {},
     },
     Card_Data { name = "Master Skald",
-        color =         .GREEN,
+        color =         .Green,
         tier =          3,
         alternate =     true,
         values =        #partial{.INITIATIVE = 5, .DEFENSE = 5, .MOVEMENT = 2, .RANGE = 4},
@@ -564,7 +564,7 @@ brogan_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.RANGE}}},
-                        Target_Contains_Any{{.HERO}},
+                        Target_Contains_Any{{.Hero}},
                         Target_Is_Friendly_Unit{},
                     },
                 },
@@ -582,7 +582,7 @@ brogan_cards := []Card_Data {
         },
     },
     Card_Data { name = "Savage Kick",
-        color =         .BLUE,
+        color =         .Blue,
         tier =          3,
         values =        #partial{.INITIATIVE = 9, .DEFENSE = 6, .MOVEMENT = 2},
         primary =       .SKILL,
@@ -607,7 +607,7 @@ brogan_cards := []Card_Data {
                                 Target_Contains_Any{UNIT_FLAGS},
                                 Target_Is_Enemy_Unit{},
                             },
-                            Target_Contains_Any{{.TOKEN}},
+                            Target_Contains_Any{{.Token}},
                         },
                     },
                 },
@@ -628,7 +628,7 @@ brogan_cards := []Card_Data {
         },
     },
     Card_Data { name = "Counterattack",
-        color =         .BLUE,
+        color =         .Blue,
         tier =          3,
         alternate =     true,
         values =        #partial{.INITIATIVE = 9, .DEFENSE = 6, .MOVEMENT = 2},
@@ -642,7 +642,7 @@ brogan_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
-                        Target_Contains_Any{{.HERO}},
+                        Target_Contains_Any{{.Hero}},
                         Target_Is_Enemy_Unit{},
                         Greater_Than {
                             Count_Card_Targets {

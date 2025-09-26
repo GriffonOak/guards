@@ -18,29 +18,29 @@ Spawnpoint_Marker :: struct {
 }
 
 Space_Flag :: enum {
-    TERRAIN,
-    MELEE_MINION_SPAWNPOINT,
-    RANGED_MINION_SPAWNPOINT,
-    HEAVY_MINION_SPAWNPOINT,
-    HERO_SPAWNPOINT,
-    HERO,
-    MELEE_MINION,
-    RANGED_MINION,
-    HEAVY_MINION,
-    TOKEN,
-    IMMUNE,
+    Terrain,
+    Melee_Minion_Spawnpoint,
+    Ranged_Minion_Spawnpoint,
+    Heavy_Minion_Spawnpoint,
+    Hero_Spawnpoint,
+    Hero,
+    Melee_Minion,
+    Ranged_Minion,
+    Heavy_Minion,
+    Token,
+    Immune,
 }
 
 
 Region_ID :: enum {
-    NONE,
-    RED_JUNGLE,
-    RED_BASE,
-    RED_BEACH,
-    CENTRE,
-    BLUE_BEACH,
-    BLUE_BASE,
-    BLUE_JUNGLE,
+    None,
+    Red_Jungle,
+    Red_Throne,
+    Red_Beach,
+    Centre,
+    Blue_Beach,
+    Blue_Throne,
+    Blue_Jungle,
 }
 
 Space_Flags :: bit_set[Space_Flag]
@@ -74,11 +74,11 @@ SAND_COLOR   :: rl.Color{219, 182, 127, 255}
 STONE_COLOR  :: rl.Color{185, 140, 93, 255}
 JUNGLE_COLOR :: rl.Color{157, 177, 58, 255}
 
-SPAWNPOINT_FLAGS :: Space_Flags{.MELEE_MINION_SPAWNPOINT, .RANGED_MINION_SPAWNPOINT, .HEAVY_MINION_SPAWNPOINT, .HERO_SPAWNPOINT}
-PERMANENT_FLAGS  :: SPAWNPOINT_FLAGS + {.TERRAIN}
-MINION_FLAGS     :: Space_Flags{.MELEE_MINION, .RANGED_MINION, .HEAVY_MINION}
-UNIT_FLAGS       :: MINION_FLAGS + {.HERO}
-OBSTACLE_FLAGS   :: UNIT_FLAGS + {.TERRAIN, .TOKEN}
+SPAWNPOINT_FLAGS :: Space_Flags{.Melee_Minion_Spawnpoint, .Ranged_Minion_Spawnpoint, .Heavy_Minion_Spawnpoint, .Hero_Spawnpoint}
+PERMANENT_FLAGS  :: SPAWNPOINT_FLAGS + {.Terrain}
+MINION_FLAGS     :: Space_Flags{.Melee_Minion, .Ranged_Minion, .Heavy_Minion}
+UNIT_FLAGS       :: MINION_FLAGS + {.Hero}
+OBSTACLE_FLAGS   :: UNIT_FLAGS + {.Terrain, .Token}
 
 
 @rodata
@@ -103,66 +103,66 @@ starting_terrain := [?]Target {
 
 @rodata
 fast_travel_adjacencies := [Region_ID]bit_set[Region_ID] {
-    .NONE = {},
-    .RED_JUNGLE = {.RED_BASE, .CENTRE},
-    .RED_BASE = {.RED_BEACH, .RED_JUNGLE},
-    .RED_BEACH = {.RED_BASE, .CENTRE},
-    .CENTRE = {.RED_BEACH, .RED_JUNGLE, .BLUE_BEACH, .BLUE_JUNGLE},
-    .BLUE_BEACH = {.BLUE_BASE, .CENTRE},
-    .BLUE_BASE = {.BLUE_BEACH, .BLUE_JUNGLE},
-    .BLUE_JUNGLE = {.BLUE_BASE, .CENTRE},
+    .None = {},
+    .Red_Jungle = {.Red_Throne, .Centre},
+    .Red_Throne = {.Red_Beach, .Red_Jungle},
+    .Red_Beach = {.Red_Throne, .Centre},
+    .Centre = {.Red_Beach, .Red_Jungle, .Blue_Beach, .Blue_Jungle},
+    .Blue_Beach = {.Blue_Throne, .Centre},
+    .Blue_Throne = {.Blue_Beach, .Blue_Jungle},
+    .Blue_Jungle = {.Blue_Throne, .Centre},
 }
 
 @rodata
 spawnpoints := [?]Spawnpoint_Marker {
-    {{2, 11}, .HERO_SPAWNPOINT, .RED},
-    {{3, 9}, .HERO_SPAWNPOINT, .RED},
-    {{3, 7}, .HERO_SPAWNPOINT, .RED},
+    {{2, 11}, .Hero_Spawnpoint, .Red},
+    {{3, 9}, .Hero_Spawnpoint, .Red},
+    {{3, 7}, .Hero_Spawnpoint, .Red},
 
-    {{5, 5}, .MELEE_MINION_SPAWNPOINT, .RED},
-    {{6, 7}, .MELEE_MINION_SPAWNPOINT, .RED},
-    {{6, 8}, .MELEE_MINION_SPAWNPOINT, .RED},
-    {{6, 12}, .MELEE_MINION_SPAWNPOINT, .RED},
-    {{7, 5}, .HEAVY_MINION_SPAWNPOINT, .RED},
-    {{7, 7}, .MELEE_MINION_SPAWNPOINT, .BLUE},
-    {{7, 12}, .MELEE_MINION_SPAWNPOINT, .RED},
-    {{8, 4}, .RANGED_MINION_SPAWNPOINT, .RED},
-    {{8, 5}, .HEAVY_MINION_SPAWNPOINT, .BLUE},
-    {{9, 4}, .MELEE_MINION_SPAWNPOINT, .BLUE},
-    {{9, 6}, .RANGED_MINION_SPAWNPOINT, .BLUE},
-    {{9, 9}, .RANGED_MINION_SPAWNPOINT, .RED},
-    {{11, 2}, .MELEE_MINION_SPAWNPOINT, .RED},
-    {{11, 3}, .MELEE_MINION_SPAWNPOINT, .BLUE},
-    {{11, 5}, .MELEE_MINION_SPAWNPOINT, .RED},
-    {{11, 9}, .MELEE_MINION_SPAWNPOINT, .RED},
-    {{13, 6}, .HEAVY_MINION_SPAWNPOINT, .RED},
+    {{5, 5}, .Melee_Minion_Spawnpoint, .Red},
+    {{6, 7}, .Melee_Minion_Spawnpoint, .Red},
+    {{6, 8}, .Melee_Minion_Spawnpoint, .Red},
+    {{6, 12}, .Melee_Minion_Spawnpoint, .Red},
+    {{7, 5}, .Heavy_Minion_Spawnpoint, .Red},
+    {{7, 7}, .Melee_Minion_Spawnpoint, .Blue},
+    {{7, 12}, .Melee_Minion_Spawnpoint, .Red},
+    {{8, 4}, .Ranged_Minion_Spawnpoint, .Red},
+    {{8, 5}, .Heavy_Minion_Spawnpoint, .Blue},
+    {{9, 4}, .Melee_Minion_Spawnpoint, .Blue},
+    {{9, 6}, .Ranged_Minion_Spawnpoint, .Blue},
+    {{9, 9}, .Ranged_Minion_Spawnpoint, .Red},
+    {{11, 2}, .Melee_Minion_Spawnpoint, .Red},
+    {{11, 3}, .Melee_Minion_Spawnpoint, .Blue},
+    {{11, 5}, .Melee_Minion_Spawnpoint, .Red},
+    {{11, 9}, .Melee_Minion_Spawnpoint, .Red},
+    {{13, 6}, .Heavy_Minion_Spawnpoint, .Red},
     
 }
 
 @rodata
 spawnpoint_to_minion := #partial [Space_Flag]Space_Flag {
-    .MELEE_MINION_SPAWNPOINT = .MELEE_MINION,
-    .RANGED_MINION_SPAWNPOINT = .RANGED_MINION,
-    .HEAVY_MINION_SPAWNPOINT = .HEAVY_MINION,
+    .Melee_Minion_Spawnpoint = .Melee_Minion,
+    .Ranged_Minion_Spawnpoint = .Ranged_Minion,
+    .Heavy_Minion_Spawnpoint = .Heavy_Minion,
 }
 
 @rodata
 region_colors := [Region_ID]rl.Color {
-    .NONE = rl.MAGENTA,
-    .RED_BASE = STONE_COLOR,
-    .RED_BEACH = SAND_COLOR,
-    .RED_JUNGLE = JUNGLE_COLOR,
-    .CENTRE = STONE_COLOR,
-    .BLUE_JUNGLE = JUNGLE_COLOR,
-    .BLUE_BEACH = SAND_COLOR,
-    .BLUE_BASE = STONE_COLOR,
+    .None = rl.MAGENTA,
+    .Red_Throne = STONE_COLOR,
+    .Red_Beach = SAND_COLOR,
+    .Red_Jungle = JUNGLE_COLOR,
+    .Centre = STONE_COLOR,
+    .Blue_Jungle = JUNGLE_COLOR,
+    .Blue_Beach = SAND_COLOR,
+    .Blue_Throne = STONE_COLOR,
 }
 
 @rodata
 minion_initials := #partial [Space_Flag]cstring {
-    .MELEE_MINION  = "M",
-    .RANGED_MINION = "R",
-    .HEAVY_MINION  = "H",
+    .Melee_Minion  = "M",
+    .Ranged_Minion = "R",
+    .Heavy_Minion  = "H",
 }
 
 
@@ -184,8 +184,8 @@ setup_space_positions :: proc(gs: ^Game_State) {
 }
 
 set_terrain_symmetric :: proc(gs: ^Game_State, target: Target) {
-    gs.board[target.x][target.y].flags += {.TERRAIN}
-    get_symmetric_space(gs, target).flags += {.TERRAIN}
+    gs.board[target.x][target.y].flags += {.Terrain}
+    get_symmetric_space(gs, target).flags += {.Terrain}
 }
 
 setup_terrain :: proc(gs: ^Game_State) {
@@ -285,13 +285,13 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
     for arr in gs.board {
         for space in arr {
             color := rl.WHITE
-            if .TERRAIN in space.flags do color = CLIFF_COLOR
+            if .Terrain in space.flags do color = CLIFF_COLOR
             else do color = region_colors[space.region_id]
             rl.DrawPoly(space.position, 6, VERTICAL_SPACING / math.sqrt_f32(3), 0, color)
 
             // Make the highlight
             brightness_increase :: 50
-            if .TERRAIN not_in space.flags {
+            if .Terrain not_in space.flags {
                 lighter_color := rl.WHITE
                 for &val, idx in lighter_color do val = 255 if color[idx] + brightness_increase < color[idx] else color[idx] + brightness_increase
                 lighter_color.a = 255
@@ -308,7 +308,7 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
             spawnpoint_flags := space.flags & SPAWNPOINT_FLAGS
             if spawnpoint_flags != {} {
                 color = team_colors[space.spawnpoint_team]
-                if .HERO_SPAWNPOINT in space.flags {
+                if .Hero_Spawnpoint in space.flags {
                     rl.DrawRing(space.position, VERTICAL_SPACING * 0.35, VERTICAL_SPACING * 0.26, 0, 360, 20, color)
                 } else {
                     // spawnpoint_type := Space_Flag(log2(transmute(int) spawnpoint_flags))
@@ -336,7 +336,7 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
 
             }
 
-            if .HERO in space.flags {
+            if .Hero in space.flags {
                 color = team_colors[space.unit_team]
                 name, ok := reflect.enum_name_from_value(space.hero_id); log.assert(ok, "Invalid hero name?")
                 initial := strings.clone_to_cstring(name[:1])
@@ -419,7 +419,7 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
             color_blend = color_blend * color_blend
             base_color := rl.DARKGRAY
             highlight_color := rl.LIGHTGRAY
-            // color: = color_lerp(rl.BLUE, rl.ORANGE, color_blend)
+            // color: = color_lerp(rl.Blue, rl.ORANGE, color_blend)
             color := color_lerp(base_color, highlight_color, color_blend)
             if info.invalid {
                 rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.08, color)
@@ -487,7 +487,7 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
             LIFE_COUNTER_PADDING :: 10
             life_counter_position: Vec2 = {0, BOARD_TEXTURE_SIZE.y} + {LIFE_COUNTER_RADIUS, -LIFE_COUNTER_RADIUS} + {LIFE_COUNTER_PADDING, -LIFE_COUNTER_PADDING}
             life_counter_position.x += f32(life_counter_index) * (LIFE_COUNTER_RADIUS * 2 + LIFE_COUNTER_PADDING)
-            if team == .BLUE do life_counter_position = BOARD_TEXTURE_SIZE - life_counter_position
+            if team == .Blue do life_counter_position = BOARD_TEXTURE_SIZE - life_counter_position
             darker_team_color := team_colors[team] / 2
             darker_team_color.a = 255
             color := team_colors[team] if life_counter_index < gs.life_counters[team] else darker_team_color

@@ -53,7 +53,7 @@ main :: proc() {
         tokens := strings.split(line, ",")
 
         card.name = tokens[0]
-        card.color = tokens[1]
+        card.color =  strings.to_ada_case(tokens[1])
         card.tier, _ = strconv.parse_int(tokens[2])
         card.alternate, _ = strconv.parse_bool(tokens[3])
         card.initiative, _ = strconv.parse_int(tokens[4])
@@ -79,16 +79,16 @@ main :: proc() {
         index: int
 
         color_offset :: proc(color: string) -> int {
-            if color == "RED" do return 0
-            if color == "GREEN" do return 1
-            if color == "BLUE" do return 2
+            if color == "Red" do return 0
+            if color == "Green" do return 1
+            if color == "Blue" do return 2
             assert(false)
             return -999
         }
 
         switch card.tier {
         case 0:
-            index = 0 if card.color == "GOLD" else 1
+            index = 0 if card.color == "Gold" else 1
         case 1:
             index = 2 + color_offset(card.color)
         case 2..=3:

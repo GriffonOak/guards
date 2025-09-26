@@ -254,7 +254,7 @@ calculate_implicit_quantity :: proc(
         delete(targets)
 
     case Minion_Difference:
-        return abs(gs.minion_counts[.RED] - gs.minion_counts[.BLUE])
+        return abs(gs.minion_counts[.Red] - gs.minion_counts[.Blue])
 
     case Ternary:
         log.assert(len(quantity.terms) == 2, "Ternary operator that does not have 2 terms!", loc)
@@ -286,8 +286,8 @@ calculate_implicit_quantity :: proc(
     case Count_Hero_Coins:
         target := calculate_implicit_target(gs, quantity.target, calc_context, loc)
         space := gs.board[target.x][target.y]
-        if .HERO not_in space.flags do return 0
-        // log.assert(.HERO in space.flags, "Tried to count hero coins in a space with no hero!")
+        if .Hero not_in space.flags do return 0
+        // log.assert(.Hero in space.flags, "Tried to count hero coins in a space with no hero!")
         player := get_player_by_id(gs, space.owner)
         return player.hero.coins
 
@@ -449,7 +449,7 @@ calculate_implicit_condition :: proc (
 
     case Target_Is_Losing_Team_Unit:
         log.assert(space_ok, "Invalid target!")
-        losing_team: Team = .RED if gs.minion_counts[.RED] < gs.minion_counts[.BLUE] else .BLUE
+        losing_team: Team = .Red if gs.minion_counts[.Red] < gs.minion_counts[.Blue] else .Blue
         return losing_team == space.unit_team
 
     case Target_Is_Enemy_Of:
@@ -546,7 +546,7 @@ calculate_implicit_card_id :: proc(gs: ^Game_State, implicit_card_id: Implicit_C
         highest_turn := -1
         cards := get_my_player(gs).hero.cards
         for card in cards {
-            if card.state == .RESOLVED && card.turn_played > highest_turn {
+            if card.state == .Resolved && card.turn_played > highest_turn {
                 out = card.id
                 highest_turn = card.turn_played
             }
@@ -567,16 +567,16 @@ calculate_implicit_action_index :: proc(gs: ^Game_State, implicit_index: Implici
         log.assert(ok, "Invalid card ID!!")
         #partial switch card_data.primary {
         case .DEFENSE: 
-            return Action_Index{.PRIMARY, calc_context.card_id, 0}
+            return Action_Index{.Primary, calc_context.card_id, 0}
         case .DEFENSE_SKILL:
             log.assert(false, "TODO")  // @Todo
             return {}
         }
-        return {.BASIC_DEFENSE, calc_context.card_id, 3}  // @Magic: index of Defense_Action in basic_defense_action
+        return {.Basic_Defense, calc_context.card_id, 3}  // @Magic: index of Defense_Action in basic_defense_action
     case Other_Card_Primary:
         other_card_id := calculate_implicit_card_id(gs, index.implicit_card_id)
-        if other_card_id == {} do return {sequence = .INVALID}
-        return {sequence = .PRIMARY, card_id = other_card_id, index = 0}
+        if other_card_id == {} do return {sequence = .Invalid}
+        return {sequence = .Primary, card_id = other_card_id, index = 0}
     }
     return {}
 }

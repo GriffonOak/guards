@@ -18,37 +18,37 @@ package guards
 //     // Bases
 //     for x_idx in 1..=4 {
 //         for y_idx in 6..=17 {
-//             if .TERRAIN in gs.board[x_idx][y_idx].flags do continue
+//             if .Terrain in gs.board[x_idx][y_idx].flags do continue
 //             if y_idx <= 14-x_idx {
-//                 assign_region_symmetric(gs, Target{i8(x_idx), i8(y_idx)}, .RED_BASE)
+//                 assign_region_symmetric(gs, Target{i8(x_idx), i8(y_idx)}, .Red_Throne)
 //             } else {
-//                 assign_region_symmetric(gs, Target{i8(x_idx), i8(y_idx)}, .RED_JUNGLE)
+//                 assign_region_symmetric(gs, Target{i8(x_idx), i8(y_idx)}, .Red_Jungle)
 //             }
 //         }
 //     }
 
 //     for x_idx in 5..=8 {
 //         for y_idx in 3..=17 {
-//             if .TERRAIN in gs.board[x_idx][y_idx].flags do continue
+//             if .Terrain in gs.board[x_idx][y_idx].flags do continue
 //             if x_idx <= 6 && y_idx >= 16 {
-//                 assign_region_symmetric(gs, Target{i8(x_idx), i8(y_idx)}, .RED_JUNGLE)
+//                 assign_region_symmetric(gs, Target{i8(x_idx), i8(y_idx)}, .Red_Jungle)
 //             } else if y_idx <= 16 - x_idx {
-//                 assign_region_symmetric(gs, Target{i8(x_idx), i8(y_idx)}, .RED_BEACH)
+//                 assign_region_symmetric(gs, Target{i8(x_idx), i8(y_idx)}, .Red_Beach)
 //             }
 //         }
 //     }
 
 //     for x_idx in 9..=12 {
 //         for y_idx in 1..=15-x_idx {
-//             if .TERRAIN in gs.board[x_idx][y_idx].flags do continue
-//             assign_region_symmetric(gs, Target{i8(x_idx), i8(y_idx)}, .RED_BEACH)
+//             if .Terrain in gs.board[x_idx][y_idx].flags do continue
+//             assign_region_symmetric(gs, Target{i8(x_idx), i8(y_idx)}, .Red_Beach)
 //         }
 //     }
 
 //     for x_idx in 5..=14 {
 //         for y_idx in 16-x_idx..=19-x_idx {
-//             if .TERRAIN in gs.board[x_idx][y_idx].flags || gs.board[x_idx][y_idx].region_id != .NONE do continue
-//             assign_region_symmetric(gs, Target{i8(x_idx), i8(y_idx)}, .CENTRE)
+//             if .Terrain in gs.board[x_idx][y_idx].flags || gs.board[x_idx][y_idx].region_id != .None do continue
+//             assign_region_symmetric(gs, Target{i8(x_idx), i8(y_idx)}, .Centre)
 //         }
 //     }
 // }

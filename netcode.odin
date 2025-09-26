@@ -142,7 +142,7 @@ when !ODIN_TEST {  // Apparently the address is in use during testing (?)
         hero = Hero {
             id = .XARGATHA,
         },
-        team = .RED,
+        team = .Red,
         is_team_captain = true,
     }
     fmt.bprintf(me._username_buf[:], "P%v", 0)
@@ -173,7 +173,7 @@ _thread_host_wait_for_clients :: proc(gs: ^Game_State, sock: net.TCP_Socket) {
                 hero = Hero {
                     id = .XARGATHA,
                 },
-                team = .BLUE,
+                team = .Blue,
                 is_team_captain = len(gs.players) == 1,
                 socket = client_socket,
             }

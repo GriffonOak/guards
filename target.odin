@@ -11,7 +11,7 @@ INVALID_TARGET :: Target{}
 
 // Target_Flag :: enum {
 //     MEMBER,
-//     INVALID,  // Set if we can move to the space along the way to a valid endpoint but the space itself is not a valid endpoint
+//     Invalid,  // Set if we can move to the space along the way to a valid endpoint but the space itself is not a valid endpoint
 //     // We flag invalid rather than valid here so spaces default to being valid
 // }
 
@@ -84,8 +84,8 @@ count_members :: proc(target_set: ^Target_Set) -> (count: int) {
 }
 
 validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
-    if index.sequence == .HALT do return true
-    if index.sequence == .INVALID do return false
+    if index.sequence == .Halt do return true
+    if index.sequence == .Invalid do return false
 
     xarg_freeze: { // Disable movement on xargatha freeze
         freeze, ok := gs.ongoing_active_effects[.XARGATHA_FREEZE]
@@ -99,7 +99,7 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         log.assert(ok2, "Could not find played card when checking for Xargatha freeze")
         played_card_data, ok3 := get_card_data_by_id(gs, played_card)
         log.assert(ok3, "Could not find played card data when checking for Xargatha freeze")
-        if index.sequence == .BASIC_MOVEMENT || index.sequence == .BASIC_FAST_TRAVEL || (index.index == 0 && index.sequence == .PRIMARY && played_card_data.primary == .MOVEMENT) {
+        if index.sequence == .Basic_Movement || index.sequence == .Basic_Fast_Travel || (index.index == 0 && index.sequence == .Primary && played_card_data.primary == .MOVEMENT) {
             // phew
             return false
         }
@@ -201,7 +201,7 @@ make_movement_targets :: proc (
     min_distance := u8(calculate_implicit_quantity(gs, criteria.min_distance, calc_context))
     valid_destinations, destinations_ok := make_arbitrary_targets(gs, criteria.destination_criteria, calc_context)
 
-    if .SHORTEST_PATH in criteria.flags {
+    if .Shortest_Path in criteria.flags {
         log.assert(destinations_ok, "Trying to calculate shortest path with no valid destination set given!")
         max_distance = BIG_NUMBER
     }
@@ -231,7 +231,7 @@ make_movement_targets :: proc (
             }
         }
 
-        if .SHORTEST_PATH in criteria.flags && max_distance == BIG_NUMBER && valid_destinations[min_loc.x][min_loc.y].member {
+        if .Shortest_Path in criteria.flags && max_distance == BIG_NUMBER && valid_destinations[min_loc.x][min_loc.y].member {
             // Shortest distance found!
             max_distance = min_info.dist
         }
@@ -253,14 +253,14 @@ make_movement_targets :: proc (
             if existing_info.member && next_dist >= existing_info.dist do continue
 
             {   // Validate next location
-                if .STRAIGHT_LINE in criteria.flags {
+                if .Straight_Line in criteria.flags {
                     calc_context := calc_context
                     calc_context.target = next_loc
                     in_straight_line := calculate_implicit_condition(gs, Target_In_Straight_Line_With{origin}, calc_context)
                     in_straight_line &&= get_norm_direction(origin, next_loc) == vector
                     if !in_straight_line do continue
                 }
-                if .IGNORING_OBSTACLES not_in criteria.flags && OBSTACLE_FLAGS & gs.board[next_loc.x][next_loc.y].flags != {} do continue
+                if .Ignoring_Obstacles not_in criteria.flags && OBSTACLE_FLAGS & gs.board[next_loc.x][next_loc.y].flags != {} do continue
                 if visited_set[next_loc.x][next_loc.y].member do continue
                 for traversed_loc in criteria.path.spaces do if traversed_loc == next_loc do continue directions
                 
@@ -304,7 +304,7 @@ make_movement_targets :: proc (
         }
     }
 
-    for (.STRAIGHT_LINE in criteria.flags) {  // Prune the tree
+    for (.Straight_Line in criteria.flags) {  // Prune the tree
         nodes_pruned := 0
         visited_set_iter := make_target_set_iterator(&visited_set)
         for info in target_set_iter_members(&visited_set_iter) {
@@ -394,7 +394,7 @@ make_clear_targets :: proc(gs: ^Game_State) -> (out: Target_Set) {
 
     for vector in direction_vectors {
         other_loc := hero_loc + vector
-        if .TOKEN in gs.board[other_loc.x][other_loc.y].flags {
+        if .Token in gs.board[other_loc.x][other_loc.y].flags {
             out[other_loc.x][other_loc.y].member = true
         }
     }
@@ -442,7 +442,7 @@ make_arbitrary_targets :: proc (
         target_set_iter := make_target_set_iterator(&out)
         for info, target in target_set_iter_members(&target_set_iter) {
             space := gs.board[target.x][target.y]
-            if space.flags & {.IMMUNE} != {} {
+            if space.flags & {.Immune} != {} {
                 info.member = false
             }
         }

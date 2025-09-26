@@ -215,7 +215,7 @@ main :: proc() {
                 case .F: toggle_fullscreen()
                 case .M: add_marker(&gs)
                 case: 
-                    if active_element_index.domain != .NONE && active_element_index.index < len(gs.ui_stack[active_element_index.domain]) {
+                    if active_element_index.domain != .None && active_element_index.index < len(gs.ui_stack[active_element_index.domain]) {
                         active_element := &gs.ui_stack[active_element_index.domain][active_element_index.index]
                         active_element.consume_input(&gs, event, active_element)
                     }
@@ -223,7 +223,7 @@ main :: proc() {
 
             case Mouse_Motion_Event:
                 // First "de-hover" the previous hovered element
-                if hovered_element_index.domain != .NONE && hovered_element_index.index < len(gs.ui_stack[hovered_element_index.domain]) {
+                if hovered_element_index.domain != .None && hovered_element_index.index < len(gs.ui_stack[hovered_element_index.domain]) {
                     hovered_element := &gs.ui_stack[hovered_element_index.domain][hovered_element_index.index]
                     if board_element, ok := &hovered_element.variant.(UI_Board_Element); ok {
                         board_element.hovered_space = INVALID_TARGET
@@ -247,7 +247,7 @@ main :: proc() {
                     }
                 }
             case Mouse_Pressed_Event:
-                if active_element_index.domain != .NONE && active_element_index.index < len(gs.ui_stack[active_element_index.domain]) {
+                if active_element_index.domain != .None && active_element_index.index < len(gs.ui_stack[active_element_index.domain]) {
                     active_element := &gs.ui_stack[active_element_index.domain][active_element_index.index]
                     active_element.flags -= {.ACTIVE}
                 }

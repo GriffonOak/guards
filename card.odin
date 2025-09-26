@@ -10,25 +10,23 @@ import "core:reflect"
 
 
 Card_Color :: enum {
-    RED,
-    GREEN,
-    BLUE,
-    GOLD,
-    SILVER,
+    Red,
+    Green,
+    Blue,
+    Gold,
+    Silver,
 }
 
 Card_State :: enum {
-    NONEXISTENT,
-    IN_HAND,
-    PLAYED,
-    RESOLVED,
-    DISCARDED,
-    ITEM,
+    In_Hand,
+    Played,
+    Resolved,
+    Discarded,
 }
 
 // I philosophically dislike this enum
 Primary_Kind :: enum {
-    // NONE,
+    // None,
     ATTACK,
     SKILL,
     DEFENSE_SKILL,
@@ -57,7 +55,7 @@ item_initials: [Card_Value_Kind]cstring = {
 PLUS_SIGN: cstring : "+"
 
 Sign :: enum {
-    NONE,
+    None,
     PLUS,
     MINUS,
 }
@@ -134,7 +132,7 @@ OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT :: rl.Rectangle {
     RESOLVED_CARD_HEIGHT,
 }
 
-OTHER_PLAYER_DISCARDED_CARD_POSITION_RECT :: rl.Rectangle {
+OTHER_PLAYER_Discarded_CARD_POSITION_RECT :: rl.Rectangle {
     OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.x + 4 * (RESOLVED_CARD_WIDTH + RESOLVED_CARD_PADDING),
     TOOLTIP_FONT_SIZE + BOARD_HAND_SPACE * 0.1,
     RESOLVED_CARD_WIDTH * 0.75,
@@ -150,7 +148,7 @@ FIRST_CARD_RESOLVED_POSITION_RECT :: rl.Rectangle {
 }
 
 
-FIRST_DISCARDED_CARD_POSITION_RECT :: rl.Rectangle {
+FIRST_Discarded_CARD_POSITION_RECT :: rl.Rectangle {
     4 * (RESOLVED_CARD_PADDING + RESOLVED_CARD_WIDTH) + FIRST_CARD_RESOLVED_POSITION_RECT.x,
     BOARD_POSITION_RECT.height + RESOLVED_CARD_PADDING,
     RESOLVED_CARD_WIDTH * 0.75,
@@ -173,11 +171,11 @@ card_hand_position_rects: [Card_Color]rl.Rectangle
 
 @rodata
 card_color_values := [Card_Color]rl.Color {
-    .GOLD   = rl.GOLD,
-    .SILVER = rl.GRAY,
-    .RED    = rl.RED,
-    .GREEN  = rl.LIME,
-    .BLUE   = rl.BLUE,
+    .Gold   = rl.GOLD,
+    .Silver = rl.GRAY,
+    .Red    = rl.RED,
+    .Green  = rl.LIME,
+    .Blue   = rl.BLUE,
 }
 
 
@@ -209,7 +207,9 @@ create_texture_for_card :: proc(card: ^Card_Data) {
     if card.background_image != {} {
         rl.DrawTexturePro(card.background_image, {0, 0, 500, 700}, {0, 0, 500, 700}, {}, 0, rl.WHITE)
     } else {
-        rl.ClearBackground(rl.DARKBLUE / 2)
+        color := rl.DARKBLUE / 2
+        color.a = 255
+        rl.ClearBackground(color)
     }
     
     // Secondaries ribbon & initiative
@@ -355,7 +355,7 @@ when !ODIN_TEST {
                 color_blend = color_blend * color_blend
                 base_color := rl.DARKGRAY
                 highlight_color := rl.LIGHTGRAY
-                // color: = color_lerp(rl.BLUE, rl.ORANGE, color_blend)
+                // color: = color_lerp(rl.Blue, rl.ORANGE, color_blend)
                 color := color_lerp(base_color, highlight_color, color_blend)
                 rl.DrawRectangleLinesEx(element.bounding_rect, 8, color)
             }
@@ -386,7 +386,7 @@ get_card_data_by_id :: proc(_gs: ^Game_State, card_id: Card_ID) -> (card: ^Card_
     // If a player is holding the card, return a pointer to that
     for &hero_card in hero_cards[card_id.hero_id] {
         if hero_card.color == card_id.color {
-            if hero_card.color == .GOLD || hero_card.color == .SILVER {
+            if hero_card.color == .Gold || hero_card.color == .Silver {
                 return &hero_card, true
             }
             if hero_card.tier == card_id.tier && hero_card.alternate == card_id.alternate {
@@ -458,7 +458,7 @@ play_card :: proc(gs: ^Game_State, card: ^Card) {
     }
 
     card.turn_played = gs.turn_counter
-    card.state = .PLAYED
+    card.state = .Played
 }
 
 retrieve_card :: proc(gs: ^Game_State, card: ^Card) {
@@ -470,7 +470,7 @@ retrieve_card :: proc(gs: ^Game_State, card: ^Card) {
         element.bounding_rect = {}
     }
 
-    card.state = .IN_HAND
+    card.state = .In_Hand
 }
 
 resolve_card :: proc(gs: ^Game_State, card: ^Card) {
@@ -485,16 +485,16 @@ resolve_card :: proc(gs: ^Game_State, card: ^Card) {
     }
     element.bounding_rect.x +=  f32(gs.turn_counter) * (RESOLVED_CARD_PADDING + FIRST_CARD_RESOLVED_POSITION_RECT.width)
     
-    card.state = .RESOLVED
+    card.state = .Resolved
 }
 
 discard_card :: proc(gs: ^Game_State, card: ^Card) {
     element, index := find_element_for_card(gs, card^)
 
     if card.owner_id == gs.my_player_id {
-        element.bounding_rect = FIRST_DISCARDED_CARD_POSITION_RECT
+        element.bounding_rect = FIRST_Discarded_CARD_POSITION_RECT
     } else {
-        element.bounding_rect = OTHER_PLAYER_DISCARDED_CARD_POSITION_RECT
+        element.bounding_rect = OTHER_PLAYER_Discarded_CARD_POSITION_RECT
         element.bounding_rect.y += f32(player_offset(gs, card.owner_id)) * BOARD_HAND_SPACE
     }
 
@@ -502,7 +502,7 @@ discard_card :: proc(gs: ^Game_State, card: ^Card) {
     prev_discarded_cards := 0
 
     for card in player.hero.cards {
-        if card.state == .DISCARDED do prev_discarded_cards += 1
+        if card.state == .Discarded do prev_discarded_cards += 1
     }
     
     offset := f32(prev_discarded_cards) * RESOLVED_CARD_PADDING
@@ -513,5 +513,5 @@ discard_card :: proc(gs: ^Game_State, card: ^Card) {
 
     ui_card_slice[prev_discarded_cards], ui_card_slice[index] = ui_card_slice[index], ui_card_slice[prev_discarded_cards]
 
-    card.state = .DISCARDED
+    card.state = .Discarded
 }

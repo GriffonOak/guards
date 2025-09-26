@@ -6,7 +6,7 @@ package guards
 
 tigerclaw_cards := []Card_Data {
     Card_Data { name = "Blink Strike",
-        color =         .GOLD,
+        color =         .Gold,
         values =        #partial{.INITIATIVE = 13, .DEFENSE = 1, .ATTACK = 3, .MOVEMENT = 1},
         primary =       .ATTACK,
         text =          "Before the attack: Move 2 spaces in a straight\nline through an enemy unit: target that unit.\nIf you cannot make this move, you cannot attack.)",
@@ -38,7 +38,7 @@ tigerclaw_cards := []Card_Data {
                     target = Self{},
                     min_distance = 2,
                     max_distance = 2,
-                    flags = {.IGNORING_OBSTACLES, .STRAIGHT_LINE},
+                    flags = {.Ignoring_Obstacles, .Straight_Line},
                     destination_criteria = {
                         conditions = {
                             Target_Within_Distance{Previously_Chosen_Target{}, {1, 1}},
@@ -52,12 +52,12 @@ tigerclaw_cards := []Card_Data {
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{},
                     strength = Card_Value{.ATTACK},
-                }
-            }
+                },
+            },
         },
     },
     Card_Data { name = "Blend into Shadows",
-        color =         .SILVER,
+        color =         .Silver,
         values =        #partial{.INITIATIVE = 6, .DEFENSE = 2, .RADIUS = 2},
         primary =       .SKILL,
         text =          "If you are adjacent to terrain, place yourself\ninto a space in radius; if you do, Next turn:\nYou are immune to enemy attack actions.",
@@ -68,7 +68,7 @@ tigerclaw_cards := []Card_Data {
                     Count_Targets {
                         conditions = {
                             Target_Within_Distance{Self{}, {1, 1}},
-                            Target_Contains_Any{{.TERRAIN}},
+                            Target_Contains_Any{{.Terrain}},
                         },
                     }, 0,
                 },
@@ -90,7 +90,7 @@ tigerclaw_cards := []Card_Data {
         },
     },
     Card_Data { name = "Hit and Run",
-        color =         .RED,
+        color =         .Red,
         tier =          1,
         values =        #partial{.INITIATIVE = 9, .DEFENSE = 3, .ATTACK = 3, .MOVEMENT = 4},
         primary =       .ATTACK,
@@ -125,7 +125,7 @@ tigerclaw_cards := []Card_Data {
         },
     },
     Card_Data { name = "Light-Fingered",
-        color =         .GREEN,
+        color =         .Green,
         tier =          1,
         values =        #partial{.INITIATIVE = 2, .DEFENSE = 1, .MOVEMENT = 3},
         primary =       .SKILL,
@@ -146,7 +146,7 @@ tigerclaw_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
-                        Target_Contains_Any{{.HERO}},
+                        Target_Contains_Any{{.Hero}},
                         Target_Is_Enemy_Unit{},
                         Greater_Than{
                             Count_Hero_Coins{Current_Target{}}, 0,
@@ -178,7 +178,7 @@ tigerclaw_cards := []Card_Data {
         },
     },
     Card_Data { name = "Dodge",  // @Unimplemented
-        color =         .BLUE,
+        color =         .Blue,
         tier =          1,
         values =        #partial{.INITIATIVE = 10, .DEFENSE = 0, .MOVEMENT = 3},
         primary =       .DEFENSE,
@@ -186,7 +186,7 @@ tigerclaw_cards := []Card_Data {
         primary_effect = []Action {},
     },
     Card_Data { name = "Combat Reflexes",
-        color =         .RED,
+        color =         .Red,
         tier =          2,
         values =        #partial{.INITIATIVE = 9, .DEFENSE = 3, .ATTACK = 4, .MOVEMENT = 4},
         primary =       .ATTACK,
@@ -252,7 +252,7 @@ tigerclaw_cards := []Card_Data {
         },
     },
     Card_Data { name = "Backstab",
-        color =         .RED,
+        color =         .Red,
         tier =          2,
         alternate =     true,
         values =        #partial{.INITIATIVE = 9, .DEFENSE = 5, .ATTACK = 5, .MOVEMENT = 5},
@@ -295,7 +295,7 @@ tigerclaw_cards := []Card_Data {
         },
     },
     Card_Data { name = "Pick Pocket",
-        color =         .GREEN,
+        color =         .Green,
         tier =          2,
         values =        #partial{.INITIATIVE = 2, .DEFENSE = 1, .MOVEMENT = 3},
         primary =       .SKILL,
@@ -314,7 +314,7 @@ tigerclaw_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
-                        Target_Contains_Any{{.HERO}},
+                        Target_Contains_Any{{.Hero}},
                         Target_Is_Enemy_Unit{},
                         Greater_Than{
                             Count_Hero_Coins{Current_Target{}}, 0,
@@ -346,7 +346,7 @@ tigerclaw_cards := []Card_Data {
         },
     },
     Card_Data { name = "Poisoned Dagger",  // @Unimplemented
-        color =         .GREEN,
+        color =         .Green,
         tier =          2,
         alternate =     true,
         values =        #partial{.INITIATIVE = 2, .DEFENSE = 1, .MOVEMENT = 3, .RANGE = 3},
@@ -356,7 +356,7 @@ tigerclaw_cards := []Card_Data {
         primary_effect = []Action {},
     },
     Card_Data { name = "Sidestep",  // @Unimplemented
-        color =         .BLUE,
+        color =         .Blue,
         tier =          2,
         values =        #partial{.INITIATIVE = 11, .DEFENSE = 0, .MOVEMENT = 3},
         primary =       .DEFENSE,
@@ -365,7 +365,7 @@ tigerclaw_cards := []Card_Data {
         primary_effect = []Action {},
     },
     Card_Data { name = "Parry",  // @Unimplemented
-        color =         .BLUE,
+        color =         .Blue,
         tier =          2,
         alternate =     true,
         values =        #partial{.INITIATIVE = 11, .DEFENSE = 0, .MOVEMENT = 3},
@@ -375,7 +375,7 @@ tigerclaw_cards := []Card_Data {
         primary_effect = []Action {},
     },
     Card_Data { name = "Leaping Strike",
-        color =         .RED,
+        color =         .Red,
         tier =          3,
         values =        #partial{.INITIATIVE = 10, .DEFENSE = 4, .ATTACK = 4, .MOVEMENT = 4},
         primary =       .ATTACK,
@@ -421,7 +421,7 @@ tigerclaw_cards := []Card_Data {
         },
     },
     Card_Data { name = "Backstab with a Ballista",  // @Unimplemented
-        color =         .RED,
+        color =         .Red,
         tier =          3,
         alternate =     true,
         values =        #partial{.INITIATIVE = 10, .DEFENSE = 6, .ATTACK = 5, .MOVEMENT = 5, .RANGE = 1},
@@ -434,7 +434,7 @@ tigerclaw_cards := []Card_Data {
         },
     },
     Card_Data { name = "Master Thief",
-        color =         .GREEN,
+        color =         .Green,
         tier =          3,
         values =        #partial{.INITIATIVE = 1, .DEFENSE = 2, .MOVEMENT = 3},
         primary =       .SKILL,
@@ -453,7 +453,7 @@ tigerclaw_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
-                        Target_Contains_Any{{.HERO}},
+                        Target_Contains_Any{{.Hero}},
                         Target_Is_Enemy_Unit{},
                         Greater_Than{
                             Count_Hero_Coins{Current_Target{}}, 0,
@@ -491,7 +491,7 @@ tigerclaw_cards := []Card_Data {
         },
     },
     Card_Data { name = "Poisoned Dart",  // @Unimplemented
-        color =         .GREEN,
+        color =         .Green,
         tier =          3,
         alternate =     true,
         values =        #partial{.INITIATIVE = 1, .DEFENSE = 2, .MOVEMENT = 3, .RANGE = 3},
@@ -501,7 +501,7 @@ tigerclaw_cards := []Card_Data {
         primary_effect = []Action {},
     },
     Card_Data { name = "Evade",  // @Unimplemented
-        color =         .BLUE,
+        color =         .Blue,
         tier =          3,
         values =        #partial{.INITIATIVE = 11, .DEFENSE = 0, .MOVEMENT = 3},
         primary =       .DEFENSE,
@@ -510,7 +510,7 @@ tigerclaw_cards := []Card_Data {
         primary_effect = []Action {},
     },
     Card_Data { name = "Riposte",  // @Unimplemented
-        color =         .BLUE,
+        color =         .Blue,
         tier =          3,
         alternate =     true,
         values =        #partial{.INITIATIVE = 11, .DEFENSE = 0, .MOVEMENT = 3},

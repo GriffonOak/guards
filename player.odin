@@ -8,11 +8,11 @@ import "core:log"
 
 
 Player_Stage :: enum {
-    NONE,
+    None,
     SELECTING,
     CONFIRMED,
     RESOLVING,
-    RESOLVED,
+    Resolved,
     UPGRADING,
 
     INTERRUPTING,

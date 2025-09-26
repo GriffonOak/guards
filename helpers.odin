@@ -30,7 +30,7 @@ find_played_card :: proc(gs: ^Game_State, player_id: Player_ID = -1, loc := #cal
     if player_id == -1 do player_id = gs.my_player_id
     player := get_player_by_id(gs, player_id)
     for &card in player.hero.cards {
-        if card.state == .PLAYED {
+        if card.state == .Played {
             return &card, true
         }
     }
@@ -90,7 +90,7 @@ get_first_set_bit :: proc(bs: bit_set[$T]) -> Maybe(T) where intrinsics.type_is_
 
 get_enemy_team :: proc(team: Team) -> Team {
 
-    return .BLUE if team == .RED else .RED
+    return .Blue if team == .Red else .Red
 }
 
 end_current_action_sequence :: proc(gs: ^Game_State) {
@@ -162,7 +162,7 @@ calculate_minion_modifiers :: proc(gs: ^Game_State) -> int {
     adjacent_targets_iter := make_target_set_iterator(&adjacent_targets)
     for _, adjacent in target_set_iter_members(&adjacent_targets_iter) {
         space := gs.board[adjacent.x][adjacent.y]
-        if space.flags & {.MELEE_MINION, .HEAVY_MINION} != {} {
+        if space.flags & {.Melee_Minion, .Heavy_Minion} != {} {
             minion_modifiers += 1 if space.unit_team == player.team else -1
         }
     }
@@ -177,7 +177,7 @@ calculate_minion_modifiers :: proc(gs: ^Game_State) -> int {
     nearby_targets_iter := make_target_set_iterator(&nearby_targets)
     for _, nearby in target_set_iter_members(&nearby_targets_iter) {
         space := gs.board[nearby.x][nearby.y]
-        if .RANGED_MINION in space.flags && space.unit_team != player.team {
+        if .Ranged_Minion in space.flags && space.unit_team != player.team {
             minion_modifiers -= 1
         }
     }
