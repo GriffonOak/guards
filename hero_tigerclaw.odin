@@ -1,14 +1,14 @@
 package guards
 
-/// TIGERCLAW
+/// Tigerclaw
 
 //  Ult: After you perform a basic action, you may\nrepeat it once; if you repeat an attack\naction, you cannot target the same unit.
 
 tigerclaw_cards := []Card_Data {
     Card_Data { name = "Blink Strike",
         color =         .Gold,
-        values =        #partial{.INITIATIVE = 13, .DEFENSE = 1, .ATTACK = 3, .MOVEMENT = 1},
-        primary =       .ATTACK,
+        values =        #partial{.Initiative = 13, .Defense = 1, .Attack = 3, .Movement = 1},
+        primary =       .Attack,
         text =          "Before the attack: Move 2 spaces in a straight\nline through an enemy unit: target that unit.\nIf you cannot make this move, you cannot attack.)",
         primary_effect = []Action {
             Action {
@@ -51,15 +51,15 @@ tigerclaw_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{.Attack},
                 },
             },
         },
     },
     Card_Data { name = "Blend into Shadows",
         color =         .Silver,
-        values =        #partial{.INITIATIVE = 6, .DEFENSE = 2, .RADIUS = 2},
-        primary =       .SKILL,
+        values =        #partial{.Initiative = 6, .Defense = 2, .Radius = 2},
+        primary =       .Skill,
         text =          "If you are adjacent to terrain, place yourself\ninto a space in radius; if you do, Next turn:\nYou are immune to enemy attack actions.",
         primary_effect = []Action {
             Action {
@@ -75,7 +75,7 @@ tigerclaw_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.RADIUS}}},
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Target_Empty,
                     },
                 },
@@ -92,8 +92,8 @@ tigerclaw_cards := []Card_Data {
     Card_Data { name = "Hit and Run",
         color =         .Red,
         tier =          1,
-        values =        #partial{.INITIATIVE = 9, .DEFENSE = 3, .ATTACK = 3, .MOVEMENT = 4},
-        primary =       .ATTACK,
+        values =        #partial{.Initiative = 9, .Defense = 3, .Attack = 3, .Movement = 4},
+        primary =       .Attack,
         text =          "Target a unit adjacent to you.\nAfter the attack: You may move 1 space.",
         primary_effect = []Action {
             Action {
@@ -110,7 +110,7 @@ tigerclaw_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{.Attack},
                 },
             },
             Action {
@@ -127,8 +127,8 @@ tigerclaw_cards := []Card_Data {
     Card_Data { name = "Light-Fingered",
         color =         .Green,
         tier =          1,
-        values =        #partial{.INITIATIVE = 2, .DEFENSE = 1, .MOVEMENT = 3},
-        primary =       .SKILL,
+        values =        #partial{.Initiative = 2, .Defense = 1, .Movement = 3},
+        primary =       .Skill,
         text =          "You may move 1 space.\nTake 1 coin from an enemy hero adjacent\nto you; if you do, you may move 1 space.",
         primary_effect = []Action {
             Action {
@@ -180,17 +180,17 @@ tigerclaw_cards := []Card_Data {
     Card_Data { name = "Dodge",  // @Unimplemented
         color =         .Blue,
         tier =          1,
-        values =        #partial{.INITIATIVE = 10, .DEFENSE = 0, .MOVEMENT = 3},
-        primary =       .DEFENSE,
+        values =        #partial{.Initiative = 10, .Defense = 0, .Movement = 3},
+        primary =       .Defense,
         text =          "Block a ranged attack.",
         primary_effect = []Action {},
     },
     Card_Data { name = "Combat Reflexes",
         color =         .Red,
         tier =          2,
-        values =        #partial{.INITIATIVE = 9, .DEFENSE = 3, .ATTACK = 4, .MOVEMENT = 4},
-        primary =       .ATTACK,
-        item =          .INITIATIVE,
+        values =        #partial{.Initiative = 9, .Defense = 3, .Attack = 4, .Movement = 4},
+        primary =       .Attack,
+        item =          .Initiative,
         text =          "Before the attack: You may move 1 space.\nTarget a unit adjacent to you.\nAfter the attack: If you did not move before\nthe attack, you may move 1 space.",
         primary_effect = []Action {
             Action {  // 0
@@ -217,7 +217,7 @@ tigerclaw_cards := []Card_Data {
                 tooltip = "Waiting for the opponent to defend...",
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{.Attack},
                 },
             },
             Action {  // 3
@@ -237,7 +237,7 @@ tigerclaw_cards := []Card_Data {
                 tooltip = "Waiting for the opponent to defend...",
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{.Attack},
                 },
             },
             Action {  // 6
@@ -255,10 +255,10 @@ tigerclaw_cards := []Card_Data {
         color =         .Red,
         tier =          2,
         alternate =     true,
-        values =        #partial{.INITIATIVE = 9, .DEFENSE = 5, .ATTACK = 5, .MOVEMENT = 5},
-        primary =       .ATTACK,
-        primary_sign =  .PLUS,
-        item =          .DEFENSE,
+        values =        #partial{.Initiative = 9, .Defense = 5, .Attack = 5, .Movement = 5},
+        primary =       .Attack,
+        primary_sign =  .Plus,
+        item =          .Defense,
         text =          "Target a unit adjacent to you; if a friendly\nunit is adjacent to the target, +2 Attack.",
         primary_effect = []Action {
             Action {
@@ -276,7 +276,7 @@ tigerclaw_cards := []Card_Data {
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{},
                     strength = Sum {
-                        Card_Value{.ATTACK},
+                        Card_Value{.Attack},
                         Ternary {
                             {2, 0},
                             Greater_Than {
@@ -297,9 +297,9 @@ tigerclaw_cards := []Card_Data {
     Card_Data { name = "Pick Pocket",
         color =         .Green,
         tier =          2,
-        values =        #partial{.INITIATIVE = 2, .DEFENSE = 1, .MOVEMENT = 3},
-        primary =       .SKILL,
-        item =          .ATTACK,
+        values =        #partial{.Initiative = 2, .Defense = 1, .Movement = 3},
+        primary =       .Skill,
+        item =          .Attack,
         text =          "Move up to 2 spaces.\nTake 1 coin from an enemy hero adjacent\nto you; if you do, you may move 1 space.",
         primary_effect = []Action {
             Action {
@@ -349,18 +349,18 @@ tigerclaw_cards := []Card_Data {
         color =         .Green,
         tier =          2,
         alternate =     true,
-        values =        #partial{.INITIATIVE = 2, .DEFENSE = 1, .MOVEMENT = 3, .RANGE = 3},
-        primary =       .SKILL,
-        item =          .INITIATIVE,
+        values =        #partial{.Initiative = 2, .Defense = 1, .Movement = 3, .Range = 3},
+        primary =       .Skill,
+        item =          .Initiative,
         text =          "Give a hero in range a Poison marker.\nThe hero with a poison marker has\n-1 Initiative, -1 Attack and -1 Defense.",
         primary_effect = []Action {},
     },
     Card_Data { name = "Sidestep",  // @Unimplemented
         color =         .Blue,
         tier =          2,
-        values =        #partial{.INITIATIVE = 11, .DEFENSE = 0, .MOVEMENT = 3},
-        primary =       .DEFENSE,
-        item =          .ATTACK,
+        values =        #partial{.Initiative = 11, .Defense = 0, .Movement = 3},
+        primary =       .Defense,
+        item =          .Attack,
         text =          "Block a ranged attack.\nYou may move 1 space.",
         primary_effect = []Action {},
     },
@@ -368,18 +368,18 @@ tigerclaw_cards := []Card_Data {
         color =         .Blue,
         tier =          2,
         alternate =     true,
-        values =        #partial{.INITIATIVE = 11, .DEFENSE = 0, .MOVEMENT = 3},
-        primary =       .DEFENSE,
-        item =          .DEFENSE,
+        values =        #partial{.Initiative = 11, .Defense = 0, .Movement = 3},
+        primary =       .Defense,
+        item =          .Defense,
         text =          "Block a non-ranged attack.\nThe attacker discards a card, if able.",
         primary_effect = []Action {},
     },
     Card_Data { name = "Leaping Strike",
         color =         .Red,
         tier =          3,
-        values =        #partial{.INITIATIVE = 10, .DEFENSE = 4, .ATTACK = 4, .MOVEMENT = 4},
-        primary =       .ATTACK,
-        item =          .RADIUS,
+        values =        #partial{.Initiative = 10, .Defense = 4, .Attack = 4, .Movement = 4},
+        primary =       .Attack,
+        item =          .Radius,
         text =          "Before the attack: You may move 1 space.\nTarget a unit adjacent to you.\nAfter the attack: You may move 1 space.",
         primary_effect = []Action {
             Action {  // 0
@@ -406,7 +406,7 @@ tigerclaw_cards := []Card_Data {
                 tooltip = "Waiting for the opponent to defend...",
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{.Attack},
                 },
             },
             Action {  // 6
@@ -424,10 +424,10 @@ tigerclaw_cards := []Card_Data {
         color =         .Red,
         tier =          3,
         alternate =     true,
-        values =        #partial{.INITIATIVE = 10, .DEFENSE = 6, .ATTACK = 5, .MOVEMENT = 5, .RANGE = 1},
-        primary =       .ATTACK,
-        primary_sign =  .PLUS,
-        item =          .DEFENSE,
+        values =        #partial{.Initiative = 10, .Defense = 6, .Attack = 5, .Movement = 5, .Range = 1},
+        primary =       .Attack,
+        primary_sign =  .Plus,
+        item =          .Defense,
         text =          "Target a unit in range;\nif a friendly unit is adjacent to the target\n+2 Attack, and the target cannot\nperform a primary action to defend.",
         primary_effect = []Action {
 
@@ -436,9 +436,9 @@ tigerclaw_cards := []Card_Data {
     Card_Data { name = "Master Thief",
         color =         .Green,
         tier =          3,
-        values =        #partial{.INITIATIVE = 1, .DEFENSE = 2, .MOVEMENT = 3},
-        primary =       .SKILL,
-        item =          .MOVEMENT,
+        values =        #partial{.Initiative = 1, .Defense = 2, .Movement = 3},
+        primary =       .Skill,
+        item =          .Movement,
         text =          "Move up to 2 spaces. Take 1 or 2 coins\nfrom an enemy hero adjacent to you;\nif you do, you may move 2 spaces.",
         primary_effect = []Action {
             Action {
@@ -494,18 +494,18 @@ tigerclaw_cards := []Card_Data {
         color =         .Green,
         tier =          3,
         alternate =     true,
-        values =        #partial{.INITIATIVE = 1, .DEFENSE = 2, .MOVEMENT = 3, .RANGE = 3},
-        primary =       .SKILL,
-        item =          .INITIATIVE,
+        values =        #partial{.Initiative = 1, .Defense = 2, .Movement = 3, .Range = 3},
+        primary =       .Skill,
+        item =          .Initiative,
         text =          "Give a hero in range a Poison marker.\nThe hero with a poison marker has\n-2 Initiative, -2 Attack and -2 Defense.",
         primary_effect = []Action {},
     },
     Card_Data { name = "Evade",  // @Unimplemented
         color =         .Blue,
         tier =          3,
-        values =        #partial{.INITIATIVE = 11, .DEFENSE = 0, .MOVEMENT = 3},
-        primary =       .DEFENSE,
-        item =          .ATTACK,
+        values =        #partial{.Initiative = 11, .Defense = 0, .Movement = 3},
+        primary =       .Defense,
+        item =          .Attack,
         text =          "Block a ranged attack.\nYou may move 1 space. You may retrieve\nyour resolved or discarded basic skill card.",
         primary_effect = []Action {},
     },
@@ -513,9 +513,9 @@ tigerclaw_cards := []Card_Data {
         color =         .Blue,
         tier =          3,
         alternate =     true,
-        values =        #partial{.INITIATIVE = 11, .DEFENSE = 0, .MOVEMENT = 3},
-        primary =       .DEFENSE,
-        item =          .RANGE,
+        values =        #partial{.Initiative = 11, .Defense = 0, .Movement = 3},
+        primary =       .Defense,
+        item =          .Range,
         text =          "Block a non-ranged attack.\nThe attacker discards a card, or is defeated.",
         primary_effect = []Action {},
     },

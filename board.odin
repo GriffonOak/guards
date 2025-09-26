@@ -246,7 +246,7 @@ board_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, elem
 
     #partial switch var in input {
     case Mouse_Pressed_Event:
-        if .HOVERED not_in element.flags || board_element.hovered_space == INVALID_TARGET do break
+        if .Hovered not_in element.flags || board_element.hovered_space == INVALID_TARGET do break
         append(&gs.event_queue, Space_Clicked_Event{board_element.hovered_space})
     case Mouse_Motion_Event:
         board_element.hovered_space = INVALID_TARGET
@@ -351,7 +351,7 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
     }
 
     space_pos: Vec2
-    if .HOVERED not_in element.flags || board_element.hovered_space != INVALID_TARGET {
+    if .Hovered not_in element.flags || board_element.hovered_space != INVALID_TARGET {
         space_pos = gs.board[board_element.hovered_space.x][board_element.hovered_space.y].position
         // rl.DrawRing(pos, VERTICAL_SPACING * 0.45, VERTICAL_SPACING * 0.5, 0, 360, 100, rl.WHITE)
         rl.DrawPolyLinesEx(space_pos, 6, VERTICAL_SPACING * (1 / math.sqrt_f32(3) + 0.05), 0, VERTICAL_SPACING * 0.05, rl.WHITE)
@@ -419,7 +419,7 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
             color_blend = color_blend * color_blend
             base_color := rl.DARKGRAY
             highlight_color := rl.LIGHTGRAY
-            // color: = color_lerp(rl.Blue, rl.ORANGE, color_blend)
+            // color: = color_lerp(rl.Blue, rl.ORange, color_blend)
             color := color_lerp(base_color, highlight_color, color_blend)
             if info.invalid {
                 rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.08, color)
@@ -430,12 +430,12 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
     }
 
     draw_hover_effect: #partial switch get_my_player(gs).stage {
-    case .RESOLVING, .INTERRUPTING:
+    case .Resolving, .Interrupting:
         action_index := get_my_player(gs).hero.current_action_index
         action := get_action_at_index(gs, action_index)
         #partial switch variant in action.variant {
         case Fast_Travel_Action:
-            if .HOVERED not_in element.flags || board_element.hovered_space == INVALID_TARGET do break
+            if .Hovered not_in element.flags || board_element.hovered_space == INVALID_TARGET do break
             if index_target_set(&action.targets, board_element.hovered_space).member {
                 player_loc := get_my_player(gs).hero.location
                 player_pos := gs.board[player_loc.x][player_loc.y].position
@@ -451,7 +451,7 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
             // See if any side buttons are hovered
             for &ui_element in gs.side_button_manager.buttons {
                 button_element := assert_variant(&ui_element.variant, UI_Button_Element)
-                if .HOVERED not_in ui_element.flags do continue
+                if .Hovered not_in ui_element.flags do continue
                 event, ok := button_element.event.(Resolve_Current_Action_Event)
                 if !ok do continue
                 next_index := event.jump_index.?

@@ -15,7 +15,7 @@ INVALID_TARGET :: Target{}
 //     // We flag invalid rather than valid here so spaces default to being valid
 // }
 
-// WARNING KEEP THIS SMALL FOR SOME GOD FORSAKEN REASON OTHERWISE IT DOESN'T COMPILE
+// WARNING KEEP THIS Small FOR SOME GOD FORSAKEN REASON OTHERWISE IT DOESN'T COMPILE
 Target_Info :: bit_field i32 {
     dist:       u8      | 5,
     children:   u8      | 3,
@@ -33,8 +33,8 @@ Target_Set_Iterator :: struct {
 }
 
 Selection_Flag :: enum {
-    NOT_PREVIOUSLY_TARGETED,
-    IGNORING_IMMUNITY,
+    Not_Previously_Targeted,
+    Ignoring_Immunity,
 }
 
 Selection_Flags :: bit_set[Selection_Flag]
@@ -88,7 +88,7 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
     if index.sequence == .Invalid do return false
 
     xarg_freeze: { // Disable movement on xargatha freeze
-        freeze, ok := gs.ongoing_active_effects[.XARGATHA_FREEZE]
+        freeze, ok := gs.ongoing_active_effects[.Xargatha_Freeze]
         if !ok do break xarg_freeze
         if calculate_implicit_quantity(gs, freeze.timing.(Single_Turn), {card_id = freeze.parent_card_id}) != gs.turn_counter do break xarg_freeze
         context.allocator = context.temp_allocator
@@ -99,7 +99,7 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         log.assert(ok2, "Could not find played card when checking for Xargatha freeze")
         played_card_data, ok3 := get_card_data_by_id(gs, played_card)
         log.assert(ok3, "Could not find played card data when checking for Xargatha freeze")
-        if index.sequence == .Basic_Movement || index.sequence == .Basic_Fast_Travel || (index.index == 0 && index.sequence == .Primary && played_card_data.primary == .MOVEMENT) {
+        if index.sequence == .Basic_Movement || index.sequence == .Basic_Fast_Travel || (index.index == 0 && index.sequence == .Primary && played_card_data.primary == .Movement) {
             // phew
             return false
         }
@@ -193,7 +193,7 @@ make_movement_targets :: proc (
     calc_context: Calculation_Context = {},
 ) -> (visited_set: Target_Set) {
 
-    BIG_NUMBER :: max(u8)
+    Big_NUMBER :: max(u8)
     log.assert(len(criteria.path.spaces) > 0, "We can't calculate targets without this!!!!")
     origin := criteria.path.spaces[0]
     current_endpoint := criteria.path.spaces[len(criteria.path.spaces) - 1]
@@ -203,7 +203,7 @@ make_movement_targets :: proc (
 
     if .Shortest_Path in criteria.flags {
         log.assert(destinations_ok, "Trying to calculate shortest path with no valid destination set given!")
-        max_distance = BIG_NUMBER
+        max_distance = Big_NUMBER
     }
 
     // dijkstra's algorithm!
@@ -221,7 +221,7 @@ make_movement_targets :: proc (
 
     for count_members(&unvisited_set) > 0 {
         // find minimum
-        min_info := Target_Info{dist = BIG_NUMBER}
+        min_info := Target_Info{dist = Big_NUMBER}
         min_loc := INVALID_TARGET
         unvisited_iter := make_target_set_iterator(&unvisited_set)
         for info, loc in target_set_iter_members(&unvisited_iter) {
@@ -231,7 +231,7 @@ make_movement_targets :: proc (
             }
         }
 
-        if .Shortest_Path in criteria.flags && max_distance == BIG_NUMBER && valid_destinations[min_loc.x][min_loc.y].member {
+        if .Shortest_Path in criteria.flags && max_distance == Big_NUMBER && valid_destinations[min_loc.x][min_loc.y].member {
             // Shortest distance found!
             max_distance = min_info.dist
         }
@@ -433,12 +433,12 @@ make_arbitrary_targets :: proc (
         }
     }
 
-    if .NOT_PREVIOUSLY_TARGETED in criteria.flags {
+    if .Not_Previously_Targeted in criteria.flags {
         previous_target := calculate_implicit_target(gs, Previously_Chosen_Target{}, calc_context)
         out[previous_target.x][previous_target.y].member = false
     }
 
-    if .IGNORING_IMMUNITY not_in criteria.flags {
+    if .Ignoring_Immunity not_in criteria.flags {
         target_set_iter := make_target_set_iterator(&out)
         for info, target in target_set_iter_members(&target_set_iter) {
             space := gs.board[target.x][target.y]

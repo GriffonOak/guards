@@ -1,14 +1,14 @@
 package guards
 
-/// SWIFT
+/// Swift
 
 // Ult: "After you resolve a basic card, you may\nperform the primary action on that card;\nyou cannot target the same enemy hero\ntwice in the same turn this way."
 
 swift_cards := []Card_Data {
     Card_Data { name = "Reload!",
         color =         .Gold,
-        values =        #partial{.INITIATIVE = 6, .DEFENSE = 1, .MOVEMENT = 1},
-        primary =       .SKILL,
+        values =        #partial{.Initiative = 6, .Defense = 1, .Movement = 1},
+        primary =       .Skill,
         text =          "Choose one -\n* Perform the primary action of your rightmost resolved card.\n*Defeat a minion adjacent to you.",
         primary_effect = []Action {
             Action {  // 0
@@ -46,8 +46,8 @@ swift_cards := []Card_Data {
     },
     Card_Data { name = "Bounce",
         color =         .Silver,
-        values =        #partial{.INITIATIVE = 12, .DEFENSE = 2},
-        primary =       .SKILL,
+        values =        #partial{.Initiative = 12, .Defense = 2},
+        primary =       .Skill,
         text =          "Move 2 spaces in a straight line, ignoring\nobstacles; if this card is already resolved as\nyou perform this action, may repeat once.",
         primary_effect = []Action {
             Action {
@@ -75,8 +75,8 @@ swift_cards := []Card_Data {
     Card_Data { name = "Snipe",
         color =         .Red,
         tier =          1,
-        values =        #partial{.INITIATIVE = 8, .DEFENSE = 4, .ATTACK = 5, .MOVEMENT = 4, .RANGE = 4},
-        primary =       .ATTACK,
+        values =        #partial{.Initiative = 8, .Defense = 4, .Attack = 5, .Movement = 4, .Range = 4},
+        primary =       .Attack,
         text =          "Target a unit at maximum range,\nand in a straight line.",
         primary_effect = []Action {
             Action {
@@ -84,7 +84,7 @@ swift_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Self{}, {Card_Value{.RANGE}, Card_Value{.RANGE}}},
+                        Target_Within_Distance{Self{}, {Card_Value{.Range}, Card_Value{.Range}}},
                         Target_In_Straight_Line_With{Self{}},
                         Target_Contains_Any{UNIT_FLAGS},
                         Target_Is_Enemy_Unit{},
@@ -95,7 +95,7 @@ swift_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{.Attack},
                 },
             },
         },
@@ -103,8 +103,8 @@ swift_cards := []Card_Data {
     Card_Data { name = "Suppress",
         color =         .Green,
         tier =          1,
-        values =        #partial{.INITIATIVE = 4, .DEFENSE = 2, .MOVEMENT = 2, .RADIUS = 3},
-        primary =       .SKILL,
+        values =        #partial{.Initiative = 4, .Defense = 2, .Movement = 2, .Radius = 3},
+        primary =       .Skill,
         text =          "An enemy hero in radius who is not\nadjacent to terrain discards a card, if able.",
         primary_effect = []Action {
             Action {
@@ -112,7 +112,7 @@ swift_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.RADIUS}}},
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Target_Contains_Any{{.Hero}},
                         Target_Is_Enemy_Unit{},
                         Greater_Than{1, Count_Targets{
@@ -135,8 +135,8 @@ swift_cards := []Card_Data {
     Card_Data { name = "Steam Jump",
         color =         .Blue,
         tier =          1,
-        values =        #partial{.INITIATIVE = 9, .DEFENSE = 3, .MOVEMENT = 2, .RADIUS = 3},
-        primary =       .SKILL,
+        values =        #partial{.Initiative = 9, .Defense = 3, .Movement = 2, .Radius = 3},
+        primary =       .Skill,
         text =          "Place yourself into a space in a straight line\nin radius. Push an enemy unit\nadjacent to you up to 1 space.",
         primary_effect = []Action {
             Action {
@@ -144,7 +144,7 @@ swift_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.RADIUS}}},
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Target_Empty,
                         Target_In_Straight_Line_With{Self{}},
                     },
@@ -186,9 +186,9 @@ swift_cards := []Card_Data {
     Card_Data { name = "Prepared Shot",
         color =         .Red,
         tier =          2,
-        values =        #partial{.INITIATIVE = 8, .DEFENSE = 5, .ATTACK = 5, .MOVEMENT = 4, .RANGE = 4},
-        primary =       .ATTACK,
-        item =          .DEFENSE,
+        values =        #partial{.Initiative = 8, .Defense = 5, .Attack = 5, .Movement = 4, .Range = 4},
+        primary =       .Attack,
+        item =          .Defense,
         text =          "Target a unit in range, in a straight\nline, and not adjacent to you.",
         primary_effect = []Action {
             Action {
@@ -196,7 +196,7 @@ swift_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Self{}, {2, Card_Value{.RANGE}}},
+                        Target_Within_Distance{Self{}, {2, Card_Value{.Range}}},
                         Target_In_Straight_Line_With{Self{}},
                         Target_Contains_Any{UNIT_FLAGS},
                         Target_Is_Enemy_Unit{},
@@ -207,7 +207,7 @@ swift_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{.Attack},
                 },
             },
         },
@@ -216,9 +216,9 @@ swift_cards := []Card_Data {
         color =         .Red,
         tier =          2,
         alternate =     true,
-        values =        #partial{.INITIATIVE = 8, .DEFENSE = 6, .ATTACK = 4, .MOVEMENT = 4, .RANGE = 2},
-        primary =       .ATTACK,
-        item =          .INITIATIVE,
+        values =        #partial{.Initiative = 8, .Defense = 6, .Attack = 4, .Movement = 4, .Range = 2},
+        primary =       .Attack,
+        item =          .Initiative,
         text =          "Target a unit in range. Before the attack:\nAn enemy hero adjacent to the target\ndiscards a card, if able.",
         primary_effect = []Action {
             Action {  // 0
@@ -226,7 +226,7 @@ swift_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.RANGE}}},
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
                         Target_Contains_Any{UNIT_FLAGS},
                         Target_Is_Enemy_Unit{},
                     },
@@ -254,7 +254,7 @@ swift_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{skips = 1},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{.Attack},
                 },
             },
         },
@@ -262,9 +262,9 @@ swift_cards := []Card_Data {
     Card_Data { name = "Pin Down",
         color =         .Green,
         tier =          2,
-        values =        #partial{.INITIATIVE = 4, .DEFENSE = 2, .MOVEMENT = 2, .RADIUS = 4},
-        primary =       .SKILL,
-        item =          .ATTACK,
+        values =        #partial{.Initiative = 4, .Defense = 2, .Movement = 2, .Radius = 4},
+        primary =       .Skill,
+        item =          .Attack,
         text =          "An enemy hero in radius who is not\nadjacent to terrain discards a card, if able.",
         primary_effect = []Action {
             Action {
@@ -272,7 +272,7 @@ swift_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.RADIUS}}},
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Target_Contains_Any{{.Hero}},
                         Target_Is_Enemy_Unit{},
                         Greater_Than{1, Count_Targets{
@@ -296,18 +296,18 @@ swift_cards := []Card_Data {
         color =         .Green,
         tier =          2,
         alternate =     true,
-        values =        #partial{.INITIATIVE = 4, .DEFENSE = 2, .MOVEMENT = 2, .RADIUS = 4},
-        primary =       .SKILL,
-        item =          .INITIATIVE,
+        values =        #partial{.Initiative = 4, .Defense = 2, .Movement = 2, .Radius = 4},
+        primary =       .Skill,
+        item =          .Initiative,
         text =          "Move an enemy minion in radius up\nto 3 spaces to a space in radius.\nNext turn: The first time an enemy minion\nin radius is defeated, gain 1 coin.",
         primary_effect = []Action {},
     },
     Card_Data { name = "Assault Jump",
         color =         .Blue,
         tier =          2,
-        values =        #partial{.INITIATIVE = 10, .DEFENSE = 4, .MOVEMENT = 2, .RADIUS = 4},
-        primary =       .SKILL,
-        item =          .ATTACK,
+        values =        #partial{.Initiative = 10, .Defense = 4, .Movement = 2, .Radius = 4},
+        primary =       .Skill,
+        item =          .Attack,
         text =          "Place yourself into a space in a straight line\nin radius. Push an enemy unit\nadjacent to you up to 2 space.",
         primary_effect = []Action {
             Action {
@@ -315,7 +315,7 @@ swift_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.RADIUS}}},
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Target_Empty,
                         Target_In_Straight_Line_With{Self{}},
                     },
@@ -358,16 +358,16 @@ swift_cards := []Card_Data {
         color =         .Blue,
         tier =          2,
         alternate =     true,
-        values =        #partial{.INITIATIVE = 10, .DEFENSE = 4, .MOVEMENT = 1, .RADIUS = 2},
-        primary =       .SKILL,
-        item =          .DEFENSE,
+        values =        #partial{.Initiative = 10, .Defense = 4, .Movement = 1, .Radius = 2},
+        primary =       .Skill,
+        item =          .Defense,
         text =          "End of turn: Place yourself into a space\nin radius not in a straight line from you.",
         primary_effect = []Action {
             Action {  // 0
                 tooltip = error_tooltip,
                 variant = Add_Active_Effect_Action {
                     effect = Active_Effect {
-                        kind = .SWIFT_DELAYED_JUMP,
+                        kind = .Swift_Delayed_Jump,
                         timing = End_Of_Turn {
                             extra_action_index = Action_Index {
                                 sequence = .Primary,
@@ -385,7 +385,7 @@ swift_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.RADIUS}}},
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Not{Target_In_Straight_Line_With{Self{}}},
                         Target_Empty,
                     },
@@ -403,9 +403,9 @@ swift_cards := []Card_Data {
     Card_Data { name = "Killshot",
         color =         .Red,
         tier =          3,
-        values =        #partial{.INITIATIVE = 9, .DEFENSE = 5, .ATTACK = 6, .MOVEMENT = 4, .RANGE = 5},
-        primary =       .ATTACK,
-        item =          .DEFENSE,
+        values =        #partial{.Initiative = 9, .Defense = 5, .Attack = 6, .Movement = 4, .Range = 5},
+        primary =       .Attack,
+        item =          .Defense,
         text =          "Target a unit in range, in a straight\nline, and not adjacent to you.",
         primary_effect = []Action {
             Action {
@@ -413,7 +413,7 @@ swift_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Self{}, {2, Card_Value{.RANGE}}},
+                        Target_Within_Distance{Self{}, {2, Card_Value{.Range}}},
                         Target_In_Straight_Line_With{Self{}},
                         Target_Contains_Any{UNIT_FLAGS},
                         Target_Is_Enemy_Unit{},
@@ -424,7 +424,7 @@ swift_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{.Attack},
                 },
             },
         },
@@ -433,9 +433,9 @@ swift_cards := []Card_Data {
         color =         .Red,
         tier =          3,
         alternate =     true,
-        values =        #partial{.INITIATIVE = 9, .DEFENSE = 6, .ATTACK = 5, .MOVEMENT = 4, .RANGE = 2},
-        primary =       .ATTACK,
-        item =          .RADIUS,
+        values =        #partial{.Initiative = 9, .Defense = 6, .Attack = 5, .Movement = 4, .Range = 2},
+        primary =       .Attack,
+        item =          .Radius,
         text =          "Target a unit in range. Before the attack:\nAn enemy hero adjacent to the target\ndiscards a card, or is defeated.",
         primary_effect = []Action {
             Action {  // 0
@@ -443,7 +443,7 @@ swift_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.RANGE}}},
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
                         Target_Contains_Any{UNIT_FLAGS},
                         Target_Is_Enemy_Unit{},
                     },
@@ -472,7 +472,7 @@ swift_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{skips = 1},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{.Attack},
                 },
             },
         },
@@ -480,9 +480,9 @@ swift_cards := []Card_Data {
     Card_Data { name = "Killing Ground",
         color =         .Green,
         tier =          3,
-        values =        #partial{.INITIATIVE = 3, .DEFENSE = 3, .MOVEMENT = 2, .RADIUS = 4},
-        primary =       .SKILL,
-        item =          .RANGE,
+        values =        #partial{.Initiative = 3, .Defense = 3, .Movement = 2, .Radius = 4},
+        primary =       .Skill,
+        item =          .Range,
         text =          "An enemy hero in radius who is not\nadjacent to terrain discards a card, or is defeated.",
         primary_effect = []Action {
             Action {
@@ -490,7 +490,7 @@ swift_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.RADIUS}}},
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Target_Contains_Any{{.Hero}},
                         Target_Is_Enemy_Unit{},
                         Greater_Than{1, Count_Targets{
@@ -515,18 +515,18 @@ swift_cards := []Card_Data {
         color =         .Green,
         tier =          3,
         alternate =     true,
-        values =        #partial{.INITIATIVE = 3, .DEFENSE = 3, .MOVEMENT = 2, .RADIUS = 4},
-        primary =       .SKILL,
-        item =          .INITIATIVE,
+        values =        #partial{.Initiative = 3, .Defense = 3, .Movement = 2, .Radius = 4},
+        primary =       .Skill,
+        item =          .Initiative,
         text =          "Move up to two enemy minions in radius,\nupto 3 spaces each, to a space in radius.\nNext turn: The first two times an enemy\nminion in radius is defeated, gain 1 coin.",
         primary_effect = []Action {},
     },
     Card_Data { name = "Drop Trooper",
         color =         .Blue,
         tier =          3,
-        values =        #partial{.INITIATIVE = 10, .DEFENSE = 4, .MOVEMENT = 2, .RADIUS = 4},
-        primary =       .SKILL,
-        item =          .ATTACK,
+        values =        #partial{.Initiative = 10, .Defense = 4, .Movement = 2, .Radius = 4},
+        primary =       .Skill,
+        item =          .Attack,
         text =          "Place yourself into a space in a straight line\nin radius. Push up to two enemy units\nadjacent to you up to 2 spaces.",
         primary_effect = []Action {
             Action {
@@ -534,7 +534,7 @@ swift_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.RADIUS}}},
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Target_Empty,
                         Target_In_Straight_Line_With{Self{}},
                     },
@@ -578,16 +578,16 @@ swift_cards := []Card_Data {
         color =         .Blue,
         tier =          3,
         alternate =     true,
-        values =        #partial{.INITIATIVE = 10, .DEFENSE = 4, .MOVEMENT = 1, .RADIUS = 2},
-        primary =       .SKILL,
-        item =          .MOVEMENT,
+        values =        #partial{.Initiative = 10, .Defense = 4, .Movement = 1, .Radius = 2},
+        primary =       .Skill,
+        item =          .Movement,
         text =          "End of turn: Place yourself into a space in\nradius not in a straight line from you.\nYou may then fast travel, if able.",
         primary_effect = []Action {
             Action {  // 0
                 tooltip = error_tooltip,
                 variant = Add_Active_Effect_Action {
                     effect = Active_Effect {
-                        kind = .SWIFT_DELAYED_JUMP,
+                        kind = .Swift_Delayed_Jump,
                         timing = End_Of_Turn {
                             extra_action_index = Action_Index {
                                 sequence = .Primary,
@@ -605,7 +605,7 @@ swift_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.RADIUS}}},
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Not{Target_In_Straight_Line_With{Self{}}},
                         Target_Empty,
                     },

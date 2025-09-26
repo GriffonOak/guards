@@ -140,7 +140,7 @@ when !ODIN_TEST {  // Apparently the address is in use during testing (?)
     me := Player {
         id = 0,
         hero = Hero {
-            id = .XARGATHA,
+            id = .Xargatha,
         },
         team = .Red,
         is_team_captain = true,
@@ -164,14 +164,14 @@ _thread_host_wait_for_clients :: proc(gs: ^Game_State, sock: net.TCP_Socket) {
             log.debug("Connected with client!", client_socket)
             add_socket_listener(gs, client_socket)
 
-            if gs.stage != .IN_LOBBY do return
+            if gs.stage != .In_Lobby do return
 
             // Right now we just completely decide the fate of the client but realistically they should get to decide their own team and stuff
             client_player := Player {
                 id = len(gs.players),
-                stage = .SELECTING,
+                stage = .Selecting,
                 hero = Hero {
-                    id = .XARGATHA,
+                    id = .Xargatha,
                 },
                 team = .Blue,
                 is_team_captain = len(gs.players) == 1,

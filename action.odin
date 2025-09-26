@@ -249,10 +249,10 @@ first_choice_action := []Action {
 basic_movement_action := []Action {
     {
         tooltip = player_movement_tooltip,
-        condition = And{Not{Card_Primary_Is{.MOVEMENT}}, Greater_Than{Card_Value{.MOVEMENT}, 0}},
+        condition = And{Not{Card_Primary_Is{.Movement}}, Greater_Than{Card_Value{.Movement}, 0}},
         variant = Movement_Action {
             target   = Self{},
-            max_distance = Card_Value{.MOVEMENT},
+            max_distance = Card_Value{.Movement},
         },
     },
 }
@@ -260,7 +260,7 @@ basic_movement_action := []Action {
 basic_fast_travel_action := []Action {
     Action {
         tooltip = "Choose a space to fast travel to.",
-        condition = Greater_Than{Card_Value{.MOVEMENT}, 0},
+        condition = Greater_Than{Card_Value{.Movement}, 0},
         variant = Fast_Travel_Action{},
     },
 }
@@ -300,7 +300,7 @@ basic_defense_action := []Action {
         tooltip = error_tooltip,
         variant = Defend_Action {
             strength = Sum {
-                Card_Value{.DEFENSE},
+                Card_Value{.Defense},
                 Minion_Modifiers{},
             },
         },

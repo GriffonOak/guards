@@ -27,37 +27,37 @@ Card_State :: enum {
 // I philosophically dislike this enum
 Primary_Kind :: enum {
     // None,
-    ATTACK,
-    SKILL,
-    DEFENSE_SKILL,
-    DEFENSE,
-    MOVEMENT,
+    Attack,
+    Skill,
+    Defense_Skill,
+    Defense,
+    Movement,
 }
 
 Card_Value_Kind :: enum {
-    ATTACK,
-    DEFENSE,
-    INITIATIVE,
-    RANGE,
-    MOVEMENT,
-    RADIUS,
+    Attack,
+    Defense,
+    Initiative,
+    Range,
+    Movement,
+    Radius,
 }
 
 item_initials: [Card_Value_Kind]cstring = {
-    .ATTACK = "A",
-    .DEFENSE = "D",
-    .INITIATIVE = "I",
-    .RANGE = "Rn",
-    .MOVEMENT = "M",
-    .RADIUS = "Ra",
+    .Attack = "A",
+    .Defense = "D",
+    .Initiative = "I",
+    .Range = "Rn",
+    .Movement = "M",
+    .Radius = "Ra",
 }
 
 PLUS_SIGN: cstring : "+"
 
 Sign :: enum {
     None,
-    PLUS,
-    MINUS,
+    Plus,
+    Minus,
 }
 
 Card_ID :: struct {
@@ -160,11 +160,11 @@ CARD_PLAYED_POSITION_RECT :: rl.Rectangle{BOARD_POSITION_RECT.width - PLAYED_CAR
 
 @rodata
 primary_initials := [Primary_Kind]string {
-    .ATTACK = "A",
-    .SKILL = "S",
-    .DEFENSE = "D",
-    .DEFENSE_SKILL = "DS",
-    .MOVEMENT = "M",
+    .Attack = "A",
+    .Skill = "S",
+    .Defense = "D",
+    .Defense_Skill = "DS",
+    .Movement = "M",
 }
 
 card_hand_position_rects: [Card_Color]rl.Rectangle
@@ -215,23 +215,23 @@ create_texture_for_card :: proc(card: ^Card_Data) {
     // Secondaries ribbon & initiative
     rl.DrawRectangleRec({0, 0, COLORED_BAND_WIDTH, CARD_TEXTURE_SIZE.y / 2}, card_color_values[card.color])
 
-    rl.DrawTextEx(default_font, fmt.ctprintf("I%d", card.values[.INITIATIVE]), {TEXT_PADDING, TEXT_PADDING}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+    rl.DrawTextEx(default_font, fmt.ctprintf("I%d", card.values[.Initiative]), {TEXT_PADDING, TEXT_PADDING}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     secondaries_index := 1
     primary_to_value := [Primary_Kind]Card_Value_Kind {
-        .ATTACK = .ATTACK,
-        .SKILL = .ATTACK, // Presumably the attack value will be 0 for skills
-        .MOVEMENT = .MOVEMENT,
-        .DEFENSE = .DEFENSE,
-        .DEFENSE_SKILL = .DEFENSE,
+        .Attack = .Attack,
+        .Skill = .Attack, // Presumably the attack value will be 0 for skills
+        .Movement = .Movement,
+        .Defense = .Defense,
+        .Defense_Skill = .Defense,
     }
 
     for value, value_kind in card.values {
         if (
             value == 0 ||
             value_kind == primary_to_value[card.primary] ||
-            value_kind == .INITIATIVE ||
-            value_kind == .RANGE ||
-            value_kind == .RADIUS
+            value_kind == .Initiative ||
+            value_kind == .Range ||
+            value_kind == .Radius
         ) { continue }
         value_name, _ := reflect.enum_name_from_value(value_kind)
         rl.DrawTextEx(default_font, fmt.ctprintf("%s%d", value_name[:1], value), {TEXT_PADDING, TEXT_PADDING + f32(secondaries_index) * TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
@@ -276,12 +276,12 @@ create_texture_for_card :: proc(card: ^Card_Data) {
     primary_value_loc := Vec2{TEXT_PADDING, y_offset - text_dimensions.y - TITLE_FONT_SIZE}
     rl.DrawRectangleV({0, primary_value_loc.y - TEXT_PADDING}, CARD_TEXTURE_SIZE, rl.WHITE)
     rl.DrawLineEx({0, primary_value_loc.y - TEXT_PADDING}, {CARD_TEXTURE_SIZE.x, primary_value_loc.y - TEXT_PADDING}, TEXT_PADDING, rl.BLACK)
-    rl.DrawTextEx(default_font, fmt.ctprintf("%s%s%s", primary_initials[card.primary], primary_value_string, PLUS_SIGN if card.primary_sign == .PLUS else ""), primary_value_loc, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+    rl.DrawTextEx(default_font, fmt.ctprintf("%s%s%s", primary_initials[card.primary], primary_value_string, PLUS_SIGN if card.primary_sign == .Plus else ""), primary_value_loc, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
 
     // Reach & sign
-    card_reach, is_radius := (card.values[.RADIUS] if card.values[.RADIUS] > 0 else card.values[.RANGE]), card.values[.RADIUS] > 0
+    card_reach, is_radius := (card.values[.Radius] if card.values[.Radius] > 0 else card.values[.Range]), card.values[.Radius] > 0
     if card_reach > 0 {
-        reach_string := fmt.ctprintf("%s%d%s", "Rd" if is_radius else "Rn", card_reach, PLUS_SIGN if card.reach_sign == .PLUS else "")
+        reach_string := fmt.ctprintf("%s%d%s", "Rd" if is_radius else "Rn", card_reach, PLUS_SIGN if card.reach_sign == .Plus else "")
         reach_dimensions := rl.MeasureTextEx(default_font, reach_string, TITLE_FONT_SIZE, FONT_SPACING).x
         rl.DrawTextEx(default_font, reach_string, {CARD_TEXTURE_SIZE.x - reach_dimensions - TEXT_PADDING, primary_value_loc.y}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
     }
@@ -355,7 +355,7 @@ when !ODIN_TEST {
                 color_blend = color_blend * color_blend
                 base_color := rl.DARKGRAY
                 highlight_color := rl.LIGHTGRAY
-                // color: = color_lerp(rl.Blue, rl.ORANGE, color_blend)
+                // color: = color_lerp(rl.Blue, rl.ORange, color_blend)
                 color := color_lerp(base_color, highlight_color, color_blend)
                 rl.DrawRectangleLinesEx(element.bounding_rect, 8, color)
             }
@@ -365,7 +365,7 @@ when !ODIN_TEST {
     if card_element.selected {
         rl.DrawRectangleLinesEx(element.bounding_rect, 8, rl.PURPLE)
     }
-    if .HOVERED in element.flags && !card_element.hidden {
+    if .Hovered in element.flags && !card_element.hidden {
         rl.DrawTexturePro(card_data.texture, {0, 0, CARD_TEXTURE_SIZE.x, -CARD_TEXTURE_SIZE.y}, CARD_HOVER_POSITION_RECT, {}, 0, rl.WHITE)
         rl.DrawRectangleLinesEx(element.bounding_rect, 4, rl.WHITE)
         // rl.DrawRectangleLinesEx(CARD_HOVER_POSITION_RECT, 2, rl.RAYWHITE)
@@ -415,7 +415,7 @@ find_upgrade_options :: proc(gs: ^Game_State, card_id: Card_ID) -> (out: [2]Card
 }
 
 get_ui_card_slice :: proc(gs: ^Game_State, player_id: Player_ID) -> []UI_Element {
-    return gs.ui_stack[.CARDS][5 * player_id:][:5]
+    return gs.ui_stack[.Cards][5 * player_id:][:5]
 }
 
 find_element_for_card :: proc(gs: ^Game_State, card_id: Card_ID) -> (^UI_Element, int) {

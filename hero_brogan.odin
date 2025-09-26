@@ -1,14 +1,14 @@
 package guards
 
-/// BROGAN
+/// Brogan
 
 //  Ult: During minion battle you count as a heavy\nminion; if you would be removed, lose the push instead.
 
 brogan_cards := []Card_Data {
     Card_Data { name = "Onslaught",
         color =         .Gold,
-        values =        #partial{.INITIATIVE = 11, .DEFENSE = 3, .ATTACK = 4, .MOVEMENT = 1},
-        primary =       .ATTACK,
+        values =        #partial{.Initiative = 11, .Defense = 3, .Attack = 4, .Movement = 1},
+        primary =       .Attack,
         text =          "Target a unit adjacent to you. After the attack:\nMove into the space it occupied, if able.",
         primary_effect = []Action {
             Action {
@@ -26,7 +26,7 @@ brogan_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{.Attack},
                 },
             },
             Action {
@@ -46,8 +46,8 @@ brogan_cards := []Card_Data {
     },
     Card_Data { name = "Bulwark",  // @Incomplete
         color =         .Silver,
-        values =        #partial{.INITIATIVE = 12, .DEFENSE = 4, .RADIUS = 4},
-        primary =       .SKILL,
+        values =        #partial{.Initiative = 12, .Defense = 4, .Radius = 4},
+        primary =       .Skill,
         text =          "You may retrieve a discarded card.\nThis turn: You and friendly units in radius\ncannot be moved, pushed, swapped\nor placed by enemy heroes.",
         primary_effect = []Action {
             Action {
@@ -70,8 +70,8 @@ brogan_cards := []Card_Data {
     Card_Data { name = "Mad Dash",
         color =         .Red,
         tier =          1,
-        values =        #partial{.INITIATIVE = 7, .DEFENSE = 7, .ATTACK = 6, .MOVEMENT = 3},
-        primary =       .ATTACK,
+        values =        #partial{.Initiative = 7, .Defense = 7, .Attack = 6, .Movement = 3},
+        primary =       .Attack,
         text =          "Before the attack: Move 2 spaces in\na straight line to a space adjacent to\nan enemy unit, then target that unit.\n(If you cannot make this move, you cannot attack.)",
         primary_effect = []Action {
             Action {
@@ -111,7 +111,7 @@ brogan_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{.Attack},
                 },
             },
         },
@@ -119,16 +119,16 @@ brogan_cards := []Card_Data {
     Card_Data { name = "Shield",  // @Unimplemented.
         color =         .Green,
         tier =          1,
-        values =        #partial{.INITIATIVE = 6, .DEFENSE = 4, .MOVEMENT = 2},
-        primary =       .SKILL,
+        values =        #partial{.Initiative = 6, .Defense = 4, .Movement = 2},
+        primary =       .Skill,
         text =          "This round: When any friendly minion in radius\nis defeated you may discard a silver card.\nIf you do, the minion is not removed.\n(The enemy hero still gains the coins for defeating the minion.)",
         primary_effect = []Action {},
     },
     Card_Data { name = "Brutal Jab",
         color =         .Blue,
         tier =          1,
-        values =        #partial{.INITIATIVE = 8, .DEFENSE = 5, .MOVEMENT = 2},
-        primary =       .SKILL,
+        values =        #partial{.Initiative = 8, .Defense = 5, .Movement = 2},
+        primary =       .Skill,
         text =          "You may move 1 space. Push an enemy unit\nor a token adjacent to you up to 1 space.",
         primary_effect = []Action {
             Action {  // 0
@@ -175,9 +175,9 @@ brogan_cards := []Card_Data {
     Card_Data { name = "Bullrush",
         color =         .Red,
         tier =          2,
-        values =        #partial{.INITIATIVE = 7, .DEFENSE = 8, .ATTACK = 6, .MOVEMENT = 3},
-        primary =       .ATTACK,
-        item =          .ATTACK,
+        values =        #partial{.Initiative = 7, .Defense = 8, .Attack = 6, .Movement = 3},
+        primary =       .Attack,
+        item =          .Attack,
         text =          "Before the attack: Move 2 or 3 spaces in\na straight line to a space adjacent to an\nenemy unit, then target that unit.",
         primary_effect = []Action {
             Action {
@@ -217,7 +217,7 @@ brogan_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{.Attack},
                 },
             },
         },
@@ -226,9 +226,9 @@ brogan_cards := []Card_Data {
         color =         .Red,
         tier =          2,
         alternate =     true,
-        values =        #partial{.INITIATIVE = 7, .DEFENSE = 7, .ATTACK = 3, .MOVEMENT = 4, .RANGE = 2},
-        primary =       .ATTACK,
-        item =          .DEFENSE,
+        values =        #partial{.Initiative = 7, .Defense = 7, .Attack = 3, .Movement = 4, .Range = 2},
+        primary =       .Attack,
+        item =          .Defense,
         text =          "Choose one -\n*Target a unit adjacent to you.\n*You may discard a card;\nif you do, target a unit in range.",
         primary_effect = []Action {
             Action {  // 0
@@ -255,7 +255,7 @@ brogan_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{.Attack},
                 },
             },
             Action {  // 3
@@ -275,7 +275,7 @@ brogan_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.RANGE}}},
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
                         Target_Contains_Any{UNIT_FLAGS},
                         Target_Is_Enemy_Unit{},
                     },
@@ -285,7 +285,7 @@ brogan_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{.Attack},
                 },
             },
         },
@@ -293,9 +293,9 @@ brogan_cards := []Card_Data {
     Card_Data { name = "Bolster",  // @Unimplemented
         color =         .Green,
         tier =          2,
-        values =        #partial{.INITIATIVE = 5, .DEFENSE = 5, .MOVEMENT = 2, .RADIUS = 2},
-        primary =       .SKILL,
-        item =          .ATTACK,
+        values =        #partial{.Initiative = 5, .Defense = 5, .Movement = 2, .Radius = 2},
+        primary =       .Skill,
+        item =          .Attack,
         text =          "This round: When any friendly minion in radius\nis defeated you may discard a silver card.\nIf you do, the minion is not removed.",
         primary_effect = []Action {},
     },
@@ -303,9 +303,9 @@ brogan_cards := []Card_Data {
         color =         .Green,
         tier =          2,
         alternate =     true,
-        values =        #partial{.INITIATIVE = 5, .DEFENSE = 5, .MOVEMENT = 2, .RANGE = 4},
-        primary =       .SKILL,
-        item =          .DEFENSE,
+        values =        #partial{.Initiative = 5, .Defense = 5, .Movement = 2, .Range = 4},
+        primary =       .Skill,
+        item =          .Defense,
         text =          "A friendly hero in range gains 1 coin;\nif any hero was defeated this round,\nthat friendly hero gains 3 coins instead.",
         primary_effect = []Action {
             Action {
@@ -313,7 +313,7 @@ brogan_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.RANGE}}},
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
                         Target_Contains_Any{{.Hero}},
                         Target_Is_Friendly_Unit{},
                     },
@@ -334,9 +334,9 @@ brogan_cards := []Card_Data {
     Card_Data { name = "Mighty Punch",
         color =         .Blue,
         tier =          2,
-        values =        #partial{.INITIATIVE = 9, .DEFENSE = 6, .MOVEMENT = 2},
-        primary =       .SKILL,
-        item =          .INITIATIVE,
+        values =        #partial{.Initiative = 9, .Defense = 6, .Movement = 2},
+        primary =       .Skill,
+        item =          .Initiative,
         text =          "You may move 1 space. Push an enemy unit\nor a token adjacent to you up to 2 spaces.",
         primary_effect = []Action {
             Action {  // 0
@@ -384,9 +384,9 @@ brogan_cards := []Card_Data {
         color =         .Blue,
         tier =          2,
         alternate =     true,
-        values =        #partial{.INITIATIVE = 9, .DEFENSE = 6, .MOVEMENT = 2},
-        primary =       .SKILL,
-        item =          .ATTACK,
+        values =        #partial{.Initiative = 9, .Defense = 6, .Movement = 2},
+        primary =       .Skill,
+        item =          .Attack,
         text =          "An enemy hero adjacent to you who\nhas played an attack card this turn\ndiscards a card, if able.",
         primary_effect = []Action {
             Action {
@@ -400,7 +400,7 @@ brogan_cards := []Card_Data {
                         Greater_Than {
                             Count_Card_Targets {
                                 Card_Owner_Is{Current_Target{}},
-                                Card_Primary_Is{.ATTACK},
+                                Card_Primary_Is{.Attack},
                                 Equal{Card_Turn_Played{}, Current_Turn{}},
                             }, 0,
                         },
@@ -418,9 +418,9 @@ brogan_cards := []Card_Data {
     Card_Data { name = "Furious Charge",
         color =         .Red,
         tier =          3,
-        values =        #partial{.INITIATIVE = 8, .DEFENSE = 8, .ATTACK = 7, .MOVEMENT = 3},
-        primary =       .ATTACK,
-        item =          .MOVEMENT,
+        values =        #partial{.Initiative = 8, .Defense = 8, .Attack = 7, .Movement = 3},
+        primary =       .Attack,
+        item =          .Movement,
         text =          "Before the attack: Move 2, 3, or 4 spaces\n in a straight line to a space adjacent to an\nenemy unit, then target that unit.",
         primary_effect = []Action {
             Action {
@@ -460,7 +460,7 @@ brogan_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{.Attack},
                 },
             },
         },
@@ -469,9 +469,9 @@ brogan_cards := []Card_Data {
         color =         .Red,
         tier =          3,
         alternate =     true,
-        values =        #partial{.INITIATIVE = 8, .DEFENSE = 7, .ATTACK = 4, .MOVEMENT = 4, .RANGE = 2},
-        primary =       .ATTACK,
-        item =          .RADIUS,
+        values =        #partial{.Initiative = 8, .Defense = 7, .Attack = 4, .Movement = 4, .Range = 2},
+        primary =       .Attack,
+        item =          .Radius,
         text =          "Choose one -\n*Target a unit adjacent to you.\n*You may discard a card. If you have a card\nin the discard, target a unit in range.",
         primary_effect = []Action {
             Action {  // 0
@@ -498,7 +498,7 @@ brogan_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{.Attack},
                 },
             },
             Action {  // 3
@@ -525,7 +525,7 @@ brogan_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.RANGE}}},
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
                         Target_Contains_Any{UNIT_FLAGS},
                         Target_Is_Enemy_Unit{},
                     },
@@ -535,7 +535,7 @@ brogan_cards := []Card_Data {
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{},
-                    strength = Card_Value{.ATTACK},
+                    strength = Card_Value{.Attack},
                 },
             },
         },
@@ -543,9 +543,9 @@ brogan_cards := []Card_Data {
     Card_Data { name = "Fortify",  // @Unimplemented
         color =         .Green,
         tier =          3,
-        values =        #partial{.INITIATIVE = 5, .DEFENSE = 5, .MOVEMENT = 2, .RADIUS = 2},
-        primary =       .SKILL,
-        item =          .ATTACK,
+        values =        #partial{.Initiative = 5, .Defense = 5, .Movement = 2, .Radius = 2},
+        primary =       .Skill,
+        item =          .Attack,
         text =          "This round: when any friendly minion in radius\nis defeated you may discard a basic card.\nIf you do, the minion is not removed.",
         primary_effect = []Action {},
     },
@@ -553,9 +553,9 @@ brogan_cards := []Card_Data {
         color =         .Green,
         tier =          3,
         alternate =     true,
-        values =        #partial{.INITIATIVE = 5, .DEFENSE = 5, .MOVEMENT = 2, .RANGE = 4},
-        primary =       .SKILL,
-        item =          .DEFENSE,
+        values =        #partial{.Initiative = 5, .Defense = 5, .Movement = 2, .Range = 4},
+        primary =       .Skill,
+        item =          .Defense,
         text =          "A friendly hero in range gains 2 coins;\nif any hero was defeated this round,\nthat friendly hero gains 4 coins instead.",
         primary_effect = []Action {
             Action {
@@ -563,7 +563,7 @@ brogan_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.RANGE}}},
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
                         Target_Contains_Any{{.Hero}},
                         Target_Is_Friendly_Unit{},
                     },
@@ -584,9 +584,9 @@ brogan_cards := []Card_Data {
     Card_Data { name = "Savage Kick",
         color =         .Blue,
         tier =          3,
-        values =        #partial{.INITIATIVE = 9, .DEFENSE = 6, .MOVEMENT = 2},
-        primary =       .SKILL,
-        item =          .INITIATIVE,
+        values =        #partial{.Initiative = 9, .Defense = 6, .Movement = 2},
+        primary =       .Skill,
+        item =          .Initiative,
         text =          "Move up to 2 spaces. Push an enemy unit\nor a token adjacent to you up to 2 spaces.",
         primary_effect = []Action {
             Action {  // 0
@@ -631,9 +631,9 @@ brogan_cards := []Card_Data {
         color =         .Blue,
         tier =          3,
         alternate =     true,
-        values =        #partial{.INITIATIVE = 9, .DEFENSE = 6, .MOVEMENT = 2},
-        primary =       .SKILL,
-        item =          .RANGE,
+        values =        #partial{.Initiative = 9, .Defense = 6, .Movement = 2},
+        primary =       .Skill,
+        item =          .Range,
         text =          "An enemy hero adjacent to you who\nhas played an attack card this turn\ndiscards a card, or is defeated.",
         primary_effect = []Action {
             Action {
@@ -647,7 +647,7 @@ brogan_cards := []Card_Data {
                         Greater_Than {
                             Count_Card_Targets {
                                 Card_Owner_Is{Current_Target{}},
-                                Card_Primary_Is{.ATTACK},
+                                Card_Primary_Is{.Attack},
                                 Equal{Card_Turn_Played{}, Current_Turn{}},
                             }, 0,
                         },

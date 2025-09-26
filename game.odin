@@ -13,12 +13,12 @@ import "core:fmt"
 _ :: rand
 
 Direction :: enum {
-    NORTH,
-    NORTH_EAST,
-    SOUTH_EAST,
-    SOUTH,
-    SOUTH_WEST,
-    NORTH_WEST,
+    North,
+    North_East,
+    South_EAST,
+    South,
+    South_West,
+    North_West,
 }
 
 Team :: enum {
@@ -27,19 +27,19 @@ Team :: enum {
 }
 
 Game_Stage :: enum {
-    PRE_LOBBY,
-    IN_LOBBY,
-    SELECTION,
-    RESOLUTION,
-    MINION_BATTLE,
-    UPGRADES,
+    Pre_Lobby,
+    In_Lobby,
+    Selection,
+    Resolution,
+    Minion_Battle,
+    Upgrades,
 }
 
 Active_Effect_Kind :: enum {
     None,
-    XARGATHA_FREEZE,
-    XARGATHA_DEFEAT,
-    SWIFT_DELAYED_JUMP,
+    Xargatha_Freeze,
+    Xargatha_Defeat,
+    Swift_Delayed_Jump,
 }
 
 End_Of_Turn :: struct {
@@ -176,12 +176,12 @@ team_colors := [Team]rl.Color{
 
 @rodata
 direction_vectors := [Direction]Target {
-    .NORTH = {0, 1},
-    .NORTH_EAST = {1, 0},
-    .SOUTH_EAST = {1, max(u8)},
-    .SOUTH = {0, max(u8)},
-    .SOUTH_WEST = {max(u8), 0},
-    .NORTH_WEST = {max(u8), 1},
+    .North = {0, 1},
+    .North_East = {1, 0},
+    .South_EAST = {1, max(u8)},
+    .South = {0, max(u8)},
+    .South_West = {max(u8), 0},
+    .North_West = {max(u8), 1},
 }
 
 // lamayo
@@ -250,11 +250,11 @@ setup_hero_cards :: proc(gs: ^Game_State) {
 
     // Do the heroes!
     hero_cards = {
-        .XARGATHA   = xargatha_cards,
-        .DODGER     = dodger_cards,
-        .SWIFT      = swift_cards,
-        .BROGAN     = brogan_cards,
-        .TIGERCLAW  = tigerclaw_cards,
+        .Xargatha   = xargatha_cards,
+        .Dodger     = dodger_cards,
+        .Swift      = swift_cards,
+        .Brogan     = brogan_cards,
+        .Tigerclaw  = tigerclaw_cards,
     }
 
     for player_id in 0..<len(gs.players) {
@@ -265,9 +265,10 @@ setup_hero_cards :: proc(gs: ^Game_State) {
             if card.background_image == {} {
                 enum_name, _ := reflect.enum_name_from_value(card.color)
                 enum_name = strings.to_lower(enum_name, context.temp_allocator)
+                hero_name, _ := reflect.enum_name_from_value(hero_id)
                 card_filename := fmt.tprintf(
                     "%v_t%v_%v%v.png",
-                    strings.to_lower(string(hero_names[hero_id]), context.temp_allocator),
+                    strings.to_lower(string(hero_name), context.temp_allocator),
                     card.tier,
                     enum_name,
                     "_alt" if card.alternate else "",
@@ -346,7 +347,7 @@ remove_heavy_immunity :: proc(gs: ^Game_State, team: Team) {
 
 
 add_pre_lobby_ui_elements :: proc (gs: ^Game_State) {
-    clear(&gs.ui_stack[.BUTTONS])
+    clear(&gs.ui_stack[.Buttons])
 
     text_box_location := rl.Rectangle {
         WIDTH / 2 - SELECTION_BUTTON_SIZE.x,
@@ -365,7 +366,7 @@ add_pre_lobby_ui_elements :: proc (gs: ^Game_State) {
     button_3_location := button_2_location
     button_3_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
 
-    append(&gs.ui_stack[.BUTTONS], UI_Element {
+    append(&gs.ui_stack[.Buttons], UI_Element {
         text_box_location, UI_Text_Box_Element {
             default_string = "Enter IP Address...",
         },

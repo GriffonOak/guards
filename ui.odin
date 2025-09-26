@@ -9,9 +9,9 @@ import ba "core:container/bit_array"
 
 UI_Domain :: enum {
     None,
-    BOARD,
-    CARDS,
-    BUTTONS,
+    Board,
+    Cards,
+    Buttons,
 }
 
 UI_Index :: struct {
@@ -54,8 +54,8 @@ UI_Input_Proc :: #type proc(^Game_State, Input_Event, ^UI_Element) -> bool
 UI_Render_Proc :: #type proc(^Game_State, UI_Element)
 
 UI_Element_Flag :: enum {
-    HOVERED,
-    ACTIVE,
+    Hovered,
+    Active,
 }
 
 UI_Element :: struct {
@@ -149,7 +149,7 @@ when !ODIN_TEST {
         FONT_SPACING,
         rl.BLACK,
     )
-    if .HOVERED in element.flags {
+    if .Hovered in element.flags {
         rl.DrawRectangleLinesEx(element.bounding_rect, BUTTON_TEXT_PADDING / 2, rl.WHITE)
     }
 }
@@ -212,7 +212,7 @@ draw_text_box: UI_Render_Proc : proc(gs: ^Game_State, element: UI_Element) {
     text_color := rl.LIGHTGRAY
     text := text_box_element.default_string
 
-    if .ACTIVE in element.flags || sa.len(text_box_element.field) > 0 {
+    if .Active in element.flags || sa.len(text_box_element.field) > 0 {
         text_color = rl.WHITE
         text = strings.clone_to_cstring(string(sa.slice(&text_box_element.field)), context.temp_allocator)
     }
@@ -226,7 +226,7 @@ draw_text_box: UI_Render_Proc : proc(gs: ^Game_State, element: UI_Element) {
         text_color,
     )
 
-    if .ACTIVE in element.flags {
+    if .Active in element.flags {
         CYCLE_TIME :: 1 // s
         time := (rl.GetTime() - text_box_element.last_click_time) / CYCLE_TIME
         time_remainder := (time - math.floor(time)) * CYCLE_TIME
@@ -273,7 +273,7 @@ render_tooltip :: proc(gs: ^Game_State) {
 
 
 add_generic_button :: proc(gs: ^Game_State, location: rl.Rectangle, text: cstring, event: Event, global: bool = false) {
-    append(&gs.ui_stack[.BUTTONS], UI_Element {
+    append(&gs.ui_stack[.Buttons], UI_Element {
         location, UI_Button_Element {
             event, text, global,
         },
@@ -285,29 +285,29 @@ add_generic_button :: proc(gs: ^Game_State, location: rl.Rectangle, text: cstrin
 
 add_side_button :: proc(gs: ^Game_State, text: cstring, event: Event, global: bool = false) {
     if len(gs.side_button_manager.buttons) == 0 {
-        gs.side_button_manager.first_button_index = len(gs.ui_stack[.BUTTONS])
+        gs.side_button_manager.first_button_index = len(gs.ui_stack[.Buttons])
     }
 
     add_generic_button(gs, gs.side_button_manager.button_location, text, event, global)
-    gs.side_button_manager.buttons = gs.ui_stack[.BUTTONS][gs.side_button_manager.first_button_index:][:len(gs.side_button_manager.buttons) + 1]
+    gs.side_button_manager.buttons = gs.ui_stack[.Buttons][gs.side_button_manager.first_button_index:][:len(gs.side_button_manager.buttons) + 1]
     gs.side_button_manager.button_location.y -= SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
 }
 
 pop_side_button :: proc(gs: ^Game_State) {
     if len(gs.side_button_manager.buttons) == 0 do return
-    pop(&gs.ui_stack[.BUTTONS])
-    gs.side_button_manager.buttons = gs.ui_stack[.BUTTONS][gs.side_button_manager.first_button_index:][:len(gs.side_button_manager.buttons) - 1]
+    pop(&gs.ui_stack[.Buttons])
+    gs.side_button_manager.buttons = gs.ui_stack[.Buttons][gs.side_button_manager.first_button_index:][:len(gs.side_button_manager.buttons) - 1]
     gs.side_button_manager.button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
 }
 
 clear_side_buttons :: proc(gs: ^Game_State) {
-    resize(&gs.ui_stack[.BUTTONS], len(gs.ui_stack[.BUTTONS]) - len(gs.side_button_manager.buttons))
+    resize(&gs.ui_stack[.Buttons], len(gs.ui_stack[.Buttons]) - len(gs.side_button_manager.buttons))
     gs.side_button_manager.buttons = {}
     gs.side_button_manager.button_location = FIRST_SIDE_BUTTON_LOCATION
 }
 
 add_game_ui_elements :: proc(gs: ^Game_State) {
-    clear(&gs.ui_stack[.BUTTONS])
+    clear(&gs.ui_stack[.Buttons])
     gs.side_button_manager = Side_Button_Manager {
         buttons = {},
         first_button_index = 0,
@@ -319,7 +319,7 @@ add_game_ui_elements :: proc(gs: ^Game_State) {
         board_render_texture = rl.LoadRenderTexture(i32(BOARD_TEXTURE_SIZE.x), i32(BOARD_TEXTURE_SIZE.y))
     }
 
-    append(&gs.ui_stack[.BOARD], UI_Element {
+    append(&gs.ui_stack[.Board], UI_Element {
         BOARD_POSITION_RECT,
         UI_Board_Element{
             texture = board_render_texture,
@@ -334,7 +334,7 @@ add_game_ui_elements :: proc(gs: ^Game_State) {
 
         if player_id == gs.my_player_id {
             for card in player.hero.cards {
-                append(&gs.ui_stack[.CARDS], UI_Element{
+                append(&gs.ui_stack[.Cards], UI_Element{
                     card_hand_position_rects[card.color],
                     UI_Card_Element{card_id = card.id},
                     card_input_proc,
@@ -344,7 +344,7 @@ add_game_ui_elements :: proc(gs: ^Game_State) {
             }
         } else {
             for card in player.hero.cards {
-                append(&gs.ui_stack[.CARDS], UI_Element {
+                append(&gs.ui_stack[.Cards], UI_Element {
                     {},
                     UI_Card_Element{card_id = card.id},
                     card_input_proc,
@@ -357,16 +357,16 @@ add_game_ui_elements :: proc(gs: ^Game_State) {
 }
 
 increase_window_size :: proc() {
-    if window_size == .SMALL {
-        window_size = .BIG
+    if window_size == .Small {
+        window_size = .Big
         rl.SetWindowSize(WIDTH, HEIGHT)
         window_scale = 1
     }
 }
 
 decrease_window_size :: proc() {
-    if window_size == .BIG {
-        window_size = .SMALL
+    if window_size == .Big {
+        window_size = .Small
         rl.SetWindowSize(WIDTH / 2, HEIGHT / 2)
         window_scale = 2
     }
@@ -374,11 +374,11 @@ decrease_window_size :: proc() {
 
 toggle_fullscreen :: proc() {
     rl.ToggleBorderlessWindowed()
-    if window_size != .FULL_SCREEN {
-        window_size = .FULL_SCREEN
+    if window_size != .Fullscreen {
+        window_size = .Fullscreen
         window_scale = WIDTH / f32(rl.GetRenderWidth())
     } else {
-        window_size = .SMALL
+        window_size = .Small
         rl.SetWindowSize(WIDTH / 2, HEIGHT / 2)
         window_scale = 2
     }

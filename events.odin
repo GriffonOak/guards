@@ -3,6 +3,7 @@ package guards
 // This is a good file. It knows exactly what it is trying to do and does it extremely well.
 
 import "core:reflect"
+import "core:strings"
 import sa "core:container/small_array"
 import "core:log"
 
@@ -238,7 +239,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         return
 
     case Join_Network_Game_Chosen_Event:
-        text_box := &gs.ui_stack[.BUTTONS][0].variant.(UI_Text_Box_Element)
+        text_box := &gs.ui_stack[.Buttons][0].variant.(UI_Text_Box_Element)
         ip := string(sa.slice(&text_box.field))
         switch error in join_game(gs, ip) {
         case nil: append(&gs.event_queue, Enter_Lobby_Event{})
@@ -258,8 +259,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         add_or_update_player(gs, var.player_base)
 
     case Enter_Lobby_Event:
-        gs.stage = .IN_LOBBY
-        clear(&gs.ui_stack[.BUTTONS])
+        gs.stage = .In_Lobby
+        clear(&gs.ui_stack[.Buttons])
         if gs.is_host {
             gs.tooltip = "Wait for players to join, then begin the game."
             button_loc := (Vec2{WIDTH, HEIGHT} - SELECTION_BUTTON_SIZE) / 2
@@ -271,12 +272,14 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         button_loc := Vec2{WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, TOOLTIP_FONT_SIZE + BUTTON_PADDING}
         for hero in Hero_ID {
             log.infof("adding button")
-            add_generic_button(gs, {button_loc.x, button_loc.y, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}, hero_names[hero], Change_Hero_Event{hero})
+            hero_name, _ := reflect.enum_name_from_value(hero)
+            hero_name_cstring := strings.unsafe_string_to_cstring(hero_name)
+            add_generic_button(gs, {button_loc.x, button_loc.y, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}, hero_name_cstring, Change_Hero_Event{hero})
             button_loc.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
         }
 
     case Change_Hero_Event:
-        log.assert(gs.stage == .IN_LOBBY, "Tried to change hero outside of lobby!")
+        log.assert(gs.stage == .In_Lobby, "Tried to change hero outside of lobby!")
         player_base := get_my_player(gs).base
         player_base.hero.id = var.hero_id
 
@@ -287,7 +290,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Space_Hovered_Event:
         #partial switch get_my_player(gs).stage {
-        case .RESOLVING, .INTERRUPTING:
+        case .Resolving, .Interrupting:
             action_index := get_my_player(gs).hero.current_action_index
             action := get_action_at_index(gs, action_index)
             #partial switch &action_variant in action.variant {
@@ -308,7 +311,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Space_Clicked_Event:
         #partial switch get_my_player(gs).stage {
-        case .RESOLVING, .INTERRUPTING:
+        case .Resolving, .Interrupting:
             action_index := get_my_player(gs).hero.current_action_index
             action := get_action_at_index(gs, action_index)
 
@@ -347,7 +350,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         card, card_ok := get_card_by_id(gs, card_id)
 
         #partial switch get_my_player(gs).stage {
-        case .SELECTING:
+        case .Selecting:
             log.assert(card_ok, "Card element clicked with no card associated!")
             #partial switch card.state {
             case .In_Hand:
@@ -362,7 +365,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 add_side_button(gs, "Confirm card", Card_Confirmed_Event{gs.my_player_id, card_id}, global=true)
             }
 
-        case .UPGRADING:
+        case .Upgrading:
             if !card_ok {  // Clicked on an upgrade option
 
                 // Find the predecessor card
@@ -384,8 +387,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 hero.item_count += 1
                 
                 // Pop two card elements and a potential cancel button
-                pop(&gs.ui_stack[.CARDS])
-                pop(&gs.ui_stack[.CARDS])
+                pop(&gs.ui_stack[.Cards])
+                pop(&gs.ui_stack[.Cards])
                 clear_side_buttons(gs)
 
                 // Complete the upgrade
@@ -404,7 +407,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
     
                     // I shouldn't really be checking this through the ui stack like this tbh
                     // But I don't have a better way of seeing if an upgrade is happening. // @Cleanup?
-                    top_element := gs.ui_stack[.CARDS][len(gs.ui_stack[.CARDS]) - 1]
+                    top_element := gs.ui_stack[.Cards][len(gs.ui_stack[.Cards]) - 1]
                     card_element, ok2 := top_element.variant.(UI_Card_Element)
                     if ok2 {
                         if _, ok3 := get_card_by_id(gs, card_element.card_id); !ok3 do break
@@ -431,7 +434,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                     for option_card in upgrade_options {
                         option_id := option_card
                         option_id.owner_id = gs.my_player_id
-                        append(&gs.ui_stack[.CARDS], UI_Element {
+                        append(&gs.ui_stack[.Cards], UI_Element {
                             card_position_rect,
                             UI_Card_Element{
                                 card_id = option_id,
@@ -444,7 +447,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                     }  
                 }
             }
-        case .RESOLVING, .INTERRUPTING:
+        case .Resolving, .Interrupting:
             action := get_current_action(gs)
             #partial switch &variant in action.variant {
             case Choose_Card_Action:
@@ -460,7 +463,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Cancel_Event:
         #partial switch get_my_player(gs).stage {
-        case .RESOLVING, .INTERRUPTING:
+        case .Resolving, .Interrupting:
             action_index := get_my_player(gs).hero.current_action_index
             action := get_action_at_index(gs, action_index)
             #partial switch &action_variant in action.variant {
@@ -487,9 +490,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 clear(&action_variant.result)
             }
 
-        case .UPGRADING:
-            pop(&gs.ui_stack[.CARDS])
-            pop(&gs.ui_stack[.CARDS])
+        case .Upgrading:
+            pop(&gs.ui_stack[.Cards])
+            pop(&gs.ui_stack[.Cards])
             clear_side_buttons(gs)
         }
 
@@ -631,7 +634,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         }
 
         if interrupt.interrupting_player == gs.my_player_id {
-            get_my_player(gs).stage = .INTERRUPTING
+            get_my_player(gs).stage = .Interrupting
 
             switch &interrupt_variant in gs.interrupt_stack[len(gs.interrupt_stack) - 1].interrupt.variant {
             case Action_Index:
@@ -645,7 +648,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 append(&gs.event_queue, Begin_Next_Action_Event{})
             }
         } else {
-            get_my_player(gs).stage = .INTERRUPTED
+            get_my_player(gs).stage = .Interrupted
         }
 
     case Resolve_Interrupt_Event:
@@ -661,8 +664,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         gs.tiebreaker_coin = var.tiebreaker
         
     case Begin_Card_Selection_Event:
-        get_my_player(gs).stage = .SELECTING
-        gs.stage = .SELECTION
+        get_my_player(gs).stage = .Selecting
+        gs.stage = .Selection
         gs.confirmed_players = 0
         gs.tooltip = "Choose a card to play and then confirm it."
 
@@ -684,7 +687,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Card_Confirmed_Event:
         player := get_player_by_id(gs, var.player_id)
-        player.stage = .CONFIRMED
+        player.stage = .Confirmed
         gs.confirmed_players += 1
 
         card_id, played_card_exists := var.maybe_card_id.?
@@ -714,7 +717,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         retrieve_card(gs, card)
 
     case Begin_Resolution_Stage_Event: 
-        gs.stage = .RESOLUTION
+        gs.stage = .Resolution
 
         // Unhide hidden cards
         for _, player_id in gs.players {
@@ -741,7 +744,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         }
 
     case Begin_Player_Resolution_Event:
-        gs.players[var.player_id].stage = .RESOLVING
+        gs.players[var.player_id].stage = .Resolving
         gs.tooltip = "Waiting for other players to resolve their cards."
         clear_side_buttons(gs)
         if var.player_id != gs.my_player_id do break
@@ -894,7 +897,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                     owner,
                     Attack_Interrupt {
                         strength = attack_strength,
-                        flags = action_type.flags + ({.Ranged} if card_data.values[.RANGE] > 0 else {}),
+                        flags = action_type.flags + ({.Ranged} if card_data.values[.Range] > 0 else {}),
                     },
                     Resolve_Current_Action_Event{},
                 )
@@ -941,7 +944,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         case Minion_Removal_Action:
             // This assert might not be necessary once we expand to more cases where minions can get removed.
-            log.assert(get_my_player(gs).is_team_captain && get_my_player(gs).stage == .INTERRUPTING && gs.stage == .MINION_BATTLE)
+            log.assert(get_my_player(gs).is_team_captain && get_my_player(gs).stage == .Interrupting && gs.stage == .Minion_Battle)
             minions_to_remove := calculate_implicit_target_slice(gs, action_type.targets)
             for minion in minions_to_remove {
                 log.assert(!remove_minion(gs, minion), "Minion removal during battle caused wave push!")
@@ -1218,7 +1221,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
 
     case Begin_Minion_Battle_Event:
-        gs.stage = .MINION_BATTLE
+        gs.stage = .Minion_Battle
         // Let the team captain choose which minions to delete
         // append(&gs.event_queue, End_Minion_Battle_Event{})
 
@@ -1324,7 +1327,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         }
 
     case Begin_Next_Upgrade_Event:
-        get_my_player(gs).stage = .UPGRADING
+        get_my_player(gs).stage = .Upgrading
         clear_side_buttons(gs)
         gs.tooltip = "Choose a card to upgrade."
         if get_my_player(gs).hero.coins >= get_my_player(gs).hero.level {

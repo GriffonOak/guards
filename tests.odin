@@ -51,7 +51,7 @@ test_basic_setup :: proc(t: ^testing.T) {
 
     testing_process_events(&gs, events)
 
-    testing.expect(t, gs.stage == .IN_LOBBY)
+    testing.expect(t, gs.stage == .In_Lobby)
     testing.expect(t, len(gs.players) == 1)
 }
 
@@ -71,32 +71,32 @@ test_basic_upgrade :: proc(t: ^testing.T) {
         Host_Game_Chosen_Event{},
         Begin_Game_Event{},
         Space_Hovered_Event{space = {0, 0}},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, hidden = false, selected = true}},
-        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}},
-        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Fast_Travel, card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, index = 0}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, hidden = false, selected = true}},
+        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}},
+        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Fast_Travel, card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, index = 0}},
         Space_Hovered_Event{space = {7, 9}},
         Space_Clicked_Event{space = {7, 9}},
         Space_Hovered_Event{space = {0, 0}},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, hidden = false, selected = true}},
-        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}},
-        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Movement, card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, index = 0}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, hidden = false, selected = true}},
+        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}},
+        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Movement, card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, index = 0}},
         Space_Hovered_Event{space = {8, 11}},
         Space_Clicked_Event{space = {8, 11}},
         Space_Hovered_Event{space = {0, 0}},
         Resolve_Current_Action_Event{jump_index = nil},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}, hidden = false, selected = true}},
-        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}},
-        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Primary, card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}, index = 0}},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}, hidden = false, selected = true}},
-        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}},
-        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Halt, card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}, index = 0}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}, hidden = false, selected = true}},
+        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}},
+        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Primary, card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}, index = 0}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}, hidden = false, selected = true}},
+        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}},
+        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Halt, card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}, index = 0}},
         Space_Hovered_Event{space = {11, 11}},
         Space_Clicked_Event{space = {11, 11}},
         Space_Hovered_Event{space = {11, 10}},
         Space_Clicked_Event{space = {11, 10}},
         Space_Hovered_Event{space = {0, 0}},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, hidden = false, selected = false}},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Blue, tier = 2, alternate = true}, hidden = false, selected = false}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, hidden = false, selected = false}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Blue, tier = 2, alternate = true}, hidden = false, selected = false}},
     }
 
     testing_process_events(&gs, event_log)
@@ -115,25 +115,25 @@ test_single_player_minion_remove :: proc(t: ^testing.T) {
         Host_Game_Chosen_Event{},
         Begin_Game_Event{},
         Space_Hovered_Event{space = {0, 0}},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, hidden = false, selected = true}},
-        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}},
-        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Fast_Travel, card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, index = 0}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, hidden = false, selected = true}},
+        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}},
+        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Fast_Travel, card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, index = 0}},
         Space_Hovered_Event{space = {7, 9}},
         Space_Clicked_Event{space = {7, 9}},
         Space_Hovered_Event{space = {0, 0}},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, hidden = false, selected = true}},
-        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}},
-        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Movement, card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, index = 0}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, hidden = false, selected = true}},
+        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}},
+        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Movement, card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, index = 0}},
         Space_Hovered_Event{space = {8, 11}},
         Space_Clicked_Event{space = {8, 11}},
         Space_Hovered_Event{space = {0, 0}},
         Resolve_Current_Action_Event{jump_index = nil},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}, hidden = false, selected = true}},
-        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}},
-        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Primary, card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}, index = 0}},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}, hidden = false, selected = true}},
-        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}},
-        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Halt, card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}, index = 0}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}, hidden = false, selected = true}},
+        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}},
+        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Primary, card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}, index = 0}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}, hidden = false, selected = true}},
+        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}},
+        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Halt, card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}, index = 0}},
     }
 
 
@@ -159,29 +159,29 @@ test_xargatha_freeze :: proc(t: ^testing.T) {
 
     event_log := []Event {
         Host_Game_Chosen_Event{},
-        Update_Player_Data_Event{player_base = Player_Base{id = 1, _username_buf = {80, 49, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, team = Team.Blue, is_team_captain = true, hero = Hero{id = Hero_ID.XARGATHA, location = {0, 0}, cards = {.Red = Card{id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, state = Card_State.In_Hand, turn_played = 0}, .Green = Card{id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, state = Card_State.In_Hand, turn_played = 0}, .Blue = Card{id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, state = Card_State.In_Hand, turn_played = 0}, .Gold = Card{id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, state = Card_State.In_Hand, turn_played = 0}, .Silver = Card{id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, state = Card_State.In_Hand, turn_played = 0}}, coins = 0, level = 0, dead = false, items = {Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}}, item_count = 0, current_action_index = Action_Index{sequence = Action_Sequence_ID.Primary, card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, index = 0}}}},
+        Update_Player_Data_Event{player_base = Player_Base{id = 1, _username_buf = {80, 49, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, team = Team.Blue, is_team_captain = true, hero = Hero{id = Hero_ID.Xargatha, location = {0, 0}, cards = {.Red = Card{id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, state = Card_State.In_Hand, turn_played = 0}, .Green = Card{id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, state = Card_State.In_Hand, turn_played = 0}, .Blue = Card{id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, state = Card_State.In_Hand, turn_played = 0}, .Gold = Card{id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, state = Card_State.In_Hand, turn_played = 0}, .Silver = Card{id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, state = Card_State.In_Hand, turn_played = 0}}, coins = 0, level = 0, dead = false, items = {Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}}, item_count = 0, current_action_index = Action_Index{sequence = Action_Sequence_ID.Primary, card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 0, alternate = false}, index = 0}}}},
         Begin_Game_Event{},
         Space_Hovered_Event{space = {0, 0}},
-        Card_Confirmed_Event{player_id = 1, maybe_card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 1, color = Card_Color.Green, tier = 1, alternate = false}},
+        Card_Confirmed_Event{player_id = 1, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 1, color = Card_Color.Green, tier = 1, alternate = false}},
         Space_Hovered_Event{space = {0, 0}},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, hidden = false, selected = true}},
-        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}},
-        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Fast_Travel, card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, index = 0}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, hidden = false, selected = true}},
+        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}},
+        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Fast_Travel, card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, index = 0}},
         Space_Hovered_Event{space = {6, 16}},
         Space_Clicked_Event{space = {6, 16}},
         Space_Hovered_Event{space = {0, 0}},
         Unit_Translocation_Event{src = {18, 8}, dest = {8, 16}},
         End_Resolution_Event{player_id = 1},
         Space_Hovered_Event{space = {0, 0}},
-        Card_Confirmed_Event{player_id = 1, maybe_card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 1, color = Card_Color.Blue, tier = 1, alternate = false}},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}, hidden = false, selected = true}},
-        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}},
-        Add_Active_Effect_Event{effect_id = Active_Effect_ID{kind = Active_Effect_Kind.XARGATHA_FREEZE, parent_card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 1, color = Card_Color.Blue, tier = 1, alternate = false}}},
+        Card_Confirmed_Event{player_id = 1, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 1, color = Card_Color.Blue, tier = 1, alternate = false}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}, hidden = false, selected = true}},
+        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}},
+        Add_Active_Effect_Event{effect_id = Active_Effect_ID{kind = Active_Effect_Kind.Xargatha_Freeze, parent_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 1, color = Card_Color.Blue, tier = 1, alternate = false}}},
         End_Resolution_Event{player_id = 1},
-        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Halt, card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}, index = 0}},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 1, alternate = false}, hidden = false, selected = true}},
-        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 1, alternate = false}},
-        Card_Confirmed_Event{player_id = 1, maybe_card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 1, color = Card_Color.Silver, tier = 0, alternate = false}},
+        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Halt, card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}, index = 0}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 1, alternate = false}, hidden = false, selected = true}},
+        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 1, alternate = false}},
+        Card_Confirmed_Event{player_id = 1, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 1, color = Card_Color.Silver, tier = 0, alternate = false}},
     }
 
     testing_process_events(&gs, event_log)
@@ -198,7 +198,7 @@ test_xargatha_freeze :: proc(t: ^testing.T) {
     for choice in choice_action.choices {
         #partial switch choice.jump_index.sequence {
         case .Primary:
-            if card_data.primary != .MOVEMENT do break
+            if card_data.primary != .Movement do break
             fallthrough
         case .Basic_Movement, .Basic_Fast_Travel:
             testing.expect(t, !choice.valid)
@@ -215,23 +215,23 @@ test_xargatha_charm :: proc(t: ^testing.T) {
         Host_Game_Chosen_Event{},
         Begin_Game_Event{},
         Space_Hovered_Event{space = {0, 0}},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, hidden = false, selected = true}},
-        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}},
-        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Fast_Travel, card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, index = 0}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, hidden = false, selected = true}},
+        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}},
+        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Fast_Travel, card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, index = 0}},
         Space_Hovered_Event{space = {6, 16}},
         Space_Clicked_Event{space = {6, 16}},
         Space_Hovered_Event{space = {0, 0}},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 1, alternate = false}, hidden = false, selected = true}},
-        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 1, alternate = false}},
-        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Movement, card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Red, tier = 1, alternate = false}, index = 0}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 1, alternate = false}, hidden = false, selected = true}},
+        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 1, alternate = false}},
+        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Movement, card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 1, alternate = false}, index = 0}},
         Space_Hovered_Event{space = {10, 12}},
         Space_Clicked_Event{space = {10, 12}},
         Space_Hovered_Event{space = {0, 0}},
         Resolve_Current_Action_Event{jump_index = nil},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, hidden = false, selected = true}},
-        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, hidden = false, selected = true}},
+        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}},
         Space_Hovered_Event{space = {0, 0}},
-        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Primary, card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, index = 0}},
+        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Primary, card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, index = 0}},
         Space_Hovered_Event{space = {0, 0}},
     }
 
@@ -263,7 +263,7 @@ test_xargatha_charm :: proc(t: ^testing.T) {
     testing.expect(t, original_space != nil)
 
     event_log2 := []Event {
-        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Primary, card_id = Card_ID{hero_id = Hero_ID.XARGATHA, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, index = 1}},
+        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Primary, card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, index = 1}},
         Space_Hovered_Event{space = {12, 11}},
         Space_Clicked_Event{space = {12, 11}},
         Space_Hovered_Event{space = {0, 0}},
@@ -291,41 +291,41 @@ test_xargatha_charm :: proc(t: ^testing.T) {
 
 //     event_log := []Event {
 //         Host_Game_Chosen_Event{},
-//         Change_Hero_Event{hero_id = Hero_ID.DODGER},
+//         Change_Hero_Event{hero_id = Hero_ID.Dodger},
 //         Begin_Game_Event{},
 //         Space_Hovered_Event{space = {0, 0}},
-//         Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, hidden = false, selected = true}},
-//         Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}},
-//         Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Fast_Travel, card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, index = 0}},
+//         Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, hidden = false, selected = true}},
+//         Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}},
+//         Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Fast_Travel, card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, index = 0}},
 //         Space_Hovered_Event{space = {7, 9}},
 //         Space_Clicked_Event{space = {7, 9}},
 //         Space_Hovered_Event{space = {0, 0}},
-//         Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, hidden = false, selected = true}},
-//         Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}},
-//         Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Movement, card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, index = 0}},
+//         Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, hidden = false, selected = true}},
+//         Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}},
+//         Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Movement, card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, index = 0}},
 //         Space_Hovered_Event{space = {8, 11}},
 //         Space_Clicked_Event{space = {8, 11}},
 //         Space_Hovered_Event{space = {0, 0}},
 //         Resolve_Current_Action_Event{jump_index = nil},
-//         Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}, hidden = false, selected = true}},
-//         Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}},
-//         Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Primary, card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}, index = 0}},
+//         Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}, hidden = false, selected = true}},
+//         Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}},
+//         Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Primary, card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}, index = 0}},
 //         Space_Hovered_Event{space = {0, 0}},
-//         Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}, hidden = false, selected = true}},
+//         Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}, hidden = false, selected = true}},
 //         Marker_Event{},
-//         Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}},
+//         Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}},
 //         Space_Hovered_Event{space = {14, 7}},
 //         Space_Clicked_Event{space = {14, 7}},
 //         Space_Hovered_Event{space = {0, 0}},
 //         Marker_Event{},
-//         Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Red, tier = 1, alternate = false}, hidden = false, selected = false}},
+//         Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Red, tier = 1, alternate = false}, hidden = false, selected = false}},
 //     }
 
 //     testing_process_events(&gs, event_log)
 
-//     testing.expect(t, len(gs.ui_stack[.CARDS]) > 0)
-//     card_1 := gs.ui_stack[.CARDS][len(gs.ui_stack[.CARDS]) - 2]
-//     card_2 := gs.ui_stack[.CARDS][len(gs.ui_stack[.CARDS]) - 1]
+//     testing.expect(t, len(gs.ui_stack[.Cards]) > 0)
+//     card_1 := gs.ui_stack[.Cards][len(gs.ui_stack[.Cards]) - 2]
+//     card_2 := gs.ui_stack[.Cards][len(gs.ui_stack[.Cards]) - 1]
 
 //     card_1_element , ok := card_1.variant.(UI_Card_Element)
 //     testing.expect(t, ok)
@@ -352,34 +352,34 @@ test_choose_targets_purged :: proc(t: ^testing.T) {
 
     event_log := []Event {
         Host_Game_Chosen_Event{},
-        Change_Hero_Event{hero_id = Hero_ID.DODGER},
+        Change_Hero_Event{hero_id = Hero_ID.Dodger},
         Begin_Game_Event{},
         Space_Hovered_Event{space = {0, 0}},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, hidden = false, selected = true}},
-        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}},
-        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Fast_Travel, card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, index = 0}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, hidden = false, selected = true}},
+        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}},
+        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Fast_Travel, card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, index = 0}},
         Space_Hovered_Event{space = {7, 9}},
         Space_Clicked_Event{space = {7, 9}},
         Space_Hovered_Event{space = {0, 0}},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, hidden = false, selected = true}},
-        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}},
-        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Movement, card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, index = 0}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, hidden = false, selected = true}},
+        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}},
+        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Basic_Movement, card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Blue, tier = 1, alternate = false}, index = 0}},
         Space_Hovered_Event{space = {8, 11}},
         Space_Clicked_Event{space = {8, 11}},
         Space_Hovered_Event{space = {0, 0}},
         Resolve_Current_Action_Event{jump_index = nil},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}, hidden = false, selected = true}},
-        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}},
-        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Primary, card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}, index = 0}},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}, hidden = false, selected = true}},
-        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}, hidden = false, selected = true}},
+        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}},
+        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Primary, card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}, index = 0}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}, hidden = false, selected = true}},
+        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}},
         Space_Hovered_Event{space = {14, 7}},
         Space_Clicked_Event{space = {14, 7}},
         Space_Hovered_Event{space = {0, 0}},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Red, tier = 1, alternate = false}, hidden = false, selected = false}},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Red, tier = 2, alternate = false}, hidden = false, selected = false}},
-        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}, hidden = false, selected = true}},
-        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.DODGER, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Red, tier = 1, alternate = false}, hidden = false, selected = false}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Red, tier = 2, alternate = false}, hidden = false, selected = false}},
+        Card_Clicked_Event{card_element = &UI_Card_Element{card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}, hidden = false, selected = true}},
+        Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Dodger, owner_id = 0, color = Card_Color.Gold, tier = 0, alternate = false}},
         Marker_Event{},
     }
 

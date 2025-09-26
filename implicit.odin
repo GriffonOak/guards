@@ -522,7 +522,7 @@ calculate_implicit_condition :: proc (
         // log.infof("Defending attack of %v, minions %v, card value %v", attack_strength, minion_modifiers)
 
         // // We do it this way so that defense items get calculated
-        // defense_strength := calculate_implicit_quantity(gs, Card_Value{.DEFENSE}, calc_context)
+        // defense_strength := calculate_implicit_quantity(gs, Card_Value{.Defense}, calc_context)
         // return defense_strength + minion_modifiers >= attack_strength
     }
     return false
@@ -566,9 +566,9 @@ calculate_implicit_action_index :: proc(gs: ^Game_State, implicit_index: Implici
         card_data, ok := get_card_data_by_id(gs, calc_context.card_id)
         log.assert(ok, "Invalid card ID!!")
         #partial switch card_data.primary {
-        case .DEFENSE: 
+        case .Defense: 
             return Action_Index{.Primary, calc_context.card_id, 0}
-        case .DEFENSE_SKILL:
+        case .Defense_Skill:
             log.assert(false, "TODO")  // @Todo
             return {}
         }

@@ -8,8 +8,8 @@ import "core:strconv"
 
 hero_name :: "Wasp"
 
-NUM_CARDS :: 17
-cards: [NUM_CARDS]Card
+NUM_Cards :: 17
+cards: [NUM_Cards]Card
 
 Card :: struct {
     name: string,
@@ -46,7 +46,7 @@ main :: proc() {
     ult_text := ult_line_tokens[1]
     
 
-    card_lines := lines[4:][:NUM_CARDS]
+    card_lines := lines[4:][:NUM_Cards]
 
     for line in card_lines {
         card: Card
@@ -61,11 +61,11 @@ main :: proc() {
         card.defense_value, _ =  strconv.parse_int(tokens[6])
         card.movement_value, _ =  strconv.parse_int(tokens[7])
 
-        card.primary = tokens[8]
-        card.primary_sign = tokens[9]
+        card.primary = strings.to_ada_case(tokens[8])
+        card.primary_sign = strings.to_ada_case(tokens[9])
         card.reach = tokens[10]
-        card.reach_sign = tokens[11]
-        card.item = tokens[12]
+        card.reach_sign = strings.to_ada_case(tokens[11])
+        card.item = strings.to_ada_case(tokens[12])
 
 
         text_slice := tokens[13:]
@@ -107,7 +107,7 @@ main :: proc() {
 
     fmt.sbprintfln(&builder, "package guards")
     fmt.sbprintfln(&builder, "")
-    fmt.sbprintfln(&builder, "/// %v", strings.to_upper(hero_name))
+    fmt.sbprintfln(&builder, "/// %v", hero_name)
     fmt.sbprintfln(&builder, "")
     fmt.sbprintfln(&builder, "//  Ult: %v", ult_text)
     fmt.sbprintfln(&builder, "")
@@ -119,16 +119,16 @@ main :: proc() {
         if card.alternate do fmt.sbprintfln(&builder, "\t\talternate\t\t= true,")
         
         fmt.sbprintf(&builder, "\t\tvalues\t\t\t= #partial{{")
-        fmt.sbprintf(&builder, ".INITIATIVE = %v", card.initiative)
-        fmt.sbprintf(&builder, ", .DEFENSE = %v", card.defense_value)
-        if card.attack_value > 0 do fmt.sbprintf(&builder, ", .ATTACK = %v", card.attack_value)
-        if card.movement_value > 0 do fmt.sbprintf(&builder, ", .MOVEMENT = %v", card.movement_value)
+        fmt.sbprintf(&builder, ".Initiative = %v", card.initiative)
+        fmt.sbprintf(&builder, ", .Defense = %v", card.defense_value)
+        if card.attack_value > 0 do fmt.sbprintf(&builder, ", .Attack = %v", card.attack_value)
+        if card.movement_value > 0 do fmt.sbprintf(&builder, ", .Movement = %v", card.movement_value)
         if card.reach != "" {
             if strings.starts_with(card.reach, "Range(") {
-                fmt.sbprintf(&builder, ", .RANGE = %v", card.reach[6:len(card.reach)-1])
+                fmt.sbprintf(&builder, ", .Range = %v", card.reach[6:len(card.reach)-1])
             }
             if strings.starts_with(card.reach, "Radius(") {
-                fmt.sbprintf(&builder, ", .RADIUS = %v", card.reach[7:len(card.reach)-1])
+                fmt.sbprintf(&builder, ", .Radius = %v", card.reach[7:len(card.reach)-1])
             }
         }
         fmt.sbprintfln(&builder, "}},")

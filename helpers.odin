@@ -95,9 +95,9 @@ get_enemy_team :: proc(team: Team) -> Team {
 
 end_current_action_sequence :: proc(gs: ^Game_State) {
     #partial switch get_my_player(gs).stage {
-    case .RESOLVING:
+    case .Resolving:
         broadcast_game_event(gs, End_Resolution_Event{gs.my_player_id})
-    case .INTERRUPTING:
+    case .Interrupting:
         broadcast_game_event(gs, Resolve_Interrupt_Event{})
     }
 }
@@ -115,7 +115,7 @@ get_next_turn_event :: proc(gs: ^Game_State) -> Event {
         player_card, ok := find_played_card(gs, player_id)
         if !ok do continue
 
-        effective_initiative := calculate_implicit_quantity(gs, Card_Value{.INITIATIVE}, {card_id = player_card.id})
+        effective_initiative := calculate_implicit_quantity(gs, Card_Value{.Initiative}, {card_id = player_card.id})
     
         if effective_initiative > highest_initiative {
             highest_initiative = effective_initiative
@@ -157,7 +157,7 @@ calculate_minion_modifiers :: proc(gs: ^Game_State) -> int {
 
     adjacent_targets := make_arbitrary_targets(gs, {
         conditions = {Target_Within_Distance{Self{}, {1, 1}}},
-        flags = {.IGNORING_IMMUNITY},
+        flags = {.Ignoring_Immunity},
     })
     adjacent_targets_iter := make_target_set_iterator(&adjacent_targets)
     for _, adjacent in target_set_iter_members(&adjacent_targets_iter) {
@@ -172,7 +172,7 @@ calculate_minion_modifiers :: proc(gs: ^Game_State) -> int {
     // Idk if the ranged minion would ever be immune but it doesn't hurt I guess
     nearby_targets := make_arbitrary_targets(gs, {
         conditions = {Target_Within_Distance{ origin = Self{}, bounds = {1, 2}}}, 
-        flags = {.IGNORING_IMMUNITY},
+        flags = {.Ignoring_Immunity},
     })
     nearby_targets_iter := make_target_set_iterator(&nearby_targets)
     for _, nearby in target_set_iter_members(&nearby_targets_iter) {
@@ -209,6 +209,6 @@ add_marker :: proc(gs: ^Game_State) {
 //     log.infof("Defending attack of %v, minions %v, card value %v", attack_strength, minion_modifiers)
 
 //     // We do it this way so that defense items get calculated
-//     defense_strength := calculate_implicit_quantity(gs, Card_Value{.DEFENSE}, calc_context)
+//     defense_strength := calculate_implicit_quantity(gs, Card_Value{.Defense}, calc_context)
 //     return defense_strength + minion_modifiers >= attack_strength
 // }

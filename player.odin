@@ -2,6 +2,7 @@ package guards
 
 import "core:fmt"
 import "core:net"
+import "core:reflect"
 import rl "vendor:raylib"
 import "core:log"
 
@@ -9,31 +10,22 @@ import "core:log"
 
 Player_Stage :: enum {
     None,
-    SELECTING,
-    CONFIRMED,
-    RESOLVING,
+    Selecting,
+    Confirmed,
+    Resolving,
     Resolved,
-    UPGRADING,
+    Upgrading,
 
-    INTERRUPTING,
-    INTERRUPTED,
+    Interrupting,
+    Interrupted,
 }
 
 Hero_ID :: enum {
-    XARGATHA,
-    DODGER,
-    SWIFT,
-    BROGAN,
-    TIGERCLAW,
-}
-
-@rodata
-hero_names := [Hero_ID]cstring {
-    .XARGATHA   = "Xargatha",
-    .DODGER     = "Dodger",
-    .SWIFT      = "Swift",
-    .BROGAN     = "Brogan",
-    .TIGERCLAW  = "Tigerclaw",
+    Xargatha,
+    Dodger,
+    Swift,
+    Brogan,
+    Tigerclaw,
 }
 
 number_names := [?]cstring {
@@ -125,7 +117,7 @@ render_player_info_at_position :: proc(gs: ^Game_State, player_id: Player_ID, po
     next_pos := pos
     player := get_player_by_id(gs, player_id)
     context.allocator = context.temp_allocator
-    name := hero_names[player.hero.id]
+    name, _ := reflect.enum_name_from_value(player.hero.id)
     hero_name := fmt.ctprintf("[%v%v] %v", get_username(gs, player.id), "!" if player.is_team_captain else "", name)
     
     rl.DrawTextEx(default_font, hero_name, next_pos, INFO_FONT_SIZE, FONT_SPACING, team_colors[player.team])

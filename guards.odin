@@ -64,9 +64,9 @@ startup :: proc() {
 }
 
 Window_Size :: enum {
-    SMALL,
-    BIG,
-    FULL_SCREEN,
+    Small,
+    Big,
+    Fullscreen,
 }
 
 Vec2 :: [2]f32
@@ -85,9 +85,9 @@ FONT_SPACING :: 0
 
 
 
-window_size: Window_Size = .SMALL
+window_size: Window_Size = .Small
 
-window_scale: f32 = 1 if window_size == .BIG else 2
+window_scale: f32 = 1 if window_size == .Big else 2
 
 default_font: rl.Font
 
@@ -168,7 +168,7 @@ main :: proc() {
         card_hand_position_rects[color] = {f32(index) * CARD_HAND_WIDTH, CARD_HAND_Y_POSITION, CARD_HAND_WIDTH, CARD_HAND_HEIGHT + 100}
     }
 
-    // window_scale: i32 = 2 if window_size == .SMALL else 1
+    // window_scale: i32 = 2 if window_size == .Small else 1
 
     // rl.SetConfigFlags({.WINDOW_TOPMOST})
     rl.SetTraceLogLevel(rl.TraceLogLevel.NONE)
@@ -190,7 +190,7 @@ main :: proc() {
 
     gs: Game_State = {
         confirmed_players = 0,
-        stage = .PRE_LOBBY,
+        stage = .Pre_Lobby,
         tooltip = "Choose to host a game or join a game.",
     }
 
@@ -228,7 +228,7 @@ main :: proc() {
                     if board_element, ok := &hovered_element.variant.(UI_Board_Element); ok {
                         board_element.hovered_space = INVALID_TARGET
                     }
-                    hovered_element.flags -= {.HOVERED}
+                    hovered_element.flags -= {.Hovered}
                 }
                 hovered_element_index = {}
                 ui_search: for i := len(UI_Domain) - 1; i >= 0; i -= 1 {
@@ -240,7 +240,7 @@ main :: proc() {
                             if !rl.CheckCollisionPointRec(var.pos, element.bounding_rect) do continue
                         }
                         if element.consume_input(&gs, event, &element) {
-                            element.flags += {.HOVERED}
+                            element.flags += {.Hovered}
                             hovered_element_index = {domain, index}
                             break ui_search
                         }
@@ -249,12 +249,12 @@ main :: proc() {
             case Mouse_Pressed_Event:
                 if active_element_index.domain != .None && active_element_index.index < len(gs.ui_stack[active_element_index.domain]) {
                     active_element := &gs.ui_stack[active_element_index.domain][active_element_index.index]
-                    active_element.flags -= {.ACTIVE}
+                    active_element.flags -= {.Active}
                 }
                 active_element_index = hovered_element_index
                 if hovered_element_index != {} {
                     active_element := &gs.ui_stack[active_element_index.domain][active_element_index.index]
-                    active_element.flags += {.ACTIVE}
+                    active_element.flags += {.Active}
                     active_element.consume_input(&gs, event, active_element)
                 }
             }
@@ -277,8 +277,8 @@ main :: proc() {
 
         rl.BeginDrawing()
 
-        if gs.stage != .PRE_LOBBY && gs.stage != .IN_LOBBY {
-            render_board_to_texture(&gs, gs.ui_stack[.BOARD][0])
+        if gs.stage != .Pre_Lobby && gs.stage != .In_Lobby {
+            render_board_to_texture(&gs, gs.ui_stack[.Board][0])
         }
 
         rl.BeginTextureMode(window_texture)
@@ -291,7 +291,7 @@ main :: proc() {
             }
         }
 
-        if gs.stage == .IN_LOBBY {
+        if gs.stage == .In_Lobby {
             pos := Vec2{10, 10}
             for player_id in 0..<len(gs.players) {
                 render_player_info_at_position(&gs, player_id, pos)
@@ -299,7 +299,7 @@ main :: proc() {
             }
         }
 
-        if gs.stage != .PRE_LOBBY && gs.stage != .IN_LOBBY {
+        if gs.stage != .Pre_Lobby && gs.stage != .In_Lobby {
             render_player_info(&gs)
         }
         render_tooltip(&gs)
