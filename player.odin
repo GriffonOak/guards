@@ -24,6 +24,7 @@ Hero_ID :: enum {
     DODGER,
     SWIFT,
     BROGAN,
+    TIGERCLAW,
 }
 
 @rodata
@@ -32,6 +33,7 @@ hero_names := [Hero_ID]cstring {
     .DODGER     = "Dodger",
     .SWIFT      = "Swift",
     .BROGAN     = "Brogan",
+    .TIGERCLAW  = "Tigerclaw",
 }
 
 number_names := [?]cstring {

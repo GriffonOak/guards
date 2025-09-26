@@ -65,23 +65,6 @@ color_lerp :: proc(a, b: rl.Color, t: $T) -> (out: rl.Color) {
     return out
 }
 
-translocate_unit :: proc(gs: ^Game_State, src, dest: Target) {
-    src_space := &gs.board[src.x][src.y]
-    dest_space := &gs.board[dest.x][dest.y]
-
-    src_transient_flags := src_space.flags - PERMANENT_FLAGS
-    src_space.flags -= src_transient_flags
-
-    dest_space.flags += src_transient_flags
-    dest_space.unit_team = src_space.unit_team
-    dest_space.hero_id = src_space.hero_id
-
-    if .HERO in src_transient_flags {
-        dest_space.owner = src_space.owner
-        get_player_by_id(gs, dest_space.owner).hero.location = dest
-    }
-}
-
 calculate_hexagonal_distance :: proc(a, b: Target) -> int {
     diff := transmute([2]i8) a - transmute([2]i8) b
     if diff.x * diff.y <= 0 {

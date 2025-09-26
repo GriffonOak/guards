@@ -423,7 +423,7 @@ dodger_cards := []Card_Data {
     Card_Data { name = "Vampiric Shield",
         color =         .BLUE,
         tier =          2,
-        values =        #partial{.INITIATIVE = 10, .DEFENSE = 0, .MOVEMENT = 3, .RADIUS = 2},  // @Todo find out what this actually is
+        values =        #partial{.INITIATIVE = 10, .DEFENSE = 4, .MOVEMENT = 3, .RADIUS = 2},  // @Todo find out what this actually is
         primary =       .DEFENSE,
         primary_sign =  .PLUS,
         item =          .INITIATIVE,
@@ -569,7 +569,7 @@ dodger_cards := []Card_Data {
     Card_Data { name = "Aegis of Doom",
         color =         .BLUE,
         tier =          3,
-        values =        #partial{.INITIATIVE = 11, .DEFENSE = 0, .MOVEMENT = 3, .RADIUS = 2},
+        values =        #partial{.INITIATIVE = 11, .DEFENSE = 4, .MOVEMENT = 3, .RADIUS = 2},
         primary =       .DEFENSE,
         primary_sign =  .PLUS,
         item =          .INITIATIVE,

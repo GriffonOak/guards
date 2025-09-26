@@ -249,6 +249,7 @@ setup_hero_cards :: proc(gs: ^Game_State) {
         .DODGER     = dodger_cards,
         .SWIFT      = swift_cards,
         .BROGAN     = brogan_cards,
+        .TIGERCLAW  = tigerclaw_cards,
     }
 
     for player_id in 0..<len(gs.players) {

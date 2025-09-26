@@ -6,7 +6,7 @@ import "core:fmt"
 import "core:strconv"
 
 
-hero_name :: "Tigerclaw"
+hero_name :: "Wasp"
 
 NUM_CARDS :: 17
 cards: [NUM_CARDS]Card

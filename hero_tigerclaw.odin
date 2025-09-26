@@ -132,9 +132,43 @@ tigerclaw_cards := []Card_Data {
                     max_distance = 1,
                 },
             },
+            Action {
+                tooltip = "Take 1 coin from an enemy hero adjacent to you.",
+                variant = Choose_Target_Action {
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Contains_Any{{.HERO}},
+                        Target_Is_Enemy_Unit{},
+                        Greater_Than{
+                            Count_Hero_Coins{Current_Target{}}, 0,
+                        },
+                    },
+                },
+            },
+            Action {
+                variant = Gain_Coins_Action{
+                    target = Self{},
+                    gain = 1,
+                },
+            },
+            Action {
+                variant = Gain_Coins_Action{
+                    target = Previously_Chosen_Target{},
+                    gain = -1,
+                },
+            },
+            Action {
+                tooltip = "You may move 1 space.",
+                optional = true,
+                variant = Movement_Action {
+                    target = Self{},
+                    min_distance = 1,
+                    max_distance = 1,
+                },
+            },
         },
     },
-    Card_Data { name = "Dodge",
+    Card_Data { name = "Dodge",  // @Unimplemented
         color =         .BLUE,
         tier =          1,
         values =        #partial{.INITIATIVE = 10, .DEFENSE = 0, .MOVEMENT = 3},
@@ -149,7 +183,64 @@ tigerclaw_cards := []Card_Data {
         primary =       .ATTACK,
         item =          .INITIATIVE,
         text =          "Before the attack: You may move 1 space.\nTarget a unit adjacent to you.\nAfter the attack: If you did not move before\nthe attack, you may move 1 space.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {  // 0
+                tooltip = "You may move 1 space.",
+                optional = true,
+                skip_index = {index = 4},
+                variant = Movement_Action {
+                    target = Self{},
+                    min_distance = 1,
+                    max_distance = 1,
+                },
+            },
+            Action {  // 1
+                tooltip = "Target a unit adjacent to you.",
+                variant = Choose_Target_Action {
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {  // 2
+                tooltip = "Waiting for the opponent to defend...",
+                variant = Attack_Action {
+                    target = Previously_Chosen_Target{},
+                    strength = Card_Value{.ATTACK},
+                },
+            },
+            Action {  // 3
+                variant = Halt_Action{},
+            },
+            Action {  // 4
+                tooltip = "Target a unit adjacent to you.",
+                variant = Choose_Target_Action {
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {  // 5
+                tooltip = "Waiting for the opponent to defend...",
+                variant = Attack_Action {
+                    target = Previously_Chosen_Target{},
+                    strength = Card_Value{.ATTACK},
+                },
+            },
+            Action {  // 6
+                tooltip = "You may move 1 space.",
+                optional = true,
+                variant = Movement_Action {
+                    target = Self{},
+                    min_distance = 1,
+                    max_distance = 1,
+                },
+            },
+        },
     },
     Card_Data { name = "Backstab",
         color =         .RED,
@@ -160,7 +251,39 @@ tigerclaw_cards := []Card_Data {
         primary_sign =  .PLUS,
         item =          .DEFENSE,
         text =          "Target a unit adjacent to you; if a friendly\nunit is adjacent to the target, +2 Attack.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = "Target a unit adjacent to you.",
+                variant = Choose_Target_Action {
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Waiting for the opponent to defend...",
+                variant = Attack_Action {
+                    target = Previously_Chosen_Target{},
+                    strength = Sum {
+                        Card_Value{.ATTACK},
+                        Ternary {
+                            {2, 0},
+                            Greater_Than {
+                                Count_Targets {
+                                    conditions = {
+                                        Target_Within_Distance{Previously_Chosen_Target{}, {1, 1}},
+                                        Target_Contains_Any{UNIT_FLAGS},
+                                        Target_Is_Friendly_Unit{},
+                                    },
+                                }, 1,
+                            },
+                        },
+                    },
+                },
+            },
+        },
     },
     Card_Data { name = "Pick Pocket",
         color =         .GREEN,
@@ -169,9 +292,51 @@ tigerclaw_cards := []Card_Data {
         primary =       .SKILL,
         item =          .ATTACK,
         text =          "Move up to 2 spaces.\nTake 1 coin from an enemy hero adjacent\nto you; if you do, you may move 1 space.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = "Move up to 2 spaces.",
+                variant = Movement_Action {
+                    target = Self{},
+                    max_distance = 2,
+                },
+            },
+            Action {
+                tooltip = "Take 1 coin from an enemy hero adjacent to you.",
+                variant = Choose_Target_Action {
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Contains_Any{{.HERO}},
+                        Target_Is_Enemy_Unit{},
+                        Greater_Than{
+                            Count_Hero_Coins{Current_Target{}}, 0,
+                        },
+                    },
+                },
+            },
+            Action {
+                variant = Gain_Coins_Action{
+                    target = Self{},
+                    gain = 1,
+                },
+            },
+            Action {
+                variant = Gain_Coins_Action{
+                    target = Previously_Chosen_Target{},
+                    gain = -1,
+                },
+            },
+            Action {
+                tooltip = "You may move 1 space.",
+                optional = true,
+                variant = Movement_Action {
+                    target = Self{},
+                    min_distance = 1,
+                    max_distance = 1,
+                },
+            },
+        },
     },
-    Card_Data { name = "Poisoned Dagger",
+    Card_Data { name = "Poisoned Dagger",  // @Unimplemented
         color =         .GREEN,
         tier =          2,
         alternate =     true,
@@ -181,7 +346,7 @@ tigerclaw_cards := []Card_Data {
         text =          "Give a hero in range a Poison marker.\nThe hero with a poison marker has\n-1 Initiative, -1 Attack and -1 Defense.",
         primary_effect = []Action {},
     },
-    Card_Data { name = "Sidestep",
+    Card_Data { name = "Sidestep",  // @Unimplemented
         color =         .BLUE,
         tier =          2,
         values =        #partial{.INITIATIVE = 11, .DEFENSE = 0, .MOVEMENT = 3},
@@ -190,7 +355,7 @@ tigerclaw_cards := []Card_Data {
         text =          "Block a ranged attack.\nYou may move 1 space.",
         primary_effect = []Action {},
     },
-    Card_Data { name = "Parry",
+    Card_Data { name = "Parry",  // @Unimplemented
         color =         .BLUE,
         tier =          2,
         alternate =     true,
@@ -207,9 +372,46 @@ tigerclaw_cards := []Card_Data {
         primary =       .ATTACK,
         item =          .RADIUS,
         text =          "Before the attack: You may move 1 space.\nTarget a unit adjacent to you.\nAfter the attack: You may move 1 space.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {  // 0
+                tooltip = "You may move 1 space.",
+                optional = true,
+                skip_index = {index = 1},
+                variant = Movement_Action {
+                    target = Self{},
+                    min_distance = 1,
+                    max_distance = 1,
+                },
+            },
+            Action {  // 1
+                tooltip = "Target a unit adjacent to you.",
+                variant = Choose_Target_Action {
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {  // 2
+                tooltip = "Waiting for the opponent to defend...",
+                variant = Attack_Action {
+                    target = Previously_Chosen_Target{},
+                    strength = Card_Value{.ATTACK},
+                },
+            },
+            Action {  // 6
+                tooltip = "You may move 1 space.",
+                optional = true,
+                variant = Movement_Action {
+                    target = Self{},
+                    min_distance = 1,
+                    max_distance = 1,
+                },
+            },
+        },
     },
-    Card_Data { name = "Backstab with a Ballista",
+    Card_Data { name = "Backstab with a Ballista",  // @Unimplemented
         color =         .RED,
         tier =          3,
         alternate =     true,
@@ -218,7 +420,9 @@ tigerclaw_cards := []Card_Data {
         primary_sign =  .PLUS,
         item =          .DEFENSE,
         text =          "Target a unit in range;\nif a friendly unit is adjacent to the target\n+2 Attack, and the target cannot\nperform a primary action to defend.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+
+        },
     },
     Card_Data { name = "Master Thief",
         color =         .GREEN,
@@ -227,9 +431,57 @@ tigerclaw_cards := []Card_Data {
         primary =       .SKILL,
         item =          .MOVEMENT,
         text =          "Move up to 2 spaces. Take 1 or 2 coins\nfrom an enemy hero adjacent to you;\nif you do, you may move 2 spaces.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = "Move up to 2 spaces.",
+                variant = Movement_Action {
+                    target = Self{},
+                    max_distance = 2,
+                },
+            },
+            Action {
+                tooltip = "Target an enemy hero adjacent to you.",
+                variant = Choose_Target_Action {
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Contains_Any{{.HERO}},
+                        Target_Is_Enemy_Unit{},
+                        Greater_Than{
+                            Count_Hero_Coins{Current_Target{}}, 0,
+                        },
+                    },
+                },
+            },
+            Action {
+                tooltip = "Choose how many coins to take from the hero.",
+                variant = Choose_Quantity_Action {
+                    bounds = {1, Min{2, Count_Hero_Coins{Previously_Chosen_Target{}}}},
+                },
+            },
+            Action {
+                variant = Gain_Coins_Action{
+                    target = Self{},
+                    gain = Previous_Quantity_Choice{},
+                },
+            },
+            Action {
+                variant = Gain_Coins_Action{
+                    target = Previously_Chosen_Target{},
+                    gain = Product{-1, Previous_Quantity_Choice{}},
+                },
+            },
+            Action {
+                tooltip = "You may move 1 space.",
+                optional = true,
+                variant = Movement_Action {
+                    target = Self{},
+                    min_distance = 1,
+                    max_distance = 1,
+                },
+            },
+        },
     },
-    Card_Data { name = "Poisoned Dart",
+    Card_Data { name = "Poisoned Dart",  // @Unimplemented
         color =         .GREEN,
         tier =          3,
         alternate =     true,
@@ -239,7 +491,7 @@ tigerclaw_cards := []Card_Data {
         text =          "Give a hero in range a Poison marker.\nThe hero with a poison marker has\n-2 Initiative, -2 Attack and -2 Defense.",
         primary_effect = []Action {},
     },
-    Card_Data { name = "Evade",
+    Card_Data { name = "Evade",  // @Unimplemented
         color =         .BLUE,
         tier =          3,
         values =        #partial{.INITIATIVE = 11, .DEFENSE = 0, .MOVEMENT = 3},
@@ -248,7 +500,7 @@ tigerclaw_cards := []Card_Data {
         text =          "Block a ranged attack.\nYou may move 1 space. You may retrieve\nyour resolved or discarded basic skill card.",
         primary_effect = []Action {},
     },
-    Card_Data { name = "Riposte",
+    Card_Data { name = "Riposte",  // @Unimplemented
         color =         .BLUE,
         tier =          3,
         alternate =     true,

@@ -494,7 +494,20 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         }
 
     case Unit_Translocation_Event:
-        translocate_unit(gs, var.src, var.dest)
+        src_space := &gs.board[var.src.x][var.src.y]
+        dest_space := &gs.board[var.dest.x][var.dest.y]
+
+        src_transient_flags := src_space.flags - PERMANENT_FLAGS
+        src_space.flags -= src_transient_flags
+
+        dest_space.flags += src_transient_flags
+        dest_space.unit_team = src_space.unit_team
+        dest_space.hero_id = src_space.hero_id
+
+        if .HERO in src_transient_flags {
+            dest_space.owner = src_space.owner
+            get_player_by_id(gs, dest_space.owner).hero.location = var.dest
+        }
 
     case Minion_Defeat_Event:
         space := &gs.board[var.target.x][var.target.y]
@@ -753,6 +766,11 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Begin_Next_Action_Event:
 
+        if get_my_player(gs).hero.dead {  // Didn't respawn bozo
+            end_current_action_sequence(gs)
+            break
+        }
+
         action_index := get_my_player(gs).hero.current_action_index
         calc_context := Calculation_Context{card_id = action_index.card_id}
         action := get_action_at_index(gs, action_index)
@@ -814,9 +832,12 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             }
 
         case Choose_Quantity_Action:
-            log.assert(len(action_type.bounds) == 2, "Improperly formatted choose quantity")
             lower_bound := calculate_implicit_quantity(gs, action_type.bounds[0], calc_context)
             upper_bound := calculate_implicit_quantity(gs, action_type.bounds[1], calc_context)
+            if upper_bound == lower_bound {
+                append(&gs.event_queue, Quantity_Chosen_Event{lower_bound})
+                break
+            }
             for quantity in lower_bound..=upper_bound {
                 add_side_button(gs, number_names[quantity], Quantity_Chosen_Event{quantity})
             }

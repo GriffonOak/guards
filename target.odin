@@ -173,7 +173,10 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         return true
 
     case Choose_Quantity_Action:
-        return true
+        log.assert(len(variant.bounds) == 2, "Improperly formatted choose quantity")
+        lower_bound := calculate_implicit_quantity(gs, variant.bounds[0], calc_context)
+        upper_bound := calculate_implicit_quantity(gs, variant.bounds[1], calc_context)
+        return upper_bound >= lower_bound
 
     case Push_Action:
         return true

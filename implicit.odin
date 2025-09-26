@@ -26,8 +26,13 @@ Card_Value :: struct {
 
 Sum     :: distinct []Implicit_Quantity
 Product :: distinct []Implicit_Quantity
+Min     :: distinct []Implicit_Quantity
 
 Count_Targets :: Selection_Criteria
+
+Count_Hero_Coins :: struct {
+    target: Implicit_Target,
+}
 
 Count_Card_Targets :: distinct []Implicit_Condition
 
@@ -55,11 +60,15 @@ Implicit_Quantity :: union {
     Heroes_Defeated_This_Round,
     Sum,
     Product,
+    Min,
     Count_Targets,
     Count_Card_Targets,
     Ternary,
     Previous_Quantity_Choice,
     Current_Turn,
+
+    // Requires target in context
+    Count_Hero_Coins,
 
     // Requires card in context
     Card_Value,
@@ -221,21 +230,19 @@ calculate_implicit_quantity :: proc(
     switch quantity in implicit_quantity {
     case int: return quantity
 
-    case Card_Value:
-        log.assert(calc_context.card_id != {}, "Invalid card ID when calculating value", loc)
-        card_data, ok := get_card_data_by_id(gs, calc_context.card_id)
-        log.assert(ok, "Invalid card ID when calculating value", loc)
-        hero := get_player_by_id(gs, calc_context.card_id.owner_id).hero
-        value := card_data.values[quantity.kind]
-        value += count_hero_items(gs, hero, quantity.kind)
-        return value
-
     case Sum:
         for summand in quantity do out += calculate_implicit_quantity(gs, summand, calc_context, loc)
     
     case Product:
         out = 1
         for multiplier in quantity do out *= calculate_implicit_quantity(gs, multiplier, calc_context, loc)
+
+    case Min:
+        out = max(int)
+        for implicit_value in quantity {
+            value := calculate_implicit_quantity(gs, implicit_value, calc_context, loc)
+            if value < out do out = value
+        }
 
     case Count_Targets:
         targets := make_arbitrary_targets(gs, quantity, calc_context)
@@ -245,12 +252,6 @@ calculate_implicit_quantity :: proc(
         targets := make_card_targets(gs, cast([]Implicit_Condition) quantity, calc_context)
         out = len(targets)
         delete(targets)
-
-    case Card_Turn_Played:
-        log.assert(calc_context.card_id != {}, "Invalid card when trying to calculate turn played", loc)
-        card, ok := get_card_by_id(gs, calc_context.card_id)
-        log.assert(ok, "Invalid card when trying to calculate turn played", loc)
-        return card.turn_played
 
     case Minion_Difference:
         return abs(gs.minion_counts[.RED] - gs.minion_counts[.BLUE])
@@ -281,6 +282,29 @@ calculate_implicit_quantity :: proc(
 
     case Current_Turn:
         return gs.turn_counter
+
+    case Count_Hero_Coins:
+        target := calculate_implicit_target(gs, quantity.target, calc_context, loc)
+        space := gs.board[target.x][target.y]
+        if .HERO not_in space.flags do return 0
+        // log.assert(.HERO in space.flags, "Tried to count hero coins in a space with no hero!")
+        player := get_player_by_id(gs, space.owner)
+        return player.hero.coins
+
+    case Card_Value:
+        log.assert(calc_context.card_id != {}, "Invalid card ID when calculating value", loc)
+        card_data, ok := get_card_data_by_id(gs, calc_context.card_id)
+        log.assert(ok, "Invalid card ID when calculating value", loc)
+        hero := get_player_by_id(gs, calc_context.card_id.owner_id).hero
+        value := card_data.values[quantity.kind]
+        value += count_hero_items(gs, hero, quantity.kind)
+        return value
+
+    case Card_Turn_Played:
+        log.assert(calc_context.card_id != {}, "Invalid card when trying to calculate turn played", loc)
+        card, ok := get_card_by_id(gs, calc_context.card_id)
+        log.assert(ok, "Invalid card when trying to calculate turn played", loc)
+        return card.turn_played
 
     }
     return 
