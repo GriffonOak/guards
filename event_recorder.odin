@@ -29,8 +29,6 @@ begin_recording_events :: proc() {
 
         fmt.fprintfln(record_file, "event_log := []Event {{")
         fmt.fprintfln(record_file, "    %w,", Host_Game_Chosen_Event{})
-    } else {
-        fmt.println(err)
     }
 }
 

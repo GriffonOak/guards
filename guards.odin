@@ -59,8 +59,8 @@ _ :: time
 
 @init
 startup :: proc() {
-    log.infof("This ran at the start!")
-    fmt.println("This ran at the start!")
+    // log.infof("This ran at the start!")
+    // fmt.println("This ran at the start!")
 }
 
 Window_Size :: enum {
@@ -110,8 +110,6 @@ spall_ctx: spall.Context
 
 
 main :: proc() {
-    fmt.println(size_of(Target_Info))
-
     // spall_ctx = spall.context_create("trace_test.spall")
 	// defer spall.context_destroy(&spall_ctx)
 
@@ -173,6 +171,7 @@ main :: proc() {
     // window_scale: i32 = 2 if window_size == .SMALL else 1
 
     // rl.SetConfigFlags({.WINDOW_TOPMOST})
+    rl.SetTraceLogLevel(rl.TraceLogLevel.NONE)
     rl.SetConfigFlags({.MSAA_4X_HINT})
     rl.InitWindow(i32(WIDTH / window_scale), i32(HEIGHT / window_scale), "guards")
     defer rl.CloseWindow()

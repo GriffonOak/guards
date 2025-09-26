@@ -140,7 +140,7 @@ swift_cards := []Card_Data {
         text =          "Place yourself into a space in a straight line\nin radius. Push an enemy unit\nadjacent to you up to 1 space.",
         primary_effect = []Action {
             Action {
-                tooltip = "Place yourself into a space in a straight line\nin radius.",
+                tooltip = "Place yourself into a space in a straight line in radius.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {

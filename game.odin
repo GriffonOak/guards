@@ -267,11 +267,11 @@ setup_hero_cards :: proc(gs: ^Game_State) {
                     enum_name,
                     "_alt" if card.alternate else "",
                 )
-                fmt.println(card_filename)
+                // fmt.println(card_filename)
                 for file in assets {
                     if file.name == card_filename {
                         card.background_image = rl.LoadTextureFromImage(rl.LoadImageFromMemory(".png", raw_data(file.data), i32(len(file.data))))
-                        fmt.printfln("Loaded swift card! %v", card_filename)
+                        // fmt.printfln("Loaded swift card! %v", card_filename)
                     }
                 }
             }

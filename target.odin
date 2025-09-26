@@ -256,8 +256,10 @@ make_movement_targets :: proc (
                 if .STRAIGHT_LINE in criteria.flags {
                     calc_context := calc_context
                     calc_context.target = next_loc
-                    if !calculate_implicit_condition(gs, Target_In_Straight_Line_With{origin}, calc_context) do continue
-                }  
+                    in_straight_line := calculate_implicit_condition(gs, Target_In_Straight_Line_With{origin}, calc_context)
+                    in_straight_line &&= get_norm_direction(origin, next_loc) == vector
+                    if !in_straight_line do continue
+                }
                 if .IGNORING_OBSTACLES not_in criteria.flags && OBSTACLE_FLAGS & gs.board[next_loc.x][next_loc.y].flags != {} do continue
                 if visited_set[next_loc.x][next_loc.y].member do continue
                 for traversed_loc in criteria.path.spaces do if traversed_loc == next_loc do continue directions

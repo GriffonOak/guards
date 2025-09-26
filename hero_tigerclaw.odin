@@ -23,6 +23,7 @@ tigerclaw_cards := []Card_Data {
                             Count_Targets {
                                 conditions = {
                                     Target_Within_Distance{Previous_Target{}, {1, 1}},
+                                    Target_Within_Distance{Self{}, {2, 2}},
                                     Target_In_Straight_Line_With{Self{}},
                                     Target_Empty,
                                 },
@@ -46,6 +47,13 @@ tigerclaw_cards := []Card_Data {
                     },
                 },
             },
+            Action {
+                tooltip = "Waiting for opponent to defend...",
+                variant = Attack_Action {
+                    target = Previously_Chosen_Target{},
+                    strength = Card_Value{.ATTACK},
+                }
+            }
         },
     },
     Card_Data { name = "Blend into Shadows",
@@ -65,6 +73,7 @@ tigerclaw_cards := []Card_Data {
                     }, 0,
                 },
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.RADIUS}}},
                         Target_Empty,
