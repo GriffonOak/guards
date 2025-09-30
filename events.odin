@@ -44,6 +44,12 @@ Cancel_Event :: struct {}
 Unit_Translocation_Event :: struct {
     src, dest: Target,
 }
+
+Give_Marker_Event :: struct {
+    player_id: Player_ID,
+    marker: Marker,
+}
+
 Minion_Defeat_Event :: struct {
     target: Target,
     defeating_player: Player_ID,
@@ -175,6 +181,8 @@ Event :: union {
     Cancel_Event,
 
     Unit_Translocation_Event,
+
+    Give_Marker_Event,
 
     Minion_Defeat_Event,
     Minion_Removal_Event,
@@ -506,6 +514,18 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         if .Hero in src_transient_flags {
             dest_space.owner = src_space.owner
             get_player_by_id(gs, dest_space.owner).hero.location = var.dest
+        }
+
+    case Give_Marker_Event:
+
+        // We loop over all players like this so that if someone else has the marker,
+        // It gets transferred to the new player (there can only be 1 marker in play)
+        for &player, player_id in gs.players {
+            if player_id == var.player_id {
+                player.hero.markers += {var.marker}
+            } else {
+                player.hero.markers -= {var.marker}
+            }
         }
 
     case Minion_Defeat_Event:
@@ -1026,6 +1046,12 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             source := calculate_implicit_target(gs, action_type.source, calc_context)
             destination := calculate_implicit_target(gs, action_type.destination, calc_context)
             broadcast_game_event(gs, Unit_Translocation_Event{source, destination})
+            append(&gs.event_queue, Resolve_Current_Action_Event{})
+
+        case Give_Marker_Action:
+            target := calculate_implicit_target(gs, action_type.target, calc_context)
+            owner := gs.board[target.x][target.y].owner
+            broadcast_game_event(gs, Give_Marker_Event{owner, action_type.marker})
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
         case Fast_Travel_Action, Clear_Action, Choose_Card_Action:

@@ -183,6 +183,9 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
 
     case Retrieve_Card_Action:
         return true
+
+    case Give_Marker_Action: 
+        return true
     }
     return false
 }

@@ -89,6 +89,8 @@ Previously_Chosen_Target :: struct {
     skips: int,
 }
 
+Attacker :: struct {}
+
 Top_Blocked_Spawnpoint :: struct {}
 
 Card_Owner :: struct {}
@@ -100,6 +102,9 @@ Implicit_Target :: union {
     Previous_Target,
     Previously_Chosen_Target,
     Top_Blocked_Spawnpoint,
+
+    // Requires attack interrupt in interrupt stack
+    Attacker,
 
     // Requires card in context
     Card_Owner,
@@ -164,6 +169,10 @@ Card_Primary_Is :: struct {
     kind: Primary_Kind,
 }
 
+Card_Color_Is :: struct {
+    color: Card_Color,
+}
+
 Card_Owner_Is :: struct {
     owner: Implicit_Target,
 }
@@ -202,6 +211,7 @@ Implicit_Condition :: union {
     // Requires card in calc context
     Card_State_Is,
     Card_Primary_Is,
+    Card_Color_Is,
     Card_Owner_Is,
     Card_Can_Defend,
 
@@ -303,6 +313,16 @@ calculate_implicit_quantity :: proc(
         hero := get_player_by_id(gs, calc_context.card_id.owner_id).hero
         value := card_data.values[quantity.kind]
         value += count_hero_items(gs, hero, quantity.kind)
+
+
+        poison_value_kinds := bit_set[Card_Value_Kind]{.Attack, .Defense, .Initiative}
+        if .Tigerclaw_Weak_Poison in hero.markers && quantity.kind in poison_value_kinds {
+            value -= 1
+        }
+        if .Tigerclaw_Strong_Poison in hero.markers && quantity.kind in poison_value_kinds {
+            value -= 2
+        }
+
         return value
 
     case Card_Turn_Played:
@@ -322,14 +342,18 @@ calculate_implicit_target :: proc(
     loc := #caller_location
 ) -> (out: Target) {
     switch target in implicit_target {
+
     case Target: out = target
+
     case Current_Target: 
         log.assert(calc_context.target != {}, "Invalid stack target!", loc)
         return calc_context.target
+
     case Previous_Target:
         log.assert(calc_context.prev_target != {}, "Invalid stack target!", loc)
         return calc_context.prev_target
     case Self: out = get_my_player(gs).hero.location
+
     case Previously_Chosen_Target:
         skips := target.skips
         index := get_my_player(gs).hero.current_action_index
@@ -344,11 +368,19 @@ calculate_implicit_target :: proc(
                 }                
             }
         }
+
     case Top_Blocked_Spawnpoint:
         my_team := get_my_player(gs).team
         num_blocked_spawns := len(gs.blocked_spawns[my_team])
         log.assert(num_blocked_spawns > 0, "No blocked spawns!!!!!", loc)
         return gs.blocked_spawns[my_team][num_blocked_spawns - 1]
+
+    case Attacker:
+        interrupt, _, ok := find_attack_interrupt(gs)
+        log.assert(ok, "No attack interrupt in stack when trying to determine attacker!")
+        hero := get_player_by_id(gs, interrupt.interrupting_player).hero
+        return hero.location
+    
     case Card_Owner:
         log.assert(calc_context.card_id != {}, "Cannot find the owner of an invalid card!", loc)
         return get_player_by_id(gs, calc_context.card_id.owner_id).hero.location
@@ -487,11 +519,16 @@ calculate_implicit_condition :: proc (
         target := calculate_implicit_target(gs, condition.target, calc_context)
         return calc_context.target == target
 
+
     case Card_Primary_Is:
         log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
         card_data, ok := get_card_data_by_id(gs, calc_context.card_id)
         log.assert(ok, "Could not find the card data when checking for its primary type!", loc)
         return card_data.primary == condition.kind
+    
+    case Card_Color_Is:
+        log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
+        return calc_context.card_id.color == condition.color
 
     case Card_State_Is:
         log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
@@ -510,7 +547,7 @@ calculate_implicit_condition :: proc (
 
     case Card_Can_Defend:
         log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
-        attack_interrupt, ok := find_attack_interrupt(gs)
+        _, attack_interrupt, ok := find_attack_interrupt(gs)
         log.assert(ok, "Trying to determine defense when there is no attack!", loc)
         
         card_data, ok2 := get_card_data_by_id(gs, calc_context.card_id)
@@ -532,7 +569,7 @@ calculate_implicit_condition :: proc (
         return defense_strength >= attack_interrupt.strength
 
     case Attack_Contains_Flag:
-        attack_interrupt, ok := find_attack_interrupt(gs)
+        _, attack_interrupt, ok := find_attack_interrupt(gs)
         log.assert(ok, "Could not find the attack interrupt when checking its flags!", loc)
         return condition.flag in attack_interrupt.flags
     }

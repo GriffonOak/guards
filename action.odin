@@ -99,16 +99,6 @@ Choose_Card_Action :: struct {
     result: Card_ID,
 }
 
-// Defense_Flag :: enum {
-//     BLOCK,
-//     IGNORE_MINION_MODIFIERS,
-// }
-// Defense_Flags :: bit_set[Defense_Flag]
-
-// Defense_Stats :: struct {
-
-// }
-
 Defend_Action :: struct {
     strength: Implicit_Quantity,
     block_condition: Implicit_Condition,
@@ -152,6 +142,11 @@ Push_Action :: struct {
     num_spaces: Implicit_Quantity,
 }
 
+Give_Marker_Action :: struct {
+    target: Implicit_Target,
+    marker: Marker,
+}
+
 Action_Variant :: union {
     Movement_Action,
     Fast_Travel_Action,
@@ -173,6 +168,7 @@ Action_Variant :: union {
     Place_Action,
     Choose_Quantity_Action,
     Push_Action,
+    Give_Marker_Action,
 
     Minion_Removal_Action,
     Minion_Defeat_Action,

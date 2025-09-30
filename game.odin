@@ -98,7 +98,7 @@ Interrupt :: struct {
 }
 
 Expanded_Interrupt :: struct {
-    interrupt: Interrupt,
+    using interrupt: Interrupt,
     previous_stage: Player_Stage,
     on_resolution: Event,
     global_resolution: bool,

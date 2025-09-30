@@ -423,7 +423,7 @@ dodger_cards := []Card_Data {
     Card_Data { name = "Vampiric Shield",
         color =         .Blue,
         tier =          2,
-        values =        #partial{.Initiative = 10, .Defense = 4, .Movement = 3, .Radius = 2},  // @Todo find out what this actually is
+        values =        #partial{.Initiative = 10, .Defense = 4, .Movement = 3, .Radius = 2},
         primary =       .Defense,
         primary_sign =  .Plus,
         item =          .Initiative,

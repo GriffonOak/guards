@@ -81,14 +81,14 @@ get_norm_direction :: proc(a, b: Target) -> Target {
     return transmute([2]u8) norm_direction
 }
 
-find_attack_interrupt :: proc(gs: ^Game_State) -> (Attack_Interrupt, bool) {
+find_attack_interrupt :: proc(gs: ^Game_State) -> (Expanded_Interrupt, Attack_Interrupt, bool) {
     #reverse for expanded_interrupt in gs.interrupt_stack {
         #partial switch interrupt_variant in expanded_interrupt.interrupt.variant {
         case Attack_Interrupt:
-            return interrupt_variant, true
+            return expanded_interrupt, interrupt_variant, true
         }
     }
-    return {}, false
+    return {}, {}, false
 }
 
 get_first_set_bit :: proc(bs: bit_set[$T]) -> Maybe(T) where intrinsics.type_is_enum(T) {

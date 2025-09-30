@@ -56,7 +56,7 @@ tigerclaw_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Blend into Shadows",
+    Card_Data { name = "Blend into Shadows",  // @Incomplete
         color =         .Silver,
         values =        #partial{.Initiative = 6, .Defense = 2, .Radius = 2},
         primary =       .Skill,
@@ -370,7 +370,7 @@ tigerclaw_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Poisoned Dagger",  // @Unimplemented
+    Card_Data { name = "Poisoned Dagger",
         color =         .Green,
         tier =          2,
         alternate =     true,
@@ -389,12 +389,15 @@ tigerclaw_cards := []Card_Data {
                     },
                 },
             },
-            // Action {
-            //     Give_Marker_Action
-            // }
+            Action {
+                variant = Give_Marker_Action {
+                    target = Previously_Chosen_Target{},
+                    marker = .Tigerclaw_Weak_Poison,
+                },
+            },
         },
     },
-    Card_Data { name = "Sidestep",  // @Unimplemented
+    Card_Data { name = "Sidestep",
         color =         .Blue,
         tier =          2,
         values =        #partial{.Initiative = 11, .Defense = 0, .Movement = 3},
@@ -402,10 +405,23 @@ tigerclaw_cards := []Card_Data {
         item =          .Attack,
         text =          "Block a ranged attack.\nYou may move 1 space.",
         primary_effect = []Action {
-
+            Action {
+                variant = Defend_Action {
+                    block_condition = Attack_Contains_Flag{.Ranged},
+                },
+            },
+            Action {
+                tooltip = "You may move 1 space.",
+                optional = true,
+                variant = Movement_Action {
+                    target = Self{},
+                    min_distance = 1,
+                    max_distance = 1,
+                },
+            },
         },
     },
-    Card_Data { name = "Parry",  // @Unimplemented
+    Card_Data { name = "Parry",
         color =         .Blue,
         tier =          2,
         alternate =     true,
@@ -413,7 +429,19 @@ tigerclaw_cards := []Card_Data {
         primary =       .Defense,
         item =          .Defense,
         text =          "Block a non-ranged attack.\nThe attacker discards a card, if able.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                variant = Defend_Action {
+                    block_condition = Not{Attack_Contains_Flag{.Ranged}},
+                },
+            },
+            Action {
+                tooltip = "Waiting for opponent to discard...",
+                variant = Force_Discard_Action {
+                    target = Attacker{},
+                },
+            },
+        },
     },
     Card_Data { name = "Leaping Strike",
         color =         .Red,
@@ -474,7 +502,7 @@ tigerclaw_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Backstab with a Ballista",  // @Unimplemented
+    Card_Data { name = "Backstab with a Ballista",
         color =         .Red,
         tier =          3,
         alternate =     true,
@@ -484,7 +512,70 @@ tigerclaw_cards := []Card_Data {
         item =          .Defense,
         text =          "Target a unit in range;\nif a friendly unit is adjacent to the target\n+2 Attack, and the target cannot\nperform a primary action to defend.",
         primary_effect = []Action {
-
+            Action {  // 0
+                tooltip = "Target a unit adjacent to you.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {  // 1
+                tooltip = error_tooltip,
+                // This choice action is basically acting as a switch in this case, maybe that could have its own separate type?
+                variant = Choice_Action {
+                    choices = {
+                        {name = "ERROR no adjacent", jump_index = {index = 2}},
+                        {name = "ERROR adjacent", jump_index = {index = 4}},
+                    },
+                },
+            },
+            Action {  // 2
+                tooltip = "Waiting for the opponent to defend...",
+                // Condition here is basically that there are no friendly units adjacent to the target
+                condition = Equal {
+                    Count_Targets {
+                        conditions = {
+                            Target_Within_Distance{Previously_Chosen_Target{}, {1, 1}},
+                            Target_Contains_Any{UNIT_FLAGS},
+                            Target_Is_Friendly_Unit{},
+                            Not{Target_Is{Self{}}},
+                        },
+                    }, 0,
+                },
+                variant = Attack_Action {
+                    target = Previously_Chosen_Target{},
+                    strength = Card_Value{.Attack},
+                },
+            },
+            Action {  // 3
+                variant = Halt_Action{},
+            },
+            Action {  // 4
+                tooltip = "Waiting for the opponent to defend...",
+                // Condition here is that there are friendly units adjacent to the target
+                condition = Greater_Than {
+                    Count_Targets {
+                        conditions = {
+                            Target_Within_Distance{Previously_Chosen_Target{}, {1, 1}},
+                            Target_Contains_Any{UNIT_FLAGS},
+                            Target_Is_Friendly_Unit{},
+                            Not{Target_Is{Self{}}},
+                        },
+                    }, 0,
+                },
+                variant = Attack_Action {
+                    target = Previously_Chosen_Target{},
+                    strength = Sum {
+                        Card_Value{.Attack},
+                        2,
+                    },
+                    flags = {.Disallow_Primary_Defense},
+                },
+            },
         },
     },
     Card_Data { name = "Master Thief",
@@ -544,7 +635,7 @@ tigerclaw_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Poisoned Dart",  // @Unimplemented
+    Card_Data { name = "Poisoned Dart",
         color =         .Green,
         tier =          3,
         alternate =     true,
@@ -552,18 +643,68 @@ tigerclaw_cards := []Card_Data {
         primary =       .Skill,
         item =          .Initiative,
         text =          "Give a hero in range a Poison marker.\nThe hero with a poison marker has\n-2 Initiative, -2 Attack and -2 Defense.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = "Choose a hero in range to give the Poison marker to.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
+                        Target_Contains_Any{{.Hero}},
+                    },
+                },
+            },
+            Action {
+                variant = Give_Marker_Action {
+                    target = Previously_Chosen_Target{},
+                    marker = .Tigerclaw_Strong_Poison,
+                },
+            },
+        },
     },
-    Card_Data { name = "Evade",  // @Unimplemented
+    Card_Data { name = "Evade",
         color =         .Blue,
         tier =          3,
         values =        #partial{.Initiative = 11, .Defense = 0, .Movement = 3},
         primary =       .Defense,
         item =          .Attack,
         text =          "Block a ranged attack.\nYou may move 1 space. You may retrieve\nyour resolved or discarded basic skill card.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {  // 0
+                variant = Defend_Action {
+                    block_condition = Attack_Contains_Flag{.Ranged},
+                },
+            },
+            Action {  // 1
+                tooltip = "You may move 1 space.",
+                optional = true,
+                skip_index = {index = 2},
+                variant = Movement_Action {
+                    target = Self{},
+                    min_distance = 1,
+                    max_distance = 1,
+                },
+            },
+            Action {  // 2
+                tooltip = "You may retrieve your basic skill card.",
+                optional = true,
+                variant = Choose_Card_Action {
+                    criteria = {
+                        Card_Owner_Is{Self{}},
+                        Card_Color_Is{.Silver},
+                        Or {
+                            Card_State_Is{.Resolved},
+                            Card_State_Is{.Discarded},
+                        },
+                    },
+                },
+            },
+            Action {
+                variant = Retrieve_Card_Action{Previous_Card_Choice{}},
+            },
+        },
     },
-    Card_Data { name = "Riposte",  // @Unimplemented
+    Card_Data { name = "Riposte",
         color =         .Blue,
         tier =          3,
         alternate =     true,
@@ -571,6 +712,19 @@ tigerclaw_cards := []Card_Data {
         primary =       .Defense,
         item =          .Range,
         text =          "Block a non-ranged attack.\nThe attacker discards a card, or is defeated.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                variant = Defend_Action {
+                    block_condition = Not{Attack_Contains_Flag{.Ranged}},
+                },
+            },
+            Action {
+                tooltip = "Waiting for opponent to discard...",
+                variant = Force_Discard_Action {
+                    target = Attacker{},
+                    or_is_defeated = true,
+                },
+            },
+        },
     },
 }
