@@ -81,6 +81,16 @@ get_norm_direction :: proc(a, b: Target) -> Target {
     return transmute([2]u8) norm_direction
 }
 
+find_attack_interrupt :: proc(gs: ^Game_State) -> (Attack_Interrupt, bool) {
+    #reverse for expanded_interrupt in gs.interrupt_stack {
+        #partial switch interrupt_variant in expanded_interrupt.interrupt.variant {
+        case Attack_Interrupt:
+            return interrupt_variant, true
+        }
+    }
+    return {}, false
+}
+
 get_first_set_bit :: proc(bs: bit_set[$T]) -> Maybe(T) where intrinsics.type_is_enum(T) {
     for enum_type in T {
         if enum_type in bs do return enum_type
@@ -191,24 +201,3 @@ add_marker :: proc(gs: ^Game_State) {
         append(&gs.event_queue, Marker_Event{})
     }
 }
-
-// can_defend :: proc(defense_strength: Implicit_Quantity, flags: Defense_Flags) -> bool{
-//     log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
-
-//     attack_strength := -1e6
-//     minion_modifiers := -1e6
-//     search_interrupts: #reverse for expanded_interrupt in gs.interrupt_stack {
-//         #partial switch interrupt_variant in expanded_interrupt.interrupt.variant {
-//         case Attack_Interrupt:
-//             attack_strength = interrupt_variant.strength
-//             break search_interrupts
-//         }
-//     }
-//     log.assert(attack_strength != -1e6, "No attack found in interrupt stack!!!!!", loc)
-
-//     log.infof("Defending attack of %v, minions %v, card value %v", attack_strength, minion_modifiers)
-
-//     // We do it this way so that defense items get calculated
-//     defense_strength := calculate_implicit_quantity(gs, Card_Value{.Defense}, calc_context)
-//     return defense_strength + minion_modifiers >= attack_strength
-// }

@@ -61,7 +61,7 @@ Choice :: struct {
 Attack_Action :: struct {
     target: Implicit_Target,
     strength: Implicit_Quantity,
-    flags: bit_set[Attack_Flag],
+    flags: Attack_Flags,
 }
 
 Force_Discard_Action :: struct {
@@ -190,8 +190,9 @@ Action :: struct {
     // will halt if they are impossible.
     skip_index: Action_Index,
     skip_name: cstring,
-    targets: Target_Set,
     variant: Action_Variant,
+    
+    targets: Target_Set,
 }
 
 Action_Sequence_ID :: enum {
@@ -280,6 +281,7 @@ basic_defense_action := []Action {
         skip_name = "Die",
         variant = Choose_Card_Action {
             criteria = {
+                Card_Owner_Is{Self{}},
                 Card_State_Is{.In_Hand},  // Apparently you can just discard anything, even if it can't defend...
             },
         },
@@ -293,7 +295,7 @@ basic_defense_action := []Action {
     Action {  // 2
         tooltip = error_tooltip,
         variant = Jump_Action {
-            jump_index = Card_Defense_Index{},
+            jump_index = Card_Defense_Index{Previous_Card_Choice{}},
         },
     },
     Action {  // 3
@@ -318,6 +320,7 @@ discard_if_able_action := []Action {
         tooltip = "Choose a card to discard.",
         variant = Choose_Card_Action {
             criteria = {
+                Card_Owner_Is{Self{}},
                 Card_State_Is{.In_Hand},
             },
         },
@@ -338,6 +341,7 @@ discard_or_defeated_action := []Action {
         skip_name = "Die",
         variant = Choose_Card_Action {
             criteria = {
+                Card_Owner_Is{Self{}},
                 Card_State_Is{.In_Hand},
             },
         },

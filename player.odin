@@ -44,6 +44,12 @@ number_names := [?]cstring {
 
 hero_cards: [Hero_ID][]Card_Data
 
+Marker :: enum {
+    Tigerclaw_Weak_Poison,
+    Tigerclaw_Strong_Poison,
+}
+
+Marker_Set :: bit_set[Marker]
 
 Hero :: struct {
     id: Hero_ID,
@@ -55,6 +61,7 @@ Hero :: struct {
     dead: bool,
     items: [10]Card_ID,  // lol
     item_count: int,
+    markers: Marker_Set,
 
     current_action_index: Action_Index,
 }

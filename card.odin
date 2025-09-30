@@ -61,8 +61,8 @@ Sign :: enum {
 }
 
 Card_ID :: struct {
-    hero_id: Hero_ID,
     owner_id: Player_ID,
+    hero_id: Hero_ID,
     color: Card_Color,
     tier: int,
     alternate: bool,
@@ -273,6 +273,10 @@ create_texture_for_card :: proc(card: ^Card_Data) {
     // Primary & its value & sign
     primary_value := card.values[primary_to_value[card.primary]]
     primary_value_string := fmt.ctprintf("%d", primary_value) if primary_value > 0 else ""
+    if card.primary == .Defense && len(card.primary_effect) > 0 {
+        defense_action := card.primary_effect[0].variant.(Defend_Action)
+        if defense_action.block_condition != nil do primary_value_string = "!"
+    }
     primary_value_loc := Vec2{TEXT_PADDING, y_offset - text_dimensions.y - TITLE_FONT_SIZE}
     rl.DrawRectangleV({0, primary_value_loc.y - TEXT_PADDING}, CARD_TEXTURE_SIZE, rl.WHITE)
     rl.DrawLineEx({0, primary_value_loc.y - TEXT_PADDING}, {CARD_TEXTURE_SIZE.x, primary_value_loc.y - TEXT_PADDING}, TEXT_PADDING, rl.BLACK)
@@ -380,22 +384,21 @@ get_card_by_id :: proc(gs: ^Game_State, card_id: Card_ID) -> (card: ^Card, ok: b
     return player_card, true
 }
 
-get_card_data_by_id :: proc(_gs: ^Game_State, card_id: Card_ID) -> (card: ^Card_Data, ok: bool) { // #optional_ok {
-    if card_id == {} do return nil, false
+get_card_data_by_id :: proc(_gs: ^Game_State, card_id: Card_ID) -> (card: Card_Data, ok: bool) { // #optional_ok {
+    if card_id == {} do return {}, false
 
-    // If a player is holding the card, return a pointer to that
     for &hero_card in hero_cards[card_id.hero_id] {
         if hero_card.color == card_id.color {
             if hero_card.color == .Gold || hero_card.color == .Silver {
-                return &hero_card, true
+                return hero_card, true
             }
             if hero_card.tier == card_id.tier && hero_card.alternate == card_id.alternate {
-                return &hero_card, true
+                return hero_card, true
             }
         }
     }
 
-    return nil, false
+    return {}, false
 }
 
 find_upgrade_options :: proc(gs: ^Game_State, card_id: Card_ID) -> (out: [2]Card_ID, ok: bool) {

@@ -80,7 +80,6 @@ Calculation_Context :: struct {
     target, prev_target: Target,
 }
 
-// Absolutely atrocious naming scheme
 Current_Target :: struct{}
 Previous_Target :: struct {}
 
@@ -157,10 +156,6 @@ Target_Outside_Battle_Zone :: struct {}
 
 Target_Empty :: Target_Contains_No{OBSTACLE_FLAGS}
 
-// Card_Can_Defend :: struct{
-//     strength: int,
-// }
-
 Card_State_Is :: struct {
     state: Card_State,
 }
@@ -173,6 +168,11 @@ Card_Owner_Is :: struct {
     owner: Implicit_Target,
 }
 
+Card_Can_Defend :: struct {}
+
+Attack_Contains_Flag :: struct {
+    flag: Attack_Flag,
+}
 
 Implicit_Condition :: union {
     bool,
@@ -200,13 +200,18 @@ Implicit_Condition :: union {
     Target_Is,
 
     // Requires card in calc context
-    // Card_Can_Defend,
     Card_State_Is,
     Card_Primary_Is,
     Card_Owner_Is,
+    Card_Can_Defend,
+
+    // Requires an attack in the interrupt stack
+    Attack_Contains_Flag,
 }
 
-Card_Defense_Index :: struct {}
+Card_Defense_Index :: struct {
+    implicit_card_id: Implicit_Card_ID,
+}
 
 Other_Card_Primary :: struct {
     implicit_card_id: Implicit_Card_ID,
@@ -475,7 +480,7 @@ calculate_implicit_condition :: proc (
         origin := calculate_implicit_target(gs, condition.origin, calc_context)
 
         delta := calc_context.target - origin
-        return delta.x == 0 || delta.y == 0 || delta.x == - delta.y
+        return delta.x == 0 || delta.y == 0 || delta.x == -delta.y
 
     case Target_Is:
         log.assert(space_ok, "Invalid target!")
@@ -503,27 +508,33 @@ calculate_implicit_condition :: proc (
         player_space := gs.board[player_location.x][player_location.y]
         return player_space.owner == card.owner_id
 
+    case Card_Can_Defend:
+        log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
+        attack_interrupt, ok := find_attack_interrupt(gs)
+        log.assert(ok, "Trying to determine defense when there is no attack!", loc)
+        
+        card_data, ok2 := get_card_data_by_id(gs, calc_context.card_id)
+        log.assert(ok2, "Could not get card data when defending!", loc)
 
-    // case Card_Can_Defend:
-        // log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
+        if (.Disallow_Primary_Defense in attack_interrupt.flags) &&
+            (card_data.primary == .Defense || card_data.primary == .Defense_Skill) {
+            return false
+        }
 
-        // attack_strength := -1e6
-        // minion_modifiers := -1e6
-        // search_interrupts: #reverse for expanded_interrupt in gs.interrupt_stack {
-        //     #partial switch interrupt_variant in expanded_interrupt.interrupt.variant {
-        //     case Attack_Interrupt:
-        //         attack_strength = interrupt_variant.strength
-        //         minion_modifiers = interrupt_variant.minion_modifiers
-        //         break search_interrupts
-        //     }
-        // }
-        // log.assert(attack_strength != -1e6, "No attack found in interrupt stack!!!!!", loc)
+        defense_index := calculate_implicit_action_index(gs, Card_Defense_Index{calc_context.card_id}, calc_context)
+        action := get_action_at_index(gs, defense_index)
+        defense_action := action.variant.(Defend_Action)
 
-        // log.infof("Defending attack of %v, minions %v, card value %v", attack_strength, minion_modifiers)
+        if defense_action.block_condition != nil {
+            return calculate_implicit_condition(gs, defense_action.block_condition, calc_context)
+        }
+        defense_strength := calculate_implicit_quantity(gs, defense_action.strength, calc_context)
+        return defense_strength >= attack_interrupt.strength
 
-        // // We do it this way so that defense items get calculated
-        // defense_strength := calculate_implicit_quantity(gs, Card_Value{.Defense}, calc_context)
-        // return defense_strength + minion_modifiers >= attack_strength
+    case Attack_Contains_Flag:
+        attack_interrupt, ok := find_attack_interrupt(gs)
+        log.assert(ok, "Could not find the attack interrupt when checking its flags!", loc)
+        return condition.flag in attack_interrupt.flags
     }
     return false
 }
@@ -563,16 +574,17 @@ calculate_implicit_action_index :: proc(gs: ^Game_State, implicit_index: Implici
     case Action_Index:
         return index
     case Card_Defense_Index:
-        card_data, ok := get_card_data_by_id(gs, calc_context.card_id)
+        card_id := calculate_implicit_card_id(gs, index.implicit_card_id)
+        card_data, ok := get_card_data_by_id(gs, card_id)
         log.assert(ok, "Invalid card ID!!")
         #partial switch card_data.primary {
         case .Defense: 
-            return Action_Index{.Primary, calc_context.card_id, 0}
+            return Action_Index{.Primary, card_id, 0}
         case .Defense_Skill:
             log.assert(false, "TODO")  // @Todo
             return {}
         }
-        return {.Basic_Defense, calc_context.card_id, 3}  // @Magic: index of Defense_Action in basic_defense_action
+        return {.Basic_Defense, card_id, 3}  // @Magic: index of Defense_Action in basic_defense_action
     case Other_Card_Primary:
         other_card_id := calculate_implicit_card_id(gs, index.implicit_card_id)
         if other_card_id == {} do return {sequence = .Invalid}

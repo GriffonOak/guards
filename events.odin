@@ -116,8 +116,6 @@ End_Of_Turn_Event :: struct {}
 
 Begin_Minion_Battle_Event :: struct {}
 
-End_Minion_Battle_Event :: struct {}
-
 
 Hero_Defeated_Event :: struct {
     defeated, defeater: Player_ID,
@@ -220,8 +218,6 @@ Event :: union {
     Resolve_Blocked_Minions_Event,
     End_Wave_Push_Event,
     
-    End_Minion_Battle_Event,
-
     Begin_Upgrading_Event,
     Begin_Next_Upgrade_Event,
     End_Upgrading_Event,
@@ -624,7 +620,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
     case Begin_Interrupt_Event:
         interrupt := var.interrupt
         if interrupt.interrupted_player != gs.my_player_id {  // The interruptee should already have added to their own interrupt stack in become_interrupted
-            previous_stage := get_my_player(gs).stage        // Therefore we only add an interrupt to the stack if we are not the interuuptee
+            previous_stage := get_my_player(gs).stage         // Therefore we only add an interrupt to the stack if we are not the interuuptee
             expanded_interrupt := Expanded_Interrupt {
                 interrupt = interrupt,
                 previous_stage = previous_stage,
@@ -657,7 +653,11 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         get_my_player(gs).stage = most_recent_interrupt.previous_stage
         get_my_player(gs).hero.current_action_index = most_recent_interrupt.previous_action_index
         if most_recent_interrupt.interrupt.interrupted_player == gs.my_player_id {
-            append(&gs.event_queue, most_recent_interrupt.on_resolution)
+            if most_recent_interrupt.global_resolution {
+                broadcast_game_event(gs, most_recent_interrupt.on_resolution)
+            } else {
+                append(&gs.event_queue, most_recent_interrupt.on_resolution)
+            }
         }
 
     case Update_Tiebreaker_Event:
@@ -769,12 +769,14 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Begin_Next_Action_Event:
 
-        if get_my_player(gs).hero.dead {  // Didn't respawn bozo
+        action_index := get_my_player(gs).hero.current_action_index
+
+        if get_my_player(gs).hero.dead && action_index.sequence != .Respawn {  // Didn't respawn bozo
             end_current_action_sequence(gs)
             break
         }
 
-        action_index := get_my_player(gs).hero.current_action_index
+        
         calc_context := Calculation_Context{card_id = action_index.card_id}
         action := get_action_at_index(gs, action_index)
 
@@ -980,27 +982,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
         case Defend_Action:
-            can_defend: bool
-            if action_type.block_condition != nil do can_defend = calculate_implicit_condition(gs, action_type.block_condition, calc_context)
-            else {
-                attack_strength := -1e6
-                search_interrupts: #reverse for expanded_interrupt in gs.interrupt_stack {
-                    #partial switch interrupt_variant in expanded_interrupt.interrupt.variant {
-                    case Attack_Interrupt:
-                        attack_strength = interrupt_variant.strength
-                        break search_interrupts
-                    }
-                }
-                log.assert(attack_strength != -1e6, "No attack found in interrupt stack!!!!!")
-
-                // We do it this way so that defense items get calculated
-                defense_strength := calculate_implicit_quantity(gs, action_type.strength, calc_context)
-                can_defend = defense_strength >= attack_strength
-            }
+            can_defend := calculate_implicit_condition(gs, Card_Can_Defend{}, calc_context)
             if can_defend do append(&gs.event_queue, Resolve_Current_Action_Event{})
-            else do append(&gs.event_queue, Resolve_Current_Action_Event{Action_Index{sequence = .Die}})
-            // @Defense: Here you would add an interrupt to perform the "defense action"
-            
+            else do append(&gs.event_queue, Resolve_Current_Action_Event{Action_Index{sequence = .Die}})            
 
         case Retrieve_Card_Action:
             card_id := calculate_implicit_card_id(gs, action_type.card)
@@ -1222,8 +1206,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Begin_Minion_Battle_Event:
         gs.stage = .Minion_Battle
-        // Let the team captain choose which minions to delete
-        // append(&gs.event_queue, End_Minion_Battle_Event{})
 
         if !gs.is_host do break
 
@@ -1238,26 +1220,21 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                     gs,
                     gs.my_player_id,
                     Wave_Push_Interrupt{pushing_team},
-                    End_Minion_Battle_Event{},
+                    Begin_Upgrading_Event{},
+                    global_resolution = true,
                 )
             } else {
                 become_interrupted (
                     gs,
                     gs.team_captains[pushed_team],
-                    Action_Index{sequence = .Minion_Removal, index = 0},
-                    End_Minion_Battle_Event{},
+                    Action_Index{sequence = .Minion_Removal},
+                    Begin_Upgrading_Event{},
+                    global_resolution = true,
                 )
             }
         } else {
-            append(&gs.event_queue, End_Minion_Battle_Event{})
+            broadcast_game_event(gs, Begin_Upgrading_Event{})
         }
-
-    case End_Minion_Battle_Event:
-
-        log.assert(gs.is_host, "Client should never reach here!!!!!")
-
-        // Host only
-        broadcast_game_event(gs, Begin_Upgrading_Event{})
 
     case Begin_Wave_Push_Event:
         // Check if game over
@@ -1315,6 +1292,19 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Begin_Upgrading_Event:
         clear(&gs.ongoing_active_effects)
+
+        // Return markers
+        for &player in gs.players {
+            player.hero.markers = {}
+        }
+
+        // Remove all tokens
+        for &arr in gs.board {
+            for &space in arr {
+                space.flags -= {.Token}
+            }
+        }
+        
         retrieve_all_cards(gs)
         gs.upgraded_players = 0
 

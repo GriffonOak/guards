@@ -266,6 +266,7 @@ brogan_cards := []Card_Data {
                 optional = true,
                 variant = Choose_Card_Action {
                     criteria = {
+                        Card_Owner_Is{Self{}},
                         Card_State_Is{.In_Hand},
                     },
                 },
@@ -510,6 +511,7 @@ brogan_cards := []Card_Data {
                 skip_index = {index = 5},
                 variant = Choose_Card_Action {
                     criteria = {
+                        Card_Owner_Is{Self{}},
                         Card_State_Is{.In_Hand},
                     },
                 },

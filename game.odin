@@ -76,12 +76,14 @@ Wave_Push_Interrupt :: struct {
 
 Attack_Flag :: enum {
     Ranged,
+    Disallow_Primary_Defense,
 }
+
+Attack_Flags :: bit_set[Attack_Flag]
 
 Attack_Interrupt :: struct {
     strength: int,
-    flags: bit_set[Attack_Flag],
-    // minion_modifiers: int,
+    flags: Attack_Flags,
 }
 
 Interrupt_Variant :: union {
@@ -99,7 +101,7 @@ Expanded_Interrupt :: struct {
     interrupt: Interrupt,
     previous_stage: Player_Stage,
     on_resolution: Event,
-    // global_resolution: bool,  @Cleanup I think something like this would simplify a lot of the interrupt flows
+    global_resolution: bool,
     previous_action_index: Action_Index,
 }
 
@@ -108,6 +110,7 @@ become_interrupted :: proc(
     interrupting_player_id: Player_ID,
     interrupt_variant: Interrupt_Variant,
     on_resolution: Event,
+    global_resolution: bool = false,
 ) {
     interrupt := Interrupt {
         gs.my_player_id, interrupting_player_id,
@@ -117,6 +120,7 @@ become_interrupted :: proc(
         interrupt,
         get_my_player(gs).stage,
         on_resolution,
+        global_resolution,
         get_my_player(gs).hero.current_action_index,
     })
 

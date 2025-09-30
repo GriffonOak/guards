@@ -99,6 +99,7 @@ tigerclaw_cards := []Card_Data {
             Action {
                 tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     conditions = {
                         Target_Within_Distance {Self{}, {1, 1}},
                         Target_Contains_Any{UNIT_FLAGS},
@@ -144,6 +145,7 @@ tigerclaw_cards := []Card_Data {
             Action {
                 tooltip = "Take 1 coin from an enemy hero adjacent to you.",
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
                         Target_Contains_Any{{.Hero}},
@@ -177,13 +179,19 @@ tigerclaw_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Dodge",  // @Unimplemented
+    Card_Data { name = "Dodge",
         color =         .Blue,
         tier =          1,
         values =        #partial{.Initiative = 10, .Defense = 0, .Movement = 3},
         primary =       .Defense,
         text =          "Block a ranged attack.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                variant = Defend_Action {
+                    block_condition = Attack_Contains_Flag{.Ranged},
+                },
+            },
+        },
     },
     Card_Data { name = "Combat Reflexes",
         color =         .Red,
@@ -201,11 +209,25 @@ tigerclaw_cards := []Card_Data {
                     target = Self{},
                     min_distance = 1,
                     max_distance = 1,
+                    destination_criteria = {
+                        conditions = {  // Have to move next to an enemy unit
+                            Greater_Than {
+                                Count_Targets {
+                                    conditions = {
+                                        Target_Within_Distance{Previous_Target{}, {1, 1}},
+                                        Target_Contains_Any{UNIT_FLAGS},
+                                        Target_Is_Enemy_Unit{},
+                                    },
+                                }, 0,
+                            },
+                        },
+                    },
                 },
             },
             Action {  // 1
                 tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
                         Target_Contains_Any{UNIT_FLAGS},
@@ -226,6 +248,7 @@ tigerclaw_cards := []Card_Data {
             Action {  // 4
                 tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
                         Target_Contains_Any{UNIT_FLAGS},
@@ -264,6 +287,7 @@ tigerclaw_cards := []Card_Data {
             Action {
                 tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
                         Target_Contains_Any{UNIT_FLAGS},
@@ -312,6 +336,7 @@ tigerclaw_cards := []Card_Data {
             Action {
                 tooltip = "Take 1 coin from an enemy hero adjacent to you.",
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
                         Target_Contains_Any{{.Hero}},
@@ -323,13 +348,13 @@ tigerclaw_cards := []Card_Data {
                 },
             },
             Action {
-                variant = Gain_Coins_Action{
+                variant = Gain_Coins_Action {
                     target = Self{},
                     gain = 1,
                 },
             },
             Action {
-                variant = Gain_Coins_Action{
+                variant = Gain_Coins_Action {
                     target = Previously_Chosen_Target{},
                     gain = -1,
                 },
@@ -353,7 +378,21 @@ tigerclaw_cards := []Card_Data {
         primary =       .Skill,
         item =          .Initiative,
         text =          "Give a hero in range a Poison marker.\nThe hero with a poison marker has\n-1 Initiative, -1 Attack and -1 Defense.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = "Choose a hero in range to give the Poison marker to.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
+                        Target_Contains_Any{{.Hero}},
+                    },
+                },
+            },
+            // Action {
+            //     Give_Marker_Action
+            // }
+        },
     },
     Card_Data { name = "Sidestep",  // @Unimplemented
         color =         .Blue,
@@ -362,7 +401,9 @@ tigerclaw_cards := []Card_Data {
         primary =       .Defense,
         item =          .Attack,
         text =          "Block a ranged attack.\nYou may move 1 space.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+
+        },
     },
     Card_Data { name = "Parry",  // @Unimplemented
         color =         .Blue,
@@ -390,6 +431,19 @@ tigerclaw_cards := []Card_Data {
                     target = Self{},
                     min_distance = 1,
                     max_distance = 1,
+                    destination_criteria = {
+                        conditions = {
+                            Greater_Than{
+                                Count_Targets {
+                                    conditions = {
+                                        Target_Within_Distance{Previous_Target{}, {1, 1}},
+                                        Target_Contains_Any{UNIT_FLAGS},
+                                        Target_Is_Enemy_Unit{},
+                                    },
+                                }, 0,
+                            },
+                        },
+                    },
                 },
             },
             Action {  // 1
