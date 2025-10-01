@@ -1,0 +1,24 @@
+,,Gold / Silver cards should be tier 0,,,,,,,,e.g. Range(3) or Radius(4),,,Replace line break with \n pls
+,,,"The ""Alt path"" card, the one different from the starting card of the same color",,,,,,Leave blank if unsigned,,Leave blank if unsigned,,
+,,,,,,,,,,leave blank if n/a,,Blank if n/a,
+Name,Color,Tier,Alternate?,Initiative,Attack Value,Defense Value,Movement Value,Primary Kind,Primary Sign,Reach,Reach Sign,Item Kind,Text
+Spell Break,SILVER,0,FALSE,13,,3,,SKILL,,Radius(3),,,"This turn: Enemy heroes in radius cannot\nperform skill actions, except on gold cards.\n(Skill is an action type. Other action types are unaffected.)"
+Dangerous Current,RED,1,FALSE,8,6,6,4,ATTACK,,,,,"Target a unit adjacent to you. Before the\nattack: up to 1 enemy hero in any of the\n2 spaces in a straight line directly behind\nthe target discards a card, or is defeated."
+Raging Stream,RED,2,FALSE,8,7,7,4,ATTACK,,,,INITIATIVE,"Target a unit adjacent to you. Before the\nattack: up to 1 enemy hero in any of the\n3 spaces in a straight line directly behind\nthe target discards a card, or is defeated."
+Rogue Wave,RED,2,TRUE,8,4,4,4,ATTACK,,Range(2),,DEFENSE,Target a unit in range.\nAfter the attack: You may push an enemy\nunit adjacent to you up to 2 spaces.
+Violent Torrent,RED,3,FALSE,9,7,7,4,ATTACK,,,,INITIATIVE,"Target a unit adjacent to you. Before the\nattack: Up to 1 enemy hero in any of the 5\nspaces in a straight line directly behind the\target discards a card, or is defeated.\nMay repeat once on a different unit."
+Tidal Blast,RED,3,TRUE,9,4,4,4,ATTACK,,Range(2),,MOVEMENT,Target a unit in range.\nAfter the attack: You may push an enemy\nunit adjacent to you up to 3 spaces.
+Liquid Leap,GREEN,1,FALSE,4,,3,2,SKILL,,Range(2),,,Place yourself into a space in range\nwithout a spawn point and not adjacent\nto an empty spawn point.
+Magical Current,GREEN,2,FALSE,4,,3,2,SKILL,,Range(3),,ATTACK,Place yourself into a space in range\nwithout a spawn point and not adjacent\nto an empty spawn point.
+Arcane Whirlpool,GREEN,2,TRUE,4,,3,2,SKILL,,Range(4),,DEFENSE,Swap with an enemy minion in range.\n(Swap places with the target. This is not a movement.)
+Stranger Tide,GREEN,3,FALSE,3,,4,2,SKILL,,Range(3),,RADIUS,Place yourself into a space in\nrange without a spawn point.
+Ebb and Flow,GREEN,3,TRUE,3,,4,2,SKILL,,Range(4),,DEFENSE,"Swap with an enemy minion in range;\nif it was adjacent to you, may repeat once."
+Noble Blade,GOLD,0,FALSE,11,4,2,1,ATTACK,,,,,"Target a unit adjacent to you.\nBefore the attack: You may move another\nunit that is adjacent to the target 1 space.\n(""Another unit"" never includes you.)"
+Aspiring Duelist,BLUE,1,FALSE,9,,5,3,DEFENSE,,,,,"Ignore all minion defense modifiers.\n(This includes your minions, as well as enemy minions.)"
+Expert Duelist,BLUE,2,FALSE,10,,6,3,DEFENSE,,,,INITIATIVE,"Ignore all minion defense modifiers.\nThis turn: You are immune to attack actions\nof all enemy heroes, except this attacker."
+Slippery Ground,BLUE,2,TRUE,10,,6,3,MOVEMENT,,,,ATTACK,"This turn: Enemy heroes adjacent\nto you cannot fast travel, or move more\nthan 1 space with a movement action."
+Master Duelist,BLUE,3,FALSE,10,,6,3,DEFENSE,,,,RANGE,"Ignore all minion defense modifiers.\nThis turn: You are immune to attack actions\nof all enemy heroes, except this attacker."
+Deluge,BLUE,3,TRUE,10,,6,3,MOVEMENT,,Radius(1),,ATTACK,"This turn: Enemy heroes in radius\ncannot fast travel, or move more than\n1 space with a movement action."
+,,,,,,,,,,,,,
+Ultimate:,"Once per turn, before performing an\nAttack action, you may move 1 space.",,,,,,,,,,,,
+,"^ Just write it out above, I'll deal with it separately",,,,,,,,,,,,

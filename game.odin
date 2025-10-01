@@ -157,6 +157,7 @@ Game_State :: struct {
     toasts: [dynamic]Toast,
 
     side_button_manager: Side_Button_Manager,
+    game_over: bool,
 
     is_host: bool,
 

@@ -6,6 +6,7 @@ import "core:reflect"
 import "core:strings"
 import sa "core:container/small_array"
 import "core:log"
+import "core:fmt"
 
 
 Marker_Event :: struct {}
@@ -24,7 +25,7 @@ Change_Hero_Event :: struct {
     hero_id: Hero_ID,
 }
 Change_Team_Event :: struct {
-    player_id: Player_ID
+    player_id: Player_ID,
 }
 Begin_Game_Event :: struct {}
 
@@ -1410,5 +1411,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
     case Game_Over_Event:
         // not too much fanfare here
         log.infof("%v team has won!", var.winning_team)
+        game_over_string := fmt.aprintf("%v team has won!", var.winning_team)
+        add_toast(gs, game_over_string, 10)
+        gs.game_over = true
     }
 }

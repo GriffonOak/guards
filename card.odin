@@ -497,7 +497,7 @@ resolve_card :: proc(gs: ^Game_State, card: ^Card) {
     }
     card_centre_position.x +=  f32(gs.turn_counter) * (RESOLVED_CARD_PADDING + FIRST_CARD_RESOLVED_POSITION_RECT.width)
 
-    for effect_kind, effect in gs.ongoing_active_effects {
+    for _, effect in gs.ongoing_active_effects {
         if effect.parent_card_id == card.id {
             card_dimensions.xy = card_dimensions.yx
             break
@@ -506,7 +506,7 @@ resolve_card :: proc(gs: ^Game_State, card: ^Card) {
     card_position := card_centre_position - card_dimensions / 2
     element.bounding_rect = {
         card_position.x, card_position.y,
-        card_dimensions.x, card_dimensions.y
+        card_dimensions.x, card_dimensions.y,
     }
     
     card.state = .Resolved

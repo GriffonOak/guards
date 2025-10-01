@@ -68,6 +68,7 @@ _ :: time
     v Full deck viewer
     v basic animations?
     v more toast for more things
+    v FPS stats tracker (kohl's ticket)
 
 
 --- MISC / IDEAS
@@ -302,6 +303,7 @@ main :: proc() {
 
         // Handle events
         for event in gs.event_queue {
+            if gs.game_over do break
             resolve_event(&gs, event)
         }
         clear(&gs.event_queue)
