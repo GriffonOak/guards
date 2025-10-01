@@ -550,8 +550,8 @@ swift_cards := []Card_Data {
             Action {
                 tooltip = "Target up to two enemy units adjacent to you.",
                 variant = Choose_Target_Action {
-                    up_to = true,
                     num_targets = 2,
+                    flags = {.Up_To},
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
                         Target_Contains_Any{UNIT_FLAGS},

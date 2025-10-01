@@ -353,7 +353,7 @@ remove_heavy_immunity :: proc(gs: ^Game_State, team: Team) {
 add_pre_lobby_ui_elements :: proc (gs: ^Game_State) {
     clear(&gs.ui_stack[.Buttons])
 
-    text_box_location := rl.Rectangle {
+    text_box_location := Rectangle {
         WIDTH / 2 - SELECTION_BUTTON_SIZE.x,
         (HEIGHT - BUTTON_PADDING) / 2 - 2 * SELECTION_BUTTON_SIZE.y,
         SELECTION_BUTTON_SIZE.x * 2,

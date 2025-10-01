@@ -35,6 +35,8 @@ Target_Set_Iterator :: struct {
 Selection_Flag :: enum {
     Not_Previously_Targeted,
     Ignoring_Immunity,
+    Up_To,
+    All,
 }
 
 Selection_Flags :: bit_set[Selection_Flag]

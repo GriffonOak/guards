@@ -100,7 +100,7 @@ CARD_TEXTURE_SIZE :: Vec2{500, 700}
 
 CARD_SCALING_FACTOR :: 1
 
-CARD_HOVER_POSITION_RECT :: rl.Rectangle {
+CARD_HOVER_POSITION_RECT :: Rectangle {
     WIDTH - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x,
     HEIGHT - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y,
     CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x,
@@ -118,21 +118,21 @@ RESOLVED_CARD_HEIGHT :: BOARD_HAND_SPACE * 0.8
 RESOLVED_CARD_WIDTH :: RESOLVED_CARD_HEIGHT / 1.5
 RESOLVED_CARD_PADDING :: (BOARD_HAND_SPACE - RESOLVED_CARD_HEIGHT) / 2
 
-OTHER_PLAYER_PLAYED_CARD_POSITION_RECT :: rl.Rectangle {
+OTHER_PLAYER_PLAYED_CARD_POSITION_RECT :: Rectangle {
     BOARD_TEXTURE_SIZE.x - RESOLVED_CARD_WIDTH / 2,
     TOOLTIP_FONT_SIZE + BOARD_HAND_SPACE * 0.1,
     RESOLVED_CARD_WIDTH,
     RESOLVED_CARD_HEIGHT,
 }
 // Copy and paste of above but with +constant on x
-OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT :: rl.Rectangle {
+OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT :: Rectangle {
     BOARD_TEXTURE_SIZE.x + RESOLVED_CARD_WIDTH / 2 + RESOLVED_CARD_PADDING + 450, // @Magic
     TOOLTIP_FONT_SIZE + BOARD_HAND_SPACE * 0.1,
     RESOLVED_CARD_WIDTH,
     RESOLVED_CARD_HEIGHT,
 }
 
-OTHER_PLAYER_Discarded_CARD_POSITION_RECT :: rl.Rectangle {
+OTHER_PLAYER_Discarded_CARD_POSITION_RECT :: Rectangle {
     OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.x + 4 * (RESOLVED_CARD_WIDTH + RESOLVED_CARD_PADDING),
     TOOLTIP_FONT_SIZE + BOARD_HAND_SPACE * 0.1,
     RESOLVED_CARD_WIDTH * 0.75,
@@ -140,7 +140,7 @@ OTHER_PLAYER_Discarded_CARD_POSITION_RECT :: rl.Rectangle {
 }  // Mouse contribution: h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h 
 
 
-FIRST_CARD_RESOLVED_POSITION_RECT :: rl.Rectangle {
+FIRST_CARD_RESOLVED_POSITION_RECT :: Rectangle {
     RESOLVED_CARD_PADDING + 450,  // @Magic this comes from the amount of space we give items when rendering player info
     BOARD_POSITION_RECT.height + RESOLVED_CARD_PADDING,
     RESOLVED_CARD_WIDTH,
@@ -148,14 +148,14 @@ FIRST_CARD_RESOLVED_POSITION_RECT :: rl.Rectangle {
 }
 
 
-FIRST_Discarded_CARD_POSITION_RECT :: rl.Rectangle {
+FIRST_Discarded_CARD_POSITION_RECT :: Rectangle {
     4 * (RESOLVED_CARD_PADDING + RESOLVED_CARD_WIDTH) + FIRST_CARD_RESOLVED_POSITION_RECT.x,
     BOARD_POSITION_RECT.height + RESOLVED_CARD_PADDING,
     RESOLVED_CARD_WIDTH * 0.75,
     RESOLVED_CARD_HEIGHT * 0.75,
 }
 
-CARD_PLAYED_POSITION_RECT :: rl.Rectangle{BOARD_POSITION_RECT.width - PLAYED_CARD_SIZE.x - RESOLVED_CARD_PADDING, BOARD_POSITION_RECT.height - PLAYED_CARD_SIZE.y / 4, PLAYED_CARD_SIZE.x, PLAYED_CARD_SIZE.y}
+CARD_PLAYED_POSITION_RECT :: Rectangle{BOARD_POSITION_RECT.width - PLAYED_CARD_SIZE.x - RESOLVED_CARD_PADDING, BOARD_POSITION_RECT.height - PLAYED_CARD_SIZE.y / 4, PLAYED_CARD_SIZE.x, PLAYED_CARD_SIZE.y}
 
 
 @rodata
@@ -167,7 +167,7 @@ primary_initials := [Primary_Kind]string {
     .Movement = "M",
 }
 
-card_hand_position_rects: [Card_Color]rl.Rectangle
+card_hand_position_rects: [Card_Color]Rectangle
 
 @rodata
 card_color_values := [Card_Color]rl.Color {
@@ -200,7 +200,7 @@ create_texture_for_card :: proc(card: ^Card_Data) {
     TEXT_PADDING :: 6
     COLORED_BAND_WIDTH :: 60
     TITLE_FONT_SIZE :: COLORED_BAND_WIDTH - 2 * TEXT_PADDING
-    TEXT_FONT_SIZE :: 31
+    TEXT_FONT_SIZE :: 28
 
     rl.BeginTextureMode(render_texture)
 
@@ -242,7 +242,7 @@ create_texture_for_card :: proc(card: ^Card_Data) {
     // Name
     name_length_px := rl.MeasureTextEx(default_font, card.name, TITLE_FONT_SIZE, FONT_SPACING).x
     name_offset := (CARD_TEXTURE_SIZE.x + COLORED_BAND_WIDTH - name_length_px) / 2
-    name_rect := rl.Rectangle{name_offset - 2 * TEXT_PADDING, 2 * TEXT_PADDING, name_length_px + 4 * TEXT_PADDING, COLORED_BAND_WIDTH + 2 * TEXT_PADDING}
+    name_rect := Rectangle{name_offset - 2 * TEXT_PADDING, 2 * TEXT_PADDING, name_length_px + 4 * TEXT_PADDING, COLORED_BAND_WIDTH + 2 * TEXT_PADDING}
     rl.DrawRectangleRounded(name_rect, 0.5, 20, rl.WHITE)
     rl.DrawRectangleRoundedLinesEx(name_rect, 0.5, 20, TEXT_PADDING, rl.BLACK)
     rl.DrawTextEx(default_font, card.name, {name_rect.x, name_rect.y} + 2 * TEXT_PADDING, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
@@ -392,7 +392,7 @@ get_card_data_by_id :: proc(_gs: ^Game_State, card_id: Card_ID) -> (card: Card_D
             if hero_card.color == .Gold || hero_card.color == .Silver {
                 return hero_card, true
             }
-            if hero_card.tier == card_id.tier && hero_card.alternate == card_id.alternate {
+            if hero_card.tier == card_id.tier && (hero_card.alternate == card_id.alternate) {
                 return hero_card, true
             }
         }

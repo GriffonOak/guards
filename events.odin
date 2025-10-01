@@ -41,7 +41,7 @@ Card_Clicked_Event :: struct {
 // Confirm_Event :: struct {}
 Cancel_Event :: struct {}
 
-Unit_Translocation_Event :: struct {
+Entity_Translocation_Event :: struct {
     src, dest: Target,
 }
 
@@ -180,7 +180,7 @@ Event :: union {
     // Confirm_Event,
     Cancel_Event,
 
-    Unit_Translocation_Event,
+    Entity_Translocation_Event,
 
     Give_Marker_Event,
 
@@ -253,9 +253,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Host_Game_Chosen_Event:
         if begin_hosting_local_game(gs) {
-            when !ODIN_TEST {
-                begin_recording_events()
-            }
             append(&gs.event_queue, Enter_Lobby_Event{})
         }
 
@@ -339,7 +336,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 if len(action_variant.result) < num_targets {
                     append(&action_variant.result, var.space)
                     action.targets[var.space.x][var.space.y].member = false
-                    if len(action_variant.result) == num_targets && !action_variant.up_to {
+                    if len(action_variant.result) == num_targets && !(.Up_To in action_variant.flags) {
                         append(&gs.event_queue, Resolve_Current_Action_Event{})
                     } else if len(action_variant.result) == 0 {
                         add_side_button(gs, "Cancel", Cancel_Event{})
@@ -500,7 +497,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             clear_side_buttons(gs)
         }
 
-    case Unit_Translocation_Event:
+    case Entity_Translocation_Event:
         src_space := &gs.board[var.src.x][var.src.y]
         dest_space := &gs.board[var.dest.x][var.dest.y]
 
@@ -828,7 +825,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         case Choose_Target_Action:
             clear(&action_type.result)
-            if action_type.up_to {
+            if .Up_To in action_type.flags {
                 add_side_button(gs, "Confirm", Resolve_Current_Action_Event{})
             } else if count_members(&action.targets) == calculate_implicit_quantity(gs, action_type.num_targets, calc_context) && !action.optional {
                 iter := make_target_set_iterator(&action.targets)
@@ -889,7 +886,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                     latest_valid_target = next_target
                 }
     
-                broadcast_game_event(gs, Unit_Translocation_Event{target, latest_valid_target})
+                broadcast_game_event(gs, Entity_Translocation_Event{target, latest_valid_target})
             }
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
@@ -1045,7 +1042,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         case Place_Action:
             source := calculate_implicit_target(gs, action_type.source, calc_context)
             destination := calculate_implicit_target(gs, action_type.destination, calc_context)
-            broadcast_game_event(gs, Unit_Translocation_Event{source, destination})
+            broadcast_game_event(gs, Entity_Translocation_Event{source, destination})
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
         case Give_Marker_Action:
@@ -1066,7 +1063,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         #partial switch &variant in action.variant {
         case Fast_Travel_Action:
-            broadcast_game_event(gs, Unit_Translocation_Event{get_my_player(gs).hero.location, variant.result})
+            broadcast_game_event(gs, Entity_Translocation_Event{get_my_player(gs).hero.location, variant.result})
         case Movement_Action:
             defer {
                 delete(variant.path.spaces)
@@ -1081,7 +1078,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
             starting_space := variant.path.spaces[0]
             ending_space := variant.path.spaces[len(variant.path.spaces) - 1]
-            broadcast_game_event(gs, Unit_Translocation_Event{starting_space, ending_space})
+            broadcast_game_event(gs, Entity_Translocation_Event{starting_space, ending_space})
         case Choice_Action:
             variant.result = var.jump_index.?            
         }
@@ -1330,25 +1327,31 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 space.flags -= {.Token}
             }
         }
-        
+
         retrieve_all_cards(gs)
         gs.upgraded_players = 0
 
-        if get_my_player(gs).hero.coins < get_my_player(gs).hero.level {
+        my_player := get_my_player(gs)
+        my_hero := &my_player.hero
+
+        if my_hero.coins < my_hero.level || my_hero.level == 8 {
             // log.infof("Pity coin collected. Current coin count: %v", get_my_player(gs).hero.coins)
-            get_my_player(gs).hero.coins += 1
+            my_hero.coins += 1
             broadcast_game_event(gs, End_Upgrading_Event{gs.my_player_id})
         } else {
             append(&gs.event_queue, Begin_Next_Upgrade_Event{})
         }
 
     case Begin_Next_Upgrade_Event:
-        get_my_player(gs).stage = .Upgrading
+        my_player := get_my_player(gs)
+        my_hero := &my_player.hero
+
+        my_player.stage = .Upgrading
         clear_side_buttons(gs)
         gs.tooltip = "Choose a card to upgrade."
-        if get_my_player(gs).hero.coins >= get_my_player(gs).hero.level {
-            get_my_player(gs).hero.coins -= get_my_player(gs).hero.level
-            get_my_player(gs).hero.level += 1
+        if my_hero.coins >= get_my_player(gs).hero.level && my_hero.level < 8 {
+            my_hero.coins -= my_hero.level
+            my_hero.level += 1
             log.infof("Player levelled up! Current level: %v", get_my_player(gs).hero.level)
         } else {
             broadcast_game_event(gs, End_Upgrading_Event{gs.my_player_id})

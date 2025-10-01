@@ -46,7 +46,6 @@ Selection_Criteria :: struct {
 
 Choose_Target_Action :: struct {
     using criteria: Selection_Criteria,
-    up_to: bool,
     num_targets: Implicit_Quantity,
     result: [dynamic]Target,
     // result: Target

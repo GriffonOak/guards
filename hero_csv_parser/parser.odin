@@ -137,7 +137,7 @@ main :: proc() {
         if card.reach_sign != "" do fmt.sbprintfln(&builder, "\t\treach_sign\t= .%v,", card.reach_sign)
         if card.item != "" do fmt.sbprintfln(&builder, "\t\titem\t\t\t= .%v,", card.item)
         fmt.sbprintfln(&builder, "\t\ttext\t\t\t= \"%v\",", card.text)
-        fmt.sbprintfln(&builder, "\t\tprimary_effect = []Action {{}},")
+        fmt.sbprintfln(&builder, "\t\tprimary_effect\t= []Action {{}},")
 
 
 

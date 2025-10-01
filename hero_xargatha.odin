@@ -503,7 +503,7 @@ xargatha_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Lethal Spin",  // @Todo check wording
+    Card_Data { name = "Lethal Spin",
         color       = .Red,
         tier        = 3,
         values      = #partial{.Initiative = 8, .Attack = 5, .Defense = 7, .Movement = 5},
@@ -550,7 +550,7 @@ xargatha_cards := []Card_Data {
     },
     Card_Data { name = "Rapid Thrusts",
         color       = .Red,
-        tier        = 2,
+        tier        = 3,
         alternate   = true,
         values      = #partial{.Initiative = 8, .Attack = 3, .Defense = 4, .Movement = 4, .Range = 1},
         primary     = .Attack,
@@ -766,7 +766,7 @@ xargatha_cards := []Card_Data {
     },
     Card_Data { name = "Devoted Followers",  // @incomplete, @Todo check wording
         color       = .Blue,
-        tier        = 2,
+        tier        = 3,
         alternate   = true,
         values      = #partial{.Initiative = 10, .Defense = 6, .Movement = 3},
         primary     = .Skill,

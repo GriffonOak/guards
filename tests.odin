@@ -170,7 +170,7 @@ test_xargatha_freeze :: proc(t: ^testing.T) {
         Space_Hovered_Event{space = {6, 16}},
         Space_Clicked_Event{space = {6, 16}},
         Space_Hovered_Event{space = {0, 0}},
-        Unit_Translocation_Event{src = {18, 8}, dest = {8, 16}},
+        Entity_Translocation_Event{src = {18, 8}, dest = {8, 16}},
         End_Resolution_Event{player_id = 1},
         Space_Hovered_Event{space = {0, 0}},
         Card_Confirmed_Event{player_id = 1, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 1, color = Card_Color.Blue, tier = 1, alternate = false}},

@@ -21,47 +21,75 @@ _ :: os
 _ :: time
 
 // Todo list
-// Dodger  (Primary defense, choose minion type ????)
-// Card values refactor?
-// Refactor heroes "out of" players (allow for multiple heroes controlled by 1 player)
-// Test for xarg retrieval
-// Figure out why tests are so slow
 
-// Highlight chooseable cards for defense, & upgrading
-// Highlight items when hovering over upgrade options
-// Full deck viewer
-// Xargatha ult
+/* CHECKLIST FOR 0.1 (must-haves)
 
-// Xargatha LITERALLY DONE after this point !!!!
+[ ] LOGGING / RELEASE BUILD
+    [ ] Setup folder for game logs & event logs in release build
+    [ ] Redirect console logging to file logging in release build
+    [ ] Disable asserts in release build
 
-// Toast, for a bit of flair & usability
-// basic animations?
+[ ] UI / UX
+    [ ] Rotate cards that are producing active effects
+    [ ] Add team switching button to lobby (kinda important)
 
-// Enter IP for joining games
+*/
 
-// Minions outside battle zone if path blocked
-// Snorri runes
+/* BEYOND 0.1
 
-// Experiment with putting spall stuff in @init and @fini procs for test profiling
+--- ENGINE 
+    ^ "Counts as" system to allow spaces to count as other things
+    ^ "Intention" system for choose_target_action to allow different types of immunity
+    ^ "Hooks" system to allow other heroes to interrupt players performing actions (brogan, swift)
+    ^ Update any previous targets after entity translocation events (allows doing things on the same target)
+    ^ Explore storing targets differently to make lookup / modification easier
+        * Target entity / target space perhaps?
+    ^ Repeat action (that can be prevented (thanks dodger)) (this likely requires action memory)
 
+    v Refactor heroes "out of" players (allow for multiple heroes controlled by 1 player)
+    v Ultimates
+    v Minions outside battle zone if path blocked
 
-// Ideas
-// Could maybe be an idea to use bit_set[0..<GRID_WIDTH*GRID_HEIGHT] types for calculating the intersection between targets
-// Alternatively, Could use a fixed array of bit field structs
-// Might also be overkill :)
-// Refactor ability_kind and item_kind together
-// Refactor skip_index in actions as next_index and use that to skip to the halt sequence instead of having a literal halt action
-// Always send team captain the minion removal event and just skip the choose step if there are more minions to remove than exist
-// Model wave push as an action sequence to obviate the need for interrupt_variant
+    vv Snorri runes
 
 
+--- TESTING
+    ^ Restart testing and make a bunch of new tests
+    ^ Add test for xarg retrieval
+
+    v Figure out why tests are so slow
 
 
-@init
-startup :: proc() {
-    // log.infof("This ran at the start!")
-    // fmt.println("This ran at the start!")
-}
+--- UI / UX
+    ^ Highlight chooseable cards for defense, & upgrading
+    
+    v map reposition (sam's ticket)
+    v Highlight items when hovering over upgrade options
+    v Full deck viewer
+    v basic animations?
+    v more toast for more things
+
+
+--- MISC / IDEAS
+
+    * Experiment with putting spall stuff in @init and @fini procs for test profiling
+    * Always send team captain the minion removal event and just skip the choose step if there are more minions to remove than exist
+    * Model wave push as an action sequence to obviate the need for interrupt_variant
+    * raylib wrapper to make testing easier
+
+*/
+
+
+
+// @init
+// startup :: proc() {
+//     // log.infof("This ran at the start!")
+//     // fmt.println("This ran at the start!")
+// }
+
+RELEASE :: #config(RELEASE, false)
+
+log_directory_name :: "logs"
 
 Window_Size :: enum {
     Small,
@@ -70,20 +98,14 @@ Window_Size :: enum {
 }
 
 Vec2 :: [2]f32
-// IVec2 :: [2]int
 
 Rectangle :: rl.Rectangle
-
-Void :: struct {}
-
 
 
 WIDTH :: 1280 * 2
 HEIGHT :: 720 * 2
 
 FONT_SPACING :: 0
-
-
 
 window_size: Window_Size = .Small
 
@@ -138,27 +160,39 @@ main :: proc() {
             }
             mem.tracking_allocator_destroy(&tracking_allocator)
         }
+    }
+    when RELEASE {
+        if !os.exists(log_directory_name) {
+            os.make_directory(log_directory_name)
+        }
+
+        time_buf: [time.MIN_HMS_LEN]u8
+        date_buf: [time.MIN_YYYY_DATE_LEN]u8
+
+        now := time.now()
+
+        time_string := time.to_string_hms(now, time_buf[:])
+        date_string := time.to_string_yyyy_mm_dd(now, date_buf[:])
+        for &r in time_buf do if r == ':' do r = '-'
+
+        current_log_directory_name := fmt.tprintf("%v/log_%v_%v", log_directory_name, date_string, time_string)
+        os.make_directory(current_log_directory_name)
+
+        log_file_name := fmt.tprintf("%v/game.log", current_log_directory_name)
+        record_file_name := fmt.tprintf("%v/events.log", current_log_directory_name)
+
+        log_file, _ := os.open(log_file_name, os.O_RDWR | os.O_CREATE)
+        defer os.close(log_file)
+        record_file, _ := os.open(record_file_name, os.O_RDWR | os.O_CREATE)
+        defer stop_recording_events(record_file)
+        begin_recording_events(record_file)
+
+        context.logger = log.create_file_logger(log_file, lowest = .Info)
+        defer log.destroy_file_logger(context.logger)
     } else {
         context.logger = log.create_console_logger(lowest = .Info)
+        defer log.destroy_console_logger(context.logger)
     }
-    defer log.destroy_console_logger(context.logger)
-
-    defer if recording_events {
-        stop_recording_events()
-    }
-
-    // arena_buffer := make([]u8, 80000)
-    // defer delete(arena_buffer)
-
-    // arena: mem.Arena
-    // mem.arena_init(&arena, arena_buffer[:])
-    // arena_allocator := mem.arena_allocator(&arena)
-    // context.allocator = arena_allocator
-
-    // defer free_all(arena_allocator)
-
-    // input_queue = make([dynamic]Input_Event)
-    // event_queue = make([dynamic]Event)
 
     active_element_index := UI_Index{}
     hovered_element_index := UI_Index{}
@@ -197,9 +231,6 @@ main :: proc() {
     setup_board(&gs)
 
     add_pre_lobby_ui_elements(&gs)
-
-    // append(&gs.event_queue, Toggle_Fullscreen_Event{})
-    // begin_game()
 
     for !rl.WindowShouldClose() {
 
@@ -264,8 +295,8 @@ main :: proc() {
         process_network_packets(&gs)
 
         // Record "Fresh" events this frame
-        if recording_events {
-            record_events(gs.event_queue[:])
+        when RELEASE {
+            record_events(record_file, gs.event_queue[:])
         }
 
         // Handle events

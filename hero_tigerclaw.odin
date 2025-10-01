@@ -56,7 +56,7 @@ tigerclaw_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Blend into Shadows",  // @Incomplete
+    Card_Data { name = "Blend into Shadows",  // @Incomplete, attack immunity
         color =         .Silver,
         values =        #partial{.Initiative = 6, .Defense = 2, .Radius = 2},
         primary =       .Skill,

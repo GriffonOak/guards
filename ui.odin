@@ -59,7 +59,7 @@ UI_Element_Flag :: enum {
 }
 
 UI_Element :: struct {
-    bounding_rect: rl.Rectangle,
+    bounding_rect: Rectangle,
     variant: UI_Variant,
     consume_input: UI_Input_Proc,
     render: UI_Render_Proc,
@@ -69,7 +69,7 @@ UI_Element :: struct {
 Side_Button_Manager :: struct {
     buttons: []UI_Element,
     first_button_index: int,
-    button_location: rl.Rectangle,
+    button_location: Rectangle,
 }
 
 Conditional_String_Argument :: struct {
@@ -109,7 +109,7 @@ TOAST_TEXT_PADDING :: 10
 TOAST_FONT_SIZE :: 40
 
 SELECTION_BUTTON_SIZE :: Vec2{400, 100}
-FIRST_SIDE_BUTTON_LOCATION :: rl.Rectangle {
+FIRST_SIDE_BUTTON_LOCATION :: Rectangle {
     BOARD_TEXTURE_SIZE.x + BUTTON_PADDING, 
     HEIGHT - BUTTON_PADDING - SELECTION_BUTTON_SIZE.y,
     SELECTION_BUTTON_SIZE.x,
@@ -272,7 +272,7 @@ render_tooltip :: proc(gs: ^Game_State) {
 }
 
 
-add_generic_button :: proc(gs: ^Game_State, location: rl.Rectangle, text: cstring, event: Event, global: bool = false) {
+add_generic_button :: proc(gs: ^Game_State, location: Rectangle, text: cstring, event: Event, global: bool = false) {
     append(&gs.ui_stack[.Buttons], UI_Element {
         location, UI_Button_Element {
             event, text, global,

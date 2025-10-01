@@ -44,7 +44,7 @@ brogan_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Bulwark",  // @Incomplete
+    Card_Data { name = "Bulwark",  // @Incomplete, push move & swap immunity
         color =         .Silver,
         values =        #partial{.Initiative = 12, .Defense = 4, .Radius = 4},
         primary =       .Skill,
