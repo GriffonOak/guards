@@ -20,7 +20,11 @@ Update_Player_Data_Event :: struct {
 
 Enter_Lobby_Event :: struct {}
 Change_Hero_Event :: struct {
+    player_id: Player_ID,
     hero_id: Hero_ID,
+}
+Change_Team_Event :: struct {
+    player_id: Player_ID
 }
 Begin_Game_Event :: struct {}
 
@@ -172,6 +176,7 @@ Event :: union {
 
     Enter_Lobby_Event,
     Change_Hero_Event,
+    Change_Team_Event,
     Begin_Game_Event,
     
     Space_Hovered_Event,
@@ -262,32 +267,61 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
     case Enter_Lobby_Event:
         gs.stage = .In_Lobby
         clear(&gs.ui_stack[.Buttons])
+        button_loc := (Vec2{WIDTH, HEIGHT} - SELECTION_BUTTON_SIZE) / 2
         if gs.is_host {
             gs.tooltip = "Wait for players to join, then begin the game."
-            button_loc := (Vec2{WIDTH, HEIGHT} - SELECTION_BUTTON_SIZE) / 2
             add_generic_button(gs, {button_loc.x, button_loc.y, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}, "Begin Game", Begin_Game_Event{}, global = true)
         } else {
             gs.tooltip = "Wait for the host to begin the game."
         }
+        button_loc.y += BUTTON_PADDING + SELECTION_BUTTON_SIZE.y
+        add_generic_button(gs, {button_loc.x, button_loc.y, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}, "Switch Team", Change_Team_Event{gs.my_player_id}, global = true)
 
-        button_loc := Vec2{WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, TOOLTIP_FONT_SIZE + BUTTON_PADDING}
+        button_loc = Vec2{WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, TOOLTIP_FONT_SIZE + BUTTON_PADDING}
         for hero in Hero_ID {
             log.infof("adding button")
             hero_name, _ := reflect.enum_name_from_value(hero)
             hero_name_cstring := strings.unsafe_string_to_cstring(hero_name)
-            add_generic_button(gs, {button_loc.x, button_loc.y, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}, hero_name_cstring, Change_Hero_Event{hero})
+            add_generic_button(gs, {button_loc.x, button_loc.y, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}, hero_name_cstring, Change_Hero_Event{gs.my_player_id, hero}, global=true)
             button_loc.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
         }
 
+    case Change_Team_Event:
+        player := get_player_by_id(gs, var.player_id)
+        player.team = .Red if player.team == .Blue else .Blue
+
     case Change_Hero_Event:
         log.assert(gs.stage == .In_Lobby, "Tried to change hero outside of lobby!")
-        player_base := get_my_player(gs).base
-        player_base.hero.id = var.hero_id
-
-        broadcast_game_event(gs, Update_Player_Data_Event{player_base})
+        player := get_player_by_id(gs, var.player_id)
+        player.hero.id = var.hero_id
 
     case Begin_Game_Event:
-        begin_game(gs)
+        gs.current_battle_zone = .Centre
+        gs.wave_counters = 5
+        gs.life_counters[.Red] = 6
+        gs.life_counters[.Blue] = 6
+
+        spawn_heroes_at_start(gs)
+
+        setup_hero_cards(gs)
+
+        if gs.is_host {
+            // tiebreaker: Team = .Red if rand.int31_max(2) == 0 else .Blue
+            tiebreaker: Team = .Red
+            broadcast_game_event(gs, Update_Tiebreaker_Event{tiebreaker})
+            spawn_minions(gs, gs.current_battle_zone)
+        }
+
+        captains_assigned: [Team]bool
+        for player in gs.players {
+            if !captains_assigned[player.team] {
+                gs.team_captains[player.team] = player.id
+            }
+        }
+
+        add_game_ui_elements(gs)
+
+        append(&gs.event_queue, Begin_Card_Selection_Event{})
 
     case Space_Hovered_Event:
         #partial switch get_my_player(gs).stage {
@@ -750,7 +784,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         }
 
     case Resolve_Same_Team_Tied_Event:
-        if var.team == get_my_player(gs).team && get_my_player(gs).is_team_captain {
+        team_captain := gs.team_captains[var.team]
+        if var.team == get_my_player(gs).team && gs.my_player_id == team_captain {
             gs.tooltip = "Tied initiative: Choose which player on your team acts first."
             for tied_id, index in var.tied_player_ids {
                 if index == var.num_ties do break
@@ -963,7 +998,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         case Minion_Removal_Action:
             // This assert might not be necessary once we expand to more cases where minions can get removed.
-            log.assert(get_my_player(gs).is_team_captain && get_my_player(gs).stage == .Interrupting && gs.stage == .Minion_Battle)
+            log.assert(get_my_player(gs).stage == .Interrupting && gs.stage == .Minion_Battle)
             minions_to_remove := calculate_implicit_target_slice(gs, action_type.targets)
             for minion in minions_to_remove {
                 log.assert(!remove_minion(gs, minion), "Minion removal during battle caused wave push!")

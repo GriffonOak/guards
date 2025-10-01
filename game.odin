@@ -299,28 +299,6 @@ when !ODIN_TEST {
 }
 }
 
-begin_game :: proc(gs: ^Game_State) {
-    gs.current_battle_zone = .Centre
-    gs.wave_counters = 5
-    gs.life_counters[.Red] = 6
-    gs.life_counters[.Blue] = 6
-
-    spawn_heroes_at_start(gs)
-
-    setup_hero_cards(gs)
-
-    if gs.is_host {
-        // tiebreaker: Team = .Red if rand.int31_max(2) == 0 else .Blue
-        tiebreaker: Team = .Red
-        broadcast_game_event(gs, Update_Tiebreaker_Event{tiebreaker})
-        spawn_minions(gs, gs.current_battle_zone)
-    }
-
-    add_game_ui_elements(gs)
-
-    append(&gs.event_queue, Begin_Card_Selection_Event{})
-}
-
 defeat_minion :: proc(gs: ^Game_State, target: Target) -> (will_interrupt: bool) {
 
     broadcast_game_event(gs, Minion_Defeat_Event{target, gs.my_player_id})

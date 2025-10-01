@@ -196,6 +196,7 @@ make_movement_targets :: proc (
     gs: ^Game_State,
     criteria: Movement_Criteria,
     calc_context: Calculation_Context = {},
+    precalc_destinations: Maybe(Target_Set) = nil,
 ) -> (visited_set: Target_Set) {
 
     Big_NUMBER :: max(u8)
@@ -204,7 +205,11 @@ make_movement_targets :: proc (
     current_endpoint := criteria.path.spaces[len(criteria.path.spaces) - 1]
     max_distance := u8(calculate_implicit_quantity(gs, criteria.max_distance, calc_context))
     min_distance := u8(calculate_implicit_quantity(gs, criteria.min_distance, calc_context))
-    valid_destinations, destinations_ok := make_arbitrary_targets(gs, criteria.destination_criteria, calc_context)
+
+    valid_destinations, destinations_ok := precalc_destinations.?
+    if !destinations_ok {
+        valid_destinations, destinations_ok = make_arbitrary_targets(gs, criteria.destination_criteria, calc_context)
+    }
 
     if .Shortest_Path in criteria.flags {
         log.assert(destinations_ok, "Trying to calculate shortest path with no valid destination set given!")
@@ -279,7 +284,7 @@ make_movement_targets :: proc (
                     }
                     defer resize(&new_criteria.path.spaces, prev_len)
 
-                    reachable_targets := make_movement_targets(gs, new_criteria, calc_context)
+                    reachable_targets := make_movement_targets(gs, new_criteria, calc_context, valid_destinations)
                     target_can_reach: bool = false
                     valid_destinations_iter := make_target_set_iterator(&valid_destinations)
                     for _, target in target_set_iter_members(&valid_destinations_iter) {
@@ -323,41 +328,6 @@ make_movement_targets :: proc (
         }
         if nodes_pruned == 0 do break
     }
-
-    // See if we have a set of valid destinations first
-
-    // Worry about valid destinations!
-
-    // Check all spaces in the visited set to see if they can be reached by one of the valid endpoints.
-    // If they can, they will be marked as invalid. Otherwise they will stay valid.
-    // valid_destinations_iter := make_target_set_iterator(&valid_destinations)
-    // for _, valid_endpoint in target_set_iter_members(&valid_destinations_iter) {
-    //     if !visited_set[valid_endpoint.x][valid_endpoint.y].member do continue
-    //     reachable_targets_from_endpoint := make_movement_targets(
-    //         gs, {max_distance = max_distance, target = valid_endpoint},
-    //     )
-    //     visited_set_iter := make_target_set_iterator(&visited_set)
-    //     for potential_info, potential_target in target_set_iter_members(&visited_set_iter) {
-    //         target_info := reachable_targets_from_endpoint[potential_target.x][potential_target.y]
-
-    //         if target_info.member && target_info.dist + potential_info.dist <= max_distance {
-    //             potential_info.invalid = true
-    //         } 
-    //     }
-    // }
-
-    // // Remove all such marked unreachable spaces
-    // visited_set_iter := make_target_set_iterator(&visited_set)
-    // for info in target_set_iter_members(&visited_set_iter) {
-    //     if !info.invalid do info.member = false
-    // }
-
-    // // Now the only spaces left in the visited set are those that can reach valid endpoints.
-    // // We now flag the spaces as invalid if they are not in the destination set.
-    // visited_set_iter = make_target_set_iterator(&visited_set)
-    // for info, target in target_set_iter_members(&visited_set_iter) {
-    //     info.invalid = !valid_destinations[target.x][target.y].member
-    // }
 
     return
 }

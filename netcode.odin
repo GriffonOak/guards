@@ -109,7 +109,6 @@ test_host_local_game :: proc(t: ^testing.T) {
     testing.expect(t, gs.my_player_id == 0, "Host player ID is not 0!")
     player := gs.players[0]
     testing.expect(t, player.id == 0, "Player 0 does not have ID 0!")
-    testing.expect(t, player.is_team_captain == true, "Host player is not the team captain!")
 }
 
 // The host always has player ID 0
@@ -143,7 +142,6 @@ when !ODIN_TEST {  // Apparently the address is in use during testing (?)
             id = .Xargatha,
         },
         team = .Red,
-        is_team_captain = true,
     }
     fmt.bprintf(me._username_buf[:], "P%v", 0)
 
@@ -174,7 +172,6 @@ _thread_host_wait_for_clients :: proc(gs: ^Game_State, sock: net.TCP_Socket) {
                     id = .Xargatha,
                 },
                 team = .Blue,
-                is_team_captain = len(gs.players) == 1,
                 socket = client_socket,
             }
             fmt.bprintf(client_player._username_buf[:], "P%v", client_player.id)

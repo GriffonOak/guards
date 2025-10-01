@@ -24,14 +24,14 @@ _ :: time
 
 /* CHECKLIST FOR 0.1 (must-haves)
 
-[ ] LOGGING / RELEASE BUILD
-    [ ] Setup folder for game logs & event logs in release build
-    [ ] Redirect console logging to file logging in release build
-    [ ] Disable asserts in release build
+[X] LOGGING / RELEASE BUILD
+    [X] Setup folder for game logs & event logs in release build
+    [X] Redirect console logging to file logging in release build
+    [X] Disable asserts in release build
 
-[ ] UI / UX
-    [ ] Rotate cards that are producing active effects
-    [ ] Add team switching button to lobby (kinda important)
+[X] UI / UX
+    [X] Rotate cards that are producing active effects (it's kind of shit)
+    [X] Add team switching button to lobby (kinda important)
 
 */
 
@@ -189,6 +189,7 @@ main :: proc() {
 
         context.logger = log.create_file_logger(log_file, lowest = .Info)
         defer log.destroy_file_logger(context.logger)
+        context.assertion_failure_proc = {}
     } else {
         context.logger = log.create_console_logger(lowest = .Info)
         defer log.destroy_console_logger(context.logger)

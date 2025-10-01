@@ -477,16 +477,37 @@ retrieve_card :: proc(gs: ^Game_State, card: ^Card) {
 }
 
 resolve_card :: proc(gs: ^Game_State, card: ^Card) {
-    
+
     element, _ := find_element_for_card(gs, card^)
+    card_centre_position, card_dimensions: Vec2
     
     if card.owner_id == gs.my_player_id {
-        element.bounding_rect = FIRST_CARD_RESOLVED_POSITION_RECT
+        card_centre_position = (
+            {FIRST_CARD_RESOLVED_POSITION_RECT.x, FIRST_CARD_RESOLVED_POSITION_RECT.y} +
+            {FIRST_CARD_RESOLVED_POSITION_RECT.width, FIRST_CARD_RESOLVED_POSITION_RECT.height} / 2
+        )
+        card_dimensions = {FIRST_CARD_RESOLVED_POSITION_RECT.width, FIRST_CARD_RESOLVED_POSITION_RECT.height}
     } else {
-        element.bounding_rect = OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT
-        element.bounding_rect.y += f32(player_offset(gs, card.owner_id)) * BOARD_HAND_SPACE
+        card_centre_position = (
+            {OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.x, OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.y} +
+            {OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.width, OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.height} / 2
+        )
+        card_dimensions = {OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.width, OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.height}
+        card_centre_position.y += f32(player_offset(gs, card.owner_id)) * BOARD_HAND_SPACE
     }
-    element.bounding_rect.x +=  f32(gs.turn_counter) * (RESOLVED_CARD_PADDING + FIRST_CARD_RESOLVED_POSITION_RECT.width)
+    card_centre_position.x +=  f32(gs.turn_counter) * (RESOLVED_CARD_PADDING + FIRST_CARD_RESOLVED_POSITION_RECT.width)
+
+    for effect_kind, effect in gs.ongoing_active_effects {
+        if effect.parent_card_id == card.id {
+            card_dimensions.xy = card_dimensions.yx
+            break
+        }
+    }
+    card_position := card_centre_position - card_dimensions / 2
+    element.bounding_rect = {
+        card_position.x, card_position.y,
+        card_dimensions.x, card_dimensions.y
+    }
     
     card.state = .Resolved
 }
