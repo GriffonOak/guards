@@ -4,3 +4,4 @@ test/*
 .git/*
 hero_csv_parser/output/*
 records/*
+*.log

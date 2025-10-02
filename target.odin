@@ -314,7 +314,7 @@ make_movement_targets :: proc (
         }
     }
 
-    for (.Straight_Line in criteria.flags) {  // Prune the tree
+    for {  // Prune the tree
         nodes_pruned := 0
         visited_set_iter := make_target_set_iterator(&visited_set)
         for info in target_set_iter_members(&visited_set_iter) {

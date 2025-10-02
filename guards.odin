@@ -89,6 +89,7 @@ _ :: time
 // }
 
 RELEASE :: #config(RELEASE, false)
+RECORD  :: #config(RECORD, true)
 
 log_directory_name :: "logs"
 
@@ -162,7 +163,7 @@ main :: proc() {
             mem.tracking_allocator_destroy(&tracking_allocator)
         }
     }
-    when RELEASE {
+    when RELEASE || RECORD {
         if !os.exists(log_directory_name) {
             os.make_directory(log_directory_name)
         }
@@ -182,18 +183,24 @@ main :: proc() {
         log_file_name := fmt.tprintf("%v/game.log", current_log_directory_name)
         record_file_name := fmt.tprintf("%v/events.log", current_log_directory_name)
 
-        log_file, _ := os.open(log_file_name, os.O_RDWR | os.O_CREATE)
-        defer os.close(log_file)
+
         record_file, _ := os.open(record_file_name, os.O_RDWR | os.O_CREATE)
         defer stop_recording_events(record_file)
         begin_recording_events(record_file)
 
-        context.logger = log.create_file_logger(log_file, lowest = .Info)
-        defer log.destroy_file_logger(context.logger)
-        context.assertion_failure_proc = {}
     } else {
         context.logger = log.create_console_logger(lowest = .Info)
         defer log.destroy_console_logger(context.logger)
+    }
+
+    when RELEASE {
+        log_file, _ := os.open(log_file_name, os.O_RDWR | os.O_CREATE)
+        defer os.close(log_file)
+
+        context.logger = log.create_file_logger(log_file, lowest = .Info)
+        defer log.destroy_file_logger(context.logger)
+
+        context.assertion_failure_proc = {}
     }
 
     active_element_index := UI_Index{}

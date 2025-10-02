@@ -186,10 +186,6 @@ _thread_host_wait_for_clients :: proc(gs: ^Game_State, sock: net.TCP_Socket) {
 
             send_network_packet_socket(client_socket, {0, Set_Client_Player_ID{client_player.id}})
 
-            // for player in gs.players {
-            //     // update existing players that new player has joined
-            //     // At some point :P
-            // }
         }
 	}
 	net.close(sock)
@@ -240,6 +236,7 @@ process_network_packets :: proc(gs: ^Game_State) {
             if !gs.is_host {
                 gs.my_player_id = event.player_id
             }
+            append(&gs.event_queue, Enter_Lobby_Event{})
 
         case Event:
             log.infof("NET: %v", reflect.union_variant_typeid(event))
