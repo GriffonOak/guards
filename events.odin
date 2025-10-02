@@ -50,6 +50,10 @@ Entity_Translocation_Event :: struct {
     src, dest: Target,
 }
 
+Entity_Swap_Event :: struct {
+    target1, target2: Target,
+}
+
 Give_Marker_Event :: struct {
     player_id: Player_ID,
     marker: Marker,
@@ -187,6 +191,7 @@ Event :: union {
     Cancel_Event,
 
     Entity_Translocation_Event,
+    Entity_Swap_Event,
 
     Give_Marker_Event,
 
@@ -531,16 +536,39 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         dest_space := &gs.board[var.dest.x][var.dest.y]
 
         src_transient_flags := src_space.flags - PERMANENT_FLAGS
-        src_space.flags -= src_transient_flags
-
-        dest_space.flags += src_transient_flags
-        dest_space.unit_team = src_space.unit_team
-        dest_space.hero_id = src_space.hero_id
-
+        
         if .Hero in src_transient_flags {
-            dest_space.owner = src_space.owner
-            get_player_by_id(gs, dest_space.owner).hero.location = var.dest
+            get_player_by_id(gs, src_space.owner).hero.location = var.dest
         }
+
+        src_space.flags -= src_transient_flags
+        dest_space.flags += src_transient_flags
+
+        dest_space.transient = src_space.transient
+
+    case Entity_Swap_Event:
+        target1_space := &gs.board[var.target1.x][var.target1.y]
+        target2_space := &gs.board[var.target2.x][var.target2.y]
+
+        target1_transient_flags := target1_space.flags - PERMANENT_FLAGS
+        target2_transient_flags := target2_space.flags - PERMANENT_FLAGS
+
+        // Relocate heroes
+        if .Hero in target1_transient_flags {
+            get_player_by_id(gs, target1_space.owner).hero.location = var.target2
+        }
+        if .Hero in target2_transient_flags {
+            get_player_by_id(gs, target2_space.owner).hero.location = var.target1
+        }
+
+        // Swap flags
+        target1_space.flags -= target1_transient_flags
+        target2_space.flags -= target2_transient_flags
+        target1_space.flags += target2_transient_flags
+        target2_space.flags += target1_transient_flags
+
+        // Swap transients
+        target1_space.transient, target2_space.transient = target2_space.transient, target2_space.transient
 
     case Give_Marker_Event:
 
@@ -992,14 +1020,23 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             }
 
         case Minion_Removal_Action:
-            // This assert might not be necessary once we expand to more cases where minions can get removed.
-            log.assert(get_my_player(gs).stage == .Interrupting && gs.stage == .Minion_Battle)
             minions_to_remove := calculate_implicit_target_slice(gs, action_type.targets)
+            interrupted: bool
             for minion in minions_to_remove {
-                log.assert(!remove_minion(gs, minion), "Minion removal during battle caused wave push!")
+                if remove_minion(gs, minion) {  // Add a wave push interrupt if the minion defeated was the last one
+                    become_interrupted (
+                        gs,
+                        0,  // Host ID
+                        Wave_Push_Interrupt{get_my_player(gs).team},
+                        Resolve_Current_Action_Event{},
+                    )
+                    interrupted = true
+                    break  // (?)  Technically only the last minion should ever cause a wave push
+                }
             }
-            append(&gs.event_queue, Resolve_Current_Action_Event{})
-
+            if !interrupted {
+                append(&gs.event_queue, Resolve_Current_Action_Event{})
+            }
             
         case Jump_Action:
             jump_index := calculate_implicit_action_index(gs, action_type.jump_index, calc_context)
@@ -1073,6 +1110,13 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             source := calculate_implicit_target(gs, action_type.source, calc_context)
             destination := calculate_implicit_target(gs, action_type.destination, calc_context)
             broadcast_game_event(gs, Entity_Translocation_Event{source, destination})
+            append(&gs.event_queue, Resolve_Current_Action_Event{})
+
+        case Swap_Action:
+            target1 := calculate_implicit_target(gs, action_type.target1, calc_context)
+            target2 := calculate_implicit_target(gs, action_type.target2, calc_context)
+
+            broadcast_game_event(gs, Entity_Swap_Event{target1, target2})
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
         case Give_Marker_Action:

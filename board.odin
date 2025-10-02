@@ -23,6 +23,8 @@ Space_Flag :: enum {
     Ranged_Minion_Spawnpoint,
     Heavy_Minion_Spawnpoint,
     Hero_Spawnpoint,
+
+
     Hero,
     Melee_Minion,
     Ranged_Minion,
@@ -45,14 +47,22 @@ Region_ID :: enum {
 
 Space_Flags :: bit_set[Space_Flag]
 
-Space :: struct {
+Space_Permanent :: struct {
     position: Vec2,
-    flags: Space_Flags,
     region_id: Region_ID,
     spawnpoint_team: Team,
+}
+
+Space_Transient :: struct {
     unit_team: Team,
     hero_id: Hero_ID,
     owner: Player_ID,
+}
+
+Space :: struct {
+    flags: Space_Flags,
+    using permanent: Space_Permanent,
+    using transient: Space_Transient,
 }
 
 

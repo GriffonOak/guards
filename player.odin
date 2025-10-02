@@ -26,6 +26,9 @@ Hero_ID :: enum {
     Swift,
     Brogan,
     Tigerclaw,
+    Wasp,
+    Arien,
+    Sabina,
 }
 
 number_names := [?]cstring {
@@ -163,7 +166,7 @@ add_or_update_player :: proc(gs: ^Game_State, player_base: Player_Base) {
     }
     gs.players[player_base.id].base = player_base
     slice := get_ui_card_slice(gs, player_base.id)
-    for &element, index in slice {
+    for &element in slice {
         card_element := assert_variant(&element.variant, UI_Card_Element)
         card_element.card_id = player_base.hero.cards[card_element.card_id.color]
     }

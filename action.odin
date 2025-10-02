@@ -146,6 +146,10 @@ Give_Marker_Action :: struct {
     marker: Marker,
 }
 
+Swap_Action :: struct {
+    target1, target2: Implicit_Target,
+}
+
 Action_Variant :: union {
     Movement_Action,
     Fast_Travel_Action,
@@ -168,6 +172,7 @@ Action_Variant :: union {
     Choose_Quantity_Action,
     Push_Action,
     Give_Marker_Action,
+    Swap_Action,
 
     Minion_Removal_Action,
     Minion_Defeat_Action,

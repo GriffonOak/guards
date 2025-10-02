@@ -198,8 +198,7 @@ main :: proc() {
         defer log.destroy_file_logger(context.logger)
 
         context.assertion_failure_proc = {}
-    }
-    else {
+    } else {
         context.logger = log.create_console_logger(lowest = .Info)
         defer log.destroy_console_logger(context.logger)
     }

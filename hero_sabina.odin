@@ -10,14 +10,57 @@ sabina_cards := []Card_Data {
         values          = #partial{.Initiative = 12, .Defense = 2, .Attack = 2, .Movement = 1, .Range = 1},
         primary         = .Attack,
         text            = "Target a unit in range. After the attack:\nIf the target is adjacent to you, push it 1 space.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = "Target a unit in range.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Waiting for the opponent to defend...",
+                variant = Attack_Action {
+                    strength = Card_Value{.Attack},
+                },
+            },
+            Action {
+                condition = Equal{Distance_Between{Self{}, Previously_Chosen_Target{}}, 1},
+                variant = Push_Action{
+                    origin = Self{},
+                    targets = Previous_Choices{},
+                    num_spaces = 1,
+                },
+            },
+        },
     },
     Card_Data { name = "Back to Back",
         color           = .Silver,
         values          = #partial{.Initiative = 8, .Defense = 2, .Radius = 2},
         primary         = .Skill,
         text            = "Swap with a friendly minion in radius.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = "Target a friendly minion in radius.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Contains_Any{MINION_FLAGS},
+                        Target_Is_Friendly_Unit{},
+                    },
+                },
+            },
+            Action {
+                variant = Swap_Action {
+                    Self{}, Previously_Chosen_Target{},
+                },
+            },
+        },
     },
     Card_Data { name = "Quickdraw",
         color           = .Red,
@@ -25,8 +68,38 @@ sabina_cards := []Card_Data {
         values          = #partial{.Initiative = 8, .Defense = 6, .Attack = 2, .Movement = 4, .Range = 2},
         primary         = .Attack,
         primary_sign    = .Plus,
-        text            = "Target a unit in range. +3 Attack if the\ntarget played and attack card this turn.",
-        primary_effect  = []Action {},
+        text            = "Target a unit in range. +3 Attack if the\ntarget played an attack card this turn.",
+        primary_effect  = []Action {
+            Action {
+                tooltip = "Target a unit in range.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Waiting for the opponent to defend...",
+                variant = Attack_Action {
+                    strength = Sum {
+                        Card_Value{.Attack},
+                        Ternary {
+                            {3, 0},
+                            Greater_Than {
+                                Count_Card_Targets {
+                                    Card_Owner_Is{Previously_Chosen_Target{}},
+                                    Card_Primary_Is{.Attack},
+                                    Equal{Card_Turn_Played{}, Current_Turn{}},
+                                }, 0,
+                            },
+                        },
+                    },
+                },
+            },
+        },
     },
     Card_Data { name = "Troop Movement",
         color           = .Green,
@@ -34,7 +107,57 @@ sabina_cards := []Card_Data {
         values          = #partial{.Initiative = 4, .Defense = 2, .Movement = 2, .Radius = 2},
         primary         = .Skill,
         text            = "Move a friendly minion in radius 1 space,\nto a space in radius. May repeat once.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = "Target a friendly minion in radius.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Contains_Any{MINION_FLAGS},
+                        Target_Is_Friendly_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Move the minion 1 space, to a space in radius",
+                variant = Movement_Action {
+                    target = Previously_Chosen_Target{},
+                    min_distance = 1,
+                    max_distance = 1,
+                    destination_criteria = {
+                        conditions = {
+                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        },
+                    },
+                },
+            },
+            Action {
+                tooltip = "May repeat once.",
+                optional = true,
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Contains_Any{MINION_FLAGS},
+                        Target_Is_Friendly_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Move the minion 1 space, to a space in radius",
+                variant = Movement_Action {
+                    target = Previously_Chosen_Target{},
+                    min_distance = 1,
+                    max_distance = 1,
+                    destination_criteria = {
+                        conditions = {
+                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        },
+                    },
+                },
+            },
+        },
     },
     Card_Data { name = "Listen Up",
         color           = .Blue,
@@ -42,7 +165,42 @@ sabina_cards := []Card_Data {
         values          = #partial{.Initiative = 9, .Defense = 3, .Movement = 3, .Radius = 1},
         primary         = .Skill,
         text            = "Swap two minions in radius.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = "Target a minion in radius.",
+                condition = Greater_Than {
+                    Count_Targets {
+                        conditions = {
+                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                            Target_Contains_Any{MINION_FLAGS},
+                        },
+                    }, 1,
+                },
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Contains_Any{MINION_FLAGS},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Target another minion in radius.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Contains_Any{MINION_FLAGS},
+                    },
+                    flags = {.Not_Previously_Targeted},
+                },
+            },
+            Action {
+                variant = Swap_Action {
+                    Previously_Chosen_Target{}, Previously_Chosen_Target{skips = 1},
+                },
+            },
+        },
     },
     Card_Data { name = "Gunslinger",
         color           = .Red,
@@ -51,8 +209,38 @@ sabina_cards := []Card_Data {
         primary         = .Attack,
         primary_sign    = .Plus,
         item            = .Initiative,
-        text            = "Target a unit in range. +3 Attack if the\ntarget played and attack card this turn.",
-        primary_effect  = []Action {},
+        text            = "Target a unit in range. +3 Attack if the\ntarget played an attack card this turn.",
+        primary_effect  = []Action {
+            Action {
+                tooltip = "Target a unit in range.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Waiting for the opponent to defend...",
+                variant = Attack_Action {
+                    strength = Sum {
+                        Card_Value{.Attack},
+                        Ternary {
+                            {3, 0},
+                            Greater_Than {
+                                Count_Card_Targets {
+                                    Card_Owner_Is{Previously_Chosen_Target{}},
+                                    Card_Primary_Is{.Attack},
+                                    Equal{Card_Turn_Played{}, Current_Turn{}},
+                                }, 0,
+                            },
+                        },
+                    },
+                },
+            },
+        },
     },
     Card_Data { name = "Shootout",
         color           = .Red,
@@ -62,16 +250,102 @@ sabina_cards := []Card_Data {
         primary         = .Attack,
         item            = .Defense,
         text            = "Target a unit in range. After the attack:\nIf the target was adjacent to you, remove\nup to one enemy minion adjacent to you.\n(You gain no coins for removing a minion, only for defeating.)",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = "Target a unit in range.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Waiting for the opponent to defend...",
+                variant = Attack_Action {
+                    strength = Card_Value{.Attack},
+                },
+            },
+            Action {
+                tooltip = "You may remove up to one enemy minion adjacent to you",
+                condition = Equal{Distance_Between{Self{}, Previously_Chosen_Target{}}, 1},
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Contains_Any{MINION_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                    flags = {.Up_To},
+                },
+            },
+            Action {
+                variant = Minion_Removal_Action {
+                    targets = Previous_Choices{},
+                },
+            },
+        },
     },
-    Card_Data { name = "Marching Orders",
+    Card_Data { name = "Marching Orders",  // @Incomplete repeat
         color           = .Green,
         tier            = 2,
         values          = #partial{.Initiative = 3, .Defense = 3, .Movement = 2, .Radius = 3},
         primary         = .Skill,
         item            = .Attack,
         text            = "Move a friendly minion in radius 1 space,\nto a space in radius. May repeat once.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = "Target a friendly minion in radius.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Contains_Any{MINION_FLAGS},
+                        Target_Is_Friendly_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Move the minion 1 space, to a space in radius",
+                variant = Movement_Action {
+                    target = Previously_Chosen_Target{},
+                    min_distance = 1,
+                    max_distance = 1,
+                    destination_criteria = {
+                        conditions = {
+                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        },
+                    },
+                },
+            },
+            Action {
+                tooltip = "May repeat once.",
+                optional = true,
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Contains_Any{MINION_FLAGS},
+                        Target_Is_Friendly_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Move the minion 1 space, to a space in radius",
+                variant = Movement_Action {
+                    target = Previously_Chosen_Target{},
+                    min_distance = 1,
+                    max_distance = 1,
+                    destination_criteria = {
+                        conditions = {
+                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        },
+                    },
+                },
+            },
+        },
     },
     Card_Data { name = "Close Support",
         color           = .Green,
@@ -81,7 +355,35 @@ sabina_cards := []Card_Data {
         primary         = .Skill,
         item            = .Initiative,
         text            = "An enemy hero in radius adjacent to your\nfriendly minion discards a card, if able.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = "Target a unit in range.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Contains_Any{{.Hero}},
+                        Target_Is_Enemy_Unit{},
+                        Greater_Than {
+                            Count_Targets {
+                                conditions = {
+                                    Target_Within_Distance{Previous_Target{}, {1, 1}},
+                                    Target_Contains_Any{MINION_FLAGS},
+                                    Target_Is_Friendly_Unit{},
+                                },
+                                flags = {.Ignoring_Immunity},
+                            },
+                        },
+                    },
+                },
+            },
+            Action {
+                tooltip = "Waiting for opponent to discard...",
+                variant = Force_Discard_Action {
+                    target = Previously_Chosen_Target{},
+                },
+            },
+        },
     },
     Card_Data { name = "Roger Roger",
         color           = .Blue,
@@ -90,7 +392,42 @@ sabina_cards := []Card_Data {
         primary         = .Skill,
         item            = .Attack,
         text            = "Swap two minions in radius.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = "Target a minion in radius.",
+                condition = Greater_Than {
+                    Count_Targets {
+                        conditions = {
+                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                            Target_Contains_Any{MINION_FLAGS},
+                        },
+                    }, 1,
+                },
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Contains_Any{MINION_FLAGS},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Target another minion in radius.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Contains_Any{MINION_FLAGS},
+                    },
+                    flags = {.Not_Previously_Targeted},
+                },
+            },
+            Action {
+                variant = Swap_Action {
+                    Previously_Chosen_Target{}, Previously_Chosen_Target{skips = 1},
+                },
+            },
+        },
     },
     Card_Data { name = "Steady Advance",
         color           = .Blue,
@@ -100,7 +437,42 @@ sabina_cards := []Card_Data {
         primary         = .Skill,
         item            = .Defense,
         text            = "If there are two or more friendly minions in\nradius, you may retrieve a discarded card;\nif you do, you may move 1 space.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = "You may retrieve a discarded card.",
+                optional = true,
+                condition = Greater_Than {
+                    Count_Targets {
+                        conditions = {
+                            Target_Within_Distance{Self{}, {1, 1}},
+                            Target_Contains_Any{MINION_FLAGS},
+                            Target_Is_Friendly_Unit{},
+                        },
+                        flags = {.Ignoring_Immunity},
+                    }, 1,
+                },
+                variant = Choose_Card_Action {
+                    criteria = {
+                        Card_Owner_Is{Self{}},
+                        Card_State_Is{.Discarded},
+                    },
+                },
+            },
+            Action {
+                variant = Retrieve_Card_Action {
+                    card = Previous_Card_Choice{},
+                },
+            },
+            Action {
+                tooltip = "You may move 1 space.",
+                optional = true,
+                variant = Movement_Action {
+                    target = Self{},
+                    min_distance = 1,
+                    max_distance = 1,
+                },
+            },
+        },
     },
     Card_Data { name = "Dead Shot",
         color           = .Red,
@@ -109,8 +481,38 @@ sabina_cards := []Card_Data {
         primary         = .Attack,
         primary_sign    = .Plus,
         item            = .Movement,
-        text            = "Target a unit in range. +4 Attack if the\ntarget played and attack card this turn.",
-        primary_effect  = []Action {},
+        text            = "Target a unit in range. +4 Attack if the\ntarget played an attack card this turn.",
+        primary_effect  = []Action {
+            Action {
+                tooltip = "Target a unit in range.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Waiting for the opponent to defend...",
+                variant = Attack_Action {
+                    strength = Sum {
+                        Card_Value{.Attack},
+                        Ternary {
+                            {4, 0},
+                            Greater_Than {
+                                Count_Card_Targets {
+                                    Card_Owner_Is{Previously_Chosen_Target{}},
+                                    Card_Primary_Is{.Attack},
+                                    Equal{Card_Turn_Played{}, Current_Turn{}},
+                                }, 0,
+                            },
+                        },
+                    },
+                },
+            },
+        },
     },
     Card_Data { name = "Bullet Hell",
         color           = .Red,
@@ -120,16 +522,127 @@ sabina_cards := []Card_Data {
         primary         = .Attack,
         item            = .Radius,
         text            = "Target a unit in range. After the attack:\nIf the target was adjacent to you, remove\nup to two enemy minions adjacent to you.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = "Target a unit in range.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Waiting for the opponent to defend...",
+                variant = Attack_Action {
+                    strength = Card_Value{.Attack},
+                },
+            },
+            Action {
+                tooltip = "You may remove up to two enemy minions adjacent to you",
+                condition = Equal{Distance_Between{Self{}, Previously_Chosen_Target{}}, 1},
+                variant = Choose_Target_Action {
+                    num_targets = 2,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Contains_Any{MINION_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                    flags = {.Up_To},
+                },
+            },
+            Action {
+                variant = Minion_Removal_Action {
+                    targets = Previous_Choices{},
+                },
+            },
+        },
     },
-    Card_Data { name = "Path to Victory",
+    Card_Data { name = "Path to Victory",  // @Incomplete repeat
         color           = .Green,
         tier            = 3,
         values          = #partial{.Initiative = 3, .Defense = 3, .Movement = 2, .Radius = 3},
         primary         = .Skill,
         item            = .Range,
         text            = "Move a friendly minion in radius 1 space, to a\nspace in radius. May repeat up to two times.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = "Target a friendly minion in radius.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Contains_Any{MINION_FLAGS},
+                        Target_Is_Friendly_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Move the minion 1 space, to a space in radius",
+                variant = Movement_Action {
+                    target = Previously_Chosen_Target{},
+                    min_distance = 1,
+                    max_distance = 1,
+                    destination_criteria = {
+                        conditions = {
+                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        },
+                    },
+                },
+            },
+            Action {
+                tooltip = "May repeat again.",
+                optional = true,
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Contains_Any{MINION_FLAGS},
+                        Target_Is_Friendly_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Move the minion 1 space, to a space in radius",
+                variant = Movement_Action {
+                    target = Previously_Chosen_Target{},
+                    min_distance = 1,
+                    max_distance = 1,
+                    destination_criteria = {
+                        conditions = {
+                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        },
+                    },
+                },
+            },
+            Action {
+                tooltip = "May repeat again.",
+                optional = true,
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Contains_Any{MINION_FLAGS},
+                        Target_Is_Friendly_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Move the minion 1 space, to a space in radius",
+                variant = Movement_Action {
+                    target = Previously_Chosen_Target{},
+                    min_distance = 1,
+                    max_distance = 1,
+                    destination_criteria = {
+                        conditions = {
+                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        },
+                    },
+                },
+            },
+        },
     },
     Card_Data { name = "Covering Fire",
         color           = .Green,
@@ -139,7 +652,36 @@ sabina_cards := []Card_Data {
         primary         = .Skill,
         item            = .Initiative,
         text            = "An enemy hero in radius adjacent to your\nfriendly minion discards a card, or is defeated.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = "Target a unit in range.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Contains_Any{{.Hero}},
+                        Target_Is_Enemy_Unit{},
+                        Greater_Than {
+                            Count_Targets {
+                                conditions = {
+                                    Target_Within_Distance{Previous_Target{}, {1, 1}},
+                                    Target_Contains_Any{MINION_FLAGS},
+                                    Target_Is_Friendly_Unit{},
+                                },
+                                flags = {.Ignoring_Immunity},
+                            },
+                        },
+                    },
+                },
+            },
+            Action {
+                tooltip = "Waiting for opponent to discard...",
+                variant = Force_Discard_Action {
+                    target = Previously_Chosen_Target{},
+                    or_is_defeated = true,
+                },
+            },
+        },
     },
     Card_Data { name = "Ready and Waiting",
         color           = .Blue,
@@ -148,7 +690,44 @@ sabina_cards := []Card_Data {
         primary         = .Skill,
         item            = .Attack,
         text            = "Swap two minions in radius,\nignoring heavy minion immunity.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = "Target a minion in radius.",
+                condition = Greater_Than {
+                    Count_Targets {
+                        conditions = {
+                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                            Target_Contains_Any{MINION_FLAGS},
+                        },
+                        flags = {.Ignoring_Immunity},
+                    }, 1,
+                },
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Contains_Any{MINION_FLAGS},
+                    },
+                    flags = {.Ignoring_Immunity},
+                },
+            },
+            Action {
+                tooltip = "Target another minion in radius.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Contains_Any{MINION_FLAGS},
+                    },
+                    flags = {.Not_Previously_Targeted, .Ignoring_Immunity},
+                },
+            },
+            Action {
+                variant = Swap_Action {
+                    Previously_Chosen_Target{}, Previously_Chosen_Target{skips = 1},
+                },
+            },
+        },
     },
     Card_Data { name = "Unwavering Resolve",
         color           = .Blue,
@@ -157,7 +736,40 @@ sabina_cards := []Card_Data {
         values          = #partial{.Initiative = 10, .Defense = 4, .Movement = 3, .Radius = 2},
         primary         = .Skill,
         item            = .Defense,
-        text            = "If there are two or more friendly minions in\nradius, you may retrieve a discarded card;\nif you do, you may move 2 spaces.",
-        primary_effect  = []Action {},
+        text            = "If there are two or more friendly minions in\nradius, you may retrieve a discarded card;\nif you do, you may move up to 2 spaces.",
+        primary_effect  = []Action {
+            Action {
+                tooltip = "You may retrieve a discarded card.",
+                optional = true,
+                condition = Greater_Than {
+                    Count_Targets {
+                        conditions = {
+                            Target_Within_Distance{Self{}, {1, 1}},
+                            Target_Contains_Any{MINION_FLAGS},
+                            Target_Is_Friendly_Unit{},
+                        },
+                        flags = {.Ignoring_Immunity},
+                    }, 1,
+                },
+                variant = Choose_Card_Action {
+                    criteria = {
+                        Card_Owner_Is{Self{}},
+                        Card_State_Is{.Discarded},
+                    },
+                },
+            },
+            Action {
+                variant = Retrieve_Card_Action {
+                    card = Previous_Card_Choice{},
+                },
+            },
+            Action {
+                tooltip = "You may move up to 2 spaces.",
+                variant = Movement_Action {
+                    target = Self{},
+                    max_distance = 2,
+                },
+            },
+        },
     },
 }

@@ -28,6 +28,8 @@ Sum     :: distinct []Implicit_Quantity
 Product :: distinct []Implicit_Quantity
 Min     :: distinct []Implicit_Quantity
 
+Distance_Between :: distinct []Implicit_Target
+
 Count_Targets :: Selection_Criteria
 
 Count_Hero_Coins :: struct {
@@ -37,6 +39,10 @@ Count_Hero_Coins :: struct {
 Count_Card_Targets :: distinct []Implicit_Condition
 
 Card_Turn_Played :: struct {}
+
+Target_Distance_To :: struct {
+    origin: Implicit_Target,
+}
 
 Minion_Difference :: struct {}
 
@@ -66,6 +72,7 @@ Implicit_Quantity :: union {
     Ternary,
     Previous_Quantity_Choice,
     Current_Turn,
+    Distance_Between,
 
     // Requires target in context
     Count_Hero_Coins,
@@ -73,6 +80,9 @@ Implicit_Quantity :: union {
     // Requires card in context
     Card_Value,
     Card_Turn_Played,
+
+    // Requires a target in context
+    Target_Distance_To,
 }
 
 Calculation_Context :: struct {
@@ -305,6 +315,17 @@ calculate_implicit_quantity :: proc(
         // log.assert(.Hero in space.flags, "Tried to count hero coins in a space with no hero!")
         player := get_player_by_id(gs, space.owner)
         return player.hero.coins
+
+    case Distance_Between:
+        log.assert(len(quantity) == 2, "Improperly formatted quantity!")
+        target1 := calculate_implicit_target(gs, quantity[0], calc_context)
+        target2 := calculate_implicit_target(gs, quantity[1], calc_context)
+        return calculate_hexagonal_distance(target1, target2)
+
+    case Target_Distance_To:
+        log.assert(calc_context.target != INVALID_TARGET, "Target invalid!!!")
+        origin := calculate_implicit_target(gs, quantity.origin, calc_context)
+        return calculate_hexagonal_distance(calc_context.target, origin)
 
     case Card_Value:
         log.assert(calc_context.card_id != {}, "Invalid card ID when calculating value", loc)
