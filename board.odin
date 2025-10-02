@@ -277,86 +277,6 @@ board_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, elem
 render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
     context.allocator = context.temp_allocator
 
-    board_element := assert_variant_rdonly(element.variant, UI_Board_Element)
-    rl.BeginTextureMode(board_element.texture)
-
-    rl.ClearBackground(WATER_COLOR)
-
-    for arr in gs.board {
-        for space in arr {
-            color := rl.WHITE
-            if .Terrain in space.flags do color = CLIFF_COLOR
-            else do color = region_colors[space.region_id]
-            rl.DrawPoly(space.position, 6, VERTICAL_SPACING / math.sqrt_f32(3), 0, color)
-
-            // Make the highlight
-            brightness_increase :: 50
-            if .Terrain not_in space.flags {
-                lighter_color := rl.WHITE
-                for &val, idx in lighter_color do val = 255 if color[idx] + brightness_increase < color[idx] else color[idx] + brightness_increase
-                lighter_color.a = 255
-                rl.DrawPoly(space.position, 6, 0.9 * VERTICAL_SPACING / math.sqrt_f32(3), 0, lighter_color)
-                rl.DrawCircleV(space.position, 0.92 * VERTICAL_SPACING / 2, color)
-
-                darker_color := rl.BLACK
-                for val, idx in color.rgb do darker_color[idx] = 0 if val - 25 > val else val - 25
-                darker_color.a = 255
-                rl.DrawPolyLinesEx(space.position, 6, VERTICAL_SPACING / math.sqrt_f32(3), 0, 1, darker_color)
-            }
-
-
-            spawnpoint_flags := space.flags & SPAWNPOINT_FLAGS
-            if spawnpoint_flags != {} {
-                color = team_colors[space.spawnpoint_team]
-                if .Hero_Spawnpoint in space.flags {
-                    rl.DrawRing(space.position, VERTICAL_SPACING * 0.35, VERTICAL_SPACING * 0.26, 0, 360, 20, color)
-                } else {
-                    // spawnpoint_type := Space_Flag(log2(transmute(int) spawnpoint_flags))
-                    spawnpoint_type := get_first_set_bit(spawnpoint_flags).?
-                    initial := minion_initials[spawnpoint_to_minion[spawnpoint_type]]
-
-                    FONT_SIZE :: 0.8 * VERTICAL_SPACING
-
-                    text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, FONT_SPACING)
-                    rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, color)
-                }
-            }
-
-            minion_flags := space.flags & MINION_FLAGS 
-            if minion_flags != {} {
-                color = team_colors[space.unit_team]
-                minion_type := get_first_set_bit(minion_flags).?
-                initial := minion_initials[minion_type]
-
-                FONT_SIZE :: 0.8 * VERTICAL_SPACING
-
-                text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, FONT_SPACING)
-                rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.42, color)
-                rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, rl.BLACK)
-
-            }
-
-            if .Hero in space.flags {
-                color = team_colors[space.unit_team]
-                name, ok := reflect.enum_name_from_value(space.hero_id); log.assert(ok, "Invalid hero name?")
-                initial := strings.clone_to_cstring(name[:1])
-
-                FONT_SIZE :: 0.8 * VERTICAL_SPACING
-
-                text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, FONT_SPACING)
-                rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.42, color)
-                rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, rl.BLACK)
-            }
-        }
-    }
-
-    space_pos: Vec2
-    if .Hovered not_in element.flags || board_element.hovered_space != INVALID_TARGET {
-        space_pos = gs.board[board_element.hovered_space.x][board_element.hovered_space.y].position
-        // rl.DrawRing(pos, VERTICAL_SPACING * 0.45, VERTICAL_SPACING * 0.5, 0, 360, 100, rl.WHITE)
-        rl.DrawPolyLinesEx(space_pos, 6, VERTICAL_SPACING * (1 / math.sqrt_f32(3) + 0.05), 0, VERTICAL_SPACING * 0.05, rl.WHITE)
-    }
-
     highlight_action_targets :: proc(gs: ^Game_State, action_index: Action_Index) {
 
         action := get_action_at_index(gs, action_index)
@@ -429,7 +349,45 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
         }
     }
 
-    draw_hover_effect: #partial switch get_my_player(gs).stage {
+    board_element := assert_variant_rdonly(element.variant, UI_Board_Element)
+    rl.BeginTextureMode(board_element.texture)
+
+    rl.ClearBackground(WATER_COLOR)
+
+    // Draw the board tiles
+    for arr in gs.board {
+        for space in arr {
+            color := rl.WHITE
+            if .Terrain in space.flags do color = CLIFF_COLOR
+            else do color = region_colors[space.region_id]
+            rl.DrawPoly(space.position, 6, VERTICAL_SPACING / math.sqrt_f32(3), 0, color)
+
+            // Make the highlight
+            brightness_increase :: 50
+            if .Terrain not_in space.flags {
+                lighter_color := rl.WHITE
+                for &val, idx in lighter_color do val = 255 if color[idx] + brightness_increase < color[idx] else color[idx] + brightness_increase
+                lighter_color.a = 255
+                rl.DrawPoly(space.position, 6, 0.9 * VERTICAL_SPACING / math.sqrt_f32(3), 0, lighter_color)
+                rl.DrawCircleV(space.position, 0.92 * VERTICAL_SPACING / 2, color)
+
+                darker_color := rl.BLACK
+                for val, idx in color.rgb do darker_color[idx] = 0 if val - 25 > val else val - 25
+                darker_color.a = 255
+                rl.DrawPolyLinesEx(space.position, 6, VERTICAL_SPACING / math.sqrt_f32(3), 0, 1, darker_color)
+            }
+        }
+    }
+    // Draw hovered space
+    space_pos: Vec2
+    if .Hovered not_in element.flags || board_element.hovered_space != INVALID_TARGET {
+        space_pos = gs.board[board_element.hovered_space.x][board_element.hovered_space.y].position
+        // rl.DrawRing(pos, VERTICAL_SPACING * 0.45, VERTICAL_SPACING * 0.5, 0, 360, 100, rl.WHITE)
+        rl.DrawPolyLinesEx(space_pos, 6, VERTICAL_SPACING * (1 / math.sqrt_f32(3) + 0.05), 0, VERTICAL_SPACING * 0.05, rl.WHITE)
+    }
+
+    // Draw hover effect
+    #partial switch get_my_player(gs).stage {
     case .Resolving, .Interrupting:
         action_index := get_my_player(gs).hero.current_action_index
         action := get_action_at_index(gs, action_index)
@@ -465,6 +423,56 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
         }
     }
 
+
+    // Draw entities
+    for arr in gs.board {
+        for space in arr {
+            color: rl.Color
+            spawnpoint_flags := space.flags & SPAWNPOINT_FLAGS
+            if spawnpoint_flags != {} {
+                color = team_colors[space.spawnpoint_team]
+                if .Hero_Spawnpoint in space.flags {
+                    rl.DrawRing(space.position, VERTICAL_SPACING * 0.35, VERTICAL_SPACING * 0.26, 0, 360, 20, color)
+                } else {
+                    // spawnpoint_type := Space_Flag(log2(transmute(int) spawnpoint_flags))
+                    spawnpoint_type := get_first_set_bit(spawnpoint_flags).?
+                    initial := minion_initials[spawnpoint_to_minion[spawnpoint_type]]
+
+                    FONT_SIZE :: 0.8 * VERTICAL_SPACING
+
+                    text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, FONT_SPACING)
+                    rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, color)
+                }
+            }
+
+            minion_flags := space.flags & MINION_FLAGS 
+            if minion_flags != {} {
+                color = team_colors[space.unit_team]
+                minion_type := get_first_set_bit(minion_flags).?
+                initial := minion_initials[minion_type]
+
+                FONT_SIZE :: 0.8 * VERTICAL_SPACING
+
+                text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, FONT_SPACING)
+                rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.42, color)
+                rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, rl.BLACK)
+
+            }
+
+            if .Hero in space.flags {
+                color = team_colors[space.unit_team]
+                name, ok := reflect.enum_name_from_value(space.hero_id); log.assert(ok, "Invalid hero name?")
+                initial := strings.clone_to_cstring(name[:1])
+
+                FONT_SIZE :: 0.8 * VERTICAL_SPACING
+
+                text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, FONT_SPACING)
+                rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.42, color)
+                rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, rl.BLACK)
+            }
+        }
+    }
+
     // Draw Tiebreaker Coin
     rl.DrawCircleV({100, 100}, 75, team_colors[gs.tiebreaker_coin])
     rl.DrawRing({100, 100}, 70, 75, 0, 360, 100, rl.RAYWHITE)
@@ -478,7 +486,6 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
         rl.DrawCircleV(wave_counter_position, 25, color)
         rl.DrawRing(wave_counter_position, 25, 30, 0, 360, 100, rl.RAYWHITE)
     }
-    // rl.DrawCircleV({100, 100}, 30, rl.BLACK)
 
     // Draw life counters 
     for team in Team {
