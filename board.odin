@@ -378,6 +378,7 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
             }
         }
     }
+
     // Draw hovered space
     space_pos: Vec2
     if .Hovered not_in element.flags || board_element.hovered_space != INVALID_TARGET {

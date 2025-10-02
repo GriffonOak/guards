@@ -505,14 +505,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             case Movement_Action:
                 action_variant.path.num_locked_spaces = 1
                 resize(&action_variant.path.spaces, 1)
-
                 action.targets = make_movement_targets(gs, action_variant.criteria, {card_id = action_index.card_id})
+                append(&gs.event_queue, Begin_Next_Action_Event{})
 
-                log.assert(len(gs.side_button_manager.buttons) > 0, "No side buttons!?")
-                top_button := gs.side_button_manager.buttons[len(gs.side_button_manager.buttons) - 1].variant.(UI_Button_Element)
-                if _, ok := top_button.event.(Resolve_Current_Action_Event); ok && len(action_variant.destination_criteria.conditions) != 0 {
-                    pop_side_button(gs)
-                }
             case Choose_Target_Action:
                 log.assert(len(gs.side_button_manager.buttons) > 0, "No side buttons!?")
                 top_button := gs.side_button_manager.buttons[len(gs.side_button_manager.buttons) - 1].variant.(UI_Button_Element)
