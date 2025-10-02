@@ -89,7 +89,7 @@ _ :: time
 // }
 
 RELEASE :: #config(RELEASE, false)
-RECORD  :: #config(RECORD, true)
+RECORD  :: #config(RECORD, false)
 
 log_directory_name :: "logs"
 
@@ -188,9 +188,6 @@ main :: proc() {
         defer stop_recording_events(record_file)
         begin_recording_events(record_file)
 
-    } else {
-        context.logger = log.create_console_logger(lowest = .Info)
-        defer log.destroy_console_logger(context.logger)
     }
 
     when RELEASE {
@@ -201,6 +198,10 @@ main :: proc() {
         defer log.destroy_file_logger(context.logger)
 
         context.assertion_failure_proc = {}
+    }
+    else {
+        context.logger = log.create_console_logger(lowest = .Info)
+        defer log.destroy_console_logger(context.logger)
     }
 
     active_element_index := UI_Index{}
@@ -304,7 +305,7 @@ main :: proc() {
         process_network_packets(&gs)
 
         // Record "Fresh" events this frame
-        when RELEASE {
+        when RELEASE || RECORD {
             record_events(record_file, gs.event_queue[:])
         }
 

@@ -418,6 +418,7 @@ find_upgrade_options :: proc(gs: ^Game_State, card_id: Card_ID) -> (out: [2]Card
 }
 
 get_ui_card_slice :: proc(gs: ^Game_State, player_id: Player_ID) -> []UI_Element {
+    if len(gs.ui_stack[.Cards]) < 5 * (player_id + 1) do return {}
     return gs.ui_stack[.Cards][5 * player_id:][:5]
 }
 

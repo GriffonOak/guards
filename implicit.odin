@@ -378,7 +378,7 @@ calculate_implicit_target :: proc(
     case Attacker:
         interrupt, _, ok := find_attack_interrupt(gs)
         log.assert(ok, "No attack interrupt in stack when trying to determine attacker!")
-        hero := get_player_by_id(gs, interrupt.interrupting_player).hero
+        hero := get_player_by_id(gs, interrupt.interrupted_player).hero
         return hero.location
     
     case Card_Owner:

@@ -124,7 +124,7 @@ render_player_info_at_position :: proc(gs: ^Game_State, player_id: Player_ID, po
     player := get_player_by_id(gs, player_id)
     context.allocator = context.temp_allocator
     name, _ := reflect.enum_name_from_value(player.hero.id)
-    hero_name := fmt.ctprintf("[%v%v] %v", get_username(gs, player.id), "!" if gs.team_captains[player.team] == player_id else "", name)
+    hero_name := fmt.ctprintf("[%v%v] %v", get_username(gs, player_id), "!" if gs.team_captains[player.team] == player_id else "", name)
     
     rl.DrawTextEx(default_font, hero_name, next_pos, INFO_FONT_SIZE, FONT_SPACING, team_colors[player.team])
     next_pos.y += INFO_FONT_SIZE + TEXT_PADDING
@@ -162,6 +162,11 @@ add_or_update_player :: proc(gs: ^Game_State, player_base: Player_Base) {
         resize(&gs.players, player_base.id + 1)
     }
     gs.players[player_base.id].base = player_base
+    slice := get_ui_card_slice(gs, player_base.id)
+    for &element, index in slice {
+        card_element := assert_variant(&element.variant, UI_Card_Element)
+        card_element.card_id = player_base.hero.cards[card_element.card_id.color]
+    }
 }
 
 get_username :: proc(gs: ^Game_State, player_id: Player_ID) -> cstring {
