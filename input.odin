@@ -4,8 +4,6 @@ package guards
 import ba "core:container/bit_array"
 // import "core:log"
 
-import rl "vendor:raylib"
-
 
 
 Input_Event :: union {
@@ -24,7 +22,7 @@ Input_Already_Consumed :: struct{}
 
 Mouse_Pressed_Event :: struct {
     pos: Vec2,
-    button: rl.MouseButton,
+    button: Mouse_Button,
 }
 
 Mouse_Motion_Event :: struct {
@@ -34,12 +32,12 @@ Mouse_Motion_Event :: struct {
 
 Mouse_Down_Event :: struct {
     pos: Vec2,
-    button: rl.MouseButton,
+    button: Mouse_Button,
 }
 
 Mouse_Up_Event :: struct {
     pos: Vec2,
-    button: rl.MouseButton,
+    button: Mouse_Button,
 }
 
 Mouse_Scroll_Event :: struct {
@@ -48,20 +46,20 @@ Mouse_Scroll_Event :: struct {
 }
 
 Key_Down_Event :: struct {
-    key: rl.KeyboardKey,
+    key: Keyboard_Key,
 }
 
 Key_Up_Event :: struct {
-    key: rl.KeyboardKey,
+    key: Keyboard_Key,
 }
 
 Key_Pressed_Event :: struct {
-    key: rl.KeyboardKey,
+    key: Keyboard_Key,
 }
 
 UI_State :: struct {
     mouse_pos: Vec2,
-    mouse_state: bit_set[rl.MouseButton],
+    mouse_state: bit_set[Mouse_Button],
     pressed_keys: ba.Bit_Array,
 }
 
@@ -72,11 +70,11 @@ ui_state: UI_State
 input_queue: [dynamic]Input_Event
 
 check_for_input_events :: proc(q: ^[dynamic]Input_Event) {
-    p := rl.GetMousePosition() * window_scale
+    p := get_mouse_position() * window_scale
     // x := p.x
     // y := p.y
 
-    for key := rl.GetKeyPressed(); key != .KEY_NULL; key = rl.GetKeyPressed() {
+    for key := get_key_pressed(); key != .KEY_NULL; key = get_key_pressed() {
         ba.set(&ui_state.pressed_keys, cast(int) key)
         append(q, Key_Pressed_Event { key })
     }
@@ -84,17 +82,17 @@ check_for_input_events :: proc(q: ^[dynamic]Input_Event) {
     iterator := ba.make_iterator(&ui_state.pressed_keys)
     key_idx, ok := ba.iterate_by_set(&iterator)
     for ; ok ; key_idx, ok = ba.iterate_by_set(&iterator) {
-        key := cast(rl.KeyboardKey) key_idx
-        if !rl.IsKeyDown(key) {
+        key := cast(Keyboard_Key) key_idx
+        if !is_key_down(key) {
             ba.unset(&ui_state.pressed_keys, key_idx)
             // append(q, Key_Up_Event { key })
-        } else if rl.IsKeyPressedRepeat(key) {
+        } else if is_key_pressed_repeat(key) {
             append(q, Key_Pressed_Event { key })
         }
     }
 
-    do_button_events :: proc(b: rl.MouseButton, p: Vec2, q: ^[dynamic]Input_Event) {
-        if rl.IsMouseButtonPressed(b) {
+    do_button_events :: proc(b: Mouse_Button, p: Vec2, q: ^[dynamic]Input_Event) {
+        if is_mouse_button_pressed(b) {
             append(q, Mouse_Pressed_Event { p, b })
         }
         // if rl.IsMouseButtonDown(b) && b not_in ui_state.mouse_state {

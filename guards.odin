@@ -2,7 +2,6 @@ package guards
 
 import "core:time"
 
-import rl "vendor:raylib"
 import "core:fmt"
 import "core:math"
 import "core:strings"
@@ -22,29 +21,17 @@ _ :: time
 
 // Todo list
 
-/* CHECKLIST FOR 0.1 (must-haves)
-
-[X] LOGGING / RELEASE BUILD
-    [X] Setup folder for game logs & event logs in release build
-    [X] Redirect console logging to file logging in release build
-    [X] Disable asserts in release build
-
-[X] UI / UX
-    [X] Rotate cards that are producing active effects (it's kind of shit)
-    [X] Add team switching button to lobby (kinda important)
-
-*/
-
 /* BEYOND 0.1
 
 --- ENGINE 
+    ^^ Explore storing targets differently to make lookup / modification easier
+        * Target entity / target space perhaps?
+    ^^ Repeat action (that can be prevented (thanks dodger)) (this likely requires action memory)
+
     ^ "Counts as" system to allow spaces to count as other things
     ^ "Intention" system for choose_target_action to allow different types of immunity
     ^ "Hooks" system to allow other heroes to interrupt players performing actions (brogan, swift)
     ^ Update any previous targets after entity translocation events (allows doing things on the same target)
-    ^ Explore storing targets differently to make lookup / modification easier
-        * Target entity / target space perhaps?
-    ^ Repeat action (that can be prevented (thanks dodger)) (this likely requires action memory)
 
     v Refactor heroes "out of" players (allow for multiple heroes controlled by 1 player)
     v Ultimates
@@ -76,8 +63,6 @@ _ :: time
     * Experiment with putting spall stuff in @init and @fini procs for test profiling
     * Always send team captain the minion removal event and just skip the choose step if there are more minions to remove than exist
     * Model wave push as an action sequence to obviate the need for interrupt_variant
-    * raylib wrapper to make testing easier
-
 */
 
 
@@ -101,8 +86,6 @@ Window_Size :: enum {
 
 Vec2 :: [2]f32
 
-Rectangle :: rl.Rectangle
-
 
 WIDTH :: 1280 * 2
 HEIGHT :: 720 * 2
@@ -113,9 +96,9 @@ window_size: Window_Size = .Small
 
 window_scale: f32 = 1 if window_size == .Big else 2
 
-default_font: rl.Font
+default_font: Font
 
-monospace_font: rl.Font
+monospace_font: Font
 
 assets := #load_directory("assets")
 
@@ -132,8 +115,9 @@ spall_ctx: spall.Context
 // 	spall._buffer_end(&spall_ctx, &spall_buffer)
 // }
 
-
+start_time: time.Time
 main :: proc() {
+    start_time = time.now()
     // spall_ctx = spall.context_create("trace_test.spall")
 	// defer spall.context_destroy(&spall_ctx)
 
@@ -213,23 +197,23 @@ main :: proc() {
 
     // window_scale: i32 = 2 if window_size == .Small else 1
 
-    // rl.SetConfigFlags({.WINDOW_TOPMOST})
-    rl.SetTraceLogLevel(rl.TraceLogLevel.NONE)
-    rl.SetConfigFlags({.MSAA_4X_HINT})
-    rl.InitWindow(i32(WIDTH / window_scale), i32(HEIGHT / window_scale), "guards")
-    defer rl.CloseWindow()
+    // set_config_flags({.WINDOW_TOPMOST})
+    set_trace_log_level(.NONE)
+    set_config_flags({.MSAA_4X_HINT})
+    init_window(i32(WIDTH / window_scale), i32(HEIGHT / window_scale), "guards")
+    defer close_window()
 
     for file in assets {
         switch file.name {
         case "Inter-VariableFont.ttf":
-            default_font = rl.LoadFontFromMemory(".ttf", raw_data(file.data), i32(len(file.data)), 200, nil, 0)
+            default_font = load_font_from_memory(".ttf", raw_data(file.data), i32(len(file.data)), 200, nil, 0)
         case "Inconsolata-Regular.ttf":
-            monospace_font = rl.LoadFontFromMemory(".ttf", raw_data(file.data), i32(len(file.data)), 200, nil, 0)
+            monospace_font = load_font_from_memory(".ttf", raw_data(file.data), i32(len(file.data)), 200, nil, 0)
         }
     }
 
-    window_texture := rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT))
-    rl.SetTextureFilter(window_texture.texture, .BILINEAR)
+    window_texture := load_render_texture(i32(WIDTH), i32(HEIGHT))
+    set_texture_filter(window_texture.texture, .BILINEAR)
 
     gs: Game_State = {
         confirmed_players = 0,
@@ -241,7 +225,7 @@ main :: proc() {
 
     add_pre_lobby_ui_elements(&gs)
 
-    for !rl.WindowShouldClose() {
+    for !window_should_close() {
 
         // Handle input
         check_for_input_events(&input_queue)
@@ -277,7 +261,7 @@ main :: proc() {
                         when ODIN_TEST {
                             continue
                         } else {
-                            if !rl.CheckCollisionPointRec(var.pos, element.bounding_rect) do continue
+                            if !check_collision_point_rec(var.pos, element.bounding_rect) do continue
                         }
                         if element.consume_input(&gs, event, &element) {
                             element.flags += {.Hovered}
@@ -316,15 +300,15 @@ main :: proc() {
         clear(&gs.event_queue)
 
 
-        rl.BeginDrawing()
+        begin_drawing()
 
         if gs.stage != .Pre_Lobby && gs.stage != .In_Lobby {
             render_board_to_texture(&gs, gs.ui_stack[.Board][0])
         }
 
-        rl.BeginTextureMode(window_texture)
+        begin_texture_mode(window_texture)
 
-        rl.ClearBackground(rl.BLACK)
+        clear_background(BLACK)
 
         for domain in UI_Domain {
             for element in gs.ui_stack[domain] {
@@ -346,25 +330,25 @@ main :: proc() {
         render_tooltip(&gs)
 
         #reverse for &toast, index in gs.toasts {
-            if rl.GetTime() > toast.start_time + toast.duration {
+            if get_time() > toast.start_time + toast.duration {
                 ordered_remove(&gs.toasts, index)
             } else {
                 draw_toast(&toast)
             }
         }
 
-        rl.EndTextureMode()
+        end_texture_mode()
 
-        rl.ClearBackground(rl.BLACK)
+        clear_background(BLACK)
 
-        rl.DrawTexturePro(
+        draw_texture_pro(
             window_texture.texture,
             {0, 0, WIDTH, -HEIGHT},
             {0, 0, WIDTH / window_scale, HEIGHT / window_scale},
-            {0, 0}, 0, rl.WHITE,
+            {0, 0}, 0, WHITE,
         )
 
-        rl.EndDrawing()
+        end_drawing()
 
         free_all(context.temp_allocator)
     }

@@ -1,7 +1,6 @@
 package guards
 
 // import "core:fmt"
-import rl "vendor:raylib"
 import "core:math/rand"
 import "core:log"
 import "core:net"
@@ -172,7 +171,7 @@ Game_State :: struct {
 }
 
 @rodata
-team_colors := [Team]rl.Color{
+team_colors := [Team]Colour{
     .Red  = {237, 92, 2, 255},
     .Blue = {22, 147, 255, 255},
 }
@@ -284,7 +283,7 @@ setup_hero_cards :: proc(gs: ^Game_State) {
                 // fmt.println(card_filename)
                 for file in assets {
                     if file.name == card_filename {
-                        card.background_image = rl.LoadTextureFromImage(rl.LoadImageFromMemory(".png", raw_data(file.data), i32(len(file.data))))
+                        card.background_image = load_texture_from_image(load_image_from_memory(".png", raw_data(file.data), i32(len(file.data))))
                         // fmt.printfln("Loaded swift card! %v", card_filename)
                     }
                 }

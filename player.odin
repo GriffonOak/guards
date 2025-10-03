@@ -3,7 +3,6 @@ package guards
 import "core:fmt"
 import "core:net"
 import "core:reflect"
-import rl "vendor:raylib"
 import "core:log"
 
 
@@ -129,15 +128,15 @@ render_player_info_at_position :: proc(gs: ^Game_State, player_id: Player_ID, po
     name, _ := reflect.enum_name_from_value(player.hero.id)
     hero_name := fmt.ctprintf("[%v%v] %v", get_username(gs, player_id), "!" if gs.team_captains[player.team] == player_id else "", name)
     
-    rl.DrawTextEx(default_font, hero_name, next_pos, INFO_FONT_SIZE, FONT_SPACING, team_colors[player.team])
+    draw_text_ex(default_font, hero_name, next_pos, INFO_FONT_SIZE, FONT_SPACING, team_colors[player.team])
     next_pos.y += INFO_FONT_SIZE + TEXT_PADDING
 
     level_string := fmt.ctprintf("Level %v", player.hero.level)
-    rl.DrawTextEx(default_font, level_string, next_pos, INFO_FONT_SIZE, FONT_SPACING, rl.WHITE)
+    draw_text_ex(default_font, level_string, next_pos, INFO_FONT_SIZE, FONT_SPACING, WHITE)
     next_pos.y += INFO_FONT_SIZE + TEXT_PADDING
 
     coins_string := fmt.ctprintf("%v coin%v", player.hero.coins, "" if player.hero.coins == 1 else "s")
-    rl.DrawTextEx(default_font, coins_string, next_pos, INFO_FONT_SIZE, FONT_SPACING, rl.WHITE)
+    draw_text_ex(default_font, coins_string, next_pos, INFO_FONT_SIZE, FONT_SPACING, WHITE)
 
 
     next_pos = pos
@@ -146,7 +145,7 @@ render_player_info_at_position :: proc(gs: ^Game_State, player_id: Player_ID, po
     for kind, index in Card_Value_Kind {
         initial := item_initials[kind]
         item_string := fmt.ctprintf("+%v%v", count_hero_items(gs, player.hero, kind), initial)
-        rl.DrawTextEx(default_font, item_string, next_pos, INFO_FONT_SIZE, FONT_SPACING, rl.WHITE)
+        draw_text_ex(default_font, item_string, next_pos, INFO_FONT_SIZE, FONT_SPACING, WHITE)
         next_pos.y += INFO_FONT_SIZE + TEXT_PADDING
 
         if index == 2 {

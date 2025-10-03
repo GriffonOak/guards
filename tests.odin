@@ -237,13 +237,16 @@ test_xargatha_charm :: proc(t: ^testing.T) {
 
     testing_process_events(&gs, event_log1)
 
-    action := get_current_action(&gs)
+    action_index := get_my_player(&gs).hero.current_action_index
+    action := get_action_at_index(&gs, action_index)
     choice_action, ok := action.variant.(Choice_Action)
     testing.expect(t, ok)
 
     second_choice := choice_action.choices[1]
+    jump_index := second_choice.jump_index
+    jump_index.card_id = action_index.card_id
 
-    maybe_action := get_action_at_index(&gs, second_choice.jump_index)
+    maybe_action := get_action_at_index(&gs, jump_index)
     testing.expect(t, maybe_action != nil)
 
     _, ok2 := &maybe_action.variant.(Choose_Target_Action)

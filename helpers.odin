@@ -1,7 +1,6 @@
 package guards
 
 import "base:intrinsics"
-import rl "vendor:raylib"
 // import "core:fmt"
 
 import "core:log"
@@ -58,7 +57,7 @@ lerp :: proc(a, b: $T, t: $T2) -> T {
     return b * t + a * (1-t)
 }
 
-color_lerp :: proc(a, b: rl.Color, t: $T) -> (out: rl.Color) {
+color_lerp :: proc(a, b: Colour, t: $T) -> (out: Colour) {
     for val, index in a {
         out[index] = u8(t * T(b[index]) + (1-t) * T(val))
     }

@@ -1,6 +1,5 @@
 package guards
 
-import rl "vendor:raylib"
 import "core:fmt"
 import "core:math"
 import "core:reflect"
@@ -76,13 +75,13 @@ GRID_HEIGHT :: 20
 
 BOARD_TEXTURE_SIZE :: Vec2{1200, 1200}
 // BOARD_TEXTURE_SIZE :: Vec2{1080, 1080}
-BOARD_POSITION_RECT :: rl.Rectangle{0, 0, BOARD_TEXTURE_SIZE.x, BOARD_TEXTURE_SIZE.y}
+BOARD_POSITION_RECT :: Rectangle{0, 0, BOARD_TEXTURE_SIZE.x, BOARD_TEXTURE_SIZE.y}
 
-WATER_COLOR  :: rl.Color{54, 186, 228, 255}
-CLIFF_COLOR  :: rl.Color{80, 76, 75, 255}
-SAND_COLOR   :: rl.Color{219, 182, 127, 255}
-STONE_COLOR  :: rl.Color{185, 140, 93, 255}
-JUNGLE_COLOR :: rl.Color{157, 177, 58, 255}
+WATER_COLOR  :: Colour{54, 186, 228, 255}
+CLIFF_COLOR  :: Colour{80, 76, 75, 255}
+SAND_COLOR   :: Colour{219, 182, 127, 255}
+STONE_COLOR  :: Colour{185, 140, 93, 255}
+JUNGLE_COLOR :: Colour{157, 177, 58, 255}
 
 SPAWNPOINT_FLAGS :: Space_Flags{.Melee_Minion_Spawnpoint, .Ranged_Minion_Spawnpoint, .Heavy_Minion_Spawnpoint, .Hero_Spawnpoint}
 PERMANENT_FLAGS  :: SPAWNPOINT_FLAGS + {.Terrain}
@@ -157,8 +156,8 @@ spawnpoint_to_minion := #partial [Space_Flag]Space_Flag {
 }
 
 @rodata
-region_colors := [Region_ID]rl.Color {
-    .None = rl.MAGENTA,
+region_colors := [Region_ID]Colour {
+    .None = MAGENTA,
     .Red_Throne = STONE_COLOR,
     .Red_Beach = SAND_COLOR,
     .Red_Jungle = JUNGLE_COLOR,
@@ -295,7 +294,7 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
         origin: Target
 
         frequency: f64 = 4
-        time := rl.GetTime()
+        time := get_time()
 
         #partial switch variant in action.variant {
         case Choice_Action:
@@ -317,10 +316,10 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
             frequency = 14
             for target in variant.result {
                 space := gs.board[target.x][target.y]
-                selected_color := rl.LIGHTGRAY
+                selected_color := LIGHTGRAY
                 pulse := f32(math.sin(1.5 * time) * VERTICAL_SPACING * 0.03)
 
-                rl.DrawRing(space.position, VERTICAL_SPACING * 0.4 + pulse, VERTICAL_SPACING * 0.5 + pulse, 0, 360, 20, selected_color)
+                draw_ring(space.position, VERTICAL_SPACING * 0.4 + pulse, VERTICAL_SPACING * 0.5 + pulse, 0, 360, 20, selected_color)
             }
         }
 
@@ -347,44 +346,43 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
 
             color_blend := (math.sin(frequency * time + phase) + 1) / 2
             color_blend = color_blend * color_blend
-            base_color := rl.DARKGRAY
-            highlight_color := rl.LIGHTGRAY
-            // color: = color_lerp(rl.Blue, rl.ORange, color_blend)
+            base_color := DARKGRAY
+            highlight_color := LIGHTGRAY
             color := color_lerp(base_color, highlight_color, color_blend)
             if info.invalid {
-                rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.08, color)
+                draw_circle_v(space.position, VERTICAL_SPACING * 0.08, color)
             } else {
-                rl.DrawPolyLinesEx(space.position, 6, VERTICAL_SPACING / 2, 0, VERTICAL_SPACING * 0.08, color)
+                draw_poly_lines_ex(space.position, 6, VERTICAL_SPACING / 2, 0, VERTICAL_SPACING * 0.08, color)
             }
         }
     }
 
     board_element := assert_variant_rdonly(element.variant, UI_Board_Element)
-    rl.BeginTextureMode(board_element.texture)
+    begin_texture_mode(board_element.texture)
 
-    rl.ClearBackground(WATER_COLOR)
+    clear_background(WATER_COLOR)
 
     // Draw the board tiles
     for arr in gs.board {
         for space in arr {
-            color := rl.WHITE
+            color := WHITE
             if .Terrain in space.flags do color = CLIFF_COLOR
             else do color = region_colors[space.region_id]
-            rl.DrawPoly(space.position, 6, VERTICAL_SPACING / math.sqrt_f32(3), 0, color)
+            draw_poly(space.position, 6, VERTICAL_SPACING / math.sqrt_f32(3), 0, color)
 
             // Make the highlight
             brightness_increase :: 50
             if .Terrain not_in space.flags {
-                lighter_color := rl.WHITE
+                lighter_color := WHITE
                 for &val, idx in lighter_color do val = 255 if color[idx] + brightness_increase < color[idx] else color[idx] + brightness_increase
                 lighter_color.a = 255
-                rl.DrawPoly(space.position, 6, 0.9 * VERTICAL_SPACING / math.sqrt_f32(3), 0, lighter_color)
-                rl.DrawCircleV(space.position, 0.92 * VERTICAL_SPACING / 2, color)
+                draw_poly(space.position, 6, 0.9 * VERTICAL_SPACING / math.sqrt_f32(3), 0, lighter_color)
+                draw_circle_v(space.position, 0.92 * VERTICAL_SPACING / 2, color)
 
-                darker_color := rl.BLACK
+                darker_color := BLACK
                 for val, idx in color.rgb do darker_color[idx] = 0 if val - 25 > val else val - 25
                 darker_color.a = 255
-                rl.DrawPolyLinesEx(space.position, 6, VERTICAL_SPACING / math.sqrt_f32(3), 0, 1, darker_color)
+                draw_poly_lines_ex(space.position, 6, VERTICAL_SPACING / math.sqrt_f32(3), 0, 1, darker_color)
             }
         }
     }
@@ -393,8 +391,7 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
     space_pos: Vec2
     if .Hovered not_in element.flags || board_element.hovered_space != INVALID_TARGET {
         space_pos = gs.board[board_element.hovered_space.x][board_element.hovered_space.y].position
-        // rl.DrawRing(pos, VERTICAL_SPACING * 0.45, VERTICAL_SPACING * 0.5, 0, 360, 100, rl.WHITE)
-        rl.DrawPolyLinesEx(space_pos, 6, VERTICAL_SPACING * (1 / math.sqrt_f32(3) + 0.05), 0, VERTICAL_SPACING * 0.05, rl.WHITE)
+        draw_poly_lines_ex(space_pos, 6, VERTICAL_SPACING * (1 / math.sqrt_f32(3) + 0.05), 0, VERTICAL_SPACING * 0.05, WHITE)
     }
 
     // Draw hover effect
@@ -408,12 +405,12 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
             if index_target_set(&action.targets, board_element.hovered_space).member {
                 player_loc := get_my_player(gs).hero.location
                 player_pos := gs.board[player_loc.x][player_loc.y].position
-                rl.DrawLineEx(space_pos, player_pos, 4, rl.VIOLET)
+                draw_line_ex(space_pos, player_pos, 4, VIOLET)
             }
         case Movement_Action:
             current_loc := variant.path.spaces[0]
             for target in variant.path.spaces[1:] {
-                rl.DrawLineEx(gs.board[current_loc.x][current_loc.y].position, gs.board[target.x][target.y].position, 4, rl.VIOLET)
+                draw_line_ex(gs.board[current_loc.x][current_loc.y].position, gs.board[target.x][target.y].position, 4, VIOLET)
                 current_loc = target
             }
         case Choice_Action:
@@ -438,12 +435,12 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
     // Draw entities
     for arr in gs.board {
         for space in arr {
-            color: rl.Color
+            color: Colour
             spawnpoint_flags := space.flags & SPAWNPOINT_FLAGS
             if spawnpoint_flags != {} {
                 color = team_colors[space.spawnpoint_team]
                 if .Hero_Spawnpoint in space.flags {
-                    rl.DrawRing(space.position, VERTICAL_SPACING * 0.35, VERTICAL_SPACING * 0.26, 0, 360, 20, color)
+                    draw_ring(space.position, VERTICAL_SPACING * 0.35, VERTICAL_SPACING * 0.26, 0, 360, 20, color)
                 } else {
                     // spawnpoint_type := Space_Flag(log2(transmute(int) spawnpoint_flags))
                     spawnpoint_type := get_first_set_bit(spawnpoint_flags).?
@@ -451,8 +448,8 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
 
                     FONT_SIZE :: 0.8 * VERTICAL_SPACING
 
-                    text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, FONT_SPACING)
-                    rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, color)
+                    text_size := measure_text_ex(default_font, initial, FONT_SIZE, FONT_SPACING)
+                    draw_text_ex(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, color)
                 }
             }
 
@@ -464,9 +461,9 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
 
                 FONT_SIZE :: 0.8 * VERTICAL_SPACING
 
-                text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, FONT_SPACING)
-                rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.42, color)
-                rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, rl.BLACK)
+                text_size := measure_text_ex(default_font, initial, FONT_SIZE, FONT_SPACING)
+                draw_circle_v(space.position, VERTICAL_SPACING * 0.42, color)
+                draw_text_ex(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, BLACK)
 
             }
 
@@ -477,25 +474,25 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
 
                 FONT_SIZE :: 0.8 * VERTICAL_SPACING
 
-                text_size := rl.MeasureTextEx(default_font, initial, FONT_SIZE, FONT_SPACING)
-                rl.DrawCircleV(space.position, VERTICAL_SPACING * 0.42, color)
-                rl.DrawTextEx(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, rl.BLACK)
+                text_size := measure_text_ex(default_font, initial, FONT_SIZE, FONT_SPACING)
+                draw_circle_v(space.position, VERTICAL_SPACING * 0.42, color)
+                draw_text_ex(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, BLACK)
             }
         }
     }
 
     // Draw Tiebreaker Coin
-    rl.DrawCircleV({100, 100}, 75, team_colors[gs.tiebreaker_coin])
-    rl.DrawRing({100, 100}, 70, 75, 0, 360, 100, rl.RAYWHITE)
+    draw_circle_v({100, 100}, 75, team_colors[gs.tiebreaker_coin])
+    draw_ring({100, 100}, 70, 75, 0, 360, 100, RAYWHITE)
 
     // Draw wave counters
     for wave_counter_index in 0..<5 {
         angle: f32 = math.TAU / 8 - math.TAU / 6  // @Magic
         angle += f32(wave_counter_index) * math.TAU / (3 * 4)
         wave_counter_position := Vec2{100, 100} + 140 * {math.cos_f32(angle), math.sin_f32(angle)}
-        color := rl.RAYWHITE if wave_counter_index < gs.wave_counters else rl.GRAY
-        rl.DrawCircleV(wave_counter_position, 25, color)
-        rl.DrawRing(wave_counter_position, 25, 30, 0, 360, 100, rl.RAYWHITE)
+        color := RAYWHITE if wave_counter_index < gs.wave_counters else GRAY
+        draw_circle_v(wave_counter_position, 25, color)
+        draw_ring(wave_counter_position, 25, 30, 0, 360, 100, RAYWHITE)
     }
 
     // Draw life counters 
@@ -509,8 +506,8 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
             darker_team_color := team_colors[team] / 2
             darker_team_color.a = 255
             color := team_colors[team] if life_counter_index < gs.life_counters[team] else darker_team_color
-            rl.DrawCircleV(life_counter_position, LIFE_COUNTER_RADIUS, color)
-            rl.DrawRing(life_counter_position, LIFE_COUNTER_RADIUS - 5, LIFE_COUNTER_RADIUS, 0, 360, 100, team_colors[team])
+            draw_circle_v(life_counter_position, LIFE_COUNTER_RADIUS, color)
+            draw_ring(life_counter_position, LIFE_COUNTER_RADIUS - 5, LIFE_COUNTER_RADIUS, 0, 360, 100, team_colors[team])
         }
     }
 
@@ -519,21 +516,20 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
             for y in 0..<GRID_HEIGHT {
                 space := gs.board[x][y]
                 coords := fmt.ctprintf("%d,%d", x, y)
-                bound := rl.MeasureTextEx(default_font, coords, 30, 0)
-                rl.DrawTextEx(default_font, coords, space.position - bound / 2, 30, 0, rl.BLACK)
+                bound := measure_text_ex(default_font, coords, 30, 0)
+                draw_text_ex(default_font, coords, space.position - bound / 2, 30, 0, BLACK)
             }
         }
     }
 
-    rl.EndTextureMode()
+    end_texture_mode()
 }
 
 draw_board: UI_Render_Proc : proc(_: ^Game_State, element: UI_Element) {
 
     board_element := element.variant.(UI_Board_Element)
 when !ODIN_TEST {
-    rl.DrawTexturePro(board_element.texture.texture, {0, 0, BOARD_TEXTURE_SIZE.x, -BOARD_TEXTURE_SIZE.y}, element.bounding_rect, {0, 0}, 0, rl.WHITE)
+    draw_texture_pro(board_element.texture.texture, {0, 0, BOARD_TEXTURE_SIZE.x, -BOARD_TEXTURE_SIZE.y}, element.bounding_rect, {0, 0}, 0, WHITE)
 }
 
-    // rl.DrawRectangleLinesEx(BOARD_POSITION_RECT, 4, rl.WHITE)
 }

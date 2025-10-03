@@ -3,7 +3,6 @@ package guards
 import "core:fmt"
 import "core:math"
 import "core:strings"
-import rl "vendor:raylib"
 import sa "core:container/small_array"
 import ba "core:container/bit_array"
 
@@ -21,7 +20,7 @@ UI_Index :: struct {
 
 UI_Board_Element :: struct {
     hovered_space: Target,
-    texture: rl.RenderTexture2D,
+    texture: Render_Texture_2D,
 }
 
 UI_Card_Element :: struct {
@@ -140,17 +139,17 @@ draw_button: UI_Render_Proc : proc(_: ^Game_State, element: UI_Element) {
     button_element := assert_variant_rdonly(element.variant, UI_Button_Element)
 
 when !ODIN_TEST {
-    rl.DrawRectangleRec(element.bounding_rect, rl.GRAY)
-    rl.DrawTextEx(
+    draw_rectangle_rec(element.bounding_rect, GRAY)
+    draw_text_ex(
         default_font,
         button_element.text,
         {element.bounding_rect.x + BUTTON_TEXT_PADDING, element.bounding_rect.y + BUTTON_TEXT_PADDING}, 
         element.bounding_rect.height - 2 * BUTTON_TEXT_PADDING,
         FONT_SPACING,
-        rl.BLACK,
+        BLACK,
     )
     if .Hovered in element.flags {
-        rl.DrawRectangleLinesEx(element.bounding_rect, BUTTON_TEXT_PADDING / 2, rl.WHITE)
+        draw_rectangle_lines_ex(element.bounding_rect, BUTTON_TEXT_PADDING / 2, WHITE)
     }
 }
 }
@@ -159,14 +158,14 @@ when !ODIN_TEST {
 text_box_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, element: ^UI_Element) -> bool {
     text_box_element := assert_variant(&element.variant, UI_Text_Box_Element)
     font_size := element.bounding_rect.height - 2 * BUTTON_TEXT_PADDING
-    single_character_width := rl.MeasureTextEx(monospace_font, "_", font_size, 0).x
+    single_character_width := measure_text_ex(monospace_font, "_", font_size, 0).x
 
     #partial switch var in input {
     case Mouse_Pressed_Event:
         index := int(math.round((var.pos.x - element.bounding_rect.x - BUTTON_TEXT_PADDING) / single_character_width))
         index = clamp(index, 0, sa.len(text_box_element.field))
         text_box_element.cursor_index = index
-        text_box_element.last_click_time = rl.GetTime()
+        text_box_element.last_click_time = get_time()
     case Key_Pressed_Event:
         #partial switch var.key {
         case (.ZERO)..=(.NINE), .PERIOD:
@@ -183,14 +182,14 @@ text_box_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, e
         case .LEFT:
             text_box_element.cursor_index -= 1
             text_box_element.cursor_index = clamp(text_box_element.cursor_index, 0, sa.len(text_box_element.field))
-            text_box_element.last_click_time = rl.GetTime()
+            text_box_element.last_click_time = get_time()
         case .RIGHT:
             text_box_element.cursor_index += 1
             text_box_element.cursor_index = clamp(text_box_element.cursor_index, 0, sa.len(text_box_element.field))
-            text_box_element.last_click_time = rl.GetTime()
+            text_box_element.last_click_time = get_time()
         case .V:
-            if !ba.get(&ui_state.pressed_keys, uint(rl.KeyboardKey.LEFT_CONTROL)) && !ba.get(&ui_state.pressed_keys, uint(rl.KeyboardKey.RIGHT_CONTROL)) do break
-            clipboard := cast([^]u8) rl.GetClipboardText()
+            if !ba.get(&ui_state.pressed_keys, uint(Keyboard_Key.LEFT_CONTROL)) && !ba.get(&ui_state.pressed_keys, uint(Keyboard_Key.RIGHT_CONTROL)) do break
+            clipboard := cast([^]u8) get_clipboard_text()
             for i := 0 ; clipboard[i] != 0; i += 1 {
                 if !sa.inject_at(&text_box_element.field, clipboard[i], text_box_element.cursor_index) {
                     break
@@ -206,18 +205,18 @@ text_box_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, e
 draw_text_box: UI_Render_Proc : proc(gs: ^Game_State, element: UI_Element) {
 
     text_box_element := assert_variant_rdonly(element.variant, UI_Text_Box_Element)
-    rl.DrawRectangleLinesEx(element.bounding_rect, 4, rl.WHITE)
+    draw_rectangle_lines_ex(element.bounding_rect, 4, WHITE)
     font_size := element.bounding_rect.height - 2 * BUTTON_TEXT_PADDING
-    single_character_width := rl.MeasureTextEx(monospace_font, "_", font_size, 0).x
-    text_color := rl.LIGHTGRAY
+    single_character_width := measure_text_ex(monospace_font, "_", font_size, 0).x
+    text_color := LIGHTGRAY
     text := text_box_element.default_string
 
     if .Active in element.flags || sa.len(text_box_element.field) > 0 {
-        text_color = rl.WHITE
+        text_color = WHITE
         text = strings.clone_to_cstring(string(sa.slice(&text_box_element.field)), context.temp_allocator)
     }
 
-    rl.DrawTextEx(
+    draw_text_ex(
         monospace_font,
         text,
         {element.bounding_rect.x + BUTTON_TEXT_PADDING, element.bounding_rect.y + BUTTON_TEXT_PADDING}, 
@@ -228,14 +227,14 @@ draw_text_box: UI_Render_Proc : proc(gs: ^Game_State, element: UI_Element) {
 
     if .Active in element.flags {
         CYCLE_TIME :: 1 // s
-        time := (rl.GetTime() - text_box_element.last_click_time) / CYCLE_TIME
+        time := (get_time() - text_box_element.last_click_time) / CYCLE_TIME
         time_remainder := (time - math.floor(time)) * CYCLE_TIME
         if time_remainder < CYCLE_TIME / 2.0 {
             cursor_x_position := element.bounding_rect.x + BUTTON_TEXT_PADDING + single_character_width * f32(text_box_element.cursor_index)
-            rl.DrawLineEx(
+            draw_line_ex(
                 {cursor_x_position, element.bounding_rect.y + BUTTON_TEXT_PADDING},
                 {cursor_x_position, element.bounding_rect.y + element.bounding_rect.height - BUTTON_TEXT_PADDING},
-                4, rl.WHITE,
+                4, WHITE,
             )
         }
     }
@@ -265,10 +264,10 @@ format_tooltip :: proc(gs: ^Game_State, tooltip: Tooltip) -> cstring {
 render_tooltip :: proc(gs: ^Game_State) {
     if gs.tooltip == nil do return
     tooltip_text := format_tooltip(gs, gs.tooltip)
-    dimensions := rl.MeasureTextEx(default_font, tooltip_text, TOOLTIP_FONT_SIZE, FONT_SPACING)
+    dimensions := measure_text_ex(default_font, tooltip_text, TOOLTIP_FONT_SIZE, FONT_SPACING)
     top_width := WIDTH - BOARD_TEXTURE_SIZE.x
     offset := BOARD_TEXTURE_SIZE.x + (top_width - dimensions.x) / 2
-    rl.DrawTextEx(default_font, tooltip_text, {offset, 0}, TOOLTIP_FONT_SIZE, FONT_SPACING, rl.WHITE)
+    draw_text_ex(default_font, tooltip_text, {offset, 0}, TOOLTIP_FONT_SIZE, FONT_SPACING, WHITE)
 }
 
 
@@ -314,9 +313,9 @@ add_game_ui_elements :: proc(gs: ^Game_State) {
         button_location = FIRST_SIDE_BUTTON_LOCATION,
     }
 
-    board_render_texture: rl.RenderTexture2D
+    board_render_texture: Render_Texture_2D
     when !ODIN_TEST {
-        board_render_texture = rl.LoadRenderTexture(i32(BOARD_TEXTURE_SIZE.x), i32(BOARD_TEXTURE_SIZE.y))
+        board_render_texture = load_render_texture(i32(BOARD_TEXTURE_SIZE.x), i32(BOARD_TEXTURE_SIZE.y))
     }
 
     append(&gs.ui_stack[.Board], UI_Element {
@@ -359,7 +358,7 @@ add_game_ui_elements :: proc(gs: ^Game_State) {
 increase_window_size :: proc() {
     if window_size == .Small {
         window_size = .Big
-        rl.SetWindowSize(WIDTH, HEIGHT)
+        set_window_size(WIDTH, HEIGHT)
         window_scale = 1
     }
 }
@@ -367,19 +366,19 @@ increase_window_size :: proc() {
 decrease_window_size :: proc() {
     if window_size == .Big {
         window_size = .Small
-        rl.SetWindowSize(WIDTH / 2, HEIGHT / 2)
+        set_window_size(WIDTH / 2, HEIGHT / 2)
         window_scale = 2
     }
 }
 
 toggle_fullscreen :: proc() {
-    rl.ToggleBorderlessWindowed()
+    toggle_borderless_windowed()
     if window_size != .Fullscreen {
         window_size = .Fullscreen
-        window_scale = WIDTH / f32(rl.GetRenderWidth())
+        window_scale = WIDTH / f32(get_render_width())
     } else {
         window_size = .Small
-        rl.SetWindowSize(WIDTH / 2, HEIGHT / 2)
+        set_window_size(WIDTH / 2, HEIGHT / 2)
         window_scale = 2
     }
 }
@@ -388,29 +387,29 @@ add_toast :: proc(gs: ^Game_State, text: string, duration: f64) {
     toast := Toast{duration = duration}
     new_string := string(text)
     copy(toast._text_buf[:], new_string[:])
-    toast.start_time = rl.GetTime()
+    toast.start_time = get_time()
     append(&gs.toasts, toast)
 }
 
 draw_toast :: proc(toast: ^Toast) {
-    t := (rl.GetTime() - toast.start_time) / toast.duration
+    t := (get_time() - toast.start_time) / toast.duration
     if t > 1 do return
     text := cstring(raw_data(toast._text_buf[:]))
 
     alpha := u8((1 - t) * 255)
 
-    background_color := rl.WHITE
+    background_color := WHITE
     background_color.a = alpha
-    text_color := rl.BLACK
+    text_color := BLACK
     text_color.a = alpha
 
-    text_size := rl.MeasureTextEx(default_font, text, TOAST_FONT_SIZE, 0)
+    text_size := measure_text_ex(default_font, text, TOAST_FONT_SIZE, 0)
     rect_size := text_size + 2 * TOAST_TEXT_PADDING
 
     text_position := (Vec2{WIDTH, HEIGHT} - text_size) / 2
     text_position.y += 100 * f32(t)
     rect_position := text_position - TOAST_TEXT_PADDING
 
-    rl.DrawRectangleV(rect_position, rect_size, background_color)
-    rl.DrawTextEx(default_font, text, text_position, TOAST_FONT_SIZE, 0, text_color)
+    draw_rectangle_v(rect_position, rect_size, background_color)
+    draw_text_ex(default_font, text, text_position, TOAST_FONT_SIZE, 0, text_color)
 }

@@ -1,6 +1,5 @@
 package guards
 
-import rl "vendor:raylib"
 import "core:strings"
 import "core:fmt"
 import "core:math"
@@ -85,8 +84,8 @@ Card_Data :: struct {
 
     // !!This cannot be sent over the network !!!!
     primary_effect: []Action,
-    texture: rl.Texture2D,
-    background_image: rl.Texture2D,
+    texture: Texture,
+    background_image: Texture,
 }
 
 Card :: struct {
@@ -170,12 +169,12 @@ primary_initials := [Primary_Kind]string {
 card_hand_position_rects: [Card_Color]Rectangle
 
 @rodata
-card_color_values := [Card_Color]rl.Color {
-    .Gold   = rl.GOLD,
-    .Silver = rl.GRAY,
-    .Red    = rl.RED,
-    .Green  = rl.LIME,
-    .Blue   = rl.BLUE,
+card_color_values := [Card_Color]Colour {
+    .Gold   = GOLD,
+    .Silver = GRAY,
+    .Red    = RED,
+    .Green  = LIME,
+    .Blue   = BLUE,
 }
 
 
@@ -195,27 +194,27 @@ card_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, eleme
 create_texture_for_card :: proc(card: ^Card_Data) {
     context.allocator = context.temp_allocator
 
-    render_texture := rl.LoadRenderTexture(i32(CARD_TEXTURE_SIZE.x), i32(CARD_TEXTURE_SIZE.y))
+    render_texture := load_render_texture(i32(CARD_TEXTURE_SIZE.x), i32(CARD_TEXTURE_SIZE.y))
 
     TEXT_PADDING :: 6
     COLORED_BAND_WIDTH :: 60
     TITLE_FONT_SIZE :: COLORED_BAND_WIDTH - 2 * TEXT_PADDING
     TEXT_FONT_SIZE :: 28
 
-    rl.BeginTextureMode(render_texture)
+    begin_texture_mode(render_texture)
 
     if card.background_image != {} {
-        rl.DrawTexturePro(card.background_image, {0, 0, 500, 700}, {0, 0, 500, 700}, {}, 0, rl.WHITE)
+        draw_texture_pro(card.background_image, {0, 0, 500, 700}, {0, 0, 500, 700}, {}, 0, WHITE)
     } else {
-        color := rl.DARKBLUE / 2
+        color := DARKBLUE / 2
         color.a = 255
-        rl.ClearBackground(color)
+        clear_background(color)
     }
     
     // Secondaries ribbon & initiative
-    rl.DrawRectangleRec({0, 0, COLORED_BAND_WIDTH, CARD_TEXTURE_SIZE.y / 2}, card_color_values[card.color])
+    draw_rectangle_rec({0, 0, COLORED_BAND_WIDTH, CARD_TEXTURE_SIZE.y / 2}, card_color_values[card.color])
 
-    rl.DrawTextEx(default_font, fmt.ctprintf("I%d", card.values[.Initiative]), {TEXT_PADDING, TEXT_PADDING}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+    draw_text_ex(default_font, fmt.ctprintf("I%d", card.values[.Initiative]), {TEXT_PADDING, TEXT_PADDING}, TITLE_FONT_SIZE, FONT_SPACING, BLACK)
     secondaries_index := 1
     primary_to_value := [Primary_Kind]Card_Value_Kind {
         .Attack = .Attack,
@@ -234,31 +233,31 @@ create_texture_for_card :: proc(card: ^Card_Data) {
             value_kind == .Radius
         ) { continue }
         value_name, _ := reflect.enum_name_from_value(value_kind)
-        rl.DrawTextEx(default_font, fmt.ctprintf("%s%d", value_name[:1], value), {TEXT_PADDING, TEXT_PADDING + f32(secondaries_index) * TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+        draw_text_ex(default_font, fmt.ctprintf("%s%d", value_name[:1], value), {TEXT_PADDING, TEXT_PADDING + f32(secondaries_index) * TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, BLACK)
         secondaries_index += 1
     }
     
 
     // Name
-    name_length_px := rl.MeasureTextEx(default_font, card.name, TITLE_FONT_SIZE, FONT_SPACING).x
+    name_length_px := measure_text_ex(default_font, card.name, TITLE_FONT_SIZE, FONT_SPACING).x
     name_offset := (CARD_TEXTURE_SIZE.x + COLORED_BAND_WIDTH - name_length_px) / 2
     name_rect := Rectangle{name_offset - 2 * TEXT_PADDING, 2 * TEXT_PADDING, name_length_px + 4 * TEXT_PADDING, COLORED_BAND_WIDTH + 2 * TEXT_PADDING}
-    rl.DrawRectangleRounded(name_rect, 0.5, 20, rl.WHITE)
-    rl.DrawRectangleRoundedLinesEx(name_rect, 0.5, 20, TEXT_PADDING, rl.BLACK)
-    rl.DrawTextEx(default_font, card.name, {name_rect.x, name_rect.y} + 2 * TEXT_PADDING, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+    draw_rectangle_rounded(name_rect, 0.5, 20, WHITE)
+    draw_rectangle_rounded_lines_ex(name_rect, 0.5, 20, TEXT_PADDING, BLACK)
+    draw_text_ex(default_font, card.name, {name_rect.x, name_rect.y} + 2 * TEXT_PADDING, TITLE_FONT_SIZE, FONT_SPACING, BLACK)
 
 
     // Tier
     tier_ball_loc := Vec2{CARD_TEXTURE_SIZE.x - COLORED_BAND_WIDTH / 2, COLORED_BAND_WIDTH / 2}
-    rl.DrawCircleV(tier_ball_loc, COLORED_BAND_WIDTH / 2, rl.DARKGRAY)
+    draw_circle_v(tier_ball_loc, COLORED_BAND_WIDTH / 2, DARKGRAY)
     TIER_FONT_SIZE :: TITLE_FONT_SIZE * 0.8
     if card.tier > 0 {
         tier_strings := []cstring{"I", "II", "III"}
         tier_string := tier_strings[card.tier - 1]
 
-        tier_dimensions := rl.MeasureTextEx(default_font, tier_string, TIER_FONT_SIZE, FONT_SPACING)
+        tier_dimensions := measure_text_ex(default_font, tier_string, TIER_FONT_SIZE, FONT_SPACING)
         tier_text_location := tier_ball_loc - tier_dimensions / 2
-        rl.DrawTextEx(default_font, tier_string, tier_text_location, TIER_FONT_SIZE, FONT_SPACING, rl.WHITE)
+        draw_text_ex(default_font, tier_string, tier_text_location, TIER_FONT_SIZE, FONT_SPACING, WHITE)
     }
 
     // Prep for bottom of card
@@ -268,7 +267,7 @@ create_texture_for_card :: proc(card: ^Card_Data) {
     }
 
     text_cstring := strings.clone_to_cstring(card.text)
-    text_dimensions := rl.MeasureTextEx(default_font, text_cstring, TEXT_FONT_SIZE, FONT_SPACING)
+    text_dimensions := measure_text_ex(default_font, text_cstring, TEXT_FONT_SIZE, FONT_SPACING)
 
     // Primary & its value & sign
     primary_value := card.values[primary_to_value[card.primary]]
@@ -278,41 +277,41 @@ create_texture_for_card :: proc(card: ^Card_Data) {
         if defense_action.block_condition != nil do primary_value_string = "!"
     }
     primary_value_loc := Vec2{TEXT_PADDING, y_offset - text_dimensions.y - TITLE_FONT_SIZE}
-    rl.DrawRectangleV({0, primary_value_loc.y - TEXT_PADDING}, CARD_TEXTURE_SIZE, rl.WHITE)
-    rl.DrawLineEx({0, primary_value_loc.y - TEXT_PADDING}, {CARD_TEXTURE_SIZE.x, primary_value_loc.y - TEXT_PADDING}, TEXT_PADDING, rl.BLACK)
-    rl.DrawTextEx(default_font, fmt.ctprintf("%s%s%s", primary_initials[card.primary], primary_value_string, PLUS_SIGN if card.primary_sign == .Plus else ""), primary_value_loc, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+    draw_rectangle_v({0, primary_value_loc.y - TEXT_PADDING}, CARD_TEXTURE_SIZE, WHITE)
+    draw_line_ex({0, primary_value_loc.y - TEXT_PADDING}, {CARD_TEXTURE_SIZE.x, primary_value_loc.y - TEXT_PADDING}, TEXT_PADDING, BLACK)
+    draw_text_ex(default_font, fmt.ctprintf("%s%s%s", primary_initials[card.primary], primary_value_string, PLUS_SIGN if card.primary_sign == .Plus else ""), primary_value_loc, TITLE_FONT_SIZE, FONT_SPACING, BLACK)
 
     // Reach & sign
     card_reach, is_radius := (card.values[.Radius] if card.values[.Radius] > 0 else card.values[.Range]), card.values[.Radius] > 0
     if card_reach > 0 {
         reach_string := fmt.ctprintf("%s%d%s", "Rd" if is_radius else "Rn", card_reach, PLUS_SIGN if card.reach_sign == .Plus else "")
-        reach_dimensions := rl.MeasureTextEx(default_font, reach_string, TITLE_FONT_SIZE, FONT_SPACING).x
-        rl.DrawTextEx(default_font, reach_string, {CARD_TEXTURE_SIZE.x - reach_dimensions - TEXT_PADDING, primary_value_loc.y}, TITLE_FONT_SIZE, FONT_SPACING, rl.BLACK)
+        reach_dimensions := measure_text_ex(default_font, reach_string, TITLE_FONT_SIZE, FONT_SPACING).x
+        draw_text_ex(default_font, reach_string, {CARD_TEXTURE_SIZE.x - reach_dimensions - TEXT_PADDING, primary_value_loc.y}, TITLE_FONT_SIZE, FONT_SPACING, BLACK)
     }
 
     // Body text
-    rl.DrawTextEx(default_font, text_cstring, {TEXT_PADDING, y_offset - text_dimensions.y - TEXT_PADDING}, TEXT_FONT_SIZE, FONT_SPACING, rl.BLACK)
+    draw_text_ex(default_font, text_cstring, {TEXT_PADDING, y_offset - text_dimensions.y - TEXT_PADDING}, TEXT_FONT_SIZE, FONT_SPACING, BLACK)
 
     // Item
     if card.tier > 1 {
-        rl.DrawRectangleRec({0, y_offset, CARD_TEXTURE_SIZE.x, COLORED_BAND_WIDTH}, rl.DARKGRAY)
+        draw_rectangle_rec({0, y_offset, CARD_TEXTURE_SIZE.x, COLORED_BAND_WIDTH}, DARKGRAY)
         item_initial := item_initials[card.item]
-        item_text_dimensions := rl.MeasureTextEx(default_font, item_initial, TITLE_FONT_SIZE, FONT_SPACING)
-        rl.DrawTextEx(default_font, item_initial, {0, y_offset} + ({CARD_TEXTURE_SIZE.x, COLORED_BAND_WIDTH} - item_text_dimensions) / 2, TITLE_FONT_SIZE, FONT_SPACING, rl.WHITE)
+        item_text_dimensions := measure_text_ex(default_font, item_initial, TITLE_FONT_SIZE, FONT_SPACING)
+        draw_text_ex(default_font, item_initial, {0, y_offset} + ({CARD_TEXTURE_SIZE.x, COLORED_BAND_WIDTH} - item_text_dimensions) / 2, TITLE_FONT_SIZE, FONT_SPACING, WHITE)
     }
 
     // Unimplemented warning
     if len(card.primary_effect) == 0 {
         unimplemented_text: cstring = "NO IMPLEMENTADO"
-        unimplemented_dimensions := rl.MeasureTextEx(default_font, unimplemented_text, TITLE_FONT_SIZE, FONT_SPACING)
-        rl.DrawTextEx(default_font, unimplemented_text, (CARD_TEXTURE_SIZE - unimplemented_dimensions) / 2, TITLE_FONT_SIZE, FONT_SPACING, rl.RED)
+        unimplemented_dimensions := measure_text_ex(default_font, unimplemented_text, TITLE_FONT_SIZE, FONT_SPACING)
+        draw_text_ex(default_font, unimplemented_text, (CARD_TEXTURE_SIZE - unimplemented_dimensions) / 2, TITLE_FONT_SIZE, FONT_SPACING, RED)
     }
     
-    rl.EndTextureMode()
+    end_texture_mode()
 
     card.texture = render_texture.texture
 
-    rl.SetTextureFilter(card.texture, .BILINEAR)
+    set_texture_filter(card.texture, .BILINEAR)
 }
 
 draw_card: UI_Render_Proc: proc(gs: ^Game_State, element: UI_Element) {
@@ -326,21 +325,21 @@ when !ODIN_TEST {
 
     // amount_to_show := element.bounding_rect.height / element.bounding_rect.width * CARD_TEXTURE_SIZE.y
     if card_element.hidden {
-        rl.DrawRectangleRec(element.bounding_rect, rl.RAYWHITE)
-        rl.DrawRectangleLinesEx(element.bounding_rect, 4, rl.LIGHTGRAY)
+        draw_rectangle_rec(element.bounding_rect, RAYWHITE)
+        draw_rectangle_lines_ex(element.bounding_rect, 4, LIGHTGRAY)
     } else {
-        rl.DrawRectangleRec(element.bounding_rect, card_color_values[card_data.color])
+        draw_rectangle_rec(element.bounding_rect, card_color_values[card_data.color])
     
         name_font_size := element.bounding_rect.width / 7
         text_padding := element.bounding_rect.width / 80
 
-        name_size := rl.MeasureTextEx(default_font, card_data.name, name_font_size, FONT_SPACING)
+        name_size := measure_text_ex(default_font, card_data.name, name_font_size, FONT_SPACING)
 
         remaining_width := element.bounding_rect.width - name_size.x
-        rl.DrawTextEx(default_font, card_data.name, {element.bounding_rect.x + remaining_width / 2, element.bounding_rect.y + text_padding}, name_font_size, FONT_SPACING, rl.BLACK)
+        draw_text_ex(default_font, card_data.name, {element.bounding_rect.x + remaining_width / 2, element.bounding_rect.y + text_padding}, name_font_size, FONT_SPACING, BLACK)
     }
     // Looks a little bunk but I should revisit this
-    // rl.DrawTexturePro(card_element.card_data.texture, {0, CARD_TEXTURE_SIZE.y - amount_to_show, CARD_TEXTURE_SIZE.x, -amount_to_show}, element.bounding_rect, {}, 0, rl.WHITE)
+    // draw_texture_pro(card_element.card_data.texture, {0, CARD_TEXTURE_SIZE.y - amount_to_show, CARD_TEXTURE_SIZE.x, -amount_to_show}, element.bounding_rect, {}, 0, WHITE)
 
     action := get_current_action(gs)
     if action != nil {
@@ -355,24 +354,24 @@ when !ODIN_TEST {
             if available {
                 // Copy n paste from board highlighting
                 frequency: f64 = 8
-                color_blend := (math.sin(frequency * rl.GetTime()) + 1) / 2
+                color_blend := (math.sin(frequency * get_time()) + 1) / 2
                 color_blend = color_blend * color_blend
-                base_color := rl.DARKGRAY
-                highlight_color := rl.LIGHTGRAY
-                // color: = color_lerp(rl.Blue, rl.ORange, color_blend)
+                base_color := DARKGRAY
+                highlight_color := LIGHTGRAY
+                // color: = color_lerp(BLUE, ORANGE, color_blend)
                 color := color_lerp(base_color, highlight_color, color_blend)
-                rl.DrawRectangleLinesEx(element.bounding_rect, 8, color)
+                draw_rectangle_lines_ex(element.bounding_rect, 8, color)
             }
         }
     }
 
     if card_element.selected {
-        rl.DrawRectangleLinesEx(element.bounding_rect, 8, rl.PURPLE)
+        draw_rectangle_lines_ex(element.bounding_rect, 8, PURPLE)
     }
     if .Hovered in element.flags && !card_element.hidden {
-        rl.DrawTexturePro(card_data.texture, {0, 0, CARD_TEXTURE_SIZE.x, -CARD_TEXTURE_SIZE.y}, CARD_HOVER_POSITION_RECT, {}, 0, rl.WHITE)
-        rl.DrawRectangleLinesEx(element.bounding_rect, 4, rl.WHITE)
-        // rl.DrawRectangleLinesEx(CARD_HOVER_POSITION_RECT, 2, rl.RAYWHITE)
+        draw_texture_pro(card_data.texture, {0, 0, CARD_TEXTURE_SIZE.x, -CARD_TEXTURE_SIZE.y}, CARD_HOVER_POSITION_RECT, {}, 0, WHITE)
+        draw_rectangle_lines_ex(element.bounding_rect, 4, WHITE)
+        // draw_rectangle_lines_ex(CARD_HOVER_POSITION_RECT, 2, RAYWHITE)
     }
 }
 }
