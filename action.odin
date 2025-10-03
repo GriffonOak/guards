@@ -17,7 +17,6 @@ Movement_Flag :: enum {
     // etc...
 }
 
-
 Movement_Criteria :: struct {
     min_distance: Implicit_Quantity,
     max_distance: Implicit_Quantity,
@@ -33,7 +32,7 @@ Movement_Action :: struct {
 }
 
 Fast_Travel_Action :: struct {
-    result: Target,
+    // result: Target,
 }
 
 Clear_Action :: struct {}
@@ -48,7 +47,6 @@ Choose_Target_Action :: struct {
     using criteria: Selection_Criteria,
     num_targets: Implicit_Quantity,
     result: [dynamic]Target,
-    // result: Target
 }
 
 Choice :: struct {

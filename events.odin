@@ -359,7 +359,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
             #partial switch &action_variant in action.variant {
             case Fast_Travel_Action:
-                action_variant.result = var.space
+                append(&gs.action_memory, var.space)
                 append(&gs.event_queue, Resolve_Current_Action_Event{})
 
             case Movement_Action:
@@ -1137,7 +1137,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         #partial switch &variant in action.variant {
         case Fast_Travel_Action:
-            broadcast_game_event(gs, Entity_Translocation_Event{get_my_player(gs).hero.location, variant.result})
+            result := gs.action_memory[len(gs.action_memory) - 1].(Target)
+            broadcast_game_event(gs, Entity_Translocation_Event{get_my_player(gs).hero.location, result})
         case Movement_Action:
             defer {
                 delete(variant.path.spaces)
@@ -1182,6 +1183,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case End_Resolution_Event:
         clear_side_buttons(gs)
+        clear(&gs.action_memory)
 
         // This is to ensure that if a player's state changes mid-interrupt, only the underlying "base state" changes, rather than all the froth on top.
         gs.players[var.player_id].stage = .Resolved

@@ -35,7 +35,7 @@ _ :: time
 
     v Refactor heroes "out of" players (allow for multiple heroes controlled by 1 player)
     v Ultimates
-    v Minions outside battle zone if path blocked
+    v Minions outside battle zone if path blocked (can use skip_index on the minion move action for this)
 
     vv Snorri runes
 

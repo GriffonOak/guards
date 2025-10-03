@@ -126,6 +126,10 @@ become_interrupted :: proc(
     broadcast_game_event(gs, Begin_Interrupt_Event{interrupt})
 }
 
+Action_Value :: union {
+    Target,
+}
+
 
 Game_State :: struct {
     players: [dynamic]Player,  // @Note: Might be better to use sa or fixed array here so entries don't move around (problem for username strings)
@@ -145,10 +149,10 @@ Game_State :: struct {
     stage: Game_Stage,
     current_battle_zone: Region_ID,
     interrupt_stack: [dynamic]Expanded_Interrupt,
+    action_memory: [dynamic]Action_Value,
 
     event_queue: [dynamic]Event,
     board: [GRID_WIDTH][GRID_HEIGHT]Space,
-
     
     tooltip: Tooltip,
 
