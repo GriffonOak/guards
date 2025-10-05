@@ -364,7 +364,7 @@ arien_cards := []Card_Data {
         text            = "This turn: Enemy heroes adjacent\nto you cannot fast travel, or move more\nthan 1 space with a movement action.",
         primary_effect  = []Action {},
     },
-    Card_Data { name = "Violent Torrent",  // @Incomplete: Bunk repeat
+    Card_Data { name = "Violent Torrent",
         color           = .Red,
         tier            = 3,
         values          = #partial{.Initiative = 9, .Defense = 7, .Attack = 7, .Movement = 4},
@@ -373,7 +373,17 @@ arien_cards := []Card_Data {
         text            = "Target a unit adjacent to you. Before the\nattack: Up to 1 enemy hero in any of the 5\nspaces in a straight line directly behind the\target discards a card, or is defeated.\nMay repeat once on a different unit.",
         primary_effect  = []Action {
             Action {  // 0
-                tooltip = "Target a unit adjacent to you.",
+                tooltip = Formatted_String {
+                    format = "%v",
+                    arguments = {
+                        Conditional_String_Argument {
+                            condition = Equal{Repeat_Count{}, 0},
+                            arg1 = "Target a unit adjacent to you.",
+                            arg2 = "May repeat once on a different unit.",
+                        },
+                    },
+                },
+                optional = Greater_Than{Repeat_Count{}, 0},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     label = .Attack_Target,
@@ -382,6 +392,7 @@ arien_cards := []Card_Data {
                         Target_Contains_Any{UNIT_FLAGS},
                         Target_Is_Enemy_Unit{},
                     },
+                    flags = {.Not_Previously_Targeted},
                 },
             },
             Action {  // 1
@@ -417,51 +428,9 @@ arien_cards := []Card_Data {
                     strength = Card_Value{.Attack},
                 },
             },
-            Action {  // 4
-                tooltip = "You may target a unit adjacent to you.",
-                optional = true,
-                variant = Choose_Target_Action {
-                    num_targets = 1,
-                    label = .Attack_Target,
-                    conditions = {
-                        Target_Within_Distance{Self{}, {1, 1}},
-                        Target_Contains_Any{UNIT_FLAGS},
-                        Target_Is_Enemy_Unit{},
-                    },
-                    flags = {.Not_Previously_Targeted},
-                },
-            },
-            Action {  // 5
-                tooltip = "You may force an enemy hero behind the target to discard.",
-                optional = true,
-                skip_index = {index = 7},
-                variant = Choose_Target_Action {
-                    num_targets = 1,
-                    conditions = {
-                        Target_Within_Distance{Self{}, {2, 4}},
-                        Target_In_Straight_Line_With{Self{}},
-                        Target_In_Straight_Line_With{Previously_Chosen_Target{}},
-                        Greater_Than {
-                            Target_Distance_To{Self{}},
-                            Target_Distance_To{Previously_Chosen_Target{}},
-                        },
-                        Target_Contains_Any{{.Hero}},
-                        Target_Is_Enemy_Unit{},
-                    },
-                },
-            },
-            Action {  // 6
-                tooltip = "Waiting for the opponent to discard...",
-                variant = Force_Discard_Action {
-                    target = Previously_Chosen_Target{},
-                    or_is_defeated = true,
-                },
-            },
-            Action {  // 7
-                tooltip = "Waiting for opponent to defend...",
-                variant = Attack_Action {
-                    target = Labelled_Target{.Attack_Target},
-                    strength = Card_Value{.Attack},
+            Action {
+                variant = Repeat_Action {
+                    max_repeats = 1,
                 },
             },
         },
@@ -548,7 +517,7 @@ arien_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Ebb and Flow",   // @Unimplemented, repeat, was
+    Card_Data { name = "Ebb and Flow",
         color           = .Green,
         tier            = 3,
         alternate       = true,
@@ -556,7 +525,48 @@ arien_cards := []Card_Data {
         primary         = .Skill,
         item            = .Defense,
         text            = "Swap with an enemy minion in range;\nif it was adjacent to you, may repeat once.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = Formatted_String {
+                    format = "%v",
+                    arguments = {
+                        Conditional_String_Argument {
+                            condition = Equal{Repeat_Count{}, 0},
+                            arg1 = "Target an enemy minion in range.",
+                            arg2 = "May repeat once.",
+                        },
+                    },
+                },
+                optional = Greater_Than{Repeat_Count{}, 0},
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
+                        Target_Contains_Any{MINION_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {
+                variant = Save_Variable_Action {
+                    variable = Equal{Distance_Between{Self{}, Previously_Chosen_Target{}}, 1},
+                },
+            },
+            Action {
+                variant = Swap_Action {
+                    targets = []Implicit_Target{
+                        Self{},
+                        Previously_Chosen_Target{},
+                    },
+                },
+            },
+            Action {
+                condition = Previously_Saved_Boolean{},
+                variant = Repeat_Action {
+                    max_repeats = 1,
+                },
+            },
+        },
     },
     Card_Data { name = "Master Duelist",  // @Incomplete, active effect
         color           = .Blue,
@@ -565,7 +575,13 @@ arien_cards := []Card_Data {
         primary         = .Defense,
         item            = .Range,
         text            = "Ignore all minion defense modifiers.\nThis round: You are immune to attack actions\nof all enemy heroes, except this attacker.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                variant = Defend_Action {  // No minion modifiers as part of this calculation...
+                    strength = Card_Value{.Defense},
+                },
+            },
+        },
     },
     Card_Data { name = "Deluge",  // @Unimplemented, active effect
         color           = .Blue,
@@ -575,12 +591,6 @@ arien_cards := []Card_Data {
         primary         = .Movement,
         item            = .Attack,
         text            = "This turn: Enemy heroes in radius\ncannot fast travel, or move more than\n1 space with a movement action.",
-        primary_effect  = []Action {
-            Action {
-                variant = Defend_Action {  // No minion modifiers as part of this calculation...
-                    strength = Card_Value{.Defense},
-                },
-            },
-        },
+        primary_effect  = []Action {},
     },
 }
