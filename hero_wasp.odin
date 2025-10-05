@@ -96,7 +96,7 @@ wasp_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Lift Up",  // @Unimplemented, "Same target"
+    Card_Data { name = "Lift Up",
         color           = .Blue,
         tier            = 1,
         values          = #partial{.Initiative = 10, .Defense = 5, .Movement = 3, .Radius = 2},
@@ -110,7 +110,7 @@ wasp_cards := []Card_Data {
                         Conditional_String_Argument {
                             condition = Equal{Repeat_Count{}, 0},
                             arg1 = "Target a unit or token in radius.",
-                            arg2 = "May repeat once on the same target."
+                            arg2 = "May repeat once on the same target.",
                         },
                     },
                 },
@@ -122,11 +122,11 @@ wasp_cards := []Card_Data {
                             And {
                                 Equal{Repeat_Count{}, 0},
                                 Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                                Target_Contains_Any{UNIT_FLAGS + {.Token}}
+                                Target_Contains_Any{UNIT_FLAGS + {.Token}},
                             },
                             And {
                                 Greater_Than{Repeat_Count{}, 0},
-                                Target_Is{Previously_Chosen_Target{}}
+                                Target_Is{Previously_Chosen_Target{}},
                             },
                         },
                     },
@@ -154,8 +154,8 @@ wasp_cards := []Card_Data {
             Action {
                 variant = Repeat_Action {
                     max_repeats = 1,
-                }
-            }
+                },
+            },
         },
     },
     Card_Data { name = "Electrocute",
@@ -306,14 +306,68 @@ wasp_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Control Gravity",  // @Incomplete "Same target"
+    Card_Data { name = "Control Gravity",
         color           = .Blue,
         tier            = 2,
         values          = #partial{.Initiative = 10, .Defense = 5, .Movement = 3, .Radius = 3},
         primary         = .Skill,
         item            = .Defense,
         text            = "Move a unit, or a token, in radius 1 space,\nwithout moving it away from you or closer to\nyou.\nMay repeat once on the same target.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = Formatted_String {
+                    format = "%v",
+                    arguments = {
+                        Conditional_String_Argument {
+                            condition = Equal{Repeat_Count{}, 0},
+                            arg1 = "Target a unit or token in radius.",
+                            arg2 = "May repeat once on the same target.",
+                        },
+                    },
+                },
+                optional = Greater_Than{Repeat_Count{}, 0},
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Or {
+                            And {
+                                Equal{Repeat_Count{}, 0},
+                                Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                                Target_Contains_Any{UNIT_FLAGS + {.Token}},
+                            },
+                            And {
+                                Greater_Than{Repeat_Count{}, 0},
+                                Target_Is{Previously_Chosen_Target{}},
+                            },
+                        },
+                    },
+                },
+            },
+            Action {
+                tooltip = "Move the target 1 space, without moving it away from you or closer to you.",
+                variant = Movement_Action {
+                    target = Previously_Chosen_Target{},
+                    min_distance = 1,
+                    max_distance = 1,
+                    destination_criteria = {
+                        conditions = {
+                            Target_Within_Distance{
+                                Self{},
+                                {
+                                    Distance_Between{Self{}, Previously_Chosen_Target{}},
+                                    Distance_Between{Self{}, Previously_Chosen_Target{}},
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            Action {
+                variant = Repeat_Action {
+                    max_repeats = 1,
+                },
+            },
+        },
     },
     Card_Data { name = "Kinetic Repulse",  // @Unimplemented, this one is just kinda hard, also need same target stuff likely
         color           = .Blue,
@@ -371,7 +425,7 @@ wasp_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Thunder Boomerang",  // @Unimplemented, what if the first target dies?????
+    Card_Data { name = "Thunder Boomerang",
         color           = .Red,
         tier            = 3,
         alternate       = true,
@@ -380,7 +434,54 @@ wasp_cards := []Card_Data {
         item            = .Movement,
         text            = "Target a unit in range and not in a straight line.\nAfter the attack: If you targeted a hero,\nmay repeat once on a different target.",
         primary_effect  = []Action {
-
+            Action {
+                tooltip = Formatted_String {
+                    format = "%v",
+                    arguments = {
+                        Conditional_String_Argument {
+                            condition = Equal{Repeat_Count{}, 0},
+                            arg1 = "Target a unit in range and not in a straight line.",
+                            arg2 = "May repeat once on a different target.",
+                        },
+                    },
+                },
+                optional = Greater_Than{Repeat_Count{}, 0},
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {2, Card_Value{.Range}}},
+                        Not{Target_In_Straight_Line_With{Self{}}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                    flags = {.Not_Previously_Targeted},
+                },
+            },
+            Action {
+                variant = Save_Variable_Action {
+                    Greater_Than {  // @Note: It would be nice to have a better way of expressing this
+                        Count_Targets {
+                            conditions = {
+                                Target_Is{Previously_Chosen_Target{}},
+                                Target_Contains_Any{{.Hero}},
+                            },
+                        }, 0,
+                    },
+                },
+            },
+            Action {
+                tooltip = "Waiting for opponent to defend...",
+                variant = Attack_Action {
+                    target = Previously_Chosen_Target{},
+                    strength = Card_Value{.Attack},
+                },
+            },
+            Action {
+                condition = Previously_Saved_Boolean{},
+                variant = Repeat_Action {
+                    max_repeats = 1,
+                },
+            },
         },
     },
     Card_Data { name = "Reflect Projectiles",
@@ -416,7 +517,7 @@ wasp_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Mass Telekinesis",  // @Unimplemented repeat
+    Card_Data { name = "Mass Telekinesis",
         color           = .Green,
         tier            = 3,
         alternate       = true,
@@ -424,18 +525,117 @@ wasp_cards := []Card_Data {
         primary         = .Skill,
         item            = .Attack,
         text            = "Place a unit or a token in range, which\nis not in a straight line, into a space\nadjacent to you. May repeat once.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = Formatted_String {
+                    format = "%v",
+                    arguments = {
+                        Conditional_String_Argument {
+                            condition = Equal{Repeat_Count{}, 0},
+                            arg1 = "Target a unit or token in range and not in a straight line.",
+                            arg2 = "May repeat once.",
+                        },
+                    },
+                },
+                optional = Greater_Than{Repeat_Count{}, 0},
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    label = .Place_Target,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
+                        Target_Contains_Any{UNIT_FLAGS + {.Token}},
+                        Not{Target_In_Straight_Line_With{Self{}}},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Place the target in a space adjacent to you.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Empty,
+                    },
+                },
+            },
+            Action {
+                tooltip = error_tooltip,
+                variant = Place_Action {
+                    source = Labelled_Target{.Place_Target},
+                    destination = Previously_Chosen_Target{},
+                },
+            },
+            Action {
+                variant = Repeat_Action {
+                    max_repeats = 1,
+                },
+            },
+        },
     },
-    Card_Data { name = "Center of Mass",  // @Unimplemented repeat, same target
+    Card_Data { name = "Center of Mass",
         color           = .Blue,
         tier            = 3,
         values          = #partial{.Initiative = 11, .Defense = 6, .Movement = 3, .Radius = 3},
         primary         = .Skill,
         item            = .Defense,
         text            = "Move a unit, or a token, in radius 1 space,\nwithout moving it away from you or closer\nto you.\nMay repeat up to two times\non the same target.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = Formatted_String {
+                    format = "%v",
+                    arguments = {
+                        Conditional_String_Argument {
+                            condition = Equal{Repeat_Count{}, 0},
+                            arg1 = "Target a unit or token in radius.",
+                            arg2 = "May repeat again on the same target.",
+                        },
+                    },
+                },
+                optional = Greater_Than{Repeat_Count{}, 0},
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Or {
+                            And {
+                                Equal{Repeat_Count{}, 0},
+                                Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                                Target_Contains_Any{UNIT_FLAGS + {.Token}},
+                            },
+                            And {
+                                Greater_Than{Repeat_Count{}, 0},
+                                Target_Is{Previously_Chosen_Target{}},
+                            },
+                        },
+                    },
+                },
+            },
+            Action {
+                tooltip = "Move the target 1 space, without moving it away from you or closer to you.",
+                variant = Movement_Action {
+                    target = Previously_Chosen_Target{},
+                    min_distance = 1,
+                    max_distance = 1,
+                    destination_criteria = {
+                        conditions = {
+                            Target_Within_Distance{
+                                Self{},
+                                {
+                                    Distance_Between{Self{}, Previously_Chosen_Target{}},
+                                    Distance_Between{Self{}, Previously_Chosen_Target{}},
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            Action {
+                variant = Repeat_Action {
+                    max_repeats = 2,
+                },
+            },
+        },
     },
-    Card_Data { name = "Kinetic Blast",
+    Card_Data { name = "Kinetic Blast",  // @Unimplemented
         color           = .Blue,
         tier            = 3,
         alternate       = true,

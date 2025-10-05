@@ -354,7 +354,7 @@ arien_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Slippery Ground",
+    Card_Data { name = "Slippery Ground",  // @Unimplemented
         color           = .Blue,
         tier            = 2,
         alternate       = true,

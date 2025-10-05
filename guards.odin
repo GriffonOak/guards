@@ -24,12 +24,9 @@ _ :: time
 /* BEYOND 0.1
 
 --- ENGINE 
-    ^^ Repeat action (that can be prevented (thanks dodger)) (this likely requires action memory)
-
     ^ "Counts as" system to allow spaces to count as other things
     ^ "Intention" system for choose_target_action to allow different types of immunity
     ^ "Hooks" system to allow other heroes to interrupt players performing actions (brogan, swift)
-    ^ Update any previous targets after entity translocation events (allows doing things on the same target)
 
     v Refactor heroes "out of" players (allow for multiple heroes controlled by 1 player)
     v Ultimates
