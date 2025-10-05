@@ -291,8 +291,6 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
         action := get_action_at_index(gs, action_index)
         if action == nil do return
 
-        origin: Target
-
         frequency: f64 = 4
         time := get_time()
 
@@ -309,9 +307,6 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
             jump_index := calculate_implicit_action_index(gs, variant.jump_index, {card_id = action_index.card_id})
             if jump_index.card_id == {} do jump_index.card_id = action_index.card_id
             highlight_action_targets(gs, jump_index)
-        case Movement_Action:
-            path := get_top_action_value_of_type(gs, Path)
-            origin = path.spaces[path.num_locked_spaces - 1]
 
         case Choose_Target_Action:
             frequency = 14
@@ -413,6 +408,7 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
             }
         case Movement_Action:
             path := get_top_action_value_of_type(gs, Path)
+            if len(path.spaces) == 0 do break
             current_loc := path.spaces[0]
             for target in path.spaces[1:] {
                 draw_line_ex(gs.board[current_loc.x][current_loc.y].position, gs.board[target.x][target.y].position, 4, VIOLET)

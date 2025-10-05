@@ -24,8 +24,6 @@ _ :: time
 /* BEYOND 0.1
 
 --- ENGINE 
-    ^^ Explore storing targets differently to make lookup / modification easier
-        * Target entity / target space perhaps?
     ^^ Repeat action (that can be prevented (thanks dodger)) (this likely requires action memory)
 
     ^ "Counts as" system to allow spaces to count as other things

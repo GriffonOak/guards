@@ -44,7 +44,7 @@ swift_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Bounce",
+    Card_Data { name = "Bounce",  // @Incomplete repeat
         color =         .Silver,
         values =        #partial{.Initiative = 12, .Defense = 2},
         primary =       .Skill,

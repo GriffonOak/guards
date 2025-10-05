@@ -87,7 +87,6 @@ Formatted_String :: struct {
     arguments: []Formatted_String_Argument,
 }
 
-
 Tooltip :: union {
     cstring,
     Formatted_String,
