@@ -12,12 +12,28 @@ xargatha_cards := []Card_Data {
         text        = "Target a unit adjacent to you.\nAfter the attack: May repeat once\non a different enemy hero.",
         primary_effect = []Action {
             Action {
-                tooltip = "Target a unit adjacent to you.",
+                tooltip = Formatted_String {
+                    format = "%v",
+                    arguments = {
+                        Conditional_String_Argument {
+                            condition = Equal{Repeat_Count{}, 0},
+                            arg1 = "Target a unit adjacent to you.",
+                            arg2 = "May repeat once on a different enemy hero.",
+                        },
+                    },
+                },
+                optional = Greater_Than{Repeat_Count{}, 0},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
-                        Target_Contains_Any{UNIT_FLAGS},
+                        Or {
+                            And {
+                                Equal{Repeat_Count{}, 0},
+                                Target_Contains_Any{MINION_FLAGS},
+                            },
+                            Target_Contains_Any{{.Hero}},
+                        },
                         Target_Is_Enemy_Unit{},
                     },
                 },
@@ -30,23 +46,8 @@ xargatha_cards := []Card_Data {
                 },
             },
             Action {
-                tooltip = "May repeat once on a different enemy hero.",
-                optional = true,
-                variant = Choose_Target_Action {
-                    num_targets = 1,
-                    conditions = {
-                        Target_Within_Distance{Self{}, {1, 1}},
-                        Target_Contains_Any{{.Hero}},
-                        Target_Is_Enemy_Unit{},
-                    },
-                    flags = {.Not_Previously_Targeted},
-                },
-            },
-            Action {
-                tooltip = "Waiting for opponent to defend...",
-                variant = Attack_Action {
-                    target = Previously_Chosen_Target{},
-                    strength = Card_Value{.Attack},
+                variant = Repeat_Action {
+                    max_repeats = 1,
                 },
             },
         },
@@ -556,10 +557,20 @@ xargatha_cards := []Card_Data {
         primary     = .Attack,
         reach_sign  = .Plus,
         item        = .Defense,
-        text        = "Target a unit in range. +1 Range\nfor each enemy unit adjacent to you.",
+        text        = "Target a unit in range. +1 Range\nfor each enemy unit adjacent to you.\nMay repeat once on a different enemy\nhero.",
         primary_effect = []Action {
             Action {
-                tooltip = "Target a unit in range.",
+                tooltip = Formatted_String {
+                    format = "%v",
+                    arguments = {
+                        Conditional_String_Argument {
+                            condition = Equal{Repeat_Count{}, 0},
+                            arg1 = "Target a unit adjacent to you.",
+                            arg2 = "May repeat once on a different enemy hero.",
+                        },
+                    },
+                },
+                optional = Greater_Than{Repeat_Count{}, 0},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -576,40 +587,15 @@ xargatha_cards := []Card_Data {
                                 },
                             }},
                         },
-                        Target_Contains_Any{UNIT_FLAGS},
-                        Target_Is_Enemy_Unit{},
-                    },
-                },
-            },
-            Action {
-                tooltip = "Waiting for opponent to defend...",
-                variant = Attack_Action {
-                    target = Previously_Chosen_Target{},
-                    strength = Card_Value{.Attack},
-                },
-            },
-            Action {
-                tooltip = "May repeat once on a different enemy hero.",
-                variant = Choose_Target_Action {
-                    num_targets = 1,
-                    conditions = {
-                        Target_Within_Distance {
-                            bounds = {1, Sum {
-                                Card_Value{.Range},
-                                Count_Targets {
-                                    conditions = {
-                                        Target_Within_Distance{Self{}, {1, 1}},
-                                        Target_Contains_Any{UNIT_FLAGS},
-                                        Target_Is_Enemy_Unit{},
-                                    },
-                                    flags = {.Ignoring_Immunity},
-                                },
-                            }},
+                        Or {
+                            And {
+                                Equal{Repeat_Count{}, 0},
+                                Target_Contains_Any{MINION_FLAGS},
+                            },
+                            Target_Contains_Any{{.Hero}},
                         },
-                        Target_Contains_Any{{.Hero}},
                         Target_Is_Enemy_Unit{},
                     },
-                    flags = {.Not_Previously_Targeted},
                 },
             },
             Action {
@@ -619,6 +605,11 @@ xargatha_cards := []Card_Data {
                     strength = Card_Value{.Attack},
                 },
             },
+            Action {
+                variant = Repeat_Action {
+                    max_repeats = 1,
+                }
+            }
         },
     },
     Card_Data { name = "Dominate",
@@ -764,7 +755,7 @@ xargatha_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Devoted Followers",  // @incomplete, @Todo check wording
+    Card_Data { name = "Devoted Followers",
         color       = .Blue,
         tier        = 3,
         alternate   = true,
