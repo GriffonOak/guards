@@ -161,6 +161,13 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         if jump_index.card_id == {} do jump_index.card_id = index.card_id
         return validate_action(gs, jump_index)
 
+    case Repeat_Action:
+        repeat_count: int
+        repeat_count_ptr, _, ok := try_get_top_action_value_of_type(gs, Repeat_Count)
+        if !ok do repeat_count = 0
+        else do repeat_count = repeat_count_ptr.count
+        return repeat_count < variant.max_repeats
+
     case Gain_Coins_Action:
         return true
 
@@ -193,6 +200,9 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         return true
 
     case Give_Marker_Action: 
+        return true
+
+    case Save_Variable_Action:
         return true
     }
     return false
@@ -416,8 +426,11 @@ make_arbitrary_targets :: proc (
     }
 
     if .Not_Previously_Targeted in criteria.flags {
-        previous_target := calculate_implicit_target(gs, Previously_Chosen_Target{}, calc_context)
-        out[previous_target.x][previous_target.y].member = false
+        for value in gs.action_memory {
+            if previous_target, ok2 := value.variant.(Target); ok2 {
+                out[previous_target.x][previous_target.y].member = false
+            }
+        }
     }
 
     if .Ignoring_Immunity not_in criteria.flags {

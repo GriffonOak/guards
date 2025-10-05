@@ -133,11 +133,25 @@ Action_Value_Label :: enum {
     Place_Target,
 }
 
+Chosen_Quantity :: struct {
+    quantity: int,
+}
+
+Repeat_Count :: struct {
+    count: int,
+}
+
+Saved_Boolean :: struct {
+    boolean: bool,
+}
+
 Action_Value_Variant :: union {
     Target,
     Path,
     Card_ID,
-    int,
+    Chosen_Quantity,
+    Repeat_Count,
+    Saved_Boolean,
 }
 
 Action_Value :: struct {

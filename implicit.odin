@@ -73,6 +73,7 @@ Implicit_Quantity :: union {
     Previous_Quantity_Choice,
     Current_Turn,
     Distance_Between,
+    Repeat_Count,
 
     // Requires target in context
     Count_Hero_Coins,
@@ -197,6 +198,10 @@ Attack_Contains_Flag :: struct {
     flag: Attack_Flag,
 }
 
+Previously_Saved_Boolean :: struct {
+    label: Action_Value_Label,
+}
+
 Implicit_Condition :: union {
     bool,
     Greater_Than,
@@ -206,6 +211,7 @@ Implicit_Condition :: union {
     Not,
     Blocked_Spawnpoints_Remain,
     Alive,
+    Previously_Saved_Boolean,
 
     // Requires target in calc_context
     Target_Within_Distance,
@@ -294,7 +300,14 @@ calculate_implicit_quantity :: proc(
         }
 
     case Previous_Quantity_Choice:
-        return get_top_action_value_of_type(gs, int)^
+        return get_top_action_value_of_type(gs, Chosen_Quantity).quantity
+
+    case Repeat_Count:
+        repeat_count, _, ok := try_get_top_action_value_of_type(gs, Repeat_Count)
+        if !ok {
+            return 0
+        }
+        return repeat_count.count
 
     case Minion_Modifiers: 
         return calculate_minion_modifiers(gs)
@@ -595,6 +608,11 @@ calculate_implicit_condition :: proc (
         _, attack_interrupt, ok := find_attack_interrupt(gs)
         log.assert(ok, "Could not find the attack interrupt when checking its flags!", loc)
         return condition.flag in attack_interrupt.flags
+
+    case Previously_Saved_Boolean:
+        saved_boolean, _, ok := try_get_top_action_value_of_type(gs, Saved_Boolean)
+        log.assert(ok, "Could not find saved boolean!")
+        return saved_boolean.boolean
     }
     return false
 }

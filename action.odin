@@ -108,6 +108,10 @@ Jump_Action :: struct {
     jump_index: Implicit_Action_Index,
 }
 
+Repeat_Action :: struct {
+    max_repeats: int,
+}
+
 Get_Defeated_Action :: struct {}
 
 Respawn_Action :: struct {
@@ -142,6 +146,14 @@ Swap_Action :: struct {
     targets: Implicit_Target_Slice,
 }
 
+Action_Variable :: union {
+    Implicit_Condition,
+}
+
+Save_Variable_Action :: struct {
+    variable: Action_Variable,
+}
+
 Action_Variant :: union {
     Movement_Action,
     Fast_Travel_Action,
@@ -157,6 +169,7 @@ Action_Variant :: union {
     Retrieve_Card_Action,
     Discard_Card_Action,
     Jump_Action,
+    Repeat_Action,
     Get_Defeated_Action,
     Respawn_Action,
     Gain_Coins_Action,
@@ -165,6 +178,7 @@ Action_Variant :: union {
     Push_Action,
     Give_Marker_Action,
     Swap_Action,
+    Save_Variable_Action,
 
     Minion_Removal_Action,
     Minion_Defeat_Action,
@@ -173,7 +187,7 @@ Action_Variant :: union {
 
 Action :: struct {
     tooltip: Tooltip,
-    optional: bool,
+    optional: Implicit_Condition,
     condition: Implicit_Condition,
 
     // I'm redoing this slightly to allow skipping non-optional actions.

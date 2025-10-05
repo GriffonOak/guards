@@ -696,7 +696,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         // action := get_current_action(gs)
         // choose_quantity_action := &action.variant.(Choose_Quantity_Action)
         // cqa.result = var.quantity
-        add_action_value(gs, var.quantity)
+        add_action_value(gs, Chosen_Quantity{var.quantity})
         append(&gs.event_queue, Resolve_Current_Action_Event{})
 
     case Begin_Interrupt_Event:
@@ -862,7 +862,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         }
         
         calc_context := Calculation_Context{card_id = action_index.card_id}
-        
+        optional := calculate_implicit_condition(gs, action.optional)
 
         skip_index := action.skip_index
         if skip_index == {} do skip_index = {sequence = .Halt}
@@ -876,7 +876,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             break
         }
 
-        if action.optional {
+        if optional {
             add_side_button(gs, "Skip" if action.skip_name == nil else action.skip_name, Resolve_Current_Action_Event{skip_index})
         }
 
@@ -894,7 +894,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         case Choose_Target_Action:
             if .Up_To in action_type.flags {
                 add_side_button(gs, "Confirm", Resolve_Current_Action_Event{})
-            } else if count_members(&action.targets) == calculate_implicit_quantity(gs, action_type.num_targets, calc_context) && !action.optional {
+            } else if count_members(&action.targets) == calculate_implicit_quantity(gs, action_type.num_targets, calc_context) && !optional {
                 iter := make_target_set_iterator(&action.targets)
                 for _, space in target_set_iter_members(&iter) {
                     add_action_value(gs, space)
@@ -1051,6 +1051,17 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             jump_index := calculate_implicit_action_index(gs, action_type.jump_index, calc_context)
             // jump_index.card_id = action_index.card_id
             append(&gs.event_queue, Resolve_Current_Action_Event{jump_index})
+
+        case Repeat_Action:
+            repeat_count, _, ok := try_get_top_action_value_of_type(gs, Repeat_Count)
+            if !ok {
+                add_action_value(gs, Repeat_Count{1})
+            } else {
+                repeat_count.count += 1
+            }
+            jump_index := action_index
+            jump_index.index = 0
+            append(&gs.event_queue, Resolve_Current_Action_Event{jump_index})
             
         case Minion_Spawn_Action:
             target := calculate_implicit_target(gs, action_type.location, calc_context)
@@ -1132,6 +1143,15 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             target := calculate_implicit_target(gs, action_type.target, calc_context)
             owner := gs.board[target.x][target.y].owner
             broadcast_game_event(gs, Give_Marker_Event{owner, action_type.marker})
+            append(&gs.event_queue, Resolve_Current_Action_Event{})
+
+        case Save_Variable_Action:
+            switch variable in action_type.variable {
+            case Implicit_Condition:
+                boolean := calculate_implicit_condition(gs, variable, calc_context)
+                add_action_value(gs, Saved_Boolean{boolean})
+            }
+
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
         case Fast_Travel_Action, Clear_Action, Choose_Card_Action:
