@@ -25,6 +25,12 @@
             "group": "build"
         },
         {
+            "label": "build-replay",
+            "type": "shell",
+            "command": "odin build . -debug -out:build/debug.exe -define:REPLAY=true",
+            "group": "build"
+        },
+        {
             "label": "Build",
             "dependsOn": [
                 "mkdir",
@@ -36,6 +42,13 @@
             "dependsOn": [
                 "mkdir",
                 "build-test"
+            ]
+        },
+        {
+            "label": "Build-Replay",
+            "dependsOn": [
+                "mkdir",
+                "build-replay"
             ]
         },
     ]

@@ -273,6 +273,14 @@ is_key_down :: proc(key: Keyboard_Key) -> bool {
     }
 }
 
+is_key_pressed :: proc(key: Keyboard_Key) -> bool {
+    when !ODIN_TEST {
+        return rl.IsKeyPressed(key)
+    } else {
+        return false
+    }
+}
+
 is_key_pressed_repeat :: proc(key: Keyboard_Key) -> bool {
     when !ODIN_TEST {
         return rl.IsKeyPressedRepeat(key)

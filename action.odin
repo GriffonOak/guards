@@ -43,7 +43,6 @@ Choose_Target_Action :: struct {
     using criteria: Selection_Criteria,
     num_targets: Implicit_Quantity,
     label: Action_Value_Label,
-    // result: [dynamic]Target,
 }
 
 Choice :: struct {

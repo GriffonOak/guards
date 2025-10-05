@@ -75,6 +75,12 @@ _ :: time
 
 RELEASE :: #config(RELEASE, false)
 RECORD  :: #config(RECORD, false)
+REPLAY  :: #config(REPLAY, false)
+
+// when REPLAY {
+event_log_index := 0
+event_queue_index := 0
+// }
 
 log_directory_name :: "logs"
 
@@ -188,6 +194,10 @@ main :: proc() {
         defer log.destroy_console_logger(context.logger)
     }
 
+    when REPLAY {
+        fmt.println(len(event_log))
+    }
+
     active_element_index := UI_Index{}
     hovered_element_index := UI_Index{}
 
@@ -229,7 +239,11 @@ main :: proc() {
     for !window_should_close() {
 
         // Handle input
-        check_for_input_events(&input_queue)
+        // when !REPLAY {
+            check_for_input_events(&input_queue)
+        // } else {
+            clear(&input_queue)
+        // }
 
         for event in input_queue {
             #partial switch var in event {
@@ -286,7 +300,9 @@ main :: proc() {
         }
         clear(&input_queue)
 
-        process_network_packets(&gs)
+        // when !REPLAY {
+            process_network_packets(&gs)
+        // }
 
         // Record "Fresh" events this frame
         when RELEASE || RECORD {
@@ -294,11 +310,30 @@ main :: proc() {
         }
 
         // Handle events
-        for event in gs.event_queue {
-            if gs.game_over do break
-            resolve_event(&gs, event)
+        when REPLAY {
+            if is_key_pressed(.SPACE) {
+                if event_queue_index >= len(gs.event_queue) {
+                    clear(&gs.event_queue)
+                    event_queue_index = 0
+                    // if event_log_index < len(event_log) {
+                    //     // append(&gs.event_queue, (&event_log[event_log_index])^)
+                    //     event_log_index += 1
+                    // }
+                }
+                if event_queue_index < len(gs.event_queue) {
+                    // resolve_event(&gs, Marker_Event{})
+                    resolve_event(&gs, gs.event_queue[event_queue_index])
+                    event_queue_index += 1
+                }
+            }
+        } else {
+            for event in gs.event_queue {
+                if gs.game_over do break
+                resolve_event(&gs, event)
+            }
+            clear(&gs.event_queue)
         }
-        clear(&gs.event_queue)
+        
 
 
         begin_drawing()
