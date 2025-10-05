@@ -38,7 +38,7 @@ Space_Clicked_Event :: struct {
 }
 
 Card_Clicked_Event :: struct {
-    card_element: ^UI_Card_Element,
+    card_id: Card_ID,
 }
 
 
@@ -388,7 +388,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         }
 
     case Card_Clicked_Event:
-        card_id := var.card_element.card_id
+        card_id := var.card_id
         card, card_ok := get_card_by_id(gs, card_id)
 
         #partial switch get_my_player(gs).stage {
@@ -396,6 +396,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             log.assert(card_ok, "Card element clicked with no card associated!")
             #partial switch card.state {
             case .In_Hand:
+                element, _ := find_element_for_card(gs, card_id)
+                log.assert(element != nil, "Could not find element for card!")
+                card_element := assert_variant(&element.variant, UI_Card_Element)
 
                 if selected_element, ok2 := find_selected_card_element(gs); ok2 {
                     selected_card_element := &selected_element.variant.(UI_Card_Element)
@@ -403,7 +406,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                     clear_side_buttons(gs)
                 }
 
-                var.card_element.selected = true
+                card_element.selected = true
                 add_side_button(gs, "Confirm card", Card_Confirmed_Event{gs.my_player_id, card_id}, global=true)
             }
 
@@ -572,7 +575,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         target2_space.flags += target1_transient_flags
 
         // Swap transients
-        target1_space.transient, target2_space.transient = target2_space.transient, target2_space.transient
+        target1_space.transient, target2_space.transient = target2_space.transient, target1_space.transient
 
     case Give_Marker_Event:
 
@@ -742,7 +745,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         gs.tiebreaker_coin = var.tiebreaker
         
     case Begin_Card_Selection_Event:
-        get_my_player(gs).stage = .Selecting
+        for &player in gs.players {
+            player.stage = .Selecting
+        }
         gs.stage = .Selection
         gs.confirmed_players = 0
         gs.tooltip = "Choose a card to play and then confirm it."
@@ -849,15 +854,15 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
     case Begin_Next_Action_Event:
 
         action_index := get_my_player(gs).hero.current_action_index
+        action := get_action_at_index(gs, action_index)
 
-        if get_my_player(gs).hero.dead && action_index.sequence != .Respawn {  // Didn't respawn bozo
+        if action == nil || (get_my_player(gs).hero.dead && action_index.sequence != .Respawn) {  // Didn't respawn bozo
             end_current_action_sequence(gs)
             break
         }
-
         
         calc_context := Calculation_Context{card_id = action_index.card_id}
-        action := get_action_at_index(gs, action_index)
+        
 
         skip_index := action.skip_index
         if skip_index == {} do skip_index = {sequence = .Halt}
@@ -1176,21 +1181,19 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             next_index.index += 1
         }
 
-        if next_index.sequence == .Halt || get_action_at_index(gs, next_index) == nil {
-            end_current_action_sequence(gs)
-            break
+        if get_action_at_index(gs, next_index) == nil {
+            next_index.sequence = .Halt
         }
 
         get_my_player(gs).hero.current_action_index = next_index
+
         append(&gs.event_queue, Begin_Next_Action_Event{})
 
     case End_Resolution_Event:
         clear_side_buttons(gs)
         clear(&gs.action_memory)
 
-        // This is to ensure that if a player's state changes mid-interrupt, only the underlying "base state" changes, rather than all the froth on top.
         gs.players[var.player_id].stage = .Resolved
-
 
         card, ok := find_played_card(gs, var.player_id)
         
@@ -1437,6 +1440,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         }
 
     case End_Upgrading_Event:
+
+        gs.players[var.player_id].stage = .Upgraded
+
         if var.player_id == gs.my_player_id {
             gs.tooltip = "Waiting for other players to finish upgrading."
         }

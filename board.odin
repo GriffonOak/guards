@@ -402,7 +402,8 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
     case .Resolving, .Interrupting:
         action_index := get_my_player(gs).hero.current_action_index
         action := get_action_at_index(gs, action_index)
-        #partial switch variant in action.variant {
+        if action == nil do break
+        #partial  switch variant in action.variant {
         case Fast_Travel_Action:
             if .Hovered not_in element.flags || board_element.hovered_space == INVALID_TARGET do break
             if index_target_set(&action.targets, board_element.hovered_space).member {

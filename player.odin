@@ -14,6 +14,7 @@ Player_Stage :: enum {
     Resolving,
     Resolved,
     Upgrading,
+    Upgraded,
 
     Interrupting,
     Interrupted,

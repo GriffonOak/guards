@@ -185,7 +185,7 @@ card_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, eleme
 
     #partial switch var in input {
     case Mouse_Pressed_Event:
-        append(&gs.event_queue, Card_Clicked_Event{card_element})
+        append(&gs.event_queue, Card_Clicked_Event{card_element.card_id})
     }
 
     return true

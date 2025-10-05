@@ -117,11 +117,12 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
     case Movement_Action:
         origin := calculate_implicit_target(gs, variant.target, calc_context)
 
-        path, path_action_index, ok := try_get_top_action_value_of_type(gs, Path)
-        if !ok || path_action_index != index {
+        // path, path_action_index, ok := try_get_top_action_value_of_type(gs, Path)
+        action_slice := get_memory_slice_for_index(gs, index)
+        if len(action_slice) == 0 {
             // There was not a path in memory, or the path was from a different action than the one we are currently doing
             add_action_value(gs, Path{}, index)
-            path = get_top_action_value_of_type(gs, Path)
+            path := get_top_action_value_of_type(gs, Path)
             append(&path.spaces, origin)
             path.num_locked_spaces = 1
         }

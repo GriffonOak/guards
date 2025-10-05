@@ -478,7 +478,7 @@ get_action_at_index :: proc(gs: ^Game_State, index: Action_Index, loc := #caller
     case .Minion_Removal:       action_sequence = minion_removal_action
     case .Minion_Spawn:         action_sequence = minion_spawn_action
     case .Minion_Outside_Zone:  action_sequence = minion_outside_zone_action
-    case .Discard_If_Able:         action_sequence = discard_if_able_action
+    case .Discard_If_Able:      action_sequence = discard_if_able_action
     case .Discard_Or_Die:       action_sequence = discard_or_defeated_action
 
     case .Invalid:              return nil
