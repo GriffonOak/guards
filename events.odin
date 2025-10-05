@@ -374,9 +374,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
             case Choose_Target_Action:
                 num_targets := calculate_implicit_quantity(gs, action_variant.num_targets, {card_id = action_index.card_id})
-                current_slice := get_memory_slice_for_index(gs, action_index)
+                current_slice := get_memory_slice_for_index(gs, action_index, gs.action_count)
                 if len(current_slice) < num_targets {
-                    add_action_value(gs, var.space, action_index, action_variant.label)
+                    add_action_value(gs, var.space, label = action_variant.label)
                     action.targets[var.space.x][var.space.y].member = false
                     if len(current_slice) + 1 == num_targets && !(.Up_To in action_variant.flags) {
                         append(&gs.event_queue, Resolve_Current_Action_Event{})
@@ -523,13 +523,12 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 if _, ok := top_button.event.(Cancel_Event); ok {
                     pop_side_button(gs)
                 }
-                results := get_memory_slice_for_index(gs, action_index)
+                results := get_memory_slice_for_index(gs, action_index, gs.action_count)
                 for value in results {
                     target := value.variant.(Target)
                     action.targets[target.x][target.y].member = true
                 }
                 clear_top_memory_slice(gs)
-                // clear(&action_variant.result)
             }
 
         case .Upgrading:
@@ -833,6 +832,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         clear_side_buttons(gs)
         if var.player_id != gs.my_player_id do break
 
+        gs.action_count = 0
+
         // Find the played card
         card, ok := find_played_card(gs)
         log.assert(ok, "No played card when player begins their resolution!")
@@ -852,6 +853,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         append(&gs.event_queue, Begin_Next_Action_Event{})
 
     case Begin_Next_Action_Event:
+
+        gs.action_count += 1
 
         action_index := get_my_player(gs).hero.current_action_index
         action := get_action_at_index(gs, action_index)
@@ -1212,6 +1215,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
     case End_Resolution_Event:
         clear_side_buttons(gs)
         clear(&gs.action_memory)
+        gs.action_count = 0
 
         gs.players[var.player_id].stage = .Resolved
 

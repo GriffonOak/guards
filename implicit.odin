@@ -389,7 +389,7 @@ calculate_implicit_target :: proc(
         return get_top_action_value_of_type(gs, Target)^
 
     case Labelled_Target:
-        return get_top_action_value_of_type(gs, Target, target.label)^
+        return get_top_action_value_of_type(gs, Target, label = target.label)^
 
     case Top_Blocked_Spawnpoint:
         my_team := get_my_player(gs).team

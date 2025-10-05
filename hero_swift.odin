@@ -44,14 +44,24 @@ swift_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Bounce",  // @Incomplete repeat
+    Card_Data { name = "Bounce",
         color =         .Silver,
         values =        #partial{.Initiative = 12, .Defense = 2},
         primary =       .Skill,
         text =          "Move 2 spaces in a straight line, ignoring\nobstacles; if this card is already resolved as\nyou perform this action, may repeat once.",
         primary_effect = []Action {
             Action {
-                tooltip = "Move 2 spaces in a straight line, ignoring obstacles.",
+                tooltip = Formatted_String {
+                    format = "%v",
+                    arguments = {
+                        Conditional_String_Argument {
+                            condition = Equal{Repeat_Count{}, 0},
+                            arg1 = "Move 2 spaces in a straight line, ignoring obstacles.",
+                            arg2 = "This card is already resolved, so you may repeat once.",
+                        },
+                    },
+                },
+                optional = Greater_Than{Repeat_Count{}, 0},
                 variant = Movement_Action {
                     target = Self{},
                     min_distance = 2,
@@ -60,14 +70,9 @@ swift_cards := []Card_Data {
                 },
             },
             Action {
-                tooltip = "This card is already resolved, so you may repeat once.",
                 condition = Card_State_Is{.Resolved},
-                optional = true,
-                variant = Movement_Action {
-                    target = Self{},
-                    min_distance = 2,
-                    max_distance = 2,
-                    flags = {.Ignoring_Obstacles, .Straight_Line},
+                variant = Repeat_Action {
+                    max_repeats = 1,
                 },
             },
         },

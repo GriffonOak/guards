@@ -608,8 +608,8 @@ xargatha_cards := []Card_Data {
             Action {
                 variant = Repeat_Action {
                     max_repeats = 1,
-                }
-            }
+                },
+            },
         },
     },
     Card_Data { name = "Dominate",

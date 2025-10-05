@@ -156,6 +156,7 @@ Action_Value_Variant :: union {
 
 Action_Value :: struct {
     action_index: Action_Index,
+    action_count: int,
     label: Action_Value_Label,
     variant: Action_Value_Variant,
 }
@@ -179,6 +180,7 @@ Game_State :: struct {
     stage: Game_Stage,
     current_battle_zone: Region_ID,
     interrupt_stack: [dynamic]Expanded_Interrupt,
+    action_count: int,
     action_memory: [dynamic]Action_Value,
 
     event_queue: [dynamic]Event,

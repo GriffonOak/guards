@@ -310,7 +310,7 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
 
         case Choose_Target_Action:
             frequency = 14
-            target_slice := get_memory_slice_for_index(gs, action_index)
+            target_slice := get_memory_slice_for_index(gs, action_index, gs.action_count)
             for action_value in target_slice {
                 target := action_value.variant.(Target)
                 space := gs.board[target.x][target.y]
