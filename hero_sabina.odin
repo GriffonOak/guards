@@ -112,7 +112,17 @@ sabina_cards := []Card_Data {
         text            = "Move a friendly minion in radius 1 space,\nto a space in radius. May repeat once.",
         primary_effect  = []Action {
             Action {
-                tooltip = "Target a friendly minion in radius.",
+                tooltip = Formatted_String {
+                    format = "%v",
+                    arguments = {
+                        Conditional_String_Argument {
+                            condition = Equal{Repeat_Count{}, 0},
+                            arg1 = "Target a friendly minion in radius.",
+                            arg2 = "May repeat once.",
+                        },
+                    },
+                },
+                optional = Greater_Than{Repeat_Count{}, 0},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -136,28 +146,8 @@ sabina_cards := []Card_Data {
                 },
             },
             Action {
-                tooltip = "May repeat once.",
-                optional = true,
-                variant = Choose_Target_Action {
-                    num_targets = 1,
-                    conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                        Target_Contains_Any{MINION_FLAGS},
-                        Target_Is_Friendly_Unit{},
-                    },
-                },
-            },
-            Action {
-                tooltip = "Move the minion 1 space, to a space in radius",
-                variant = Movement_Action {
-                    target = Previously_Chosen_Target{},
-                    min_distance = 1,
-                    max_distance = 1,
-                    destination_criteria = {
-                        conditions = {
-                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                        },
-                    },
+                variant = Repeat_Action {
+                    max_repeats = 1,
                 },
             },
         },
@@ -247,6 +237,11 @@ sabina_cards := []Card_Data {
                 },
             },
             Action {
+                variant = Save_Variable_Action {
+                    variable = Equal{Distance_Between{Self{}, Previously_Chosen_Target{}}, 1},
+                },
+            },
+            Action {
                 tooltip = "Waiting for the opponent to defend...",
                 variant = Attack_Action {
                     strength = Card_Value{.Attack},
@@ -254,7 +249,7 @@ sabina_cards := []Card_Data {
             },
             Action {
                 tooltip = "You may remove up to one enemy minion adjacent to you",
-                condition = Equal{Distance_Between{Self{}, Previously_Chosen_Target{}}, 1},
+                condition = Previously_Saved_Boolean{},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -272,7 +267,7 @@ sabina_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Marching Orders",  // @Incomplete repeat
+    Card_Data { name = "Marching Orders",
         color           = .Green,
         tier            = 2,
         values          = #partial{.Initiative = 3, .Defense = 3, .Movement = 2, .Radius = 3},
@@ -281,7 +276,17 @@ sabina_cards := []Card_Data {
         text            = "Move a friendly minion in radius 1 space,\nto a space in radius. May repeat once.",
         primary_effect  = []Action {
             Action {
-                tooltip = "Target a friendly minion in radius.",
+                tooltip = Formatted_String {
+                    format = "%v",
+                    arguments = {
+                        Conditional_String_Argument {
+                            condition = Equal{Repeat_Count{}, 0},
+                            arg1 = "Target a friendly minion in radius.",
+                            arg2 = "May repeat once.",
+                        },
+                    },
+                },
+                optional = Greater_Than{Repeat_Count{}, 0},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -305,28 +310,8 @@ sabina_cards := []Card_Data {
                 },
             },
             Action {
-                tooltip = "May repeat once.",
-                optional = true,
-                variant = Choose_Target_Action {
-                    num_targets = 1,
-                    conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                        Target_Contains_Any{MINION_FLAGS},
-                        Target_Is_Friendly_Unit{},
-                    },
-                },
-            },
-            Action {
-                tooltip = "Move the minion 1 space, to a space in radius",
-                variant = Movement_Action {
-                    target = Previously_Chosen_Target{},
-                    min_distance = 1,
-                    max_distance = 1,
-                    destination_criteria = {
-                        conditions = {
-                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                        },
-                    },
+                variant = Repeat_Action {
+                    max_repeats = 1,
                 },
             },
         },
@@ -500,6 +485,11 @@ sabina_cards := []Card_Data {
                 },
             },
             Action {
+                variant = Save_Variable_Action {
+                    variable = Equal{Distance_Between{Self{}, Previously_Chosen_Target{}}, 1},
+                },
+            },
+            Action {
                 tooltip = "Waiting for the opponent to defend...",
                 variant = Attack_Action {
                     strength = Card_Value{.Attack},
@@ -507,7 +497,7 @@ sabina_cards := []Card_Data {
             },
             Action {
                 tooltip = "You may remove up to two enemy minions adjacent to you",
-                condition = Equal{Distance_Between{Self{}, Previously_Chosen_Target{}}, 1},
+                condition = Previously_Saved_Boolean{},
                 variant = Choose_Target_Action {
                     num_targets = 2,
                     conditions = {
@@ -525,7 +515,7 @@ sabina_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Path to Victory",  // @Incomplete repeat
+    Card_Data { name = "Path to Victory",
         color           = .Green,
         tier            = 3,
         values          = #partial{.Initiative = 3, .Defense = 3, .Movement = 2, .Radius = 3},
@@ -534,7 +524,17 @@ sabina_cards := []Card_Data {
         text            = "Move a friendly minion in radius 1 space, to a\nspace in radius. May repeat up to two times.",
         primary_effect  = []Action {
             Action {
-                tooltip = "Target a friendly minion in radius.",
+                tooltip = Formatted_String {
+                    format = "%v",
+                    arguments = {
+                        Conditional_String_Argument {
+                            condition = Equal{Repeat_Count{}, 0},
+                            arg1 = "Target a friendly minion in radius.",
+                            arg2 = "May repeat again.",
+                        },
+                    },
+                },
+                optional = Greater_Than{Repeat_Count{}, 0},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -558,53 +558,8 @@ sabina_cards := []Card_Data {
                 },
             },
             Action {
-                tooltip = "May repeat again.",
-                optional = true,
-                variant = Choose_Target_Action {
-                    num_targets = 1,
-                    conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                        Target_Contains_Any{MINION_FLAGS},
-                        Target_Is_Friendly_Unit{},
-                    },
-                },
-            },
-            Action {
-                tooltip = "Move the minion 1 space, to a space in radius",
-                variant = Movement_Action {
-                    target = Previously_Chosen_Target{},
-                    min_distance = 1,
-                    max_distance = 1,
-                    destination_criteria = {
-                        conditions = {
-                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                        },
-                    },
-                },
-            },
-            Action {
-                tooltip = "May repeat again.",
-                optional = true,
-                variant = Choose_Target_Action {
-                    num_targets = 1,
-                    conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                        Target_Contains_Any{MINION_FLAGS},
-                        Target_Is_Friendly_Unit{},
-                    },
-                },
-            },
-            Action {
-                tooltip = "Move the minion 1 space, to a space in radius",
-                variant = Movement_Action {
-                    target = Previously_Chosen_Target{},
-                    min_distance = 1,
-                    max_distance = 1,
-                    destination_criteria = {
-                        conditions = {
-                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                        },
-                    },
+                variant = Repeat_Action {
+                    max_repeats = 2,
                 },
             },
         },
@@ -648,7 +603,7 @@ sabina_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Ready and Waiting",  // @Unimplemented, figure out how to format swap
+    Card_Data { name = "Ready and Waiting",
         color           = .Blue,
         tier            = 3,
         values          = #partial{.Initiative = 10, .Defense = 4, .Movement = 3, .Radius = 2},
