@@ -57,7 +57,10 @@ sabina_cards := []Card_Data {
             },
             Action {
                 variant = Swap_Action {
-                    Self{}, Previously_Chosen_Target{},
+                    targets = []Implicit_Target{
+                        Self{},
+                        Previously_Chosen_Target{},
+                    },
                 },
             },
         },
@@ -167,37 +170,18 @@ sabina_cards := []Card_Data {
         text            = "Swap two minions in radius.",
         primary_effect  = []Action {
             Action {
-                tooltip = "Target a minion in radius.",
-                condition = Greater_Than {
-                    Count_Targets {
-                        conditions = {
-                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                            Target_Contains_Any{MINION_FLAGS},
-                        },
-                    }, 1,
-                },
+                tooltip = "Target two minions in radius.",
                 variant = Choose_Target_Action {
-                    num_targets = 1,
+                    num_targets = 2,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Target_Contains_Any{MINION_FLAGS},
                     },
-                },
-            },
-            Action {
-                tooltip = "Target another minion in radius.",
-                variant = Choose_Target_Action {
-                    num_targets = 1,
-                    conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                        Target_Contains_Any{MINION_FLAGS},
-                    },
-                    flags = {.Not_Previously_Targeted},
                 },
             },
             Action {
                 variant = Swap_Action {
-                    Previously_Chosen_Target{}, Previously_Chosen_Target{skips = 1},
+                    targets = Previous_Choices{},
                 },
             },
         },
@@ -394,37 +378,18 @@ sabina_cards := []Card_Data {
         text            = "Swap two minions in radius.",
         primary_effect  = []Action {
             Action {
-                tooltip = "Target a minion in radius.",
-                condition = Greater_Than {
-                    Count_Targets {
-                        conditions = {
-                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                            Target_Contains_Any{MINION_FLAGS},
-                        },
-                    }, 1,
-                },
+                tooltip = "Target two minions in radius.",
                 variant = Choose_Target_Action {
-                    num_targets = 1,
+                    num_targets = 2,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Target_Contains_Any{MINION_FLAGS},
                     },
-                },
-            },
-            Action {
-                tooltip = "Target another minion in radius.",
-                variant = Choose_Target_Action {
-                    num_targets = 1,
-                    conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                        Target_Contains_Any{MINION_FLAGS},
-                    },
-                    flags = {.Not_Previously_Targeted},
                 },
             },
             Action {
                 variant = Swap_Action {
-                    Previously_Chosen_Target{}, Previously_Chosen_Target{skips = 1},
+                    targets = Previous_Choices{},
                 },
             },
         },
@@ -683,7 +648,7 @@ sabina_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Ready and Waiting",
+    Card_Data { name = "Ready and Waiting",  // @Unimplemented, figure out how to format swap
         color           = .Blue,
         tier            = 3,
         values          = #partial{.Initiative = 10, .Defense = 4, .Movement = 3, .Radius = 2},
@@ -692,18 +657,9 @@ sabina_cards := []Card_Data {
         text            = "Swap two minions in radius,\nignoring heavy minion immunity.",
         primary_effect  = []Action {
             Action {
-                tooltip = "Target a minion in radius.",
-                condition = Greater_Than {
-                    Count_Targets {
-                        conditions = {
-                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                            Target_Contains_Any{MINION_FLAGS},
-                        },
-                        flags = {.Ignoring_Immunity},
-                    }, 1,
-                },
+                tooltip = "Target two minions in radius, ignoring heavy minion immunity.",
                 variant = Choose_Target_Action {
-                    num_targets = 1,
+                    num_targets = 2,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Target_Contains_Any{MINION_FLAGS},
@@ -712,19 +668,8 @@ sabina_cards := []Card_Data {
                 },
             },
             Action {
-                tooltip = "Target another minion in radius.",
-                variant = Choose_Target_Action {
-                    num_targets = 1,
-                    conditions = {
-                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                        Target_Contains_Any{MINION_FLAGS},
-                    },
-                    flags = {.Not_Previously_Targeted, .Ignoring_Immunity},
-                },
-            },
-            Action {
                 variant = Swap_Action {
-                    Previously_Chosen_Target{}, Previously_Chosen_Target{skips = 1},
+                    targets = Previous_Choices{},
                 },
             },
         },

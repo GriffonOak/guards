@@ -5,11 +5,6 @@ import "core:log"
 _ :: log
 
 
-Path :: struct {
-    num_locked_spaces: int,
-    spaces: [dynamic]Target,
-}
-
 Movement_Flag :: enum {
     Shortest_Path,
     Ignoring_Obstacles,
@@ -22,18 +17,19 @@ Movement_Criteria :: struct {
     max_distance: Implicit_Quantity,
     destination_criteria: Selection_Criteria,
     flags: bit_set[Movement_Flag],
-    path: Path,
+}
+
+Path :: struct {
+    num_locked_spaces: int,
+    spaces: [dynamic]Target,
 }
 
 Movement_Action :: struct {
     target: Implicit_Target,
     using criteria: Movement_Criteria,
-
 }
 
-Fast_Travel_Action :: struct {
-    // result: Target,
-}
+Fast_Travel_Action :: struct {}
 
 Clear_Action :: struct {}
 
@@ -46,7 +42,8 @@ Selection_Criteria :: struct {
 Choose_Target_Action :: struct {
     using criteria: Selection_Criteria,
     num_targets: Implicit_Quantity,
-    result: [dynamic]Target,
+    label: Action_Value_Label,
+    // result: [dynamic]Target,
 }
 
 Choice :: struct {
@@ -68,7 +65,6 @@ Force_Discard_Action :: struct {
 
 Choice_Action :: struct {
     choices: []Choice,
-    result: Action_Index,
 }
 
 Add_Active_Effect_Action :: struct {
@@ -89,11 +85,11 @@ Minion_Spawn_Action :: struct {
     location, spawnpoint: Implicit_Target,
 }
 
+Card_ID_Set :: map[Card_ID]Void
 
 Choose_Card_Action :: struct {
     criteria: []Implicit_Condition,
-    card_targets: [dynamic]Card_ID,
-    result: Card_ID,
+    card_targets: Card_ID_Set,
 }
 
 Defend_Action :: struct {
@@ -130,7 +126,6 @@ Place_Action :: struct {
 
 Choose_Quantity_Action :: struct {
     bounds: []Implicit_Quantity,
-    result: int,
 }
 
 Push_Action :: struct {
@@ -145,7 +140,7 @@ Give_Marker_Action :: struct {
 }
 
 Swap_Action :: struct {
-    target1, target2: Implicit_Target,
+    targets: Implicit_Target_Slice,
 }
 
 Action_Variant :: union {

@@ -335,16 +335,17 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             action := get_action_at_index(gs, action_index)
             #partial switch &action_variant in action.variant {
             case Movement_Action:
-                resize(&action_variant.path.spaces, action_variant.path.num_locked_spaces)
+                path := get_top_action_value_of_type(gs, Path)
+                resize(&path.spaces, path.num_locked_spaces)
 
                 if var.space == INVALID_TARGET do break
                 if !action.targets[var.space.x][var.space.y].member do break
 
-                starting_space := action_variant.path.spaces[action_variant.path.num_locked_spaces - 1]
+                starting_space := path.spaces[path.num_locked_spaces - 1]
 
                 current_space := var.space
                 for ; current_space != starting_space; current_space = {action.targets[current_space.x][current_space.y].prev_x, action.targets[current_space.x][current_space.y].prev_y} {
-                    inject_at(&action_variant.path.spaces, action_variant.path.num_locked_spaces, current_space)
+                    inject_at(&path.spaces, path.num_locked_spaces, current_space)
                 }
             }
         }
@@ -359,29 +360,30 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
             #partial switch &action_variant in action.variant {
             case Fast_Travel_Action:
-                append(&gs.action_memory, var.space)
+                add_action_value(gs, var.space)
                 append(&gs.event_queue, Resolve_Current_Action_Event{})
 
             case Movement_Action:
-                if len(action_variant.path.spaces) == action_variant.path.num_locked_spaces do break
+                path := get_top_action_value_of_type(gs, Path)
+                if len(path.spaces) == path.num_locked_spaces do break
 
-                action_variant.path.num_locked_spaces = len(action_variant.path.spaces)
+                path.num_locked_spaces = len(path.spaces)
                 calc_context := Calculation_Context{card_id = action_index.card_id}
                 action.targets = make_movement_targets(gs, action_variant.criteria, calc_context)
                 append(&gs.event_queue, Begin_Next_Action_Event{})
 
             case Choose_Target_Action:
                 num_targets := calculate_implicit_quantity(gs, action_variant.num_targets, {card_id = action_index.card_id})
-                if len(action_variant.result) < num_targets {
-                    append(&action_variant.result, var.space)
+                current_slice := get_memory_slice_for_index(gs, action_index)
+                if len(current_slice) < num_targets {
+                    add_action_value(gs, var.space, action_index, action_variant.label)
                     action.targets[var.space.x][var.space.y].member = false
-                    if len(action_variant.result) == num_targets && !(.Up_To in action_variant.flags) {
+                    if len(current_slice) + 1 == num_targets && !(.Up_To in action_variant.flags) {
                         append(&gs.event_queue, Resolve_Current_Action_Event{})
-                    } else if len(action_variant.result) == 0 {
+                    } else if len(current_slice) == 0 {
                         add_side_button(gs, "Cancel", Cancel_Event{})
                     }
                 }
-
             }
         }
 
@@ -491,12 +493,10 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             action := get_current_action(gs)
             #partial switch &variant in action.variant {
             case Choose_Card_Action:
-                for target_card_id in variant.card_targets {
-                    if target_card_id == card_id {
-                        variant.result = card_id
-                        append(&gs.event_queue, Resolve_Current_Action_Event{})
-                        break
-                    }
+                if card_id in variant.card_targets {
+                    add_action_value(gs, card_id)
+                    append(&gs.event_queue, Resolve_Current_Action_Event{})
+                    break
                 }
             }
         }
@@ -508,8 +508,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             action := get_action_at_index(gs, action_index)
             #partial switch &action_variant in action.variant {
             case Movement_Action:
-                action_variant.path.num_locked_spaces = 1
-                resize(&action_variant.path.spaces, 1)
+                path := get_top_action_value_of_type(gs, Path)
+                path.num_locked_spaces = 1
+                resize(&path.spaces, 1)
                 action.targets = make_movement_targets(gs, action_variant.criteria, {card_id = action_index.card_id})
                 append(&gs.event_queue, Begin_Next_Action_Event{})
 
@@ -519,10 +520,13 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 if _, ok := top_button.event.(Cancel_Event); ok {
                     pop_side_button(gs)
                 }
-                for space in action_variant.result {
-                    action.targets[space.x][space.y].member = true
+                results := get_memory_slice_for_index(gs, action_index)
+                for value in results {
+                    target := value.variant.(Target)
+                    action.targets[target.x][target.y].member = true
                 }
-                clear(&action_variant.result)
+                clear_top_memory_slice(gs)
+                // clear(&action_variant.result)
             }
 
         case .Upgrading:
@@ -686,9 +690,10 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         delete_key(&gs.ongoing_active_effects, var.effect_kind)
 
     case Quantity_Chosen_Event:
-        action := get_current_action(gs)
-        cqa := &action.variant.(Choose_Quantity_Action)
-        cqa.result = var.quantity
+        // action := get_current_action(gs)
+        // choose_quantity_action := &action.variant.(Choose_Quantity_Action)
+        // cqa.result = var.quantity
+        add_action_value(gs, var.quantity)
         append(&gs.event_queue, Resolve_Current_Action_Event{})
 
     case Begin_Interrupt_Event:
@@ -713,7 +718,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             case Wave_Push_Interrupt:
                 broadcast_game_event(gs, Begin_Wave_Push_Event{interrupt_variant.pushing_team})
             case Attack_Interrupt:
-                // @Todo need to do attacks now
                 get_my_player(gs).hero.current_action_index = {sequence = .Basic_Defense, index = 0}
                 append(&gs.event_queue, Begin_Next_Action_Event{})
             }
@@ -875,20 +879,20 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         case Movement_Action:
             add_side_button(gs, "Reset move", Cancel_Event{})
 
-            top_space := action_type.path.spaces[len(action_type.path.spaces) - 1]
+            path := get_top_action_value_of_type(gs, Path)
+            top_space := path.spaces[len(path.spaces) - 1]
             target_valid := !action.targets[top_space.x][top_space.y].invalid
             if target_valid {
                 add_side_button(gs, "Confirm move", Resolve_Current_Action_Event{})
             }
 
         case Choose_Target_Action:
-            clear(&action_type.result)
             if .Up_To in action_type.flags {
                 add_side_button(gs, "Confirm", Resolve_Current_Action_Event{})
             } else if count_members(&action.targets) == calculate_implicit_quantity(gs, action_type.num_targets, calc_context) && !action.optional {
                 iter := make_target_set_iterator(&action.targets)
                 for _, space in target_set_iter_members(&iter) {
-                    append(&action_type.result, space)
+                    add_action_value(gs, space)
                 }
                 append(&gs.event_queue, Resolve_Current_Action_Event{})
             }
@@ -1113,10 +1117,10 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
         case Swap_Action:
-            target1 := calculate_implicit_target(gs, action_type.target1, calc_context)
-            target2 := calculate_implicit_target(gs, action_type.target2, calc_context)
+            targets := calculate_implicit_target_slice(gs, action_type.targets, calc_context)
+            log.assert(len(targets) == 2, "Attempted to swap with incorrect number of targets!!!")
 
-            broadcast_game_event(gs, Entity_Swap_Event{target1, target2})
+            broadcast_game_event(gs, Entity_Swap_Event{targets[0], targets[1]})
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
         case Give_Marker_Action:
@@ -1137,25 +1141,24 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         #partial switch &variant in action.variant {
         case Fast_Travel_Action:
-            result := gs.action_memory[len(gs.action_memory) - 1].(Target)
-            broadcast_game_event(gs, Entity_Translocation_Event{get_my_player(gs).hero.location, result})
+            result := get_top_action_value_of_type(gs, Target)
+            broadcast_game_event(gs, Entity_Translocation_Event{get_my_player(gs).hero.location, result^})
         case Movement_Action:
+            path := get_top_action_value_of_type(gs, Path)
             defer {
-                delete(variant.path.spaces)
-                variant.path.spaces = nil
-                variant.path.num_locked_spaces = 0
+                delete(path.spaces)
+                path.spaces = nil
+                path.num_locked_spaces = 0
             }
             if _, ok := var.jump_index.?; ok do break  // Movement Skipped
-            for space in variant.path.spaces {
+            for space in path.spaces {
                 // Stuff that happens on move through goes here
                 log.debugf("Traversed_space: %v", space)
             }
 
-            starting_space := variant.path.spaces[0]
-            ending_space := variant.path.spaces[len(variant.path.spaces) - 1]
+            starting_space := path.spaces[0]
+            ending_space := path.spaces[len(path.spaces) - 1]
             broadcast_game_event(gs, Entity_Translocation_Event{starting_space, ending_space})
-        case Choice_Action:
-            variant.result = var.jump_index.?            
         }
 
         action.targets = {}
@@ -1279,7 +1282,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             }
         }
 
-        if gs.turn_counter < 4 {
+        if gs.turn_counter < 4 {  // @Magic (?)
             broadcast_game_event(gs, Begin_Card_Selection_Event{})
         } else {
             // Start any extra actions from end of round effects

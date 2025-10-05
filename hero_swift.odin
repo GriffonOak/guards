@@ -225,6 +225,7 @@ swift_cards := []Card_Data {
                 tooltip = "Target a unit in range.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
+                    label = .Attack_Target,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
                         Target_Contains_Any{UNIT_FLAGS},
@@ -253,7 +254,7 @@ swift_cards := []Card_Data {
             Action {  // 3
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previously_Chosen_Target{skips = 1},
+                    target = Labelled_Target{.Attack_Target},
                     strength = Card_Value{.Attack},
                 },
             },
@@ -442,6 +443,7 @@ swift_cards := []Card_Data {
                 tooltip = "Target a unit in range.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
+                    label = .Attack_Target,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
                         Target_Contains_Any{UNIT_FLAGS},
@@ -471,7 +473,7 @@ swift_cards := []Card_Data {
             Action {  // 3
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previously_Chosen_Target{skips = 1},
+                    target = Labelled_Target{.Attack_Target},
                     strength = Card_Value{.Attack},
                 },
             },

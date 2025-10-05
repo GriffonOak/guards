@@ -225,6 +225,7 @@ wasp_cards := []Card_Data {
                 tooltip = "Target a unit or token in range and not in a straight line.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
+                    label = .Place_Target,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
                         Target_Contains_Any{UNIT_FLAGS + {.Token}},
@@ -245,7 +246,7 @@ wasp_cards := []Card_Data {
             Action {
                 tooltip = error_tooltip,
                 variant = Place_Action {
-                    source = Previously_Chosen_Target{skips = 1},
+                    source = Labelled_Target{.Place_Target},
                     destination = Previously_Chosen_Target{},
                 },
             },

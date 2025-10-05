@@ -126,8 +126,24 @@ become_interrupted :: proc(
     broadcast_game_event(gs, Begin_Interrupt_Event{interrupt})
 }
 
-Action_Value :: union {
+Action_Value_Label :: enum {
+    None,
+    Attack_Target,
+    Movement_Target,
+    Place_Target,
+}
+
+Action_Value_Variant :: union {
     Target,
+    Path,
+    Card_ID,
+    int,
+}
+
+Action_Value :: struct {
+    action_index: Action_Index,
+    label: Action_Value_Label,
+    variant: Action_Value_Variant,
 }
 
 

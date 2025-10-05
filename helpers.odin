@@ -200,3 +200,97 @@ add_marker :: proc(gs: ^Game_State) {
         append(&gs.event_queue, Marker_Event{})
     }
 }
+
+add_action_value :: proc(
+    gs: ^Game_State,
+    value: Action_Value_Variant,
+    index: Action_Index = {},
+    label: Action_Value_Label = .None,
+) {
+    // depth := len(gs.interrupt_stack)
+    index := index
+    if index == {} {
+        index = get_my_player(gs).hero.current_action_index
+    }
+    append(&gs.action_memory, Action_Value {
+        action_index = index,
+        // depth = depth,
+        label = label,
+        variant = value,
+    })
+}
+
+get_memory_slice_for_index :: proc(gs: ^Game_State, index: Action_Index) -> []Action_Value {
+    end_index := len(gs.action_memory) - 1
+    for end_index >= 0 && gs.action_memory[end_index].action_index != index {
+        end_index -= 1
+    }
+
+    start_index := end_index
+    for start_index >= 0 && gs.action_memory[start_index].action_index == index {
+        start_index -= 1 
+    }
+    start_index += 1
+    end_index += 1
+    if end_index > len(gs.action_memory) || start_index >= len(gs.action_memory) do return {}
+    return gs.action_memory[start_index:end_index]
+}
+
+clear_top_memory_slice :: proc(gs: ^Game_State) {
+    top_index := get_my_player(gs).hero.current_action_index 
+
+    start_index := len(gs.action_memory) - 1
+    for start_index >= 0 && gs.action_memory[start_index].action_index == top_index {
+        start_index -= 1 
+    }
+    start_index += 1
+    // if start_index >= len(gs.action_memory) do return
+    resize(&gs.action_memory, len(gs.action_memory) - start_index)
+    // return gs.action_memory[start_index:end_index]
+}
+
+get_top_memory_slice :: proc(gs: ^Game_State) -> []Action_Value {
+    top_index := get_my_player(gs).hero.current_action_index
+    return get_memory_slice_for_index(gs, top_index)
+}
+
+// You need to be sure this exists otherwise it will crash
+get_top_action_value_of_type :: proc(
+    gs: ^Game_State, $T: typeid, label: Action_Value_Label = .None
+) -> ^T where intrinsics.type_is_variant_of(Action_Value_Variant, T) {
+    value, _, ok := try_get_top_action_value_of_type(gs, T, label)
+    log.assert(ok, "Invalid type assertion for action value!")
+    return value
+}
+
+try_get_top_action_value_of_type :: proc(
+    gs: ^Game_State, $T: typeid, label: Action_Value_Label = .None
+) -> (^T, Action_Index, bool) where intrinsics.type_is_variant_of(Action_Value_Variant, T) {
+    #reverse for &value in gs.action_memory {
+        if label != .None && value.label != label do continue
+        typed_value, ok := &value.variant.(T)
+        if ok do return typed_value, value.action_index, true
+    }
+    return nil, {}, false
+}
+
+get_top_action_slice_of_type :: proc(gs: ^Game_State, $T: typeid) -> []Action_Value where intrinsics.type_is_variant_of(Action_Value_Variant, T) {
+    start_index, end_index := -1, -1
+    action_index: Action_Index
+    #reverse for &value, index in gs.action_memory {
+        _, ok := &value.variant.(T)
+        if ok {
+            end_index = index
+            action_index = value.action_index
+            break
+        }
+    }
+    #reverse for &value, index in gs.action_memory[:end_index] {
+        _, ok := &value.variant.(T)
+        if !ok || value.action_index != action_index {
+            start_index = index
+            break
+        }
+    }
+    return gs.action_memory[start_index + 1 : end_index + 1]
+}

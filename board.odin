@@ -310,11 +310,14 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
             if jump_index.card_id == {} do jump_index.card_id = action_index.card_id
             highlight_action_targets(gs, jump_index)
         case Movement_Action:
-            origin = variant.path.spaces[variant.path.num_locked_spaces - 1]
+            path := get_top_action_value_of_type(gs, Path)
+            origin = path.spaces[path.num_locked_spaces - 1]
 
         case Choose_Target_Action:
             frequency = 14
-            for target in variant.result {
+            target_slice := get_memory_slice_for_index(gs, action_index)
+            for action_value in target_slice {
+                target := action_value.variant.(Target)
                 space := gs.board[target.x][target.y]
                 selected_color := LIGHTGRAY
                 pulse := f32(math.sin(1.5 * time) * VERTICAL_SPACING * 0.03)
@@ -408,8 +411,9 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
                 draw_line_ex(space_pos, player_pos, 4, VIOLET)
             }
         case Movement_Action:
-            current_loc := variant.path.spaces[0]
-            for target in variant.path.spaces[1:] {
+            path := get_top_action_value_of_type(gs, Path)
+            current_loc := path.spaces[0]
+            for target in path.spaces[1:] {
                 draw_line_ex(gs.board[current_loc.x][current_loc.y].position, gs.board[target.x][target.y].position, 4, VIOLET)
                 current_loc = target
             }

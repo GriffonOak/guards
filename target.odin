@@ -115,12 +115,15 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
 
     switch &variant in action.variant {
     case Movement_Action:
-        // clear(&variant.path.spaces)
         origin := calculate_implicit_target(gs, variant.target, calc_context)
-        if len(variant.path.spaces) == 0 || variant.path.spaces[0] != origin {
-            clear(&variant.path.spaces)
-            append(&variant.path.spaces, origin)
-            variant.path.num_locked_spaces = 1
+
+        path, path_action_index, ok := try_get_top_action_value_of_type(gs, Path)
+        if !ok || path_action_index != index {
+            // There was not a path in memory, or the path was from a different action than the one we are currently doing
+            add_action_value(gs, Path{}, index)
+            path = get_top_action_value_of_type(gs, Path)
+            append(&path.spaces, origin)
+            path.num_locked_spaces = 1
         }
         action.targets = make_movement_targets(gs, variant.criteria, calc_context)
         return count_members(&action.targets) > 0
@@ -134,8 +137,7 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         return count_members(&action.targets) > 0
 
     case Choose_Target_Action:
-        action.targets =  make_arbitrary_targets(gs, variant.criteria, calc_context)
-        clear(&variant.result)
+        action.targets = make_arbitrary_targets(gs, variant.criteria, calc_context)
         return count_members(&action.targets) > 0
 
     case Choice_Action:
@@ -203,9 +205,10 @@ make_movement_targets :: proc (
 ) -> (visited_set: Target_Set) {
 
     Big_NUMBER :: max(u8)
-    log.assert(len(criteria.path.spaces) > 0, "We can't calculate targets without this!!!!")
-    origin := criteria.path.spaces[0]
-    current_endpoint := criteria.path.spaces[len(criteria.path.spaces) - 1]
+    path := get_top_action_value_of_type(gs, Path)
+    log.assert(len(path.spaces) > 0, "We can't calculate targets without this!!!!")
+    origin := path.spaces[0]
+    current_endpoint := path.spaces[len(path.spaces) - 1]
     max_distance := u8(calculate_implicit_quantity(gs, criteria.max_distance, calc_context))
     min_distance := u8(calculate_implicit_quantity(gs, criteria.min_distance, calc_context))
 
@@ -222,7 +225,7 @@ make_movement_targets :: proc (
     // dijkstra's algorithm!
     
     unvisited_set: Target_Set
-    first_info := Target_Info{dist = u8(len(criteria.path.spaces) - 1), member = true}
+    first_info := Target_Info{dist = u8(len(path.spaces) - 1), member = true}
     if (
         destinations_ok && !valid_destinations[current_endpoint.x][current_endpoint.y].member ||
         (current_endpoint != origin && OBSTACLE_FLAGS & gs.board[current_endpoint.x][current_endpoint.y].flags != {}) ||
@@ -275,17 +278,17 @@ make_movement_targets :: proc (
                 }
                 if .Ignoring_Obstacles not_in criteria.flags && OBSTACLE_FLAGS & gs.board[next_loc.x][next_loc.y].flags != {} do continue
                 if visited_set[next_loc.x][next_loc.y].member do continue
-                for traversed_loc in criteria.path.spaces do if traversed_loc == next_loc do continue directions
+                for traversed_loc in path.spaces do if traversed_loc == next_loc do continue directions
                 
                 if destinations_ok {
                     new_criteria := criteria
-                    prev_len := len(&new_criteria.path.spaces)
+                    prev_len := len(path.spaces)
                     // This is only slightly cursed
-                    append(&new_criteria.path.spaces, next_loc)
+                    append(&path.spaces, next_loc)
                     for prev_space := min_loc; prev_space != current_endpoint; prev_space = {visited_set[prev_space.x][prev_space.y].prev_x, visited_set[prev_space.x][prev_space.y].prev_y} {
-                        inject_at(&new_criteria.path.spaces, prev_len, prev_space)
+                        inject_at(&path.spaces, prev_len, prev_space)
                     }
-                    defer resize(&new_criteria.path.spaces, prev_len)
+                    defer resize(&path.spaces, prev_len)
 
                     reachable_targets := make_movement_targets(gs, new_criteria, calc_context, valid_destinations)
                     target_can_reach: bool = false
@@ -449,22 +452,22 @@ make_card_targets :: proc(
     gs: ^Game_State,
     criteria: []Implicit_Condition,
     calc_context: Calculation_Context = {},
-) -> (out: [dynamic]Card_ID) {
+) -> (out: Card_ID_Set) {
     calc_context := calc_context
     for player in gs.players {
         for card in player.hero.cards {
             calc_context.card_id = card.id
             if calculate_implicit_condition(gs, criteria[0], calc_context) {
-                append(&out, card.id)
+                out[card.id] = {}
             }
         }
     }
 
     for criterion in criteria [1:] {
-        #reverse for card_id, index in out {
+        for card_id in out {
             calc_context.card_id = card_id
             if !calculate_implicit_condition(gs, criterion, calc_context) {
-                unordered_remove(&out, index)
+                delete_key(&out, card_id)
             }
         }
     }

@@ -86,6 +86,7 @@ Window_Size :: enum {
 
 Vec2 :: [2]f32
 
+Void :: struct {}
 
 WIDTH :: 1280 * 2
 HEIGHT :: 720 * 2

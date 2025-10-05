@@ -15,6 +15,7 @@ arien_cards := []Card_Data {
                 tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
+                    label = .Attack_Target,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
                         Target_Contains_Any{UNIT_FLAGS},
@@ -47,7 +48,7 @@ arien_cards := []Card_Data {
             Action {  // 3
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previously_Chosen_Target{skips = 1},
+                    target = Labelled_Target{.Attack_Target},
                     strength = Card_Value{.Attack},
                 },
             },
@@ -71,6 +72,7 @@ arien_cards := []Card_Data {
                 tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
+                    label = .Attack_Target,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
                         Target_Contains_Any{UNIT_FLAGS},
@@ -107,7 +109,7 @@ arien_cards := []Card_Data {
             Action {  // 3
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previously_Chosen_Target{skips = 1},
+                    target = Labelled_Target{.Attack_Target},
                     strength = Card_Value{.Attack},
                 },
             },
@@ -174,6 +176,7 @@ arien_cards := []Card_Data {
                 tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
+                    label = .Attack_Target,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
                         Target_Contains_Any{UNIT_FLAGS},
@@ -210,7 +213,7 @@ arien_cards := []Card_Data {
             Action {  // 3
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previously_Chosen_Target{skips = 1},
+                    target = Labelled_Target{.Attack_Target},
                     strength = Card_Value{.Attack},
                 },
             },
@@ -328,8 +331,10 @@ arien_cards := []Card_Data {
             },
             Action {
                 variant = Swap_Action {
-                    target1 = Self{},
-                    target2 = Previously_Chosen_Target{},
+                    targets = []Implicit_Target{
+                        Self{},
+                        Previously_Chosen_Target{},
+                    },
                 },
             },
         },
@@ -371,6 +376,7 @@ arien_cards := []Card_Data {
                 tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
+                    label = .Attack_Target,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
                         Target_Contains_Any{UNIT_FLAGS},
@@ -407,7 +413,7 @@ arien_cards := []Card_Data {
             Action {  // 3
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previously_Chosen_Target{skips = 1},
+                    target = Labelled_Target{.Attack_Target},
                     strength = Card_Value{.Attack},
                 },
             },
@@ -416,6 +422,7 @@ arien_cards := []Card_Data {
                 optional = true,
                 variant = Choose_Target_Action {
                     num_targets = 1,
+                    label = .Attack_Target,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
                         Target_Contains_Any{UNIT_FLAGS},
@@ -453,7 +460,7 @@ arien_cards := []Card_Data {
             Action {  // 7
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Previously_Chosen_Target{skips = 1},
+                    target = Labelled_Target{.Attack_Target},
                     strength = Card_Value{.Attack},
                 },
             },

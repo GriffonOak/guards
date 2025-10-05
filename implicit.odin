@@ -95,8 +95,10 @@ Previous_Target :: struct {}
 
 Self :: struct {}
 
-Previously_Chosen_Target :: struct {
-    skips: int,
+Previously_Chosen_Target :: struct {}
+
+Labelled_Target :: struct {
+    label: Action_Value_Label,
 }
 
 Attacker :: struct {}
@@ -111,6 +113,7 @@ Implicit_Target :: union {
     Current_Target,
     Previous_Target,
     Previously_Chosen_Target,
+    Labelled_Target,
     Top_Blocked_Spawnpoint,
 
     // Requires attack interrupt in interrupt stack
@@ -124,6 +127,7 @@ Previous_Choices :: struct {}
 
 Implicit_Target_Slice :: union {
     []Target,
+    []Implicit_Target,
     Previous_Choices,
 }
 
@@ -290,14 +294,7 @@ calculate_implicit_quantity :: proc(
         }
 
     case Previous_Quantity_Choice:
-        index := get_my_player(gs).hero.current_action_index
-        index.index -= 1
-        for ; true; index.index -= 1 {
-            action := get_action_at_index(gs, index)
-            if variant, ok := action.variant.(Choose_Quantity_Action); ok {
-                return variant.result
-            }
-        }
+        return get_top_action_value_of_type(gs, int)^
 
     case Minion_Modifiers: 
         return calculate_minion_modifiers(gs)
@@ -376,19 +373,10 @@ calculate_implicit_target :: proc(
     case Self: out = get_my_player(gs).hero.location
 
     case Previously_Chosen_Target:
-        skips := target.skips
-        index := get_my_player(gs).hero.current_action_index
-        index.index -= 1
-        for ; true; index.index -= 1 {
-            action := get_action_at_index(gs, index)
-            if variant, ok := action.variant.(Choose_Target_Action); ok {
-                if skips == 0 {
-                    return variant.result[0]
-                } else {
-                    skips -= 1
-                }                
-            }
-        }
+        return get_top_action_value_of_type(gs, Target)^
+
+    case Labelled_Target:
+        return get_top_action_value_of_type(gs, Target, target.label)^
 
     case Top_Blocked_Spawnpoint:
         my_team := get_my_player(gs).team
@@ -416,15 +404,29 @@ calculate_implicit_target_slice :: proc(
 ) -> []Target {
     switch slice in implicit_slice {
     case []Target: return slice
-    case Previous_Choices:
-        index := get_my_player(gs).hero.current_action_index
-        index.index -= 1
-        for ; true; index.index -= 1 {
-            action := get_action_at_index(gs, index)
-            if variant, ok := action.variant.(Choose_Target_Action); ok {
-                return variant.result[:]
-            }
+
+    case []Implicit_Target:
+        out := make([]Target, len(slice), context.temp_allocator)
+        for implicit_target, index in slice {
+            out[index] = calculate_implicit_target(gs, implicit_target, calc_context)
         }
+        return out
+
+    case Previous_Choices:
+        // index := get_my_player(gs).hero.current_action_index
+        // index.index -= 1
+        // for ; true; index.index -= 1 {
+        //     action := get_action_at_index(gs, index)
+        //     if variant, ok := action.variant.(Choose_Target_Action); ok {
+        //         return variant.result[:]
+        //     }
+        // }
+        action_values := get_top_action_slice_of_type(gs, Target)
+        out := make([]Target, len(action_values), context.temp_allocator)
+        for value, index in action_values {
+            out[index] = value.variant.(Target)
+        }
+        return out
     }
     return {}
 }
@@ -602,14 +604,7 @@ calculate_implicit_card_id :: proc(gs: ^Game_State, implicit_card_id: Implicit_C
     case Card_ID:
         return card_id
     case Previous_Card_Choice:
-        index := get_my_player(gs).hero.current_action_index
-        index.index -= 1
-        for ; true; index.index -= 1 {
-            action := get_action_at_index(gs, index)
-            if variant, ok := action.variant.(Choose_Card_Action); ok {
-                return variant.result
-            }
-        }
+        return get_top_action_value_of_type(gs, Card_ID)^
     case Rightmost_Resolved_Card:
         out: Card_ID
         highest_turn := -1
