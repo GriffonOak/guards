@@ -102,7 +102,61 @@ wasp_cards := []Card_Data {
         values          = #partial{.Initiative = 10, .Defense = 5, .Movement = 3, .Radius = 2},
         primary         = .Skill,
         text            = "Move a unit, or a token, in radius 1 space,\nwithout moving it away from you or closer to you.\nMay repeat once on the same target.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = Formatted_String {
+                    format = "%v",
+                    arguments = {
+                        Conditional_String_Argument {
+                            condition = Equal{Repeat_Count{}, 0},
+                            arg1 = "Target a unit or token in radius.",
+                            arg2 = "May repeat once on the same target."
+                        },
+                    },
+                },
+                optional = Greater_Than{Repeat_Count{}, 0},
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Or {
+                            And {
+                                Equal{Repeat_Count{}, 0},
+                                Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                                Target_Contains_Any{UNIT_FLAGS + {.Token}}
+                            },
+                            And {
+                                Greater_Than{Repeat_Count{}, 0},
+                                Target_Is{Previously_Chosen_Target{}}
+                            },
+                        },
+                    },
+                },
+            },
+            Action {
+                tooltip = "Move the target 1 space, without moving it away from you or closer to you.",
+                variant = Movement_Action {
+                    target = Previously_Chosen_Target{},
+                    min_distance = 1,
+                    max_distance = 1,
+                    destination_criteria = {
+                        conditions = {
+                            Target_Within_Distance{
+                                Self{},
+                                {
+                                    Distance_Between{Self{}, Previously_Chosen_Target{}},
+                                    Distance_Between{Self{}, Previously_Chosen_Target{}},
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            Action {
+                variant = Repeat_Action {
+                    max_repeats = 1,
+                }
+            }
+        },
     },
     Card_Data { name = "Electrocute",
         color           = .Red,

@@ -467,13 +467,17 @@ calculate_implicit_condition :: proc (
         log.assert(len(condition) == 2, "Equal condition check that does not have 2 elements!", loc)
         return calculate_implicit_quantity(gs, condition[0], calc_context, loc) == calculate_implicit_quantity(gs, condition[1], calc_context, loc)
     case And:
-        out := true
-        for extra_condition in condition do out &&= calculate_implicit_condition(gs, extra_condition, calc_context, loc)
-        return out
+        // Short-circuting!
+        for extra_condition in condition {
+            if !calculate_implicit_condition(gs, extra_condition, calc_context, loc) do return false
+        }
+        return true
     case Or:
-        out := false
-        for extra_condition in condition do out ||= calculate_implicit_condition(gs, extra_condition, calc_context, loc)
-        return out
+        // Short-circuting!
+        for extra_condition in condition {
+            if calculate_implicit_condition(gs, extra_condition, calc_context, loc) do return true
+        }
+        return false
     case Not:
         log.assert(len(condition) == 1, "Improperly formatted not statement!", loc)
         return !calculate_implicit_condition(gs, condition[0], calc_context, loc)

@@ -252,19 +252,20 @@ clear_top_memory_slice :: proc(gs: ^Game_State) {
 
 // You need to be sure this exists otherwise it will crash
 get_top_action_value_of_type :: proc(
-    gs: ^Game_State, $T: typeid, index: Action_Index = {}, label: Action_Value_Label = .None
+    gs: ^Game_State, $T: typeid, index: Action_Index = {}, count: int = 0, label: Action_Value_Label = .None
 ) -> ^T where intrinsics.type_is_variant_of(Action_Value_Variant, T) {
-    value, _, ok := try_get_top_action_value_of_type(gs, T, index, label)
+    value, _, ok := try_get_top_action_value_of_type(gs, T, index, count, label)
     log.assert(ok, "Invalid type assertion for action value!")
     return value
 }
 
 try_get_top_action_value_of_type :: proc(
-    gs: ^Game_State, $T: typeid, index: Action_Index = {}, label: Action_Value_Label = .None
+    gs: ^Game_State, $T: typeid, index: Action_Index = {}, count: int = 0, label: Action_Value_Label = .None
 ) -> (^T, Action_Index, bool) where intrinsics.type_is_variant_of(Action_Value_Variant, T) {
     #reverse for &value in gs.action_memory {
         if label != .None && value.label != label do continue
         if index != {} && value.action_index != index do continue
+        if count != 0 && value.action_count != count do continue
         typed_value, ok := &value.variant.(T)
         if ok do return typed_value, value.action_index, true
     }

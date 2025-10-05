@@ -552,6 +552,12 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         dest_space.transient = src_space.transient
 
+        for &value in gs.action_memory {
+            if target, ok := &value.variant.(Target); ok && target^ == var.src {
+                target^ = var.dest
+            }
+        }
+
     case Entity_Swap_Event:
         target1_space := &gs.board[var.target1.x][var.target1.y]
         target2_space := &gs.board[var.target2.x][var.target2.y]
@@ -575,6 +581,16 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         // Swap transients
         target1_space.transient, target2_space.transient = target2_space.transient, target1_space.transient
+
+        for &value in gs.action_memory {
+            if target, ok := &value.variant.(Target); ok {
+                if target^ == var.target1 {
+                    target^ = var.target2
+                } else if target^ == var.target2 {
+                    target^ = var.target1
+                }
+            }
+        }
 
     case Give_Marker_Event:
 

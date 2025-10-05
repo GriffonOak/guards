@@ -122,7 +122,7 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         if !ok {
             // There was not a path in memory, or the path was from a different action than the one we are currently doing
             add_action_value(gs, Path{}, index)
-            path = get_top_action_value_of_type(gs, Path)
+            path = get_top_action_value_of_type(gs, Path, index = index)
         }
         if len(path.spaces) == 0 {
             append(&path.spaces, origin)
@@ -217,7 +217,7 @@ make_movement_targets :: proc (
     precalc_destinations: Maybe(Target_Set) = nil,
 ) -> (visited_set: Target_Set) {
 
-    Big_NUMBER :: max(u8)
+    BIG_NUMBER :: max(u8)
     path := get_top_action_value_of_type(gs, Path)
     log.assert(len(path.spaces) > 0, "We can't calculate targets without this!!!!")
     origin := path.spaces[0]
@@ -232,7 +232,7 @@ make_movement_targets :: proc (
 
     if .Shortest_Path in criteria.flags {
         log.assert(destinations_ok, "Trying to calculate shortest path with no valid destination set given!")
-        max_distance = Big_NUMBER
+        max_distance = BIG_NUMBER
     }
 
     // dijkstra's algorithm!
@@ -250,7 +250,7 @@ make_movement_targets :: proc (
 
     for count_members(&unvisited_set) > 0 {
         // find minimum
-        min_info := Target_Info{dist = Big_NUMBER}
+        min_info := Target_Info{dist = BIG_NUMBER}
         min_loc := INVALID_TARGET
         unvisited_iter := make_target_set_iterator(&unvisited_set)
         for info, loc in target_set_iter_members(&unvisited_iter) {
@@ -260,7 +260,7 @@ make_movement_targets :: proc (
             }
         }
 
-        if .Shortest_Path in criteria.flags && max_distance == Big_NUMBER && valid_destinations[min_loc.x][min_loc.y].member {
+        if .Shortest_Path in criteria.flags && max_distance == BIG_NUMBER && valid_destinations[min_loc.x][min_loc.y].member {
             // Shortest distance found!
             max_distance = min_info.dist
         }
@@ -293,8 +293,11 @@ make_movement_targets :: proc (
                 if visited_set[next_loc.x][next_loc.y].member do continue
                 for traversed_loc in path.spaces do if traversed_loc == next_loc do continue directions
                 
-                if destinations_ok {
+                if destinations_ok && max_distance != BIG_NUMBER {
                     new_criteria := criteria
+                    new_criteria.flags -= {.Shortest_Path}
+                    new_criteria.max_distance = int(max_distance)
+                    new_criteria.min_distance = int(min_distance)
                     prev_len := len(path.spaces)
                     // This is only slightly cursed
                     append(&path.spaces, next_loc)
