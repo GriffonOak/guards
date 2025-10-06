@@ -54,12 +54,37 @@ arien_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Spell Break",  // @Unimplemented
+    Card_Data { name = "Spell Break",
         color           = .Silver,
         values          = #partial{.Initiative = 13, .Defense = 3, .Radius = 3},
         primary         = .Skill,
         text            = "This turn: Enemy heroes in radius cannot\nperform skill actions, except on gold cards.\n(Skill is an action type. Other action types are unaffected.)",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = error_tooltip,
+                variant = Add_Active_Effect_Action {
+                    effect = Active_Effect {
+                        kind = .Xargatha_Freeze,
+                        timing = Single_Turn(Card_Turn_Played{}),
+                        affected_targets = {
+                            Target_Within_Distance {
+                                origin = Card_Owner{},
+                                bounds = {1, Card_Value{.Radius}},
+                            },
+                            Target_Contains_Any{{.Hero}},
+                            Target_Is_Enemy_Of{Card_Owner{}},
+                        },
+                        outcomes = {
+                            Disallow_Action {
+                                Action_Index_Sequence_Is{.Primary},
+                                Action_Index_Card_Primary_Is{.Skill},
+                                Not{Action_Index_Card_Color_Is{.Gold}},
+                            },
+                        },
+                    },
+                },
+            },
+        },
     },
     Card_Data { name = "Dangerous Current",
         color           = .Red,

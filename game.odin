@@ -67,7 +67,7 @@ Active_Effect_ID :: struct {
 
 Disallow_Action :: []Implicit_Condition
 Target_Counts_As :: struct {
-    flags: Space_Flags
+    flags: Space_Flags,
 }
 
 Active_Effect_Outcome :: union {

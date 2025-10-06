@@ -208,6 +208,10 @@ Action_Index_Card_Primary_Is :: struct {
     primary_kind: Primary_Kind,
 }
 
+Action_Index_Card_Color_Is :: struct {
+    color: Card_Color,
+}
+
 Implicit_Condition :: union {
     bool,
     Greater_Than,
@@ -243,6 +247,7 @@ Implicit_Condition :: union {
     // Requires action index in calc context
     Action_Index_Sequence_Is,
     Action_Index_Card_Primary_Is,
+    Action_Index_Card_Color_Is,
 
     // Requires an attack in the interrupt stack
     Attack_Contains_Flag,
@@ -619,6 +624,10 @@ calculate_implicit_condition :: proc (
         card_data, ok := get_card_data_by_id(gs, calc_context.action_index.card_id)
         log.assert(ok, "Could not get data for card in action index!!!", loc)
         return card_data.primary == condition.primary_kind
+
+    case Action_Index_Card_Color_Is:
+        log.assert(calc_context.action_index != {}, "No action index!", loc)
+        return calc_context.action_index.card_id.color == condition.color
 
     case Attack_Contains_Flag:
         _, attack_interrupt, ok := find_attack_interrupt(gs)
