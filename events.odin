@@ -366,10 +366,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             case Movement_Action:
                 path := get_top_action_value_of_type(gs, Path)
                 if len(path.spaces) == path.num_locked_spaces do break
-
                 path.num_locked_spaces = len(path.spaces)
-                calc_context := Calculation_Context{card_id = action_index.card_id}
-                action.targets = make_movement_targets(gs, action_variant.criteria, calc_context)
                 append(&gs.event_queue, Begin_Next_Action_Event{})
 
             case Choose_Target_Action:
@@ -911,7 +908,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             } else if count_members(&action.targets) == calculate_implicit_quantity(gs, action_type.num_targets, calc_context) && !optional {
                 iter := make_target_set_iterator(&action.targets)
                 for _, space in target_set_iter_members(&iter) {
-                    add_action_value(gs, space)
+                    add_action_value(gs, space, label = action_type.label)
                 }
                 append(&gs.event_queue, Resolve_Current_Action_Event{})
             }

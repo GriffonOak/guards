@@ -1,6 +1,7 @@
 package guards
 
 import "core:log"
+import "core:reflect"
 
 My_Player_ID :: struct {}
 
@@ -212,6 +213,10 @@ Action_Index_Card_Color_Is :: struct {
     color: Card_Color,
 }
 
+Action_Variant_At_Index_Is :: struct {
+    action_variant_typeid: typeid,
+}
+
 Implicit_Condition :: union {
     bool,
     Greater_Than,
@@ -248,6 +253,7 @@ Implicit_Condition :: union {
     Action_Index_Sequence_Is,
     Action_Index_Card_Primary_Is,
     Action_Index_Card_Color_Is,
+    Action_Variant_At_Index_Is,
 
     // Requires an attack in the interrupt stack
     Attack_Contains_Flag,
@@ -628,6 +634,11 @@ calculate_implicit_condition :: proc (
     case Action_Index_Card_Color_Is:
         log.assert(calc_context.action_index != {}, "No action index!", loc)
         return calc_context.action_index.card_id.color == condition.color
+
+    case Action_Variant_At_Index_Is:
+        log.assert(calc_context.action_index != {}, "No action Index!", loc)
+        action := get_action_at_index(gs, calc_context.action_index, loc)
+        return reflect.union_variant_typeid(action.variant) == condition.action_variant_typeid
 
     case Attack_Contains_Flag:
         _, attack_interrupt, ok := find_attack_interrupt(gs)

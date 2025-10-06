@@ -89,25 +89,6 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
     if index.sequence == .Halt do return true
     if index.sequence == .Invalid do return false
 
-    // xarg_freeze: { // Disable movement on xargatha freeze
-    //     freeze, ok := gs.ongoing_active_effects[.Xargatha_Freeze]
-    //     if !ok do break xarg_freeze
-    //     if calculate_implicit_quantity(gs, freeze.timing.(Single_Turn), {card_id = freeze.parent_card_id}) != gs.turn_counter do break xarg_freeze
-    //     context.allocator = context.temp_allocator
-    //     my_location := get_my_player(gs).hero.location
-    //     freeze_targets := make_arbitrary_targets(gs, freeze.target_set, {card_id = freeze.parent_card_id})
-    //     if !freeze_targets[my_location.x][my_location.y].member do break xarg_freeze
-    //     played_card, ok2 := find_played_card(gs)
-    //     log.assert(ok2, "Could not find played card when checking for Xargatha freeze")
-    //     played_card_data, ok3 := get_card_data_by_id(gs, played_card)
-    //     log.assert(ok3, "Could not find played card data when checking for Xargatha freeze")
-    //     if index.sequence == .Basic_Movement || index.sequence == .Basic_Fast_Travel || (index.index == 0 && index.sequence == .Primary && played_card_data.primary == .Movement) {
-    //         // phew
-    //         return false
-    //     }
-    // }
-
-
     action := get_action_at_index(gs, index)
     my_location := get_my_player(gs).hero.location
     calc_context := Calculation_Context{card_id = index.card_id}
@@ -131,7 +112,6 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
 
     switch &variant in action.variant {
     case Movement_Action:
-        origin := calculate_implicit_target(gs, variant.target, calc_context)
 
         // path, path_action_index, ok := try_get_top_action_value_of_type(gs, Path)
         path, _, ok := try_get_top_action_value_of_type(gs, Path, index = index)
@@ -141,10 +121,31 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
             path = get_top_action_value_of_type(gs, Path, index = index)
         }
         if len(path.spaces) == 0 {
-            append(&path.spaces, origin)
+            append(&path.spaces, calculate_implicit_target(gs, variant.target, calc_context))
             path.num_locked_spaces = 1
         }
-        action.targets = make_movement_targets(gs, variant.criteria, calc_context)
+
+        criteria := variant.criteria
+        origin := path.spaces[0]
+        limited_max_dist := Min{999, criteria.max_distance}
+
+        for _, effect in gs.ongoing_active_effects {
+            effect_calc_context := Calculation_Context{target = origin, card_id = effect.parent_card_id, action_index = index}
+            if !effect_timing_valid(gs, effect.timing, effect_calc_context) do continue
+            target_valid := calculate_implicit_condition(gs, And(effect.affected_targets), effect_calc_context)
+            if !target_valid do continue
+            for outcome in effect.outcomes {
+                limit_movement, ok := outcome.(Limit_Movement)
+                if !ok do continue
+                
+                if calculate_implicit_condition(gs, And(limit_movement.conditions), effect_calc_context) {
+                    limited_max_dist[0] = min(limited_max_dist[0].(int), limit_movement.limit)
+                }
+            }
+        }
+        if limited_max_dist[0].(int) != 999 do criteria.max_distance = limited_max_dist
+
+        action.targets = make_movement_targets(gs, criteria, calc_context)
         return count_members(&action.targets) > 0
 
     case Fast_Travel_Action:

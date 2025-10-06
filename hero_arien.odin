@@ -64,7 +64,7 @@ arien_cards := []Card_Data {
                 tooltip = error_tooltip,
                 variant = Add_Active_Effect_Action {
                     effect = Active_Effect {
-                        kind = .Xargatha_Freeze,
+                        kind = .Arien_Spell_Break,
                         timing = Single_Turn(Card_Turn_Played{}),
                         affected_targets = {
                             Target_Within_Distance {
@@ -379,7 +379,7 @@ arien_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Slippery Ground",  // @Unimplemented
+    Card_Data { name = "Slippery Ground",
         color           = .Blue,
         tier            = 2,
         alternate       = true,
@@ -387,7 +387,39 @@ arien_cards := []Card_Data {
         primary         = .Movement,
         item            = .Attack,
         text            = "This turn: Enemy heroes adjacent\nto you cannot fast travel, or move more\nthan 1 space with a movement action.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = error_tooltip,
+                variant = Add_Active_Effect_Action {
+                    effect = Active_Effect {
+                        kind = .Arien_Limit_Movement,
+                        timing = Single_Turn(Card_Turn_Played{}),
+                        affected_targets = {
+                            Target_Within_Distance {Card_Owner{}, {1, 1}},
+                            Target_Contains_Any{{.Hero}},
+                            Target_Is_Enemy_Of{Card_Owner{}},
+                        },
+                        outcomes = {
+                            Disallow_Action {
+                                Action_Variant_At_Index_Is{Fast_Travel_Action},
+                            },
+                            Limit_Movement {
+                                limit = 1,
+                                conditions = {
+                                    Or {
+                                        Action_Index_Sequence_Is{.Basic_Movement},
+                                        And {
+                                            Action_Index_Sequence_Is{.Primary},
+                                            Action_Index_Card_Primary_Is{.Movement},
+                                        },
+                                    },
+                                }
+                            },
+                        },
+                    },
+                },
+            },
+        },
     },
     Card_Data { name = "Violent Torrent",
         color           = .Red,
@@ -608,7 +640,7 @@ arien_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Deluge",  // @Unimplemented, active effect
+    Card_Data { name = "Deluge",
         color           = .Blue,
         tier            = 3,
         alternate       = true,
@@ -616,6 +648,38 @@ arien_cards := []Card_Data {
         primary         = .Movement,
         item            = .Attack,
         text            = "This turn: Enemy heroes in radius\ncannot fast travel, or move more than\n1 space with a movement action.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = error_tooltip,
+                variant = Add_Active_Effect_Action {
+                    effect = Active_Effect {
+                        kind = .Arien_Limit_Movement,
+                        timing = Single_Turn(Card_Turn_Played{}),
+                        affected_targets = {
+                            Target_Within_Distance {Card_Owner{}, {1, 1}},
+                            Target_Contains_Any{{.Hero}},
+                            Target_Is_Enemy_Of{Card_Owner{}},
+                        },
+                        outcomes = {
+                            Disallow_Action {
+                                Action_Variant_At_Index_Is{Fast_Travel_Action},
+                            },
+                            Limit_Movement {
+                                limit = 1,
+                                conditions = {
+                                    Or {
+                                        Action_Index_Sequence_Is{.Basic_Movement},
+                                        And {
+                                            Action_Index_Sequence_Is{.Primary},
+                                            Action_Index_Card_Primary_Is{.Movement},
+                                        },
+                                    },
+                                }
+                            },
+                        },
+                    },
+                },
+            },
+        },
     },
 }

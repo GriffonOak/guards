@@ -39,6 +39,8 @@ Active_Effect_Kind :: enum {
     Xargatha_Freeze,
     Xargatha_Defeat,
     Swift_Delayed_Jump,
+    Arien_Spell_Break,
+    Arien_Limit_Movement,
 }
 
 End_Of_Turn :: struct {
@@ -69,10 +71,15 @@ Disallow_Action :: []Implicit_Condition
 Target_Counts_As :: struct {
     flags: Space_Flags,
 }
+Limit_Movement :: struct {
+    limit: int,
+    conditions: []Implicit_Condition,
+}
 
 Active_Effect_Outcome :: union {
     Disallow_Action,
     Target_Counts_As,
+    Limit_Movement,
 }
 
 Active_Effect :: struct {
