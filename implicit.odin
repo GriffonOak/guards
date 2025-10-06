@@ -20,7 +20,6 @@ Implicit_Card_ID :: union {
     Rightmost_Resolved_Card,
 }
 
-
 Card_Value :: struct {
     kind: Card_Value_Kind,
 }
@@ -30,6 +29,8 @@ Product :: distinct []Implicit_Quantity
 Min     :: distinct []Implicit_Quantity
 
 Distance_Between :: distinct []Implicit_Target
+
+Choices_Taken :: struct {}
 
 Count_Targets :: Selection_Criteria
 
@@ -75,6 +76,7 @@ Implicit_Quantity :: union {
     Current_Turn,
     Distance_Between,
     Repeat_Count,
+    Choices_Taken,
 
     // Requires target in context
     Count_Hero_Coins,
@@ -333,6 +335,13 @@ calculate_implicit_quantity :: proc(
             return 0
         }
         return repeat_count.count
+
+    case Choices_Taken:
+        for value in gs.action_memory {
+            if _, ok := value.variant.(Choice_Taken); ok {
+                out += 1
+            }
+        }
 
     case Minion_Modifiers: 
         return calculate_minion_modifiers(gs)

@@ -135,8 +135,9 @@ xargatha_cards := []Card_Data {
                 variant = Choice_Action {
                     choices = {
                         {name = "Move self",    jump_index = {index=1}},
-                        {name = "Move minion",  jump_index = {index=5}},
+                        {name = "Move minion",  jump_index = {index=3}},
                     },
+                    cannot_repeat = true,
                 },
             },
             Action {  // 1
@@ -147,32 +148,15 @@ xargatha_cards := []Card_Data {
                 },
             },
             Action {  // 2
-                optional = true,
-                tooltip = "You may choose a ranged minion to move, or you may skip.",
-                variant = Choose_Target_Action {
-                    num_targets = 1,
-                    conditions = {
-                        Target_Within_Distance {
-                            origin = Self{},
-                            bounds = {1, Card_Value{.Radius}},
-                        },
-                        Target_Contains_Any{{.Ranged_Minion}},
-                        Target_Is_Enemy_Unit{},
-                    },
+                tooltip = error_tooltip,
+                variant = Jump_Action {
+                    jump_index = Action_Index{index = 0},
                 },
             },
             Action {  // 3
-                tooltip = "Move the ranged minion up to 2 spaces.",
-                variant = Movement_Action {
-                    target = Previously_Chosen_Target{},
-                    max_distance = 2,
-                },
-            },
-            Action {  // 4
-                variant = Halt_Action{},
-            },
-            Action {  // 5
-                tooltip = "Choose a ranged minion to move.",
+                optional = true,
+                skip_index = Action_Index{index = 0},
+                tooltip = "You may choose a ranged minion to move.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -185,18 +169,17 @@ xargatha_cards := []Card_Data {
                     },
                 },
             },
-            Action {  // 6
+            Action {  // 4
                 tooltip = "Move the ranged minion up to 2 spaces.",
                 variant = Movement_Action {
                     target = Previously_Chosen_Target{},
                     max_distance = 2,
                 },
             },
-            Action {  // 7
-                tooltip = player_movement_tooltip,
-                variant = Movement_Action {
-                    target = Self{},
-                    max_distance = Card_Value{.Movement},
+            Action {  // 5
+                tooltip = error_tooltip,
+                variant = Jump_Action {
+                    jump_index = Action_Index{index = 0},
                 },
             },
         },
@@ -340,8 +323,9 @@ xargatha_cards := []Card_Data {
                 variant = Choice_Action {
                     choices = {
                         {name = "Move self",    jump_index = {index=1}},
-                        {name = "Move minion",  jump_index = {index=5}},
+                        {name = "Move minion",  jump_index = {index=3}},
                     },
+                    cannot_repeat = true,
                 },
             },
             Action {  // 1
@@ -352,35 +336,20 @@ xargatha_cards := []Card_Data {
                 },
             },
             Action {  // 2
-                optional = true,
-                tooltip = "You may choose a ranged or melee minion to move, or you may skip.",
-                variant = Choose_Target_Action {
-                    num_targets = 1,
-                    conditions = {
-                        Target_Within_Distance {
-                            bounds = {1, Card_Value{.Radius}},
-                        },
-                        Target_Contains_Any{{.Ranged_Minion, .Melee_Minion}},
-                        Target_Is_Enemy_Unit{},
-                    },
+                tooltip = error_tooltip,
+                variant = Jump_Action {
+                    jump_index = Action_Index{index = 0},
                 },
             },
             Action {  // 3
-                tooltip = "Move the minion up to 2 spaces.",
-                variant = Movement_Action {
-                    target = Previously_Chosen_Target{},
-                    max_distance = 2,
-                },
-            },
-            Action {  // 4
-                variant = Halt_Action{},
-            },
-            Action {  // 5
-                tooltip = "Choose a ranged or melee minion to move.",
+                optional = true,
+                skip_index = Action_Index{index = 0},
+                tooltip = "You may choose a ranged or melee minion to move.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance {
+                            origin = Self{},
                             bounds = {1, Card_Value{.Radius}},
                         },
                         Target_Contains_Any{{.Ranged_Minion, .Melee_Minion}},
@@ -388,18 +357,17 @@ xargatha_cards := []Card_Data {
                     },
                 },
             },
-            Action {  // 6
+            Action {  // 4
                 tooltip = "Move the minion up to 2 spaces.",
                 variant = Movement_Action {
                     target = Previously_Chosen_Target{},
                     max_distance = 2,
                 },
             },
-            Action {  // 7
-                tooltip = player_movement_tooltip,
-                variant = Movement_Action {
-                    target = Self{},
-                    max_distance = Card_Value{.Movement},
+            Action {  // 5
+                tooltip = error_tooltip,
+                variant = Jump_Action {
+                    jump_index = Action_Index{index = 0},
                 },
             },
         },
@@ -649,6 +617,7 @@ xargatha_cards := []Card_Data {
                         {name = "Move self",    jump_index = Action_Index{index=1}},
                         {name = "Move minion",  jump_index = Action_Index{index=5}},
                     },
+                    cannot_repeat = true,
                 },
             },
             Action {  // 1
@@ -659,32 +628,15 @@ xargatha_cards := []Card_Data {
                 },
             },
             Action {  // 2
-                optional = true,
-                tooltip = "You may choose a minion to move, or you may skip.",
-                variant = Choose_Target_Action {
-                    num_targets = 1,
-                    conditions = {
-                        Target_Within_Distance {
-                            bounds = {1, Card_Value{.Radius}},
-                        },
-                        Target_Contains_Any{MINION_FLAGS},
-                        Target_Is_Enemy_Unit{},
-                    },
-                    flags = {.Ignoring_Immunity},
+                tooltip = error_tooltip,
+                variant = Jump_Action {
+                    jump_index = Action_Index{index = 0},
                 },
             },
             Action {  // 3
-                tooltip = "Move the minion up to 2 spaces.",
-                variant = Movement_Action {
-                    target = Previously_Chosen_Target{},
-                    max_distance = 2,
-                },
-            },
-            Action {  // 4
-                variant = Halt_Action{},
-            },
-            Action {  // 5
-                tooltip = "Choose a minion to move.",
+                optional = true,
+                skip_index = {index = 0},
+                tooltip = "You may choose a minion to move.",
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -697,18 +649,17 @@ xargatha_cards := []Card_Data {
                     flags = {.Ignoring_Immunity},
                 },
             },
-            Action {  // 6
+            Action {  // 4
                 tooltip = "Move the minion up to 2 spaces.",
                 variant = Movement_Action {
                     target = Previously_Chosen_Target{},
                     max_distance = 2,
                 },
             },
-            Action {  // 7
-                tooltip = player_movement_tooltip,
-                variant = Movement_Action {
-                    target = Self{},
-                    max_distance = Card_Value{.Movement},
+            Action {  // 5
+                tooltip = error_tooltip,
+                variant = Jump_Action {
+                    jump_index = Action_Index{index = 0},
                 },
             },
         },

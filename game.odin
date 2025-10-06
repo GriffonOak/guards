@@ -165,6 +165,10 @@ Chosen_Quantity :: struct {
     quantity: int,
 }
 
+Choice_Taken :: struct {
+    choice_index: int,
+}
+
 Repeat_Count :: struct {
     count: int,
 }
@@ -180,6 +184,7 @@ Action_Value_Variant :: union {
     Chosen_Quantity,
     Repeat_Count,
     Saved_Boolean,
+    Choice_Taken,
 }
 
 Action_Value :: struct {

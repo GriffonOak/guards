@@ -162,7 +162,17 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
 
     case Choice_Action:
         out := false
+        for &choice in variant.choices do choice.valid = true
+        if variant.cannot_repeat {
+            #reverse for value in gs.action_memory {
+                choice_taken, ok := value.variant.(Choice_Taken)
+                if !ok do continue
+                if value.action_index != index do continue
+                variant.choices[choice_taken.choice_index].valid = false
+            }
+        }
         for &choice in &variant.choices {
+            if !choice.valid do continue
             jump_index := choice.jump_index
             if jump_index.card_id == {} do jump_index.card_id = index.card_id
             choice.valid = validate_action(gs, jump_index)

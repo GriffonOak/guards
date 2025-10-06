@@ -255,7 +255,7 @@ test_xargatha_charm :: proc(t: ^testing.T) {
     testing.expect(t, original_space != nil)
 
     event_log2 := []Event {
-        Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Primary, card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, index = 1}},
+        Choice_Taken_Event{choice_index = 0, jump_index = Action_Index{sequence = Action_Sequence_ID.Primary, card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Green, tier = 1, alternate = false}, index = 1}},
         Space_Hovered_Event{space = {12, 11}},
         Space_Clicked_Event{space = {12, 11}},
         Space_Hovered_Event{space = {0, 0}},

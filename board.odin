@@ -420,9 +420,9 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
             for &ui_element in gs.side_button_manager.buttons {
                 button_element := assert_variant(&ui_element.variant, UI_Button_Element)
                 if .Hovered not_in ui_element.flags do continue
-                event, ok := button_element.event.(Resolve_Current_Action_Event)
+                event, ok := button_element.event.(Choice_Taken_Event)
                 if !ok do continue
-                next_index := event.jump_index.?
+                next_index := event.jump_index
                 if next_index.card_id == {} do next_index.card_id = action_index.card_id
                 highlight_action_targets(gs, next_index)
             }

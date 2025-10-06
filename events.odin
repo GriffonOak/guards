@@ -104,6 +104,11 @@ Quantity_Chosen_Event :: struct {
     quantity: int,
 }
 
+Choice_Taken_Event :: struct {
+    choice_index: int,
+    jump_index: Action_Index,
+}
+
 Begin_Resolution_Stage_Event :: struct{}
 
 Resolve_Same_Team_Tied_Event :: struct {
@@ -116,6 +121,7 @@ Begin_Player_Resolution_Event :: struct {
     player_id: Player_ID,
 }
 Begin_Next_Action_Event :: struct {}
+
 Resolve_Current_Action_Event :: struct {
     jump_index: Maybe(Action_Index),
 }
@@ -210,6 +216,8 @@ Event :: union {
     Remove_Active_Effect_Event,
 
     Quantity_Chosen_Event,
+
+    Choice_Taken_Event,
 
     Begin_Interrupt_Event,
     Resolve_Interrupt_Event,
@@ -705,6 +713,13 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         add_action_value(gs, Chosen_Quantity{var.quantity})
         append(&gs.event_queue, Resolve_Current_Action_Event{})
 
+    case Choice_Taken_Event:
+        action_index := get_my_player(gs).hero.current_action_index
+        action := get_action_at_index(gs, action_index)
+        choice_action := action.variant.(Choice_Action)
+        if choice_action.cannot_repeat do add_action_value(gs, Choice_Taken{var.choice_index}, index = action_index)
+        append(&gs.event_queue, Resolve_Current_Action_Event{var.jump_index})
+
     case Begin_Interrupt_Event:
         interrupt := var.interrupt
         if interrupt.interrupted_player != gs.my_player_id {  // The interruptee should already have added to their own interrupt stack in become_interrupted
@@ -914,20 +929,20 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         case Choice_Action:
             choices_added: int
-            most_recent_choice: Action_Index
+            event: Choice_Taken_Event
 
-            for choice in action_type.choices {
+            for choice, choice_index in action_type.choices {
                 if choice.valid {
                     jump_index := choice.jump_index
                     if jump_index.card_id == {} do jump_index.card_id = action_index.card_id
-                    add_side_button(gs, choice.name, Resolve_Current_Action_Event{jump_index})
+                    event = Choice_Taken_Event{choice_index, jump_index}
+                    add_side_button(gs, choice.name, event)
                     choices_added += 1
-                    most_recent_choice = jump_index
                 }
             }
 
             if choices_added == 1 {
-                append(&gs.event_queue, Resolve_Current_Action_Event{most_recent_choice})
+                append(&gs.event_queue, event)
             }
 
         case Choose_Quantity_Action:

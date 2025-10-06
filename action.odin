@@ -64,6 +64,7 @@ Force_Discard_Action :: struct {
 
 Choice_Action :: struct {
     choices: []Choice,
+    cannot_repeat: bool,
 }
 
 Add_Active_Effect_Action :: struct {

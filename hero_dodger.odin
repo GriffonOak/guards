@@ -485,14 +485,75 @@ dodger_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Middlefinger of Death",  // @Unimplemented
+    Card_Data { name = "Middlefinger of Death",
         color =         .Red,
         tier =          3,
         values =        #partial{.Initiative = 10, .Defense = 6, .Attack = 5, .Movement = 4, .Range = 3},
         primary =       .Attack,
         item =          .Movement,
         text =          "Choose one, or both, on different targets -\n*Target a unit adjacent to you.\nTarget a hero in range who has one or\nmore cards in the discard",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = "Choose one:",
+                optional = Greater_Than{Choices_Taken{}, 0},
+                variant = Choice_Action{
+                    choices = {
+                        {name = "Adjacent", jump_index = {index = 1}},
+                        {name = "In range", jump_index = {index = 4}},
+                    },
+                },
+            },
+            Action {  // 1
+                tooltip = "Target a unit adjacent to you.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance {
+                            origin = Self{},
+                            bounds = {1, 1},
+                        },
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {  // 2
+                tooltip = "Waiting for opponent to defend...",
+                variant = Attack_Action {
+                    target = Previously_Chosen_Target{},
+                    strength = Card_Value{.Attack},
+                },
+            },
+            Action { variant = Jump_Action { jump_index = Action_Index{index = 0} } },  // 3
+            Action {  // 4
+                tooltip = "Target a hero in range who has one or more cards in the discard.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance {
+                            origin = Self{},
+                            bounds = {1, Card_Value{.Range}},
+                        },
+                        Target_Contains_Any{{.Hero}},
+                        Target_Is_Enemy_Unit{},
+                        Greater_Than{
+                            Count_Card_Targets{
+                                Card_Owner_Is{Current_Target{}},
+                                Card_State_Is{.Discarded},
+                            }, 0,
+                        },
+                    },
+                },
+            },
+            Action {  // 5
+                tooltip = "Waiting for opponent to defend...",
+                variant = Attack_Action {
+                    target = Previously_Chosen_Target{},
+                    strength = Card_Value{.Attack},
+                },
+            },
+            Action { variant = Jump_Action { jump_index = Action_Index{index = 0} } },  // 6
+        },
     },
     Card_Data { name = "Blazing Skull",
         color =         .Red,
