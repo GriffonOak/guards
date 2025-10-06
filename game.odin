@@ -41,6 +41,7 @@ Active_Effect_Kind :: enum {
     Swift_Delayed_Jump,
     Arien_Spell_Break,
     Arien_Limit_Movement,
+    Dodger_Attack_Debuff,
 }
 
 End_Of_Turn :: struct {
@@ -75,11 +76,16 @@ Limit_Movement :: struct {
     limit: int,
     conditions: []Implicit_Condition,
 }
+Augment_Card_Value :: struct {
+    value_kind: Card_Value_Kind,
+    augment: int,
+}
 
 Active_Effect_Outcome :: union {
     Disallow_Action,
     Target_Counts_As,
     Limit_Movement,
+    Augment_Card_Value,
 }
 
 Active_Effect :: struct {

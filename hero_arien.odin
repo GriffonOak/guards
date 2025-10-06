@@ -413,7 +413,7 @@ arien_cards := []Card_Data {
                                             Action_Index_Card_Primary_Is{.Movement},
                                         },
                                     },
-                                }
+                                },
                             },
                         },
                     },
@@ -674,7 +674,7 @@ arien_cards := []Card_Data {
                                             Action_Index_Card_Primary_Is{.Movement},
                                         },
                                     },
-                                }
+                                },
                             },
                         },
                     },

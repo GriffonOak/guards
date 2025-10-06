@@ -454,7 +454,7 @@ dodger_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Weakness",  // @Unimplemented
+    Card_Data { name = "Weakness",
         color =         .Blue,
         tier =          2,
         alternate =     true,
@@ -462,7 +462,28 @@ dodger_cards := []Card_Data {
         primary =       .Skill,
         item =          .Attack,
         text =          "This turn: Enemy heroes\nin radius have -4 Attack.\n(They can still attack, even with a negative attack value.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = error_tooltip,
+                variant = Add_Active_Effect_Action {
+                    effect = Active_Effect {
+                        kind = .Dodger_Attack_Debuff,
+                        timing = Single_Turn(Card_Turn_Played{}),
+                        affected_targets = {
+                            Target_Within_Distance {Card_Owner{}, {1, Card_Value{.Radius}}},
+                            Target_Contains_Any{{.Hero}},
+                            Target_Is_Enemy_Of{Card_Owner{}},
+                        },
+                        outcomes = {
+                            Augment_Card_Value {
+                                value_kind = .Attack,
+                                augment = -4,
+                            },
+                        },
+                    },
+                },
+            },
+        },
     },
     Card_Data { name = "Middlefinger of Death",  // @Unimplemented
         color =         .Red,
@@ -576,7 +597,7 @@ dodger_cards := []Card_Data {
         text =          "+4 Defense if there are 2 or more empty\nspawn points in radius in the battle zone.",
         primary_effect = []Action {},
     },
-    Card_Data { name = "Enfeeblement",  // @Unimplemented
+    Card_Data { name = "Enfeeblement",
         color =         .Blue,
         tier =          3,
         alternate =     true,
@@ -584,6 +605,30 @@ dodger_cards := []Card_Data {
         primary =       .Skill,
         item =          .Attack,
         text =          "This turn: Enemy heroes\nin radius have -6 Attack and cannot repeat actions.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = error_tooltip,
+                variant = Add_Active_Effect_Action {
+                    effect = Active_Effect {
+                        kind = .Dodger_Attack_Debuff,
+                        timing = Single_Turn(Card_Turn_Played{}),
+                        affected_targets = {
+                            Target_Within_Distance {Card_Owner{}, {1, Card_Value{.Radius}}},
+                            Target_Contains_Any{{.Hero}},
+                            Target_Is_Enemy_Of{Card_Owner{}},
+                        },
+                        outcomes = {
+                            Augment_Card_Value {
+                                value_kind = .Attack,
+                                augment = -6,
+                            },
+                            Disallow_Action {
+                                Action_Variant_At_Index_Is{Repeat_Action}
+                            },
+                        },
+                    },
+                },
+            },
+        },
     },
 }

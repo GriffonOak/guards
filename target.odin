@@ -135,8 +135,8 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
             target_valid := calculate_implicit_condition(gs, And(effect.affected_targets), effect_calc_context)
             if !target_valid do continue
             for outcome in effect.outcomes {
-                limit_movement, ok := outcome.(Limit_Movement)
-                if !ok do continue
+                limit_movement, ok2 := outcome.(Limit_Movement)
+                if !ok2 do continue
                 
                 if calculate_implicit_condition(gs, And(limit_movement.conditions), effect_calc_context) {
                     limited_max_dist[0] = min(limited_max_dist[0].(int), limit_movement.limit)

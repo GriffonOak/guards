@@ -365,13 +365,27 @@ calculate_implicit_quantity :: proc(
         value := card_data.values[quantity.kind]
         value += count_hero_items(gs, hero, quantity.kind)
 
-
         poison_value_kinds := bit_set[Card_Value_Kind]{.Attack, .Defense, .Initiative}
         if .Tigerclaw_Weak_Poison in hero.markers && quantity.kind in poison_value_kinds {
             value -= 1
         }
         if .Tigerclaw_Strong_Poison in hero.markers && quantity.kind in poison_value_kinds {
             value -= 2
+        }
+
+        for _, effect in gs.ongoing_active_effects {
+            effect_calc_context := Calculation_Context{target = hero.location, card_id = effect.parent_card_id}
+            if !effect_timing_valid(gs, effect.timing, effect_calc_context) do continue
+            target_valid := calculate_implicit_condition(gs, And(effect.affected_targets), effect_calc_context)
+            if !target_valid do continue
+            for outcome in effect.outcomes {
+                augment_value, ok2 := outcome.(Augment_Card_Value)
+                if !ok2 do continue
+                
+                if quantity.kind == augment_value.value_kind {
+                    value += augment_value.augment
+                }
+            }
         }
 
         return value
