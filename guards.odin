@@ -36,8 +36,8 @@ _ :: time
 
 
 --- TESTING
-    ^ Restart testing and make a bunch of new tests
     ^ Add test for xarg retrieval
+    ^ make a bunch of new tests
 
     v Figure out why tests are so slow
 

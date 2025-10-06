@@ -150,7 +150,7 @@ swift_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                        Target_Empty,
+                        Target_Empty{},
                         Target_In_Straight_Line_With{Self{}},
                     },
                 },
@@ -322,7 +322,7 @@ swift_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                        Target_Empty,
+                        Target_Empty{},
                         Target_In_Straight_Line_With{Self{}},
                     },
                 },
@@ -393,7 +393,7 @@ swift_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Not{Target_In_Straight_Line_With{Self{}}},
-                        Target_Empty,
+                        Target_Empty{},
                     },
                 },
             },
@@ -542,7 +542,7 @@ swift_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                        Target_Empty,
+                        Target_Empty{},
                         Target_In_Straight_Line_With{Self{}},
                     },
                 },
@@ -614,7 +614,7 @@ swift_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Not{Target_In_Straight_Line_With{Self{}}},
-                        Target_Empty,
+                        Target_Empty{},
                     },
                 },
             },

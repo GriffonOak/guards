@@ -88,6 +88,7 @@ Implicit_Quantity :: union {
 
 Calculation_Context :: struct {
     card_id: Card_ID,
+    action_index: Action_Index,  // @Note this also carries a card id, wonder if these could be combined
     target, prev_target: Target,
 }
 
@@ -160,8 +161,7 @@ Target_Is :: struct {
 }
 
 Target_Contains_Any :: struct { flags: Space_Flags }
-Target_Contains_No  :: struct { flags: Space_Flags }
-Target_Contains_All :: struct { flags: Space_Flags }
+Target_Empty :: struct {}
 
 Target_Is_Enemy_Unit :: struct {}
 Target_Is_Friendly_Unit :: struct {}
@@ -173,8 +173,6 @@ Target_Is_Friendly_Spawnpoint :: struct {}
 
 Target_In_Battle_Zone :: struct {}
 Target_Outside_Battle_Zone :: struct {}
-
-Target_Empty :: Target_Contains_No{OBSTACLE_FLAGS}
 
 Card_State_Is :: struct {
     state: Card_State,
@@ -202,6 +200,14 @@ Previously_Saved_Boolean :: struct {
     label: Action_Value_Label,
 }
 
+Action_Index_Sequence_Is :: struct {
+    sequence_id: Action_Sequence_ID,
+}
+
+Action_Index_Card_Primary_Is :: struct {
+    primary_kind: Primary_Kind,
+}
+
 Implicit_Condition :: union {
     bool,
     Greater_Than,
@@ -216,8 +222,7 @@ Implicit_Condition :: union {
     // Requires target in calc_context
     Target_Within_Distance,
     Target_Contains_Any,
-    Target_Contains_No,
-    Target_Contains_All,
+    Target_Empty,
     Target_Is_Enemy_Unit,
     Target_Is_Friendly_Unit,
     Target_Is_Losing_Team_Unit,
@@ -234,6 +239,10 @@ Implicit_Condition :: union {
     Card_Color_Is,
     Card_Owner_Is,
     Card_Can_Defend,
+
+    // Requires action index in calc context
+    Action_Index_Sequence_Is,
+    Action_Index_Card_Primary_Is,
 
     // Requires an attack in the interrupt stack
     Attack_Contains_Flag,
@@ -502,18 +511,11 @@ calculate_implicit_condition :: proc (
 
     case Target_Contains_Any:
         log.assert(space_ok, "Invalid target!")
-        intersection := space.flags & condition.flags
-        return intersection != {}
+        return target_contains_any(gs, calc_context.target, condition.flags)
 
-    case Target_Contains_All:
+    case Target_Empty:
         log.assert(space_ok, "Invalid target!")
-        intersection := space.flags & condition.flags
-        return intersection == condition.flags
-    
-    case Target_Contains_No:
-        log.assert(space_ok, "Invalid target!")
-        intersection := space.flags & condition.flags
-        return intersection == {}
+        return !target_contains_any(gs, calc_context.target, OBSTACLE_FLAGS)
 
     // @Note these don't actually test whether a unit is present in the space, only that the teams are the same / different
     case Target_Is_Enemy_Unit:
@@ -607,6 +609,16 @@ calculate_implicit_condition :: proc (
         }
         defense_strength := calculate_implicit_quantity(gs, defense_action.strength, calc_context)
         return defense_strength >= attack_interrupt.strength
+
+    case Action_Index_Sequence_Is:
+        log.assert(calc_context.action_index != {}, "No action index!", loc)
+        return calc_context.action_index.sequence == condition.sequence_id
+
+    case Action_Index_Card_Primary_Is:
+        log.assert(calc_context.action_index != {}, "No action index!", loc)
+        card_data, ok := get_card_data_by_id(gs, calc_context.action_index.card_id)
+        log.assert(ok, "Could not get data for card in action index!!!", loc)
+        return card_data.primary == condition.primary_kind
 
     case Attack_Contains_Flag:
         _, attack_interrupt, ok := find_attack_interrupt(gs)

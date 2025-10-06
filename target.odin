@@ -89,29 +89,45 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
     if index.sequence == .Halt do return true
     if index.sequence == .Invalid do return false
 
-    xarg_freeze: { // Disable movement on xargatha freeze
-        freeze, ok := gs.ongoing_active_effects[.Xargatha_Freeze]
-        if !ok do break xarg_freeze
-        if calculate_implicit_quantity(gs, freeze.timing.(Single_Turn), {card_id = freeze.parent_card_id}) != gs.turn_counter do break xarg_freeze
-        context.allocator = context.temp_allocator
-        my_location := get_my_player(gs).hero.location
-        freeze_targets := make_arbitrary_targets(gs, freeze.target_set, {card_id = freeze.parent_card_id})
-        if !freeze_targets[my_location.x][my_location.y].member do break xarg_freeze
-        played_card, ok2 := find_played_card(gs)
-        log.assert(ok2, "Could not find played card when checking for Xargatha freeze")
-        played_card_data, ok3 := get_card_data_by_id(gs, played_card)
-        log.assert(ok3, "Could not find played card data when checking for Xargatha freeze")
-        if index.sequence == .Basic_Movement || index.sequence == .Basic_Fast_Travel || (index.index == 0 && index.sequence == .Primary && played_card_data.primary == .Movement) {
-            // phew
-            return false
-        }
-    }
+    // xarg_freeze: { // Disable movement on xargatha freeze
+    //     freeze, ok := gs.ongoing_active_effects[.Xargatha_Freeze]
+    //     if !ok do break xarg_freeze
+    //     if calculate_implicit_quantity(gs, freeze.timing.(Single_Turn), {card_id = freeze.parent_card_id}) != gs.turn_counter do break xarg_freeze
+    //     context.allocator = context.temp_allocator
+    //     my_location := get_my_player(gs).hero.location
+    //     freeze_targets := make_arbitrary_targets(gs, freeze.target_set, {card_id = freeze.parent_card_id})
+    //     if !freeze_targets[my_location.x][my_location.y].member do break xarg_freeze
+    //     played_card, ok2 := find_played_card(gs)
+    //     log.assert(ok2, "Could not find played card when checking for Xargatha freeze")
+    //     played_card_data, ok3 := get_card_data_by_id(gs, played_card)
+    //     log.assert(ok3, "Could not find played card data when checking for Xargatha freeze")
+    //     if index.sequence == .Basic_Movement || index.sequence == .Basic_Fast_Travel || (index.index == 0 && index.sequence == .Primary && played_card_data.primary == .Movement) {
+    //         // phew
+    //         return false
+    //     }
+    // }
 
 
     action := get_action_at_index(gs, index)
+    my_location := get_my_player(gs).hero.location
     calc_context := Calculation_Context{card_id = index.card_id}
     if action == nil do return false
     if action.condition != nil && !calculate_implicit_condition(gs, action.condition, calc_context) do return false
+
+    for _, effect in gs.ongoing_active_effects {
+        effect_calc_context := Calculation_Context{target = my_location, card_id = effect.parent_card_id, action_index = index}
+        if !effect_timing_valid(gs, effect.timing, effect_calc_context) do continue
+        target_valid := calculate_implicit_condition(gs, And(effect.affected_targets), effect_calc_context)
+        if !target_valid do continue
+        for outcome in effect.outcomes {
+            disallow_conditions, ok := outcome.(Disallow_Action)
+            if !ok do continue
+            
+            if calculate_implicit_condition(gs, And(disallow_conditions), effect_calc_context) {
+                return false
+            }
+        }
+    }
 
     switch &variant in action.variant {
     case Movement_Action:

@@ -292,3 +292,29 @@ get_top_action_slice_of_type :: proc(gs: ^Game_State, $T: typeid) -> []Action_Va
     }
     return gs.action_memory[start_index + 1 : end_index + 1]
 }
+
+target_contains_any :: proc(gs: ^Game_State, target: Target, flags: Space_Flags) -> bool {
+    space := gs.board[target.x][target.y]
+    if flags & space.flags != {} do return true
+    for _, effect in gs.ongoing_active_effects {
+        effect_calc_context := Calculation_Context{target = target, card_id = effect.parent_card_id}
+        if !effect_timing_valid(gs, effect.timing, effect_calc_context) do continue
+        for outcome in effect.outcomes {
+            counts_as, ok := outcome.(Target_Counts_As)
+            if !ok do continue
+            if flags & counts_as.flags == {} do continue
+            if calculate_implicit_condition(gs, And(effect.affected_targets), effect_calc_context) {
+                return true
+            }
+        }
+    }
+    return false
+}
+
+effect_timing_valid :: proc(gs: ^Game_State, timing: Effect_Timing, calc_context: Calculation_Context = {}) -> bool {
+    #partial switch timing_variant in timing {
+    case Round: return true
+    case Single_Turn: return calculate_implicit_quantity(gs, timing_variant, calc_context) == gs.turn_counter
+    }
+    return false
+}

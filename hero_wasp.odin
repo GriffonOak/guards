@@ -293,7 +293,7 @@ wasp_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
-                        Target_Empty,
+                        Target_Empty{},
                     },
                 },
             },
@@ -554,7 +554,7 @@ wasp_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
-                        Target_Empty,
+                        Target_Empty{},
                     },
                 },
             },

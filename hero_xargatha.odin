@@ -201,7 +201,7 @@ xargatha_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Stone Gaze",  // @Incomplete: "count as terrain"
+    Card_Data { name = "Stone Gaze",
         color       = .Blue,
         tier        = 1,
         values      = #partial{.Initiative = 9, .Defense = 5, .Movement = 3, .Radius = 2},
@@ -214,14 +214,25 @@ xargatha_cards := []Card_Data {
                     effect = Active_Effect {
                         kind = .Xargatha_Freeze,
                         timing = Single_Turn(Sum{Card_Turn_Played{}, 1}),
-                        target_set = {
-                            conditions = {
-                                Target_Within_Distance {
-                                    origin = Card_Owner{},
-                                    bounds = {1, Card_Value{.Radius}},
+                        affected_targets = {
+                            Target_Within_Distance {
+                                origin = Card_Owner{},
+                                bounds = {1, Card_Value{.Radius}},
+                            },
+                            Target_Contains_Any{{.Hero}},
+                            Target_Is_Enemy_Of{Card_Owner{}},
+                        },
+                        outcomes = {
+                            Target_Counts_As{{.Terrain}},
+                            Disallow_Action {
+                                Or {
+                                    Action_Index_Sequence_Is{.Basic_Fast_Travel},
+                                    Action_Index_Sequence_Is{.Basic_Movement},
+                                    And {
+                                        Action_Index_Sequence_Is{.Primary},
+                                        Action_Index_Card_Primary_Is{.Movement},
+                                    },
                                 },
-                                Target_Contains_Any{{.Hero}},
-                                Target_Is_Enemy_Of{Card_Owner{}},
                             },
                         },
                     },
@@ -438,7 +449,7 @@ xargatha_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Petrifying Stare",  // @Incomplete: "count as terrain"
+    Card_Data { name = "Petrifying Stare",
         color       = .Blue,
         tier        = 2,
         values      = #partial{.Initiative = 10, .Defense = 6, .Movement = 3, .Radius = 3},
@@ -452,14 +463,25 @@ xargatha_cards := []Card_Data {
                     effect = Active_Effect {
                         kind = .Xargatha_Freeze,
                         timing = Single_Turn(Sum{Card_Turn_Played{}, 1}),
-                        target_set = {
-                            conditions = {
-                                Target_Within_Distance {
-                                    origin = Card_Owner{},
-                                    bounds = {1, Card_Value{.Radius}},
+                        affected_targets = {
+                            Target_Within_Distance {
+                                origin = Card_Owner{},
+                                bounds = {1, Card_Value{.Radius}},
+                            },
+                            Target_Contains_Any{{.Hero}},
+                            Target_Is_Enemy_Of{Card_Owner{}},
+                        },
+                        outcomes = {
+                            Target_Counts_As{{.Terrain}},
+                            Disallow_Action {
+                                Or {
+                                    Action_Index_Sequence_Is{.Basic_Fast_Travel},
+                                    Action_Index_Sequence_Is{.Basic_Movement},
+                                    And {
+                                        Action_Index_Sequence_Is{.Primary},
+                                        Action_Index_Card_Primary_Is{.Movement},
+                                    },
                                 },
-                                Target_Contains_Any{{.Hero}},
-                                Target_Is_Enemy_Of{Card_Owner{}},
                             },
                         },
                     },
@@ -736,7 +758,7 @@ xargatha_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Turn Into Statues",  // @Incomplete: "count as terrain"
+    Card_Data { name = "Turn Into Statues",
         color       = .Blue,
         tier        = 3,
         values      = #partial{.Initiative = 10, .Defense = 6, .Movement = 3, .Radius = 4},
@@ -750,6 +772,27 @@ xargatha_cards := []Card_Data {
                     effect = Active_Effect {
                         kind = .Xargatha_Freeze,
                         timing = Single_Turn(Sum{Card_Turn_Played{}, 1}),
+                        affected_targets = {
+                            Target_Within_Distance {
+                                origin = Card_Owner{},
+                                bounds = {1, Card_Value{.Radius}},
+                            },
+                            Target_Contains_Any{{.Hero}},
+                            Target_Is_Enemy_Of{Card_Owner{}},
+                        },
+                        outcomes = {
+                            Target_Counts_As{{.Terrain}},
+                            Disallow_Action {
+                                Or {
+                                    Action_Index_Sequence_Is{.Basic_Fast_Travel},
+                                    Action_Index_Sequence_Is{.Basic_Movement},
+                                    And {
+                                        Action_Index_Sequence_Is{.Primary},
+                                        Action_Index_Card_Primary_Is{.Movement},
+                                    },
+                                },
+                            },
+                        },
                     },
                 },
             },

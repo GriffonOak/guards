@@ -48,7 +48,7 @@ dodger_cards := []Card_Data {
                     Count_Targets {
                         conditions = {
                             Target_Within_Distance{Self{}, {1, 1}},
-                            Target_Empty,
+                            Target_Empty{},
                             Target_Contains_Any{SPAWNPOINT_FLAGS},
                             Target_In_Battle_Zone{},
                         },
@@ -99,7 +99,7 @@ dodger_cards := []Card_Data {
                                         origin = Previous_Target{},
                                         bounds = {1, 1},
                                     },
-                                    Target_Empty,
+                                    Target_Empty{},
                                     Target_Contains_Any{SPAWNPOINT_FLAGS},
                                     Target_In_Battle_Zone{},
                                 },
@@ -196,7 +196,7 @@ dodger_cards := []Card_Data {
                     Count_Targets {
                         conditions = {
                             Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                            Target_Empty,
+                            Target_Empty{},
                             Target_Contains_Any{SPAWNPOINT_FLAGS},
                             Target_In_Battle_Zone{},
                         },
@@ -230,7 +230,7 @@ dodger_cards := []Card_Data {
                                         Target_Within_Distance {
                                             Self{}, {1, Card_Value{.Radius}},
                                         },
-                                        Target_Empty,
+                                        Target_Empty{},
                                         Target_Contains_Any{SPAWNPOINT_FLAGS},
                                         Target_In_Battle_Zone{},
                                     },
@@ -373,7 +373,7 @@ dodger_cards := []Card_Data {
                     Count_Targets {
                         conditions = {
                             Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                            Target_Empty,
+                            Target_Empty{},
                             Target_Contains_Any{SPAWNPOINT_FLAGS},
                             Target_In_Battle_Zone{},
                         },
@@ -401,7 +401,7 @@ dodger_cards := []Card_Data {
             //     variant = Choose_Target_Action {
             //         conditions = {
             //             Target_Within_Distance{Self{}, {1, 1}},
-            //             Target_Empty,
+            //             Target_Empty{},
             //             Target_Contains_Any{SPAWNPOINT_FLAGS},
             //             Target_In_Battle_Zone{},
             //             Target_Is_Friendly_Spawnpoint{},
@@ -442,7 +442,7 @@ dodger_cards := []Card_Data {
                                         Target_Within_Distance {
                                             Self{}, {1, Card_Value{.Radius}},
                                         },
-                                        Target_Empty,
+                                        Target_Empty{},
                                         Target_Contains_Any{SPAWNPOINT_FLAGS},
                                         Target_In_Battle_Zone{},
                                     },

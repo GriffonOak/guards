@@ -51,10 +51,13 @@ End_Of_Round :: struct {
 
 Single_Turn :: Implicit_Quantity
 
+Round :: struct {}
+
 Effect_Timing :: union {
     End_Of_Turn,
     End_Of_Round,
     Single_Turn,
+    Round,
 }
 
 Active_Effect_ID :: struct {
@@ -62,11 +65,22 @@ Active_Effect_ID :: struct {
     parent_card_id: Card_ID,
 }
 
+Disallow_Action :: []Implicit_Condition
+Target_Counts_As :: struct {
+    flags: Space_Flags
+}
+
+Active_Effect_Outcome :: union {
+    Disallow_Action,
+    Target_Counts_As,
+}
+
 Active_Effect :: struct {
     using id: Active_Effect_ID,
 
     timing: Effect_Timing,
-    target_set: Selection_Criteria,
+    affected_targets: []Implicit_Condition,
+    outcomes: []Active_Effect_Outcome,
 }
 
 Wave_Push_Interrupt :: struct {

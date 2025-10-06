@@ -176,7 +176,7 @@ test_xargatha_freeze :: proc(t: ^testing.T) {
         Card_Confirmed_Event{player_id = 1, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 1, color = Card_Color.Blue, tier = 1, alternate = false}},
         Card_Clicked_Event{card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}},
         Card_Confirmed_Event{player_id = 0, maybe_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}},
-        Add_Active_Effect_Event{effect_id = Active_Effect_ID{kind = Active_Effect_Kind.Xargatha_Freeze, parent_card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 1, color = Card_Color.Blue, tier = 1, alternate = false}}},
+        Add_Active_Effect_Event{from_action_index = Action_Index{sequence = Action_Sequence_ID.Primary, card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 1, color = Card_Color.Blue, tier = 1, alternate = false}, index = 0}},
         End_Resolution_Event{player_id = 1},
         Resolve_Current_Action_Event{jump_index = Action_Index{sequence = Action_Sequence_ID.Halt, card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Silver, tier = 0, alternate = false}, index = 0}},
         Card_Clicked_Event{card_id = Card_ID{hero_id = Hero_ID.Xargatha, owner_id = 0, color = Card_Color.Red, tier = 1, alternate = false}},
@@ -190,6 +190,9 @@ test_xargatha_freeze :: proc(t: ^testing.T) {
     // There should have been no valid choices except to hold, so we should be resolved at this point.
     player := get_my_player(&gs)
     testing.expect(t, player.stage == .Resolved)
+
+    loc := player.hero.location
+    testing.expect(t, target_contains_any(&gs, loc, {.Terrain}))
 }
 
 @(test)

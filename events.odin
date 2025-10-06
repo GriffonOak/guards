@@ -142,7 +142,7 @@ Hero_Respawn_Event :: struct {
 }
 
 Add_Active_Effect_Event :: struct {
-    effect_id: Active_Effect_ID,
+    from_action_index: Action_Index,
 }
 
 Remove_Active_Effect_Event :: struct {
@@ -691,18 +691,13 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Add_Active_Effect_Event:
 
-        // parent_card, ok := get_card_by_id(gs, var.effect_id.parent_card_id)
-        // log.assertf(ok, "Invalid card ID in new active effect!")
-        parent_card_data, ok := get_card_data_by_id(gs, var.effect_id.parent_card_id)
-        log.assertf(ok, "Could not find primary data for card!")
-        effect_action := parent_card_data.primary_effect[0].variant.(Add_Active_Effect_Action).effect
+        action := get_action_at_index(gs, var.from_action_index)
+        active_effect_action := action.variant.(Add_Active_Effect_Action)
+        effect := active_effect_action.effect
+        effect.parent_card_id = var.from_action_index.card_id
 
-        log.infof("Adding active effect: %v", var.effect_id.kind)
-        gs.ongoing_active_effects[var.effect_id.kind] = Active_Effect {
-            var.effect_id,
-            effect_action.timing,
-            effect_action.target_set,
-        }
+        log.infof("Adding active effect: %v", effect.kind)
+        gs.ongoing_active_effects[effect.kind] = effect
 
     case Remove_Active_Effect_Event:
         delete_key(&gs.ongoing_active_effects, var.effect_kind)
@@ -1021,11 +1016,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             )
         
         case Add_Active_Effect_Action:
-            effect_id := action_type.effect.id
-            parent_card, ok := get_card_by_id(gs, action_index.card_id)
-            log.assert(ok, "Could not resolve parent card when adding an active effect!")
-            effect_id.parent_card_id = parent_card.id
-            broadcast_game_event(gs, Add_Active_Effect_Event{effect_id})
+            broadcast_game_event(gs, Add_Active_Effect_Event{action_index})
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
         case Halt_Action:

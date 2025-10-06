@@ -128,12 +128,12 @@ arien_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
-                        Target_Empty,
+                        Target_Empty{},
                         Equal {
                             Count_Targets {
                                 conditions = {
                                     Target_Within_Distance{Previous_Target{}, {0, 1}},
-                                    Target_Empty,
+                                    Target_Empty{},
                                     Target_Contains_Any{SPAWNPOINT_FLAGS},
                                 },
                             }, 0,
@@ -287,12 +287,12 @@ arien_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
-                        Target_Empty,
+                        Target_Empty{},
                         Equal {
                             Count_Targets {
                                 conditions = {
                                     Target_Within_Distance{Previous_Target{}, {0, 1}},
-                                    Target_Empty,
+                                    Target_Empty{},
                                     Target_Contains_Any{SPAWNPOINT_FLAGS},
                                 },
                             }, 0,
@@ -503,8 +503,8 @@ arien_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
-                        Target_Empty,
-                        Target_Contains_No{SPAWNPOINT_FLAGS},
+                        Target_Empty{},
+                        Not{Target_Contains_Any{SPAWNPOINT_FLAGS}},
                     },
                 },
             },

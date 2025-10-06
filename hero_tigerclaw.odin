@@ -25,7 +25,7 @@ tigerclaw_cards := []Card_Data {
                                     Target_Within_Distance{Previous_Target{}, {1, 1}},
                                     Target_Within_Distance{Self{}, {2, 2}},
                                     Target_In_Straight_Line_With{Self{}},
-                                    Target_Empty,
+                                    Target_Empty{},
                                 },
                             }, 0,
                         },
@@ -42,7 +42,7 @@ tigerclaw_cards := []Card_Data {
                     destination_criteria = {
                         conditions = {
                             Target_Within_Distance{Previously_Chosen_Target{}, {1, 1}},
-                            Target_Empty,
+                            Target_Empty{},
                         },
                     },
                 },
@@ -76,7 +76,7 @@ tigerclaw_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                        Target_Empty,
+                        Target_Empty{},
                     },
                 },
             },

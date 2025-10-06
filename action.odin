@@ -374,7 +374,7 @@ respawn_action := []Action {
         variant = Choose_Target_Action {
             num_targets = 1,
             conditions = {
-                Target_Empty,
+                Target_Empty{},
                 Target_Contains_Any{{.Hero_Spawnpoint}},
                 Target_Is_Friendly_Spawnpoint{},
             },
@@ -423,7 +423,7 @@ minion_spawn_action := []Action {
             num_targets = 1,
             conditions = {
                 Target_In_Battle_Zone{},
-                Target_Empty,
+                Target_Empty{},
             },
             closest_to = Top_Blocked_Spawnpoint{},
         },
@@ -479,7 +479,6 @@ get_action_at_index :: proc(gs: ^Game_State, index: Action_Index, loc := #caller
     case .Primary:
         card_data, ok := get_card_data_by_id(gs, index.card_id)
         if !ok do return nil
-        // log.assert(ok, "no played card!!?!?!?!?!", loc)
         action_sequence = card_data.primary_effect
     case .Halt:                 return nil
     case .Die:                  action_sequence = die_action
