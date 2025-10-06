@@ -623,7 +623,7 @@ dodger_cards := []Card_Data {
                                 augment = -6,
                             },
                             Disallow_Action {
-                                Action_Variant_At_Index_Is{Repeat_Action}
+                                Action_Variant_At_Index_Is{Repeat_Action},
                             },
                         },
                     },

@@ -30,6 +30,7 @@ Space_Flag :: enum {
     Heavy_Minion,
     Token,
     Immune,
+    Obstacle,
 }
 
 
@@ -87,7 +88,7 @@ SPAWNPOINT_FLAGS :: Space_Flags{.Melee_Minion_Spawnpoint, .Ranged_Minion_Spawnpo
 PERMANENT_FLAGS  :: SPAWNPOINT_FLAGS + {.Terrain}
 MINION_FLAGS     :: Space_Flags{.Melee_Minion, .Ranged_Minion, .Heavy_Minion}
 UNIT_FLAGS       :: MINION_FLAGS + {.Hero}
-OBSTACLE_FLAGS   :: UNIT_FLAGS + {.Terrain, .Token}
+OBSTACLE_FLAGS   :: UNIT_FLAGS + {.Terrain, .Token, .Obstacle}
 
 
 @rodata

@@ -42,6 +42,7 @@ Active_Effect_Kind :: enum {
     Arien_Spell_Break,
     Arien_Limit_Movement,
     Dodger_Attack_Debuff,
+    Wasp_Static_Barrier,
 }
 
 End_Of_Turn :: struct {

@@ -148,6 +148,10 @@ Blocked_Spawnpoints_Remain :: struct {}
 
 Alive :: struct {}
 
+Are_Enemies :: struct {
+    target1, target2: Implicit_Target,
+}
+
 Target_Within_Distance :: struct {
     origin: Implicit_Target,
     bounds: []Implicit_Quantity,
@@ -227,6 +231,7 @@ Implicit_Condition :: union {
     Blocked_Spawnpoints_Remain,
     Alive,
     Previously_Saved_Boolean,
+    Are_Enemies,
 
     // Requires target in calc_context
     Target_Within_Distance,
@@ -376,11 +381,11 @@ calculate_implicit_quantity :: proc(
         for _, effect in gs.ongoing_active_effects {
             effect_calc_context := Calculation_Context{target = hero.location, card_id = effect.parent_card_id}
             if !effect_timing_valid(gs, effect.timing, effect_calc_context) do continue
-            target_valid := calculate_implicit_condition(gs, And(effect.affected_targets), effect_calc_context)
-            if !target_valid do continue
             for outcome in effect.outcomes {
                 augment_value, ok2 := outcome.(Augment_Card_Value)
                 if !ok2 do continue
+                target_valid := calculate_implicit_condition(gs, And(effect.affected_targets), effect_calc_context)
+                if !target_valid do continue
                 
                 if quantity.kind == augment_value.value_kind {
                     value += augment_value.augment
@@ -520,6 +525,12 @@ calculate_implicit_condition :: proc (
         return len(gs.blocked_spawns[my_team]) > 0
     case Alive:
         return !get_my_player(gs).hero.dead
+    case Are_Enemies:
+        target1 := calculate_implicit_target(gs, condition.target1, calc_context)
+        target2 := calculate_implicit_target(gs, condition.target2, calc_context)
+        space1 := gs.board[target1.x][target1.y]
+        space2 := gs.board[target2.x][target2.y]
+        return space1.unit_team != space2.unit_team
 
     case Target_Within_Distance:
         log.assert(space_ok, "Invalid target!", loc)

@@ -306,7 +306,7 @@ make_movement_targets :: proc (
                     in_straight_line &&= get_norm_direction(origin, next_loc) == vector
                     if !in_straight_line do continue
                 }
-                if .Ignoring_Obstacles not_in criteria.flags && OBSTACLE_FLAGS & gs.board[next_loc.x][next_loc.y].flags != {} do continue
+                if .Ignoring_Obstacles not_in criteria.flags && target_contains_any(gs, next_loc, OBSTACLE_FLAGS) do continue
                 if visited_set[next_loc.x][next_loc.y].member do continue
                 for traversed_loc in path.spaces do if traversed_loc == next_loc do continue directions
                 

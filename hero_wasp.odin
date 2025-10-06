@@ -31,12 +31,38 @@ wasp_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Static Barrier",  // @Unimplemented
+    Card_Data { name = "Static Barrier",
         color           = .Silver,
         values          = #partial{.Initiative = 13, .Defense = 2, .Radius = 2},
         primary         = .Skill,
         text            = "This turn: While an enemy hero outside of\nradius is performing an action, spaces in\nradius count as obstacles. While an enemy\nhero in radius is performing an action,\nspaces outside of radius count as obstacles.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {
+                tooltip = error_tooltip,
+                variant = Add_Active_Effect_Action {
+                    effect = Active_Effect {
+                        kind = .Wasp_Static_Barrier,
+                        timing = Single_Turn(Card_Turn_Played{}),
+                        affected_targets = {  // Phew! this one is kind of a looker but I think it works
+                            Are_Enemies{Self{}, Card_Owner{}},
+                            Or {
+                                And {
+                                    Target_Within_Distance {Card_Owner{}, {1, Card_Value{.Radius}}},
+                                    Greater_Than{Distance_Between{Self{}, Card_Owner{}}, Card_Value{.Radius}},
+                                },
+                                And {
+                                    Not{Target_Within_Distance{Card_Owner{}, {1, Card_Value{.Radius}}}},
+                                    Not{Greater_Than{Distance_Between{Self{}, Card_Owner{}}, Card_Value{.Radius}}},
+                                },
+                            },
+                        },
+                        outcomes = {
+                            Target_Counts_As{{.Obstacle}},
+                        },
+                    },
+                },
+            },
+        },
     },
     Card_Data { name = "Shock",
         color           = .Red,

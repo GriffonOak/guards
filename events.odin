@@ -511,7 +511,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 path := get_top_action_value_of_type(gs, Path)
                 path.num_locked_spaces = 1
                 resize(&path.spaces, 1)
-                action.targets = make_movement_targets(gs, action_variant.criteria, {card_id = action_index.card_id})
                 append(&gs.event_queue, Begin_Next_Action_Event{})
 
             case Choose_Target_Action:

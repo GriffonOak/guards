@@ -24,7 +24,6 @@ _ :: time
 /* BEYOND 0.1
 
 --- ENGINE 
-    ^ "Counts as" system to allow spaces to count as other things
     ^ "Intention" system for choose_target_action to allow different types of immunity
     ^ "Hooks" system to allow other heroes to interrupt players performing actions (brogan, swift)
 
