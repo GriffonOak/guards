@@ -268,7 +268,7 @@ make_movement_targets :: proc (
     first_info := Target_Info{dist = u8(len(path.spaces) - 1), member = true}
     if (
         destinations_ok && !valid_destinations[current_endpoint.x][current_endpoint.y].member ||
-        (current_endpoint != origin && OBSTACLE_FLAGS & gs.board[current_endpoint.x][current_endpoint.y].flags != {}) ||
+        (current_endpoint != origin && target_contains_any(gs, current_endpoint, OBSTACLE_FLAGS)) ||
         first_info.dist < min_distance
     ) {
         first_info.invalid = true
@@ -354,7 +354,7 @@ make_movement_targets :: proc (
             }
             if  (
                 destinations_ok && !valid_destinations[next_loc.x][next_loc.y].member ||
-                OBSTACLE_FLAGS & gs.board[next_loc.x][next_loc.y].flags != {} ||
+                target_contains_any(gs, next_loc, OBSTACLE_FLAGS) ||
                 next_dist < min_distance
             ) {
                 info.invalid = true
@@ -393,7 +393,7 @@ make_fast_travel_targets :: proc(gs: ^Game_State) -> (out: Target_Set) {
     }
 
     for loc in zone_indices[region] {
-        if OBSTACLE_FLAGS & gs.board[loc.x][loc.y].flags != {} do continue
+        if target_contains_any(gs, loc, OBSTACLE_FLAGS) do continue
         out[loc.x][loc.y].member = true
     }
 
@@ -406,7 +406,7 @@ make_fast_travel_targets :: proc(gs: ^Game_State) -> (out: Target_Set) {
             }
         }
         for loc in zone_indices[other_region] {
-            if OBSTACLE_FLAGS & gs.board[loc.x][loc.y].flags != {} do continue
+            if target_contains_any(gs, loc, OBSTACLE_FLAGS) do continue
             out[loc.x][loc.y].member = true
         }
     }

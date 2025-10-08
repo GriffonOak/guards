@@ -974,7 +974,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 for _ in 0..<num_spaces {
                     next_target := latest_valid_target + direction
                     space := gs.board[next_target.x][next_target.y]
-                    if OBSTACLE_FLAGS & space.flags != {} do break
+                    if target_contains_any(gs, next_target, OBSTACLE_FLAGS) do break
                     latest_valid_target = next_target
                 }
     
