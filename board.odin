@@ -31,6 +31,11 @@ Space_Flag :: enum {
     Token,
     Immune,
     Obstacle,
+
+    Cannot_Move,
+    Cannot_Push,
+    Cannot_Swap,
+    Cannot_Place,
 }
 
 

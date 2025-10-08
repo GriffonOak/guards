@@ -149,6 +149,7 @@ arien_cards := []Card_Data {
         primary_effect  = []Action {
             Action {
                 tooltip = "Choose a space in range without a spawn point and not adjacent to an empty spawn point.",
+                condition = Not{Self_Contains_Any{{.Cannot_Place}}},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -308,6 +309,7 @@ arien_cards := []Card_Data {
         primary_effect  = []Action {
             Action {
                 tooltip = "Choose a space in range without a spawn point and not adjacent to an empty spawn point.",
+                condition = Not{Self_Contains_Any{{.Cannot_Place}}},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -345,11 +347,13 @@ arien_cards := []Card_Data {
         primary_effect  = []Action {
             Action {
                 tooltip = "Target an enemy minion in range.",
+                condition = Not{Self_Contains_Any{{.Cannot_Swap}}},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
                         Target_Contains_Any{MINION_FLAGS},
+                        Not{Target_Contains_Any{{.Cannot_Swap}}},
                         Target_Is_Enemy_Unit{},
                     },
                 },
@@ -556,6 +560,7 @@ arien_cards := []Card_Data {
         primary_effect  = []Action {
             Action {
                 tooltip = "Choose a space in range without a spawn point.",
+                condition = Not{Self_Contains_Any{{.Cannot_Place}}},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -595,11 +600,13 @@ arien_cards := []Card_Data {
                     },
                 },
                 optional = Greater_Than{Repeat_Count{}, 0},
+                condition = Not{Self_Contains_Any{{.Cannot_Swap}}},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
                         Target_Contains_Any{MINION_FLAGS},
+                        Not{Target_Contains_Any{{.Cannot_Swap}}},
                         Target_Is_Enemy_Unit{},
                     },
                 },

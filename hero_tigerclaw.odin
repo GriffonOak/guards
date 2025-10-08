@@ -64,13 +64,16 @@ tigerclaw_cards := []Card_Data {
         primary_effect = []Action {
             Action {
                 tooltip = "Place yourself into a space in radius.",
-                condition = Greater_Than {
-                    Count_Targets {
-                        conditions = {
-                            Target_Within_Distance{Self{}, {1, 1}},
-                            Target_Contains_Any{{.Terrain}},
-                        },
-                    }, 0,
+                condition = And {
+                    Greater_Than {
+                        Count_Targets {
+                            conditions = {
+                                Target_Within_Distance{Self{}, {1, 1}},
+                                Target_Contains_Any{{.Terrain}},
+                            },
+                        }, 0,
+                    },
+                    Not{Self_Contains_Any{{.Cannot_Place}}},
                 },
                 variant = Choose_Target_Action {
                     num_targets = 1,

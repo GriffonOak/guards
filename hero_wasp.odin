@@ -5,7 +5,7 @@ package guards
 //  Ult: Each time after you perform a basic skill,\nyou may defeat an enemy minion in radius;\nan enemy hero who was adjacent to that\nminion discards a card, if able.
 
 wasp_cards := []Card_Data {
-    Card_Data { name = "Magnetic Dagger",  // @Incomplete, swap & place immunity
+    Card_Data { name = "Magnetic Dagger",
         color           = .Gold,
         values          = #partial{.Initiative = 12, .Defense = 2, .Attack = 3, .Movement = 1, .Radius = 3},
         primary         = .Attack,
@@ -27,6 +27,24 @@ wasp_cards := []Card_Data {
                 variant = Attack_Action {
                     target = Previously_Chosen_Target{},
                     strength = Card_Value{.Attack},
+                },
+            },
+            Action {
+                tooltip = error_tooltip,
+                variant = Add_Active_Effect_Action {
+                    effect = Active_Effect {
+                        kind = .Wasp_Magnetic_Dagger,
+                        timing = Single_Turn(Card_Turn_Played{}),
+                        affected_targets = {
+                            Are_Enemies{Self{}, Card_Owner{}},
+                            Target_Within_Distance{Card_Owner{}, {1, Card_Value{.Radius}}},
+                            Target_Contains_Any{UNIT_FLAGS},
+                            Target_Is_Enemy_Of{Card_Owner{}},
+                        },
+                        outcomes = {
+                            Target_Counts_As{{.Cannot_Swap, .Cannot_Place}},
+                        },
+                    },
                 },
             },
         },
@@ -310,6 +328,7 @@ wasp_cards := []Card_Data {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
                         Target_Contains_Any{UNIT_FLAGS + {.Token}},
                         Not{Target_In_Straight_Line_With{Self{}}},
+                        Not{Target_Contains_Any{{.Cannot_Place}}},
                     },
                 },
             },
@@ -571,6 +590,7 @@ wasp_cards := []Card_Data {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Range}}},
                         Target_Contains_Any{UNIT_FLAGS + {.Token}},
                         Not{Target_In_Straight_Line_With{Self{}}},
+                        Not{Target_Contains_Any{{.Cannot_Place}}},
                     },
                 },
             },

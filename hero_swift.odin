@@ -146,6 +146,7 @@ swift_cards := []Card_Data {
         primary_effect = []Action {
             Action {
                 tooltip = "Place yourself into a space in a straight line in radius.",
+                condition = Not{Self_Contains_Any{{.Cannot_Place}}},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -318,6 +319,7 @@ swift_cards := []Card_Data {
         primary_effect = []Action {
             Action {
                 tooltip = "Place yourself into a space in a straight line\nin radius.",
+                condition = Not{Self_Contains_Any{{.Cannot_Place}}},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -388,6 +390,7 @@ swift_cards := []Card_Data {
             },
             Action {  // 2
                 tooltip = "Place yourself into a space in radius not in a straight line from you.",
+                condition = Not{Self_Contains_Any{{.Cannot_Place}}},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -538,6 +541,7 @@ swift_cards := []Card_Data {
         primary_effect = []Action {
             Action {
                 tooltip = "Place yourself into a space in a straight line\nin radius.",
+                condition = Not{Self_Contains_Any{{.Cannot_Place}}},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -609,6 +613,7 @@ swift_cards := []Card_Data {
             },
             Action {  // 2
                 tooltip = "Place yourself into a space in radius not in a straight line from you.",
+                condition = Not{Self_Contains_Any{{.Cannot_Place}}},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {

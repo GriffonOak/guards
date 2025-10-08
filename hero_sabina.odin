@@ -46,12 +46,14 @@ sabina_cards := []Card_Data {
         primary_effect  = []Action {
             Action {
                 tooltip = "Target a friendly minion in radius.",
+                condition = Not{Self_Contains_Any{{.Cannot_Swap}}},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Target_Contains_Any{MINION_FLAGS},
                         Target_Is_Friendly_Unit{},
+                        Not{Target_Contains_Any{{.Cannot_Swap}}},
                     },
                 },
             },
@@ -166,6 +168,7 @@ sabina_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Target_Contains_Any{MINION_FLAGS},
+                        Not{Target_Contains_Any{{.Cannot_Swap}}},
                     },
                 },
             },
@@ -369,6 +372,7 @@ sabina_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Target_Contains_Any{MINION_FLAGS},
+                        Not{Target_Contains_Any{{.Cannot_Swap}}},
                     },
                 },
             },
@@ -618,6 +622,7 @@ sabina_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Target_Contains_Any{MINION_FLAGS},
+                        Not{Target_Contains_Any{{.Cannot_Swap}}},
                     },
                     flags = {.Ignoring_Immunity},
                 },

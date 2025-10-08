@@ -154,6 +154,8 @@ Are_Enemies :: struct {
     target1, target2: Implicit_Target,
 }
 
+Self_Contains_Any :: struct { flags: Space_Flags }
+
 Target_Within_Distance :: struct {
     origin: Implicit_Target,
     bounds: []Implicit_Quantity,
@@ -234,6 +236,7 @@ Implicit_Condition :: union {
     Alive,
     Previously_Saved_Boolean,
     Are_Enemies,
+    Self_Contains_Any,
 
     // Requires target in calc_context
     Target_Within_Distance,
@@ -553,6 +556,10 @@ calculate_implicit_condition :: proc (
 
         distance := calculate_hexagonal_distance(origin, calc_context.target)
         return distance <= max_dist && distance >= min_dist
+
+    case Self_Contains_Any:
+        loc := get_my_player(gs).hero.location
+        return target_contains_any(gs, loc, condition.flags)
 
     case Target_Contains_Any:
         log.assert(space_ok, "Invalid target!")
