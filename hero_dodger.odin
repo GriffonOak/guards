@@ -505,6 +505,7 @@ dodger_cards := []Card_Data {
                         Target_Contains_Any{UNIT_FLAGS},
                         Target_Is_Enemy_Unit{},
                     },
+                    flags = {.Not_Previously_Targeted},
                 },
             },
             Action {  // 2
@@ -533,6 +534,7 @@ dodger_cards := []Card_Data {
                             }, 0,
                         },
                     },
+                    flags = {.Not_Previously_Targeted},
                 },
             },
             Action {  // 5

@@ -36,6 +36,7 @@ xargatha_cards := []Card_Data {
                         },
                         Target_Is_Enemy_Unit{},
                     },
+                    flags = {.Not_Previously_Targeted},
                 },
             },
             Action {
@@ -571,6 +572,7 @@ xargatha_cards := []Card_Data {
                         },
                         Target_Is_Enemy_Unit{},
                     },
+                    flags = {.Not_Previously_Targeted}
                 },
             },
             Action {
