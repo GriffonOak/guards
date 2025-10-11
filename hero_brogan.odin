@@ -428,6 +428,12 @@ brogan_cards := []Card_Data {
                                 Equal{Card_Turn_Played{}, Current_Turn{}},
                             }, 0,
                         },
+                        Greater_Than {
+                            Count_Card_Targets {
+                                Card_Owner_Is{Current_Target{}},
+                                Card_State_Is{.In_Hand},
+                            }, 0,
+                        },
                     },
                 },
             },
@@ -460,7 +466,7 @@ brogan_cards := []Card_Data {
                                     Target_Within_Distance{Previous_Target{}, {1, 1}},
                                     Target_Contains_Any{UNIT_FLAGS},
                                     Target_Is_Enemy_Unit{},
-                                    Not{Target_Contains_Any{{.Immune, .Immune_Attacks}}}
+                                    Not{Target_Contains_Any{{.Immune, .Immune_Attacks}}},
                                 }, 0,
                             },
                         },

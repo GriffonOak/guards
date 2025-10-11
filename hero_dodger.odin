@@ -99,8 +99,13 @@ dodger_cards := []Card_Data {
                                 Target_Empty{},
                                 Target_Contains_Any{SPAWNPOINT_FLAGS},
                                 Target_In_Battle_Zone{},
-                            },
-                            0,
+                            }, 0,
+                        },
+                        Greater_Than {
+                            Count_Card_Targets {
+                                Card_Owner_Is{Current_Target{}},
+                                Card_State_Is{.In_Hand},
+                            }, 0,
                         },
                     },
                 },

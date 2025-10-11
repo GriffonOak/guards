@@ -415,7 +415,7 @@ wasp_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Kinetic Repulse",  // @Unimplemented, this one is just kinda hard, also need same target stuff likely
+    Card_Data { name = "Kinetic Repulse",
         color           = .Blue,
         tier            = 2,
         alternate       = true,
@@ -423,7 +423,57 @@ wasp_cards := []Card_Data {
         primary         = .Skill,
         item            = .Attack,
         text            = "Push up to 2 enemy units adjacent to you\n3 spaces; if a pushed hero is stopped by an\nobstacle, that hero discards a card, if able.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {  // 0
+                tooltip = "Target up to 2 enemy units adjacent to you.",
+                variant = Choose_Target_Action {
+                    num_targets = 2,
+                    flags = {.Up_To},
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                        Not{Target_Contains_Any{{.Cannot_Push}}},
+                    },
+                },
+            },
+            Action {  // 1
+                variant = Push_Action {
+                    origin = Self{},
+                    targets = Previous_Choices{},
+                    num_spaces = 3,
+                },
+            },
+            Action {  // 2
+                tooltip = "Choose which hero to force to discard first.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, 3}},  // If they were 4 away then they were not stopped
+                        Target_Contains_Any{{.Hero}},
+                        Target_Is_Enemy_Unit{},
+                        Greater_Than {
+                            Count_Card_Targets {
+                                Card_Owner_Is{Current_Target{}},
+                                Card_State_Is{.In_Hand},
+                            }, 0,
+                        },
+                    },
+                    flags = {.Only_Previously_Targeted, .Not_Previously_Targeted_By_This_Action},
+                },
+            },
+            Action {  // 3
+                tooltip = "Waiting for opponent to discard...",
+                variant = Force_Discard_Action {
+                    target = Previously_Chosen_Target{},
+                },
+            },
+            Action {
+                variant = Jump_Action {
+                    jump_index = Action_Index{index = 2},
+                },
+            },
+        },
     },
     Card_Data { name = "Electroblast",
         color           = .Red,
@@ -681,7 +731,7 @@ wasp_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Kinetic Blast",  // @Unimplemented
+    Card_Data { name = "Kinetic Blast",
         color           = .Blue,
         tier            = 3,
         alternate       = true,
@@ -689,6 +739,62 @@ wasp_cards := []Card_Data {
         primary         = .Skill,
         item            = .Range,
         text            = "Push up to 2 enemy units adjacent to you\n3 or 4 spaces; if a pushed hero is stopped by\nan obstacle, that hero discards a card, if able.",
-        primary_effect  = []Action {},
+        primary_effect  = []Action {
+            Action {  // 0
+                tooltip = "Target up to 2 enemy units adjacent to you.",
+                variant = Choose_Target_Action {
+                    num_targets = 2,
+                    flags = {.Up_To},
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                        Not{Target_Contains_Any{{.Cannot_Push}}},
+                    },
+                },
+            },
+            Action {  // 1
+                tooltip = "Choose how many spaces to push the unit(s).",
+                variant = Choose_Quantity_Action {
+                    bounds = {3, 4},
+                },
+            },
+            Action {  // 2
+                variant = Push_Action {
+                    origin = Self{},
+                    targets = Previous_Choices{},
+                    num_spaces = Previous_Quantity_Choice{},
+                },
+            },
+            Action {  // 3
+                tooltip = "Choose which hero to force discard next",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Previous_Quantity_Choice{}}},  // If they were 4 away then they were not stopped
+                        Target_Contains_Any{{.Hero}},
+                        Target_Is_Enemy_Unit{},
+                        Greater_Than {
+                            Count_Card_Targets {
+                                Card_Owner_Is{Current_Target{}},
+                                Card_State_Is{.In_Hand},
+                            }, 0,
+                        },
+                    },
+                    flags = {.Only_Previously_Targeted, .Not_Previously_Targeted_By_This_Action},
+                },
+            },
+            Action {  // 4
+                tooltip = "Waiting for opponent to discard...",
+                variant = Force_Discard_Action {
+                    target = Previously_Chosen_Target{},
+                },
+            },
+            Action {  // 5
+                variant = Jump_Action {
+                    jump_index = Action_Index{index = 3},
+                },
+            },
+        },
     },
 }

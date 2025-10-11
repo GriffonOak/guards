@@ -34,6 +34,8 @@ Target_Set_Iterator :: struct {
 
 Selection_Flag :: enum {
     Not_Previously_Targeted,
+    Not_Previously_Targeted_By_This_Action,
+    Only_Previously_Targeted,
     Ignoring_Immunity,
     Up_To,
     All,
@@ -449,13 +451,22 @@ make_arbitrary_targets :: proc (
 
     calc_context := calc_context
     calc_context.prev_target = calc_context.target
-    for x in 0..<GRID_WIDTH {
-        for y in 0..<GRID_HEIGHT {
-            target := Target{u8(x), u8(y)}
-            if target == {} do continue
-            calc_context.target = target
-            if calculate_implicit_condition(gs, criteria.conditions[0], calc_context, loc) {
-                out[target.x][target.y].member = true
+
+    if .Only_Previously_Targeted in criteria.flags {
+        for value in gs.action_memory {
+            if previous_target, ok2 := value.variant.(Target); ok2 {
+                out[previous_target.x][previous_target.y].member = true
+            }
+        }
+    } else {
+        for x in 0..<GRID_WIDTH {
+            for y in 0..<GRID_HEIGHT {
+                target := Target{u8(x), u8(y)}
+                if target == {} do continue
+                calc_context.target = target
+                if calculate_implicit_condition(gs, criteria.conditions[0], calc_context, loc) {
+                    out[target.x][target.y].member = true
+                }
             }
         }
     }
@@ -473,6 +484,16 @@ make_arbitrary_targets :: proc (
     if .Not_Previously_Targeted in criteria.flags {
         for value in gs.action_memory {
             if previous_target, ok2 := value.variant.(Target); ok2 {
+                out[previous_target.x][previous_target.y].member = false
+            }
+        }
+    }
+
+    if .Not_Previously_Targeted_By_This_Action in criteria.flags {
+        current_action_index := get_my_player(gs).hero.current_action_index  // @Robustness?? is this ok or should we pass action index in calc context?
+        for value in gs.action_memory {
+            if previous_target, ok2 := value.variant.(Target); ok2 {
+                if value.action_index != current_action_index do continue
                 out[previous_target.x][previous_target.y].member = false
             }
         }
