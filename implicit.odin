@@ -10,6 +10,29 @@ Implicit_Player_ID :: union {
     My_Player_ID,
 }
 
+Calculation_Context :: struct {
+    card_id: Card_ID,
+    action_index: Action_Index,  // @Note this also carries a card id, wonder if these could be combined
+    target, prev_target: Target,
+}
+
+
+/// IMPLICIT SPACE FLAG
+
+
+Top_Blocked_Spawnpoint_Type :: struct {}
+
+Previously_Chosen_Dead_Minion :: struct {}
+
+Implicit_Space_Flag :: union {
+    Space_Flag,
+    Top_Blocked_Spawnpoint_Type,
+    Previously_Chosen_Dead_Minion,
+}
+
+
+/// IMPLICIT CARD ID
+
 Previous_Card_Choice :: struct {}
 
 Rightmost_Resolved_Card :: struct {}
@@ -19,6 +42,10 @@ Implicit_Card_ID :: union {
     Previous_Card_Choice,
     Rightmost_Resolved_Card,
 }
+
+
+
+/// IMPLICIT QUANTITY
 
 Card_Value :: struct {
     kind: Card_Value_Kind,
@@ -37,6 +64,8 @@ Count_Targets :: Selection_Criteria
 Count_Hero_Coins :: struct {
     target: Implicit_Target,
 }
+
+My_Team_Total_Dead_Minions :: struct {}
 
 Count_Card_Targets :: distinct []Implicit_Condition
 
@@ -66,6 +95,7 @@ Implicit_Quantity :: union {
     Minion_Difference,
     Minion_Modifiers,
     Heroes_Defeated_This_Round,
+    My_Team_Total_Dead_Minions,
     Sum,
     Product,
     Min,
@@ -87,12 +117,6 @@ Implicit_Quantity :: union {
 
     // Requires a target in context
     Target_Distance_To,
-}
-
-Calculation_Context :: struct {
-    card_id: Card_ID,
-    action_index: Action_Index,  // @Note this also carries a card id, wonder if these could be combined
-    target, prev_target: Target,
 }
 
 Current_Target :: struct{}
@@ -127,6 +151,10 @@ Implicit_Target :: union {
     // Requires card in context
     Card_Owner,
 }
+
+
+
+/// IMPLICIT TARGET SLICE
 
 Previous_Choices :: struct {}
 
@@ -269,6 +297,10 @@ Implicit_Condition :: union {
     Attack_Contains_Flag,
 }
 
+
+
+/// IMPLICIT ACTION INDEX
+
 Card_Defense_Index :: struct {
     implicit_card_id: Implicit_Card_ID,
 }
@@ -283,6 +315,25 @@ Implicit_Action_Index :: union {
     Other_Card_Primary,
 }
 
+calculate_implicit_space_flag :: proc(
+    gs: ^Game_State,
+    implicit_space_flag: Implicit_Space_Flag,
+    calc_context: Calculation_Context,
+) -> Space_Flag {
+    switch flag in implicit_space_flag {
+    case Space_Flag: return flag
+    case Top_Blocked_Spawnpoint_Type:
+        spawnpoint := calculate_implicit_target(gs, Top_Blocked_Spawnpoint{}, calc_context)
+        space := gs.board[spawnpoint.x][spawnpoint.y]
+        spawnpoint_flags := space.flags & (SPAWNPOINT_FLAGS - {.Hero_Spawnpoint})
+        log.assert(spawnpoint_flags != {}, "Invalid top blocked spawnpoint or something")
+        spawnpoint_type := get_first_set_bit(spawnpoint_flags).?
+        return spawnpoint_to_minion[spawnpoint_type]
+    case Previously_Chosen_Dead_Minion:
+        return get_top_action_value_of_type(gs, Chosen_Minion_Type).minion_type
+    }
+    return .Terrain  // (?)
+}
 
 
 calculate_implicit_quantity :: proc(
@@ -351,6 +402,10 @@ calculate_implicit_quantity :: proc(
 
     case Heroes_Defeated_This_Round:
         return gs.heroes_defeated_this_round
+
+    case My_Team_Total_Dead_Minions:
+        my_player := get_my_player(gs)
+        return len(gs.dead_minions[my_player.team])
 
     case Current_Turn:
         return gs.turn_counter

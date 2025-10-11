@@ -149,7 +149,7 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         return count_members(&action.targets) > 0
 
     case Fast_Travel_Action:
-        action.targets =  make_fast_travel_targets(gs)
+        action.targets = make_fast_travel_targets(gs)
         return count_members(&action.targets) > 0
 
     case Clear_Action:
@@ -232,6 +232,15 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         return true
 
     case Save_Variable_Action:
+        return true
+
+    case Choose_Dead_Minion_Type_Action:
+        my_team := get_my_player(gs).team
+        for _, index in gs.dead_minions[my_team] {
+            dead_minion_target := dead_minion_target_indices[index]
+            if my_team == .Blue do dead_minion_target = {GRID_WIDTH-1, GRID_HEIGHT-1} - dead_minion_target
+            action.targets[dead_minion_target.x][dead_minion_target.y].member = true
+        }
         return true
     }
     return false

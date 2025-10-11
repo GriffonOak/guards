@@ -185,6 +185,10 @@ Saved_Boolean :: struct {
     boolean: bool,
 }
 
+Chosen_Minion_Type :: struct {
+    minion_type: Space_Flag,
+}
+
 Action_Value_Variant :: union {
     Target,
     Path,
@@ -193,6 +197,7 @@ Action_Value_Variant :: union {
     Repeat_Count,
     Saved_Boolean,
     Choice_Taken,
+    Chosen_Minion_Type,
 }
 
 Action_Value :: struct {

@@ -82,7 +82,8 @@ Minion_Removal_Action :: struct {
 }
 
 Minion_Spawn_Action :: struct {
-    location, spawnpoint: Implicit_Target,
+    location: Implicit_Target,
+    minion_type: Implicit_Space_Flag,
 }
 
 Card_ID_Set :: map[Card_ID]Void
@@ -155,6 +156,8 @@ Save_Variable_Action :: struct {
     variable: Action_Variable,
 }
 
+Choose_Dead_Minion_Type_Action :: struct {} 
+
 Action_Variant :: union {
     Movement_Action,
     Fast_Travel_Action,
@@ -180,6 +183,7 @@ Action_Variant :: union {
     Give_Marker_Action,
     Swap_Action,
     Save_Variable_Action,
+    Choose_Dead_Minion_Type_Action,
 
     Minion_Removal_Action,
     Minion_Defeat_Action,
@@ -432,7 +436,7 @@ minion_spawn_action := []Action {
     Action {
         variant = Minion_Spawn_Action {
             location = Previously_Chosen_Target{},
-            spawnpoint = Top_Blocked_Spawnpoint{},
+            minion_type = Top_Blocked_Spawnpoint_Type{},
         },
     },
     Action {

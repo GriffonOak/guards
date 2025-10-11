@@ -391,6 +391,18 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                         add_side_button(gs, "Cancel", Cancel_Event{})
                     }
                 }
+
+            case Choose_Dead_Minion_Type_Action:
+                my_team := get_my_player(gs).team
+                for minion_type, index in gs.dead_minions[my_team] {
+                    dead_minion_target := dead_minion_target_indices[index]
+                    if my_team == .Blue do dead_minion_target = {GRID_WIDTH-1, GRID_HEIGHT-1} - dead_minion_target
+                    if var.space == dead_minion_target {
+                        add_action_value(gs, Chosen_Minion_Type{minion_type})
+                        append(&gs.event_queue, Resolve_Current_Action_Event{})
+                        break
+                    }
+                }
             }
         }
 
@@ -638,19 +650,22 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             log.assert(space.flags & MINION_FLAGS != {}, "Tried to remove a minion from a space with no minions!")
             minion_team := space.unit_team
             log.assert(gs.minion_counts[minion_team] > 0, "Removing a minion but the game state claims there are 0 minions")
+            minion_flags := space.flags & MINION_FLAGS 
+            minion_type := get_first_set_bit(minion_flags).?
             space.flags -= MINION_FLAGS
     
             gs.minion_counts[minion_team] -= 1
+            append(&gs.dead_minions[minion_team], minion_type)
     
             log.infof("Minion removed, new counts: %v", gs.minion_counts)
 
             if gs.minion_counts[minion_team] == 1 {
                 // Remove heavy minion immunity
                 zone := zone_indices[gs.current_battle_zone]
-                for target in zone {
-                    space := &gs.board[target.x][target.y]
-                    if space.flags & {.Heavy_Minion} != {} && space.unit_team == minion_team {
-                        space.flags -= {.Immune}
+                for zone_target in zone {
+                    zone_space := &gs.board[zone_target.x][zone_target.y]
+                    if zone_space.flags & {.Heavy_Minion} != {} && zone_space.unit_team == minion_team {
+                        zone_space.flags -= {.Immune}
                     }
                 }
             }
@@ -680,7 +695,14 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             space.flags += {.Immune}
         }
         space.unit_team = var.team
+
         gs.minion_counts[var.team] += 1
+        #reverse for minion_type, index in gs.dead_minions[var.team] {
+            if minion_type == var.minion_type {
+                ordered_remove(&gs.dead_minions[var.team], index)
+                break
+            }
+        }
 
     case Minion_Blocked_Event:
         space := &gs.board[var.target.x][var.target.y]
@@ -1091,19 +1113,14 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             
         case Minion_Spawn_Action:
             target := calculate_implicit_target(gs, action_type.location, calc_context)
-            spawnpoint := calculate_implicit_target(gs, action_type.spawnpoint, calc_context)
-            space := gs.board[spawnpoint.x][spawnpoint.y]
-            spawnpoint_flags := space.flags & (SPAWNPOINT_FLAGS - {.Hero_Spawnpoint})
-            log.assert(spawnpoint_flags != {}, "Minion spawn action with invalid spawnpoint!!!")
-            spawnpoint_type := get_first_set_bit(spawnpoint_flags).?
-            minion_type := spawnpoint_to_minion[spawnpoint_type]
-            minion_team := space.spawnpoint_team
+            minion_type := calculate_implicit_space_flag(gs, action_type.minion_type, calc_context)
 
-            if len(gs.blocked_spawns[get_my_player(gs).team]) > 0 {
-                pop(&gs.blocked_spawns[get_my_player(gs).team])
+            my_team := get_my_player(gs).team
+            if len(gs.blocked_spawns[my_team]) > 0 {
+                pop(&gs.blocked_spawns[my_team])
             }
 
-            broadcast_game_event(gs, Minion_Spawn_Event{target, minion_type, minion_team})
+            broadcast_game_event(gs, Minion_Spawn_Event{target, minion_type, my_team})
             append(&gs.event_queue, Resolve_Current_Action_Event{})
             
         case Discard_Card_Action:
@@ -1179,6 +1196,22 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             }
 
             append(&gs.event_queue, Resolve_Current_Action_Event{})
+
+        case Choose_Dead_Minion_Type_Action:
+            my_team := get_my_player(gs).team
+            log.assert(len(gs.dead_minions[my_team]) > 0, "Cannot choose a dead minion type with no dead minions!") 
+            more_than_one_type := false
+            for minion_type in gs.dead_minions[my_team] {
+                if minion_type != gs.dead_minions[my_team][0] {
+                    more_than_one_type = true
+                    break
+                }
+            }
+            if !more_than_one_type {
+                add_action_value(gs, Chosen_Minion_Type{gs.dead_minions[my_team][0]})
+                append(&gs.event_queue, Resolve_Current_Action_Event{})
+            }
+            
 
         case Fast_Travel_Action, Clear_Action, Choose_Card_Action:
             // nuffink
@@ -1411,8 +1444,10 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             space.flags -= MINION_FLAGS
         }
 
-        gs.minion_counts[.Red] = 0
-        gs.minion_counts[.Blue] = 0
+        for team in Team {
+            gs.minion_counts[team] = 0
+            clear(&gs.dead_minions[team])
+        }
 
         for &array in gs.blocked_spawns {
             clear(&array)

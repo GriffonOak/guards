@@ -387,7 +387,7 @@ dodger_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Necromancy",  // @Unimplemented
+    Card_Data { name = "Necromancy",
         color =         .Green,
         tier =          2,
         alternate =     true,
@@ -396,29 +396,30 @@ dodger_cards := []Card_Data {
         item =          .Attack,
         text =          "Respawn a friendly minion in an empty friendly\nspawn point adjacent to you in the battle zone.",
         primary_effect = []Action {
-            // Action {
-            //     tooltip = "Choose an empty friendly spawn point adjacent to you in the battle zone.",
-            //     // condition = Greater_Than { Total_Dead_Minions{My_Team{}}, 0 },  @Todo
-            //     variant = Choose_Target_Action {
-            //         conditions = {
-            //             Target_Within_Distance{Self{}, {1, 1}},
-            //             Target_Empty{},
-            //             Target_Contains_Any{SPAWNPOINT_FLAGS},
-            //             Target_In_Battle_Zone{},
-            //             Target_Is_Friendly_Spawnpoint{},
-            //         },
-            //     },
-            // },
-            // Action {
-            //     tooltip = "Choose which type of minion to respawn",
-            //     variant = Choose_Minion_Type_Action {},  // ??????
-            // },
-            // Action {
-            //     variant = Minion_Spawn_Action {
-            //         location = Previous_Choice{},
-            //         spawnpoint = Previous_Choice{},
-            //     },
-            // },
+            Action {
+                tooltip = "Choose an empty friendly spawn point adjacent to you in the battle zone.",
+                condition = Greater_Than { My_Team_Total_Dead_Minions{}, 0 },
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Empty{},
+                        Target_Contains_Any{SPAWNPOINT_FLAGS},
+                        Target_In_Battle_Zone{},
+                        Target_Is_Friendly_Spawnpoint{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Choose which minion to respawn.",
+                variant = Choose_Dead_Minion_Type_Action{},
+            },
+            Action {
+                variant = Minion_Spawn_Action {
+                    location = Previously_Chosen_Target{},
+                    minion_type = Previously_Chosen_Dead_Minion{},
+                },
+            },
         },
     },
     Card_Data { name = "Vampiric Shield",
@@ -641,7 +642,7 @@ dodger_cards := []Card_Data {
             
         },
     },
-    Card_Data { name = "Necromastery",  // @Unimplemented
+    Card_Data { name = "Necromastery",
         color =         .Green,
         tier =          3,
         alternate =     true,
@@ -649,7 +650,32 @@ dodger_cards := []Card_Data {
         primary =       .Skill,
         item =          .Range,
         text =          "Respawn a friendly minion in an empty friendly\nspawn point in radius in the battle zone.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = "Choose an empty friendly spawn point adjacent to you in the battle zone.",
+                condition = Greater_Than { My_Team_Total_Dead_Minions{}, 0 },
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Empty{},
+                        Target_Contains_Any{SPAWNPOINT_FLAGS},
+                        Target_In_Battle_Zone{},
+                        Target_Is_Friendly_Spawnpoint{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Choose which minion to respawn.",
+                variant = Choose_Dead_Minion_Type_Action{},
+            },
+            Action {
+                variant = Minion_Spawn_Action {
+                    location = Previously_Chosen_Target{},
+                    minion_type = Previously_Chosen_Dead_Minion{},
+                },
+            },
+        },
     },
     Card_Data { name = "Aegis of Doom",
         color =         .Blue,

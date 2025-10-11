@@ -24,8 +24,10 @@ _ :: time
 /* BEYOND 0.1
 
 --- ENGINE 
-    ^ "Intention" system for choose_target_action to allow different types of immunity
+    ^ "Intention" system for choose_target_action to allow different types of immunity (Sort of??)
     ^ "Hooks" system to allow other heroes to interrupt players performing actions (brogan, swift)
+
+    - Store dead minions & allow respawn actions
 
     v Refactor heroes "out of" players (allow for multiple heroes controlled by 1 player)
     v Ultimates

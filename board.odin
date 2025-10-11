@@ -38,7 +38,6 @@ Space_Flag :: enum {
     Cannot_Place,
 }
 
-
 Region_ID :: enum {
     None,
     Red_Jungle,
@@ -70,6 +69,14 @@ Space :: struct {
     using transient: Space_Transient,
 }
 
+@rodata
+dead_minion_target_indices := [5]Target {
+    {1, 10},
+    {1, 9},
+    {1, 8},
+    {1, 7},
+    {2, 6},
+}
 
 VERTICAL_SPACING :: 67
 
@@ -438,6 +445,7 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
         }
     }
 
+    ENTITY_FONT_SIZE :: 0.8 * VERTICAL_SPACING
 
     // Draw entities
     for arr in gs.board {
@@ -453,24 +461,20 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
                     spawnpoint_type := get_first_set_bit(spawnpoint_flags).?
                     initial := minion_initials[spawnpoint_to_minion[spawnpoint_type]]
 
-                    FONT_SIZE :: 0.8 * VERTICAL_SPACING
-
-                    text_size := measure_text_ex(default_font, initial, FONT_SIZE, FONT_SPACING)
-                    draw_text_ex(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, color)
+                    text_size := measure_text_ex(default_font, initial, ENTITY_FONT_SIZE, FONT_SPACING)
+                    draw_text_ex(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, ENTITY_FONT_SIZE, FONT_SPACING, color)
                 }
             }
 
             minion_flags := space.flags & MINION_FLAGS 
             if minion_flags != {} {
-                color = team_colors[space.unit_team]
                 minion_type := get_first_set_bit(minion_flags).?
+                color = team_colors[space.unit_team]
                 initial := minion_initials[minion_type]
 
-                FONT_SIZE :: 0.8 * VERTICAL_SPACING
-
-                text_size := measure_text_ex(default_font, initial, FONT_SIZE, FONT_SPACING)
+                text_size := measure_text_ex(default_font, initial, ENTITY_FONT_SIZE, FONT_SPACING)
                 draw_circle_v(space.position, VERTICAL_SPACING * 0.42, color)
-                draw_text_ex(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, BLACK)
+                draw_text_ex(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, ENTITY_FONT_SIZE, FONT_SPACING, BLACK)
 
             }
 
@@ -479,11 +483,9 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
                 name, ok := reflect.enum_name_from_value(space.hero_id); log.assert(ok, "Invalid hero name?")
                 initial := strings.clone_to_cstring(name[:1])
 
-                FONT_SIZE :: 0.8 * VERTICAL_SPACING
-
-                text_size := measure_text_ex(default_font, initial, FONT_SIZE, FONT_SPACING)
+                text_size := measure_text_ex(default_font, initial, ENTITY_FONT_SIZE, FONT_SPACING)
                 draw_circle_v(space.position, VERTICAL_SPACING * 0.42, color)
-                draw_text_ex(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, FONT_SIZE, FONT_SPACING, BLACK)
+                draw_text_ex(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, ENTITY_FONT_SIZE, FONT_SPACING, BLACK)
             }
         }
     }
@@ -507,7 +509,7 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
         for life_counter_index in 0..<6 {
             LIFE_COUNTER_RADIUS :: 23
             LIFE_COUNTER_PADDING :: 10
-            life_counter_position: Vec2 = {0, BOARD_TEXTURE_SIZE.y} + {LIFE_COUNTER_RADIUS, -LIFE_COUNTER_RADIUS} + {LIFE_COUNTER_PADDING, -LIFE_COUNTER_PADDING}
+            life_counter_position := Vec2{0, BOARD_TEXTURE_SIZE.y} + {LIFE_COUNTER_RADIUS, -LIFE_COUNTER_RADIUS} + {LIFE_COUNTER_PADDING, -LIFE_COUNTER_PADDING}
             life_counter_position.x += f32(life_counter_index) * (LIFE_COUNTER_RADIUS * 2 + LIFE_COUNTER_PADDING)
             if team == .Blue do life_counter_position = BOARD_TEXTURE_SIZE - life_counter_position
             darker_team_color := team_colors[team] / 2
@@ -515,6 +517,18 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
             color := team_colors[team] if life_counter_index < gs.life_counters[team] else darker_team_color
             draw_circle_v(life_counter_position, LIFE_COUNTER_RADIUS, color)
             draw_ring(life_counter_position, LIFE_COUNTER_RADIUS - 5, LIFE_COUNTER_RADIUS, 0, 360, 100, team_colors[team])
+        }
+
+        for minion_type, minion_index in gs.dead_minions[team] {
+            color := team_colors[team]
+            initial := minion_initials[minion_type]
+            target := dead_minion_target_indices[minion_index]
+            if team == .Blue do target = {GRID_WIDTH-1, GRID_HEIGHT-1} - target
+            position := gs.board[target.x][target.y].position
+            // position := Vec2 {VERTICAL_SPACING * 0.5, BOARD_TEXTURE_SIZE.y - VERTICAL_SPACING * 1.5 - f32(minion_index) * VERTICAL_SPACING}
+            text_size := measure_text_ex(default_font, initial, ENTITY_FONT_SIZE, FONT_SPACING)
+            draw_circle_v(position, VERTICAL_SPACING * 0.42, color)
+            draw_text_ex(default_font, initial, {position.x - text_size.x / 2, position.y - text_size.y / 2.2}, ENTITY_FONT_SIZE, FONT_SPACING, BLACK)
         }
     }
 
