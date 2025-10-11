@@ -29,13 +29,15 @@ Space_Flag :: enum {
     Ranged_Minion,
     Heavy_Minion,
     Token,
-    Immune,
     Obstacle,
 
     Cannot_Move,
     Cannot_Push,
     Cannot_Swap,
     Cannot_Place,
+
+    Immune,
+    Immune_Attacks,
 }
 
 Region_ID :: enum {

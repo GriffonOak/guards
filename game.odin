@@ -50,6 +50,8 @@ Active_Effect_Kind :: enum {
     Wasp_Magnetic_Dagger,
     Wasp_Static_Barrier,
 
+    Tigerclaw_Blend_Into_Shadows,
+
     Brogan_Bulwark,
 }
 

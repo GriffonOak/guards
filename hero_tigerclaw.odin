@@ -56,7 +56,7 @@ tigerclaw_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Blend into Shadows",  // @Incomplete, attack immunity
+    Card_Data { name = "Blend into Shadows",
         color =         .Silver,
         values =        #partial{.Initiative = 6, .Defense = 2, .Radius = 2},
         primary =       .Skill,
@@ -88,6 +88,22 @@ tigerclaw_cards := []Card_Data {
                 variant = Place_Action {
                     source = Self{},
                     destination = Previously_Chosen_Target{},
+                },
+            },
+            Action {
+                tooltip = error_tooltip,
+                variant = Add_Active_Effect_Action {
+                    effect = Active_Effect {
+                        kind = .Tigerclaw_Blend_Into_Shadows,
+                        timing = Single_Turn(Sum{Card_Turn_Played{}, 1}),
+                        affected_targets = {
+                            Are_Enemies{Self{}, Card_Owner{}},
+                            Target_Is{Card_Owner{}},
+                        },
+                        outcomes = {
+                            Target_Counts_As{{.Immune_Attacks}},
+                        },
+                    },
                 },
             },
         },
