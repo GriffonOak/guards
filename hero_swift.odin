@@ -121,10 +121,8 @@ swift_cards := []Card_Data {
                         Target_Contains_Any{{.Hero}},
                         Target_Is_Enemy_Unit{},
                         Greater_Than{1, Count_Targets{
-                            conditions = {
-                                Target_Within_Distance{Previous_Target{}, {1, 1}},
-                                Target_Contains_Any{{.Terrain}},
-                            },
+                            Target_Within_Distance{Previous_Target{}, {1, 1}},
+                            Target_Contains_Any{{.Terrain}},
                         }},
                     },
                 },
@@ -284,10 +282,8 @@ swift_cards := []Card_Data {
                         Target_Contains_Any{{.Hero}},
                         Target_Is_Enemy_Unit{},
                         Greater_Than{1, Count_Targets{
-                            conditions = {
-                                Target_Within_Distance{Previous_Target{}, {1, 1}},
-                                Target_Contains_Any{{.Terrain}},
-                            },
+                            Target_Within_Distance{Previous_Target{}, {1, 1}},
+                            Target_Contains_Any{{.Terrain}},
                         }},
                     },
                 },
@@ -506,10 +502,8 @@ swift_cards := []Card_Data {
                         Target_Contains_Any{{.Hero}},
                         Target_Is_Enemy_Unit{},
                         Greater_Than{1, Count_Targets{
-                            conditions = {
-                                Target_Within_Distance{Previous_Target{}, {1, 1}},
-                                Target_Contains_Any{{.Terrain}},
-                            },
+                            Target_Within_Distance{Previous_Target{}, {1, 1}},
+                            Target_Contains_Any{{.Terrain}},
                         }},
                     },
                 },

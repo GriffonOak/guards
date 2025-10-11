@@ -111,12 +111,9 @@ xargatha_cards := []Card_Data {
                     strength = Sum {
                         Card_Value{.Attack}, 
                         Count_Targets {
-                            conditions = {
-                                Target_Within_Distance{Self{}, {1, 1}},
-                                Target_Contains_Any{UNIT_FLAGS},
-                                Target_Is_Enemy_Unit{},
-                            },
-                            flags = {.Ignoring_Immunity},
+                            Target_Within_Distance{Self{}, {1, 1}},
+                            Target_Contains_Any{UNIT_FLAGS},
+                            Target_Is_Enemy_Unit{},
                         },
                         -1,
                     },
@@ -254,12 +251,9 @@ xargatha_cards := []Card_Data {
                         Product {
                             Sum {
                                 Count_Targets {
-                                    conditions = {
-                                        Target_Within_Distance{Self{}, {1, 1}},
-                                        Target_Contains_Any{UNIT_FLAGS},
-                                        Target_Is_Enemy_Unit{},
-                                    },
-                                    flags = {.Ignoring_Immunity},
+                                    Target_Within_Distance{Self{}, {1, 1}},
+                                    Target_Contains_Any{UNIT_FLAGS},
+                                    Target_Is_Enemy_Unit{},
                                 },
                                 -1,
                             },
@@ -289,12 +283,9 @@ xargatha_cards := []Card_Data {
                             bounds = {1, Sum {
                                 Card_Value{.Range},
                                 Count_Targets {
-                                    conditions = {
-                                        Target_Within_Distance{Self{}, {1, 1}},
-                                        Target_Contains_Any{UNIT_FLAGS},
-                                        Target_Is_Enemy_Unit{},
-                                    },
-                                    flags = {.Ignoring_Immunity},
+                                    Target_Within_Distance{Self{}, {1, 1}},
+                                    Target_Contains_Any{UNIT_FLAGS},
+                                    Target_Is_Enemy_Unit{},
                                 },
                             }},
                         },
@@ -473,12 +464,9 @@ xargatha_cards := []Card_Data {
                 tooltip = "Choose a discarded card to retrieve.",
                 condition = Greater_Than {
                     Count_Targets {
-                        conditions = {
-                            Target_Within_Distance{Self{}, {1, 1}},
-                            Target_Contains_Any{MINION_FLAGS},
-                            Target_Is_Enemy_Unit{},
-                        },
-                        flags = {.Ignoring_Immunity},
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Contains_Any{MINION_FLAGS},
+                        Target_Is_Enemy_Unit{},
                     },
                     0,
                 },
@@ -526,12 +514,9 @@ xargatha_cards := []Card_Data {
                         Product {
                             Sum {
                                 Count_Targets {
-                                    conditions = {
-                                        Target_Within_Distance{Self{}, {1, 1}},
-                                        Target_Contains_Any{UNIT_FLAGS},
-                                        Target_Is_Enemy_Unit{},
-                                    },
-                                    flags = {.Ignoring_Immunity},
+                                    Target_Within_Distance{Self{}, {1, 1}},
+                                    Target_Contains_Any{UNIT_FLAGS},
+                                    Target_Is_Enemy_Unit{},
                                 },
                                 -1,
                             },
@@ -571,12 +556,9 @@ xargatha_cards := []Card_Data {
                             bounds = {1, Sum {
                                 Card_Value{.Range},
                                 Count_Targets {
-                                    conditions = {
-                                        Target_Within_Distance{Self{}, {1, 1}},
-                                        Target_Contains_Any{UNIT_FLAGS},
-                                        Target_Is_Enemy_Unit{},
-                                    },
-                                    flags = {.Ignoring_Immunity},
+                                    Target_Within_Distance{Self{}, {1, 1}},
+                                    Target_Contains_Any{UNIT_FLAGS},
+                                    Target_Is_Enemy_Unit{},
                                 },
                             }},
                         },
@@ -766,12 +748,9 @@ xargatha_cards := []Card_Data {
                 tooltip = "Choose a discarded card to retrieve.",
                 condition = Greater_Than {
                     Count_Targets {
-                        conditions = {
-                            Target_Within_Distance{Self{}, {1, 1}},
-                            Target_Contains_Any{UNIT_FLAGS},
-                            Target_Is_Enemy_Unit{},
-                        },
-                        flags = {.Ignoring_Immunity},
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Enemy_Unit{},
                     },
                     0,
                 },

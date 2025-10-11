@@ -107,11 +107,10 @@ brogan_cards := []Card_Data {
                         conditions = {
                             Greater_Than{
                                 Count_Targets {
-                                    conditions = {
-                                        Target_Within_Distance{Previous_Target{}, {1, 1}},
-                                        Target_Contains_Any{UNIT_FLAGS},
-                                        Target_Is_Enemy_Unit{},
-                                    },
+                                    Target_Within_Distance{Previous_Target{}, {1, 1}},
+                                    Target_Contains_Any{UNIT_FLAGS},
+                                    Target_Is_Enemy_Unit{},
+                                    Not{Target_Contains_Any{{.Immune, .Immune_Attacks}}},
                                 }, 0,
                             },
                         },
@@ -214,11 +213,10 @@ brogan_cards := []Card_Data {
                         conditions = {
                             Greater_Than{
                                 Count_Targets {
-                                    conditions = {
-                                        Target_Within_Distance{Previous_Target{}, {1, 1}},
-                                        Target_Contains_Any{UNIT_FLAGS},
-                                        Target_Is_Enemy_Unit{},
-                                    },
+                                    Target_Within_Distance{Previous_Target{}, {1, 1}},
+                                    Target_Contains_Any{UNIT_FLAGS},
+                                    Target_Is_Enemy_Unit{},
+                                    Not{Target_Contains_Any{{.Immune, .Immune_Attacks}}},
                                 }, 0,
                             },
                         },
@@ -459,11 +457,10 @@ brogan_cards := []Card_Data {
                         conditions = {
                             Greater_Than{
                                 Count_Targets {
-                                    conditions = {
-                                        Target_Within_Distance{Previous_Target{}, {1, 1}},
-                                        Target_Contains_Any{UNIT_FLAGS},
-                                        Target_Is_Enemy_Unit{},
-                                    },
+                                    Target_Within_Distance{Previous_Target{}, {1, 1}},
+                                    Target_Contains_Any{UNIT_FLAGS},
+                                    Target_Is_Enemy_Unit{},
+                                    Not{Target_Contains_Any{{.Immune, .Immune_Attacks}}}
                                 }, 0,
                             },
                         },

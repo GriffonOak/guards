@@ -507,10 +507,8 @@ wasp_cards := []Card_Data {
                 variant = Save_Variable_Action {
                     Greater_Than {  // @Note: It would be nice to have a better way of expressing this
                         Count_Targets {
-                            conditions = {
-                                Target_Is{Previously_Chosen_Target{}},
-                                Target_Contains_Any{{.Hero}},
-                            },
+                            Target_Is{Previously_Chosen_Target{}},
+                            Target_Contains_Any{{.Hero}},
                         }, 0,
                     },
                 },

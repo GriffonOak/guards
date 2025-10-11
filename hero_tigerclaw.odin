@@ -21,12 +21,10 @@ tigerclaw_cards := []Card_Data {
                         Target_Is_Enemy_Unit{},
                         Greater_Than {
                             Count_Targets {
-                                conditions = {
-                                    Target_Within_Distance{Previous_Target{}, {1, 1}},
-                                    Target_Within_Distance{Self{}, {2, 2}},
-                                    Target_In_Straight_Line_With{Self{}},
-                                    Target_Empty{},
-                                },
+                                Target_Within_Distance{Previous_Target{}, {1, 1}},
+                                Target_Within_Distance{Self{}, {2, 2}},
+                                Target_In_Straight_Line_With{Self{}},
+                                Target_Empty{},
                             }, 0,
                         },
                     },
@@ -67,10 +65,8 @@ tigerclaw_cards := []Card_Data {
                 condition = And {
                     Greater_Than {
                         Count_Targets {
-                            conditions = {
-                                Target_Within_Distance{Self{}, {1, 1}},
-                                Target_Contains_Any{{.Terrain}},
-                            },
+                            Target_Within_Distance{Self{}, {1, 1}},
+                            Target_Contains_Any{{.Terrain}},
                         }, 0,
                     },
                     Not{Contains_Any{Self{}, {.Cannot_Place}}},
@@ -232,11 +228,10 @@ tigerclaw_cards := []Card_Data {
                         conditions = {  // Have to move next to an enemy unit
                             Greater_Than {
                                 Count_Targets {
-                                    conditions = {
-                                        Target_Within_Distance{Previous_Target{}, {1, 1}},
-                                        Target_Contains_Any{UNIT_FLAGS},
-                                        Target_Is_Enemy_Unit{},
-                                    },
+                                    Target_Within_Distance{Previous_Target{}, {1, 1}},
+                                    Target_Contains_Any{UNIT_FLAGS},
+                                    Target_Is_Enemy_Unit{},
+                                    Not{Target_Contains_Any{{.Immune, .Immune_Attacks}}},
                                 }, 0,
                             },
                         },
@@ -324,11 +319,9 @@ tigerclaw_cards := []Card_Data {
                             {2, 0},
                             Greater_Than {
                                 Count_Targets {
-                                    conditions = {
-                                        Target_Within_Distance{Previously_Chosen_Target{}, {1, 1}},
-                                        Target_Contains_Any{UNIT_FLAGS},
-                                        Target_Is_Friendly_Unit{},
-                                    },
+                                    Target_Within_Distance{Previously_Chosen_Target{}, {1, 1}},
+                                    Target_Contains_Any{UNIT_FLAGS},
+                                    Target_Is_Friendly_Unit{},
                                 }, 1,
                             },
                         },
@@ -482,11 +475,10 @@ tigerclaw_cards := []Card_Data {
                         conditions = {
                             Greater_Than{
                                 Count_Targets {
-                                    conditions = {
-                                        Target_Within_Distance{Previous_Target{}, {1, 1}},
-                                        Target_Contains_Any{UNIT_FLAGS},
-                                        Target_Is_Enemy_Unit{},
-                                    },
+                                    Target_Within_Distance{Previous_Target{}, {1, 1}},
+                                    Target_Contains_Any{UNIT_FLAGS},
+                                    Target_Is_Enemy_Unit{},
+                                    Not{Target_Contains_Any{{.Immune, .Immune_Attacks}}},
                                 }, 0,
                             },
                         },
@@ -557,12 +549,10 @@ tigerclaw_cards := []Card_Data {
                 // Condition here is basically that there are no friendly units adjacent to the target
                 condition = Equal {
                     Count_Targets {
-                        conditions = {
-                            Target_Within_Distance{Previously_Chosen_Target{}, {1, 1}},
-                            Target_Contains_Any{UNIT_FLAGS},
-                            Target_Is_Friendly_Unit{},
-                            Not{Target_Is{Self{}}},
-                        },
+                        Target_Within_Distance{Previously_Chosen_Target{}, {1, 1}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Friendly_Unit{},
+                        Not{Target_Is{Self{}}},
                     }, 0,
                 },
                 variant = Attack_Action {
@@ -578,12 +568,10 @@ tigerclaw_cards := []Card_Data {
                 // Condition here is that there are friendly units adjacent to the target
                 condition = Greater_Than {
                     Count_Targets {
-                        conditions = {
-                            Target_Within_Distance{Previously_Chosen_Target{}, {1, 1}},
-                            Target_Contains_Any{UNIT_FLAGS},
-                            Target_Is_Friendly_Unit{},
-                            Not{Target_Is{Self{}}},
-                        },
+                        Target_Within_Distance{Previously_Chosen_Target{}, {1, 1}},
+                        Target_Contains_Any{UNIT_FLAGS},
+                        Target_Is_Friendly_Unit{},
+                        Not{Target_Is{Self{}}},
                     }, 0,
                 },
                 variant = Attack_Action {

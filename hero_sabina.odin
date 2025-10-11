@@ -343,12 +343,9 @@ sabina_cards := []Card_Data {
                         Target_Is_Enemy_Unit{},
                         Greater_Than {
                             Count_Targets {
-                                conditions = {
-                                    Target_Within_Distance{Previous_Target{}, {1, 1}},
-                                    Target_Contains_Any{MINION_FLAGS},
-                                    Target_Is_Friendly_Unit{},
-                                },
-                                flags = {.Ignoring_Immunity},
+                                Target_Within_Distance{Previous_Target{}, {1, 1}},
+                                Target_Contains_Any{MINION_FLAGS},
+                                Target_Is_Friendly_Unit{},
                             },
                         },
                     },
@@ -402,12 +399,9 @@ sabina_cards := []Card_Data {
                 optional = true,
                 condition = Greater_Than {
                     Count_Targets {
-                        conditions = {
-                            Target_Within_Distance{Self{}, {1, 1}},
-                            Target_Contains_Any{MINION_FLAGS},
-                            Target_Is_Friendly_Unit{},
-                        },
-                        flags = {.Ignoring_Immunity},
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Contains_Any{MINION_FLAGS},
+                        Target_Is_Friendly_Unit{},
                     }, 1,
                 },
                 variant = Choose_Card_Action {
@@ -593,12 +587,9 @@ sabina_cards := []Card_Data {
                         Target_Is_Enemy_Unit{},
                         Greater_Than {
                             Count_Targets {
-                                conditions = {
-                                    Target_Within_Distance{Previous_Target{}, {1, 1}},
-                                    Target_Contains_Any{MINION_FLAGS},
-                                    Target_Is_Friendly_Unit{},
-                                },
-                                flags = {.Ignoring_Immunity},
+                                Target_Within_Distance{Previous_Target{}, {1, 1}},
+                                Target_Contains_Any{MINION_FLAGS},
+                                Target_Is_Friendly_Unit{},
                             },
                         },
                     },
@@ -654,12 +645,9 @@ sabina_cards := []Card_Data {
                 optional = true,
                 condition = Greater_Than {
                     Count_Targets {
-                        conditions = {
-                            Target_Within_Distance{Self{}, {1, 1}},
-                            Target_Contains_Any{MINION_FLAGS},
-                            Target_Is_Friendly_Unit{},
-                        },
-                        flags = {.Ignoring_Immunity},
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Contains_Any{MINION_FLAGS},
+                        Target_Is_Friendly_Unit{},
                     }, 1,
                 },
                 variant = Choose_Card_Action {

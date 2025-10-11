@@ -59,7 +59,7 @@ Distance_Between :: distinct []Implicit_Target
 
 Choices_Taken :: struct {}
 
-Count_Targets :: Selection_Criteria
+Count_Targets :: []Implicit_Condition
 
 Count_Hero_Coins :: struct {
     target: Implicit_Target,
@@ -364,7 +364,11 @@ calculate_implicit_quantity :: proc(
         }
 
     case Count_Targets:
-        targets := make_arbitrary_targets(gs, quantity, calc_context)
+        selection_criteria := Selection_Criteria {
+            conditions = quantity,
+            flags = {.Ignoring_Immunity},
+        }
+        targets := make_arbitrary_targets(gs, selection_criteria, calc_context)
         return count_members(&targets)
 
     case Count_Card_Targets:

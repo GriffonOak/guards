@@ -46,12 +46,10 @@ dodger_cards := []Card_Data {
                 tooltip = "Target a unit in range.",
                 condition = Greater_Than {
                     Count_Targets {
-                        conditions = {
-                            Target_Within_Distance{Self{}, {1, 1}},
-                            Target_Empty{},
-                            Target_Contains_Any{SPAWNPOINT_FLAGS},
-                            Target_In_Battle_Zone{},
-                        },
+                        Target_Within_Distance{Self{}, {1, 1}},
+                        Target_Empty{},
+                        Target_Contains_Any{SPAWNPOINT_FLAGS},
+                        Target_In_Battle_Zone{},
                     }, 0,
                 },
                 variant = Choose_Target_Action {
@@ -94,15 +92,13 @@ dodger_cards := []Card_Data {
                         Target_Is_Enemy_Unit{},
                         Greater_Than {
                             Count_Targets {
-                                conditions = {
-                                    Target_Within_Distance {
-                                        origin = Previous_Target{},
-                                        bounds = {1, 1},
-                                    },
-                                    Target_Empty{},
-                                    Target_Contains_Any{SPAWNPOINT_FLAGS},
-                                    Target_In_Battle_Zone{},
+                                Target_Within_Distance {
+                                    origin = Previous_Target{},
+                                    bounds = {1, 1},
                                 },
+                                Target_Empty{},
+                                Target_Contains_Any{SPAWNPOINT_FLAGS},
+                                Target_In_Battle_Zone{},
                             },
                             0,
                         },
@@ -194,12 +190,10 @@ dodger_cards := []Card_Data {
             Action {
                 condition = Greater_Than {
                     Count_Targets {
-                        conditions = {
-                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                            Target_Empty{},
-                            Target_Contains_Any{SPAWNPOINT_FLAGS},
-                            Target_In_Battle_Zone{},
-                        },
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Empty{},
+                        Target_Contains_Any{SPAWNPOINT_FLAGS},
+                        Target_In_Battle_Zone{},
                     }, 1,
                 },
                 variant = Gain_Coins_Action {
@@ -226,14 +220,12 @@ dodger_cards := []Card_Data {
                             {2, 0},
                             Greater_Than {
                                 Count_Targets {
-                                    conditions = {
-                                        Target_Within_Distance {
-                                            Self{}, {1, Card_Value{.Radius}},
-                                        },
-                                        Target_Empty{},
-                                        Target_Contains_Any{SPAWNPOINT_FLAGS},
-                                        Target_In_Battle_Zone{},
+                                    Target_Within_Distance {
+                                        Self{}, {1, Card_Value{.Radius}},
                                     },
+                                    Target_Empty{},
+                                    Target_Contains_Any{SPAWNPOINT_FLAGS},
+                                    Target_In_Battle_Zone{},
                                 }, 1,
                             },
                         },
@@ -372,12 +364,10 @@ dodger_cards := []Card_Data {
             Action {
                 condition = Greater_Than {
                     Count_Targets {
-                        conditions = {
-                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                            Target_Empty{},
-                            Target_Contains_Any{SPAWNPOINT_FLAGS},
-                            Target_In_Battle_Zone{},
-                        },
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Empty{},
+                        Target_Contains_Any{SPAWNPOINT_FLAGS},
+                        Target_In_Battle_Zone{},
                     }, 1,
                 },
                 variant = Gain_Coins_Action {
@@ -440,14 +430,12 @@ dodger_cards := []Card_Data {
                             {2, 0},
                             Greater_Than {
                                 Count_Targets {
-                                    conditions = {
-                                        Target_Within_Distance {
-                                            Self{}, {1, Card_Value{.Radius}},
-                                        },
-                                        Target_Empty{},
-                                        Target_Contains_Any{SPAWNPOINT_FLAGS},
-                                        Target_In_Battle_Zone{},
+                                    Target_Within_Distance {
+                                        Self{}, {1, Card_Value{.Radius}},
                                     },
+                                    Target_Empty{},
+                                    Target_Contains_Any{SPAWNPOINT_FLAGS},
+                                    Target_In_Battle_Zone{},
                                 }, 1,
                             },
                         },
@@ -642,12 +630,10 @@ dodger_cards := []Card_Data {
             Action {
                 condition = Greater_Than {
                     Count_Targets {
-                        conditions = {
-                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
-                            Target_Empty{},
-                            Target_Contains_Any{SPAWNPOINT_FLAGS},
-                            Target_In_Battle_Zone{},
-                        },
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Empty{},
+                        Target_Contains_Any{SPAWNPOINT_FLAGS},
+                        Target_In_Battle_Zone{},
                     }, 1,
                 },
                 variant = Gain_Coins_Action {
