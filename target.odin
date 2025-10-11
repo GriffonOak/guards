@@ -242,6 +242,10 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
             action.targets[dead_minion_target.x][dead_minion_target.y].member = true
         }
         return true
+
+    case Gain_Item_Action:
+        return true
+
     }
     return false
 }

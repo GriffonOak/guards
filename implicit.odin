@@ -67,6 +67,8 @@ Count_Hero_Coins :: struct {
 
 My_Team_Total_Dead_Minions :: struct {}
 
+My_Level :: struct {}
+
 Count_Card_Targets :: distinct []Implicit_Condition
 
 Card_Turn_Played :: struct {}
@@ -96,6 +98,7 @@ Implicit_Quantity :: union {
     Minion_Modifiers,
     Heroes_Defeated_This_Round,
     My_Team_Total_Dead_Minions,
+    My_Level,
     Sum,
     Product,
     Min,
@@ -406,6 +409,10 @@ calculate_implicit_quantity :: proc(
     case My_Team_Total_Dead_Minions:
         my_player := get_my_player(gs)
         return len(gs.dead_minions[my_player.team])
+
+    case My_Level:
+        my_player := get_my_player(gs)
+        return my_player.hero.level
 
     case Current_Turn:
         return gs.turn_counter

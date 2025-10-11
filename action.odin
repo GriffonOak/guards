@@ -156,7 +156,11 @@ Save_Variable_Action :: struct {
     variable: Action_Variable,
 }
 
-Choose_Dead_Minion_Type_Action :: struct {} 
+Choose_Dead_Minion_Type_Action :: struct {}
+
+Gain_Item_Action :: struct {
+    card_id: Implicit_Card_ID,
+}
 
 Action_Variant :: union {
     Movement_Action,
@@ -184,6 +188,7 @@ Action_Variant :: union {
     Swap_Action,
     Save_Variable_Action,
     Choose_Dead_Minion_Type_Action,
+    Gain_Item_Action,
 
     Minion_Removal_Action,
     Minion_Defeat_Action,

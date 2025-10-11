@@ -631,7 +631,7 @@ dodger_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Darkest Ritual",  // @Unimplemented
+    Card_Data { name = "Darkest Ritual",
         color =         .Green,
         tier =          3,
         values =        #partial{.Initiative = 2, .Defense = 3, .Movement = 2, .Radius = 3},
@@ -639,7 +639,30 @@ dodger_cards := []Card_Data {
         item =          .Defense,
         text =          "If there are 2 or more empty spawn points in\nradius in the battle zone, gain 2 coins. If you\nhave your Ultimate, gain an Attack item.\n(Use any spare card from the box with the corresponding icon.",
         primary_effect = []Action {
-            
+            Action {
+                condition = Greater_Than {
+                    Count_Targets {
+                        conditions = {
+                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                            Target_Empty{},
+                            Target_Contains_Any{SPAWNPOINT_FLAGS},
+                            Target_In_Battle_Zone{},
+                        },
+                    }, 1,
+                },
+                variant = Gain_Coins_Action {
+                    target = Self{},
+                    gain = 2,
+                },
+            },
+            Action {
+                condition = Greater_Than{
+                    My_Level{}, 8,
+                },
+                variant = Gain_Item_Action {
+                    card_id = Card_ID{hero_id = .Dodger, color = .Red, tier = 5},
+                },
+            },
         },
     },
     Card_Data { name = "Necromastery",
@@ -720,5 +743,13 @@ dodger_cards := []Card_Data {
                 },
             },
         },
+    },
+
+
+
+    Card_Data { name = "Attack Item",
+        color =         .Red,
+        tier =          5,
+        item =          .Attack,
     },
 }

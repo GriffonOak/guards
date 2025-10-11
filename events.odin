@@ -1211,7 +1211,16 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 add_action_value(gs, Chosen_Minion_Type{gs.dead_minions[my_team][0]})
                 append(&gs.event_queue, Resolve_Current_Action_Event{})
             }
-            
+
+        case Gain_Item_Action:
+            my_player := get_my_player(gs)
+            my_hero := &my_player.hero
+            card_id := calculate_implicit_card_id(gs, action_type.card_id)
+            my_hero.items[my_hero.item_count] = card_id
+            my_hero.item_count += 1
+            broadcast_game_event(gs, Update_Player_Data_Event{})
+            append(&gs.event_queue, Resolve_Current_Action_Event{})
+
 
         case Fast_Travel_Action, Clear_Action, Choose_Card_Action:
             // nuffink
