@@ -379,34 +379,6 @@ when !ODIN_TEST {
 }
 }
 
-defeat_minion :: proc(gs: ^Game_State, target: Target) -> (will_interrupt: bool) {
-
-    broadcast_game_event(gs, Minion_Defeat_Event{target, gs.my_player_id})
-
-    return remove_minion(gs, target)
-}
-
-remove_minion :: proc(gs: ^Game_State, target: Target) -> (will_interrupt: bool) {
-    space := &gs.board[target.x][target.y]
-    log.assert(space.flags & MINION_FLAGS != {}, "Tried to remove a minion from a space with no minions!")
-    minion_team := space.unit_team
-    log.assert(gs.minion_counts[minion_team] > 0, "Removing a minion but the game state claims there are 0 minions")
-
-    broadcast_game_event(gs, Minion_Removal_Event{target, gs.my_player_id})
-
-    return gs.minion_counts[minion_team] <= 1
-}
-
-remove_heavy_immunity :: proc(gs: ^Game_State, team: Team) {
-    zone := zone_indices[gs.current_battle_zone]
-    for target in zone {
-        space := &gs.board[target.x][target.y]
-        if space.flags & {.Heavy_Minion} != {} {
-            space.flags -= {.Immune}
-        }
-    }
-}
-
 
 add_pre_lobby_ui_elements :: proc (gs: ^Game_State) {
     clear(&gs.ui_stack[.Buttons])

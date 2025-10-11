@@ -63,8 +63,10 @@ Minion_Defeat_Event :: struct {
     target: Target,
     defeating_player: Player_ID,
 }
+
 Minion_Removal_Event :: struct {
-    target: Target,
+    targets: [6]Target,
+    num_targets: int,
     removing_player: Player_ID,
 }
 Minion_Spawn_Event :: struct {
@@ -621,20 +623,54 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             get_player_by_id(gs, var.defeating_player).hero.coins += 2
         }
 
-    case Minion_Removal_Event:
-        space := &gs.board[var.target.x][var.target.y]
-        log.assert(space.flags & MINION_FLAGS != {}, "Tried to remove a minion from a space with no minions!")
-        minion_team := space.unit_team
-        log.assert(gs.minion_counts[minion_team] > 0, "Removing a minion but the game state claims there are 0 minions")
-        space.flags -= MINION_FLAGS
-
-        gs.minion_counts[minion_team] -= 1
-
-        log.infof("Minion removed, new counts: %v", gs.minion_counts)
-
-        if gs.minion_counts[minion_team] == 1 {
-            remove_heavy_immunity(gs, minion_team)
+        if gs.my_player_id == var.defeating_player {
+            removal_event: Minion_Removal_Event
+            removal_event.targets[0] = var.target
+            removal_event.num_targets = 1
+            removal_event.removing_player = var.defeating_player
+            broadcast_game_event(gs, removal_event)
         }
+
+    case Minion_Removal_Event:
+        for target_index in 0..<var.num_targets {
+            target := var.targets[target_index]
+            space := &gs.board[target.x][target.y]
+            log.assert(space.flags & MINION_FLAGS != {}, "Tried to remove a minion from a space with no minions!")
+            minion_team := space.unit_team
+            log.assert(gs.minion_counts[minion_team] > 0, "Removing a minion but the game state claims there are 0 minions")
+            space.flags -= MINION_FLAGS
+    
+            gs.minion_counts[minion_team] -= 1
+    
+            log.infof("Minion removed, new counts: %v", gs.minion_counts)
+
+            if gs.minion_counts[minion_team] == 1 {
+                // Remove heavy minion immunity
+                zone := zone_indices[gs.current_battle_zone]
+                for target in zone {
+                    space := &gs.board[target.x][target.y]
+                    if space.flags & {.Heavy_Minion} != {} && space.unit_team == minion_team {
+                        space.flags -= {.Immune}
+                    }
+                }
+            }
+        }
+
+        if var.removing_player == gs.my_player_id {
+            my_player := get_my_player(gs)
+            // @Note: Here we assume we only remove enemy minions.
+            // If we somehow remove the heavy minion on our own team, an interrupt will not trigger.
+            if gs.minion_counts[get_enemy_team(my_player.team)] == 0 {
+                become_interrupted (
+                    gs,
+                    0,  // Host ID
+                    Wave_Push_Interrupt{my_player.team},
+                    Resolve_Current_Action_Event{},
+                )
+            }
+            append(&gs.event_queue, Resolve_Current_Action_Event{})
+        }
+
 
     case Minion_Spawn_Event:
         space := &gs.board[var.target.x][var.target.y]
@@ -990,16 +1026,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             log.infof("Attack strength: %v", attack_strength)
             // Here we assume the target must be an enemy. Enemy should always be in the selection flags for attacks.
             if MINION_FLAGS & space.flags != {} {
-                if defeat_minion(gs, target) {  // Add a wave push interrupt if the minion defeated was the last one
-                    become_interrupted (
-                        gs,
-                        0,  // Host ID
-                        Wave_Push_Interrupt{get_my_player(gs).team},
-                        Resolve_Current_Action_Event{},
-                    )
-                } else {
-                    append(&gs.event_queue, Resolve_Current_Action_Event{})
-                }
+                broadcast_game_event(gs, Minion_Defeat_Event{target, gs.my_player_id})
             } else {
                 owner := space.owner
                 become_interrupted (
@@ -1034,38 +1061,17 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         case Minion_Defeat_Action:
             target := calculate_implicit_target(gs, action_type.target, calc_context)
-            space := gs.board[target.x][target.y]
-            if MINION_FLAGS & space.flags != {} {
-                if defeat_minion(gs, target) {  // Add a wave push interrupt if the minion defeated was the last one
-                    become_interrupted (
-                        gs,
-                        0,  // Host ID
-                        Wave_Push_Interrupt{get_my_player(gs).team},
-                        Resolve_Current_Action_Event{},
-                    )
-                } else {
-                    append(&gs.event_queue, Resolve_Current_Action_Event{})
-                }
-            }
+            broadcast_game_event(gs, Minion_Defeat_Event{target, gs.my_player_id})
 
         case Minion_Removal_Action:
             minions_to_remove := calculate_implicit_target_slice(gs, action_type.targets)
-            interrupted: bool
-            for minion in minions_to_remove {
-                if remove_minion(gs, minion) {  // Add a wave push interrupt if the minion defeated was the last one
-                    become_interrupted (
-                        gs,
-                        0,  // Host ID
-                        Wave_Push_Interrupt{get_my_player(gs).team},
-                        Resolve_Current_Action_Event{},
-                    )
-                    interrupted = true
-                    break  // (?)  Technically only the last minion should ever cause a wave push
-                }
+            removal_event: Minion_Removal_Event
+            removal_event.num_targets = len(minions_to_remove)
+            removal_event.removing_player = gs.my_player_id
+            for target, index in minions_to_remove {
+                removal_event.targets[index] = target
             }
-            if !interrupted {
-                append(&gs.event_queue, Resolve_Current_Action_Event{})
-            }
+            broadcast_game_event(gs, removal_event)
             
         case Jump_Action:
             jump_index := calculate_implicit_action_index(gs, action_type.jump_index, calc_context)
