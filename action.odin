@@ -150,10 +150,13 @@ Swap_Action :: struct {
 
 Action_Variable :: union {
     Implicit_Condition,
+    Implicit_Quantity,
 }
 
 Save_Variable_Action :: struct {
     variable: Action_Variable,
+    label: Action_Value_Label,
+    global: bool,
 }
 
 Choose_Dead_Minion_Type_Action :: struct {}

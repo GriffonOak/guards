@@ -193,7 +193,7 @@ card_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, eleme
 
 create_texture_for_card :: proc(card: ^Card_Data) {
     if card.tier > 3 do return
-    
+
     context.allocator = context.temp_allocator
 
     render_texture := load_render_texture(i32(CARD_TEXTURE_SIZE.x), i32(CARD_TEXTURE_SIZE.y))
@@ -539,5 +539,8 @@ discard_card :: proc(gs: ^Game_State, card: ^Card) {
 
     ui_card_slice[prev_discarded_cards], ui_card_slice[index] = ui_card_slice[index], ui_card_slice[prev_discarded_cards]
 
+
+    // Need to set turn played here for duelist cards. Shouldn't matter otherwise.
+    card.turn_played = gs.turn_counter
     card.state = .Discarded
 }

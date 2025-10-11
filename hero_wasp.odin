@@ -345,7 +345,7 @@ wasp_cards := []Card_Data {
             Action {
                 tooltip = error_tooltip,
                 variant = Place_Action {
-                    source = Labelled_Target{.Place_Target},
+                    source = Labelled_Local_Variable{.Place_Target},
                     destination = Previously_Chosen_Target{},
                 },
             },
@@ -555,12 +555,12 @@ wasp_cards := []Card_Data {
             },
             Action {
                 variant = Save_Variable_Action {
-                    Greater_Than {  // @Note: It would be nice to have a better way of expressing this
+                    variable = Implicit_Condition(Greater_Than {  // @Note: It would be nice to have a better way of expressing this
                         Count_Targets {
                             Target_Is{Previously_Chosen_Target{}},
                             Target_Contains_Any{{.Hero}},
                         }, 0,
-                    },
+                    }),
                 },
             },
             Action {
@@ -656,7 +656,7 @@ wasp_cards := []Card_Data {
             Action {
                 tooltip = error_tooltip,
                 variant = Place_Action {
-                    source = Labelled_Target{.Place_Target},
+                    source = Labelled_Local_Variable{.Place_Target},
                     destination = Previously_Chosen_Target{},
                 },
             },

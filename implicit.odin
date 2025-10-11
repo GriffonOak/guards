@@ -3,12 +3,12 @@ package guards
 import "core:log"
 import "core:reflect"
 
-My_Player_ID :: struct {}
+// My_Player_ID :: struct {}
 
-Implicit_Player_ID :: union {
-    Player_ID,
-    My_Player_ID,
-}
+// Implicit_Player_ID :: union {
+//     Player_ID,
+//     My_Player_ID,
+// }
 
 Calculation_Context :: struct {
     card_id: Card_ID,
@@ -69,6 +69,14 @@ My_Team_Total_Dead_Minions :: struct {}
 
 My_Level :: struct {}
 
+Player_ID_Of :: struct {
+    target: Implicit_Target,
+}
+
+Labelled_Global_Variable :: struct {
+    label: Action_Value_Label,
+}
+
 Count_Card_Targets :: distinct []Implicit_Condition
 
 Card_Turn_Played :: struct {}
@@ -99,6 +107,8 @@ Implicit_Quantity :: union {
     Heroes_Defeated_This_Round,
     My_Team_Total_Dead_Minions,
     My_Level,
+    Player_ID_Of,
+    Labelled_Global_Variable,
     Sum,
     Product,
     Min,
@@ -129,7 +139,7 @@ Self :: struct {}
 
 Previously_Chosen_Target :: struct {}
 
-Labelled_Target :: struct {
+Labelled_Local_Variable :: struct {
     label: Action_Value_Label,
 }
 
@@ -145,7 +155,7 @@ Implicit_Target :: union {
     Current_Target,
     Previous_Target,
     Previously_Chosen_Target,
-    Labelled_Target,
+    Labelled_Local_Variable,
     Top_Blocked_Spawnpoint,
 
     // Requires attack interrupt in interrupt stack
@@ -418,6 +428,20 @@ calculate_implicit_quantity :: proc(
         my_player := get_my_player(gs)
         return my_player.hero.level
 
+    case Player_ID_Of:
+        target := calculate_implicit_target(gs, quantity.target, calc_context)
+        space := gs.board[target.x][target.y]
+        return space.owner
+
+    case Labelled_Global_Variable:
+        #reverse for action_value in gs.global_memory {
+            if action_value.label == quantity.label {
+                return action_value.variant.(Saved_Integer).integer
+            }
+        }
+        log.assert(false, "Could not find global variable with label!", loc)
+        return
+
     case Current_Turn:
         return gs.turn_counter
 
@@ -505,7 +529,7 @@ calculate_implicit_target :: proc(
     case Previously_Chosen_Target:
         return get_top_action_value_of_type(gs, Target)^
 
-    case Labelled_Target:
+    case Labelled_Local_Variable:
         return get_top_action_value_of_type(gs, Target, label = target.label)^
 
     case Top_Blocked_Spawnpoint:

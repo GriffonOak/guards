@@ -259,7 +259,7 @@ swift_cards := []Card_Data {
             Action {  // 3
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Labelled_Target{.Attack_Target},
+                    target = Labelled_Local_Variable{.Attack_Target},
                     strength = Card_Value{.Attack},
                 },
             },
@@ -479,7 +479,7 @@ swift_cards := []Card_Data {
             Action {  // 3
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Labelled_Target{.Attack_Target},
+                    target = Labelled_Local_Variable{.Attack_Target},
                     strength = Card_Value{.Attack},
                 },
             },

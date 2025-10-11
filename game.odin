@@ -44,6 +44,7 @@ Active_Effect_Kind :: enum {
 
     Arien_Spell_Break,
     Arien_Limit_Movement,
+    Arien_Duelist,
 
     Dodger_Attack_Debuff,
 
@@ -169,6 +170,8 @@ Action_Value_Label :: enum {
     Attack_Target,
     Movement_Target,
     Place_Target,
+
+    Arien_Dueling_Partner,
 }
 
 Chosen_Quantity :: struct {
@@ -187,10 +190,17 @@ Saved_Boolean :: struct {
     boolean: bool,
 }
 
+Saved_Integer :: struct {
+    integer: int,
+}
+
 Chosen_Minion_Type :: struct {
     minion_type: Space_Flag,
 }
 
+
+// @Cleanup: seems to be some semantic overlap between this union and the labelling system.
+// Might be better to trim this union down and rely more on labelling.
 Action_Value_Variant :: union {
     Target,
     Path,
@@ -198,6 +208,7 @@ Action_Value_Variant :: union {
     Chosen_Quantity,
     Repeat_Count,
     Saved_Boolean,
+    Saved_Integer,
     Choice_Taken,
     Chosen_Minion_Type,
 }
@@ -230,6 +241,7 @@ Game_State :: struct {
     interrupt_stack: [dynamic]Expanded_Interrupt,
     action_count: int,
     action_memory: [dynamic]Action_Value,
+    global_memory: [dynamic]Action_Value,
 
     event_queue: [dynamic]Event,
     board: [GRID_WIDTH][GRID_HEIGHT]Space,

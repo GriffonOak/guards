@@ -49,7 +49,7 @@ arien_cards := []Card_Data {
             Action {  // 3
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Labelled_Target{.Attack_Target},
+                    target = Labelled_Local_Variable{.Attack_Target},
                     strength = Card_Value{.Attack},
                 },
             },
@@ -135,7 +135,7 @@ arien_cards := []Card_Data {
             Action {  // 3
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Labelled_Target{.Attack_Target},
+                    target = Labelled_Local_Variable{.Attack_Target},
                     strength = Card_Value{.Attack},
                 },
             },
@@ -238,7 +238,7 @@ arien_cards := []Card_Data {
             Action {  // 3
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Labelled_Target{.Attack_Target},
+                    target = Labelled_Local_Variable{.Attack_Target},
                     strength = Card_Value{.Attack},
                 },
             },
@@ -366,7 +366,7 @@ arien_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Expert Duelist",  // @Incomplete, active effect
+    Card_Data { name = "Expert Duelist",
         color           = .Blue,
         tier            = 2,
         values          = #partial{.Initiative = 10, .Defense = 6, .Movement = 3},
@@ -377,6 +377,32 @@ arien_cards := []Card_Data {
             Action {
                 variant = Defend_Action {  // No minion modifiers as part of this calculation...
                     strength = Card_Value{.Defense},
+                },
+            },
+            Action {
+                variant = Save_Variable_Action {
+                    variable = Implicit_Quantity(Player_ID_Of{Attacker{}}),
+                    label = .Arien_Dueling_Partner,
+                    global = true,
+                },
+            },
+            Action {
+                variant = Add_Active_Effect_Action {
+                    effect = Active_Effect {
+                        kind = .Arien_Duelist,
+                        timing = Single_Turn(Card_Turn_Played{}),
+                        affected_targets = {
+                            Are_Enemies{Self{}, Card_Owner{}},
+                            Not{Equal{
+                                Player_ID_Of{Self{}},
+                                Labelled_Global_Variable{.Arien_Dueling_Partner},
+                            }},
+                            Target_Is{Card_Owner{}},
+                        },
+                        outcomes = {
+                            Target_Counts_As{{.Immune_Attacks}},
+                        },
+                    },
                 },
             },
         },
@@ -483,7 +509,7 @@ arien_cards := []Card_Data {
             Action {  // 3
                 tooltip = "Waiting for opponent to defend...",
                 variant = Attack_Action {
-                    target = Labelled_Target{.Attack_Target},
+                    target = Labelled_Local_Variable{.Attack_Target},
                     strength = Card_Value{.Attack},
                 },
             },
@@ -612,7 +638,7 @@ arien_cards := []Card_Data {
             },
             Action {
                 variant = Save_Variable_Action {
-                    variable = Equal{Distance_Between{Self{}, Previously_Chosen_Target{}}, 1},
+                    variable = Implicit_Condition(Equal{Distance_Between{Self{}, Previously_Chosen_Target{}}, 1}),
                 },
             },
             Action {
@@ -631,7 +657,7 @@ arien_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Master Duelist",  // @Incomplete, active effect
+    Card_Data { name = "Master Duelist",
         color           = .Blue,
         tier            = 3,
         values          = #partial{.Initiative = 10, .Defense = 6, .Movement = 3},
@@ -642,6 +668,32 @@ arien_cards := []Card_Data {
             Action {
                 variant = Defend_Action {  // No minion modifiers as part of this calculation...
                     strength = Card_Value{.Defense},
+                },
+            },
+            Action {
+                variant = Save_Variable_Action {
+                    variable = Implicit_Quantity(Player_ID_Of{Attacker{}}),
+                    label = .Arien_Dueling_Partner,
+                    global = true,
+                },
+            },
+            Action {
+                variant = Add_Active_Effect_Action {
+                    effect = Active_Effect {
+                        kind = .Arien_Duelist,
+                        timing = Round{},
+                        affected_targets = {
+                            Are_Enemies{Self{}, Card_Owner{}},
+                            Not{Equal{
+                                Player_ID_Of{Self{}},
+                                Labelled_Global_Variable{.Arien_Dueling_Partner},
+                            }},
+                            Target_Is{Card_Owner{}},
+                        },
+                        outcomes = {
+                            Target_Counts_As{{.Immune_Attacks}},
+                        },
+                    },
                 },
             },
         },

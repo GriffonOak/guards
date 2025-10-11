@@ -111,6 +111,10 @@ Choice_Taken_Event :: struct {
     jump_index: Action_Index,
 }
 
+Add_Global_Variable_Event :: struct {
+    value: Action_Value,
+}
+
 Begin_Resolution_Stage_Event :: struct{}
 
 Resolve_Same_Team_Tied_Event :: struct {
@@ -220,6 +224,8 @@ Event :: union {
     Quantity_Chosen_Event,
 
     Choice_Taken_Event,
+
+    Add_Global_Variable_Event,
 
     Begin_Interrupt_Event,
     Resolve_Interrupt_Event,
@@ -778,6 +784,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         if choice_action.cannot_repeat do add_action_value(gs, Choice_Taken{var.choice_index}, index = action_index)
         append(&gs.event_queue, Resolve_Current_Action_Event{var.jump_index})
 
+    case Add_Global_Variable_Event:
+        append(&gs.global_memory, var.value)
+
     case Begin_Interrupt_Event:
         interrupt := var.interrupt
         if interrupt.interrupted_player != gs.my_player_id {  // The interruptee should already have added to their own interrupt stack in become_interrupted
@@ -1192,7 +1201,10 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             switch variable in action_type.variable {
             case Implicit_Condition:
                 boolean := calculate_implicit_condition(gs, variable, calc_context)
-                add_action_value(gs, Saved_Boolean{boolean})
+                add_action_value(gs, Saved_Boolean{boolean}, label = action_type.label, global = action_type.global)
+            case Implicit_Quantity:
+                integer := calculate_implicit_quantity(gs, variable, calc_context)
+                add_action_value(gs, Saved_Integer{integer}, label = action_type.label, global = action_type.global)
             }
 
             append(&gs.event_queue, Resolve_Current_Action_Event{})
@@ -1488,6 +1500,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Begin_Upgrading_Event:
         clear(&gs.ongoing_active_effects)
+        clear(&gs.global_memory)
 
         // Return markers
         for &player in gs.players {

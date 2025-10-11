@@ -245,7 +245,7 @@ sabina_cards := []Card_Data {
             },
             Action {
                 variant = Save_Variable_Action {
-                    variable = Equal{Distance_Between{Self{}, Previously_Chosen_Target{}}, 1},
+                    variable = Implicit_Condition(Equal{Distance_Between{Self{}, Previously_Chosen_Target{}}, 1}),
                 },
             },
             Action {
@@ -489,7 +489,7 @@ sabina_cards := []Card_Data {
             },
             Action {
                 variant = Save_Variable_Action {
-                    variable = Equal{Distance_Between{Self{}, Previously_Chosen_Target{}}, 1},
+                    variable = Implicit_Condition(Equal{Distance_Between{Self{}, Previously_Chosen_Target{}}, 1}),
                 },
             },
             Action {

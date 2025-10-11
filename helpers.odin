@@ -206,19 +206,26 @@ add_action_value :: proc(
     value: Action_Value_Variant,
     index: Action_Index = {},
     label: Action_Value_Label = .None,
+    global: bool = false,
 ) {
     // depth := len(gs.interrupt_stack)
     index := index
     if index == {} {
         index = get_my_player(gs).hero.current_action_index
     }
-    append(&gs.action_memory, Action_Value {
+    action_value := Action_Value {
         action_index = index,
         action_count = gs.action_count,
         // depth = depth,
         label = label,
         variant = value,
-    })
+    }
+    if !global {
+        append(&gs.action_memory, action_value)
+    } else {
+        log.assert(label != .None, "Cannot add a non-labelled global variable!!!")
+        broadcast_game_event(gs, Add_Global_Variable_Event{action_value})
+    }
 }
 
 get_memory_slice_for_index :: proc(gs: ^Game_State, index: Action_Index, count: int = 0) -> []Action_Value {
