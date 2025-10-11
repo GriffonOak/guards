@@ -32,6 +32,7 @@ arien_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance{Previously_Chosen_Target{}, {1, 1}},
                         Target_Contains_Any{UNIT_FLAGS},
+                        Not{Target_Contains_Any{{.Cannot_Move}}},
                         Not{Target_Is{Self{}}},
                     },
                 },
@@ -149,7 +150,7 @@ arien_cards := []Card_Data {
         primary_effect  = []Action {
             Action {
                 tooltip = "Choose a space in range without a spawn point and not adjacent to an empty spawn point.",
-                condition = Not{Self_Contains_Any{{.Cannot_Place}}},
+                condition = Not{Contains_Any{Self{}, {.Cannot_Place}}},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -279,6 +280,7 @@ arien_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
                         Target_Contains_Any{UNIT_FLAGS},
+                        Not{Target_Contains_Any{{.Cannot_Push}}},
                         Target_Is_Enemy_Unit{},
                     },
                 },
@@ -309,7 +311,7 @@ arien_cards := []Card_Data {
         primary_effect  = []Action {
             Action {
                 tooltip = "Choose a space in range without a spawn point and not adjacent to an empty spawn point.",
-                condition = Not{Self_Contains_Any{{.Cannot_Place}}},
+                condition = Not{Contains_Any{Self{}, {.Cannot_Place}}},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -347,7 +349,7 @@ arien_cards := []Card_Data {
         primary_effect  = []Action {
             Action {
                 tooltip = "Target an enemy minion in range.",
-                condition = Not{Self_Contains_Any{{.Cannot_Swap}}},
+                condition = Not{Contains_Any{Self{}, {.Cannot_Swap}}},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -530,6 +532,7 @@ arien_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
                         Target_Contains_Any{UNIT_FLAGS},
+                        Not{Target_Contains_Any{{.Cannot_Push}}},
                         Target_Is_Enemy_Unit{},
                     },
                 },
@@ -560,7 +563,7 @@ arien_cards := []Card_Data {
         primary_effect  = []Action {
             Action {
                 tooltip = "Choose a space in range without a spawn point.",
-                condition = Not{Self_Contains_Any{{.Cannot_Place}}},
+                condition = Not{Contains_Any{Self{}, {.Cannot_Place}}},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -600,7 +603,7 @@ arien_cards := []Card_Data {
                     },
                 },
                 optional = Greater_Than{Repeat_Count{}, 0},
-                condition = Not{Self_Contains_Any{{.Cannot_Swap}}},
+                condition = Not{Contains_Any{Self{}, {.Cannot_Swap}}},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {

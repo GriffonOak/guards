@@ -29,7 +29,10 @@ sabina_cards := []Card_Data {
                 },
             },
             Action {
-                condition = Equal{Distance_Between{Self{}, Previously_Chosen_Target{}}, 1},
+                condition = And{
+                    Equal{Distance_Between{Self{}, Previously_Chosen_Target{}}, 1},
+                    Not{Contains_Any{Previously_Chosen_Target{}, {.Cannot_Push}}},
+                },
                 variant = Push_Action{
                     origin = Self{},
                     targets = Previous_Choices{},
@@ -46,7 +49,7 @@ sabina_cards := []Card_Data {
         primary_effect  = []Action {
             Action {
                 tooltip = "Target a friendly minion in radius.",
-                condition = Not{Self_Contains_Any{{.Cannot_Swap}}},
+                condition = Not{Contains_Any{Self{}, {.Cannot_Swap}}},
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
@@ -131,6 +134,7 @@ sabina_cards := []Card_Data {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Target_Contains_Any{MINION_FLAGS},
                         Target_Is_Friendly_Unit{},
+                        Not{Target_Contains_Any{{.Cannot_Move}}},
                     },
                 },
             },
@@ -296,6 +300,7 @@ sabina_cards := []Card_Data {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Target_Contains_Any{MINION_FLAGS},
                         Target_Is_Friendly_Unit{},
+                        Not{Target_Contains_Any{{.Cannot_Move}}},
                     },
                 },
             },
@@ -545,6 +550,7 @@ sabina_cards := []Card_Data {
                         Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
                         Target_Contains_Any{MINION_FLAGS},
                         Target_Is_Friendly_Unit{},
+                        Not{Target_Contains_Any{{.Cannot_Move}}},
                     },
                 },
             },

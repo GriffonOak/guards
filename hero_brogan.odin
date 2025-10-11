@@ -44,7 +44,7 @@ brogan_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Bulwark",  // @Incomplete, push move & swap immunity
+    Card_Data { name = "Bulwark",
         color =         .Silver,
         values =        #partial{.Initiative = 12, .Defense = 4, .Radius = 4},
         primary =       .Skill,
@@ -63,6 +63,29 @@ brogan_cards := []Card_Data {
                 tooltip = error_tooltip,
                 variant = Retrieve_Card_Action {
                     card = Previous_Card_Choice{},
+                },
+            },
+            Action {
+                tooltip = error_tooltip,
+                variant = Add_Active_Effect_Action {
+                    effect = Active_Effect {
+                        kind = .Brogan_Bulwark,
+                        timing = Single_Turn(Card_Turn_Played{}),
+                        affected_targets = {
+                            Are_Enemies{Self{}, Card_Owner{}},
+                            Target_Within_Distance{Card_Owner{}, {0, Card_Value{.Radius}}},
+                            Target_Contains_Any{UNIT_FLAGS},
+                            Not{Target_Is_Enemy_Of{Card_Owner{}}},
+                        },
+                        outcomes = {
+                            Target_Counts_As{{
+                                .Cannot_Move,
+                                .Cannot_Push,
+                                .Cannot_Swap,
+                                .Cannot_Place,
+                            }},
+                        },
+                    },
                 },
             },
         },
@@ -147,6 +170,7 @@ brogan_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
+                        Not{Target_Contains_Any{{.Cannot_Push}}},
                         Or {
                             And {
                                 Target_Contains_Any{UNIT_FLAGS},
@@ -356,6 +380,7 @@ brogan_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
+                        Not{Target_Contains_Any{{.Cannot_Push}}},
                         Or {
                             And {
                                 Target_Contains_Any{UNIT_FLAGS},
@@ -604,6 +629,7 @@ brogan_cards := []Card_Data {
                     num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
+                        Not{Target_Contains_Any{{.Cannot_Push}}},
                         Or {
                             And {
                                 Target_Contains_Any{UNIT_FLAGS},

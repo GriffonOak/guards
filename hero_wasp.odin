@@ -374,6 +374,7 @@ wasp_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
+                        Not{Target_Contains_Any{{.Cannot_Move}}},
                         Or {
                             And {
                                 Equal{Repeat_Count{}, 0},
@@ -641,6 +642,7 @@ wasp_cards := []Card_Data {
                 variant = Choose_Target_Action {
                     num_targets = 1,
                     conditions = {
+                        Not{Target_Contains_Any{{.Cannot_Move}}},
                         Or {
                             And {
                                 Equal{Repeat_Count{}, 0},

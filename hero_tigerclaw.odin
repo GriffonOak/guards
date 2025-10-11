@@ -73,7 +73,7 @@ tigerclaw_cards := []Card_Data {
                             },
                         }, 0,
                     },
-                    Not{Self_Contains_Any{{.Cannot_Place}}},
+                    Not{Contains_Any{Self{}, {.Cannot_Place}}},
                 },
                 variant = Choose_Target_Action {
                     num_targets = 1,

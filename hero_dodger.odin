@@ -342,6 +342,7 @@ dodger_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance {Self{}, {1, 1}},
                         Target_Contains_Any{MINION_FLAGS},
+                        Not{Target_Contains_Any{{.Cannot_Move}}},
                     },
                 },
             },
@@ -588,6 +589,7 @@ dodger_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance {Self{}, {1, 1}},
                         Target_Contains_Any{MINION_FLAGS},
+                        Not{Target_Contains_Any{{.Cannot_Move}}},
                     },
                 },
             },
@@ -610,6 +612,7 @@ dodger_cards := []Card_Data {
                     conditions = {
                         Target_Within_Distance {Self{}, {1, 1}},
                         Target_Contains_Any{MINION_FLAGS},
+                        Not{Target_Contains_Any{{.Cannot_Move}}},
                     },
                 },
             },

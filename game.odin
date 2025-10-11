@@ -36,14 +36,21 @@ Game_Stage :: enum {
 
 Active_Effect_Kind :: enum {
     None,
+
     Xargatha_Freeze,
     Xargatha_Defeat,
+
     Swift_Delayed_Jump,
+
     Arien_Spell_Break,
     Arien_Limit_Movement,
+
     Dodger_Attack_Debuff,
+
     Wasp_Magnetic_Dagger,
     Wasp_Static_Barrier,
+
+    Brogan_Bulwark,
 }
 
 End_Of_Turn :: struct {
