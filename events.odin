@@ -641,6 +641,20 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             get_player_by_id(gs, var.defeating_player).hero.coins += 2
         }
 
+        // Swift farm
+        for _, effect in gs.ongoing_active_effects {
+            effect_calc_context := Calculation_Context{target = var.target, card_id = effect.parent_card_id}
+            if !effect_timing_valid(gs, effect.timing, effect_calc_context) do continue
+            for outcome in effect.outcomes {
+                if _, ok := outcome.(Gain_Extra_Coins_On_Defeat); !ok do continue
+                if !calculate_implicit_condition(gs, And(effect.affected_targets), effect_calc_context) do continue
+                swift_coin_count := &get_top_global_variable_by_label(gs, .Swift_Farm_Defeat_Count).variant.(Saved_Integer)
+                swift_coin_count.integer += 1
+                owner := get_player_by_id(gs, effect.parent_card_id.owner_id)
+                owner.hero.coins += 1
+            }
+        }
+
         if gs.my_player_id == var.defeating_player {
             removal_event: Minion_Removal_Event
             removal_event.targets[0] = var.target
@@ -716,6 +730,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         append(&gs.blocked_spawns[space.spawnpoint_team], var.target)
 
     case Hero_Defeated_Event:
+
+        // @Todo: remove active effects on death
         defeated := get_player_by_id(gs, var.defeated)
         defeated_hero := &defeated.hero
         defeated_hero.dead = true

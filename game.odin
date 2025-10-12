@@ -41,6 +41,7 @@ Active_Effect_Kind :: enum {
     Xargatha_Defeat,
 
     Swift_Delayed_Jump,
+    Swift_Farm,
 
     Arien_Spell_Break,
     Arien_Limit_Movement,
@@ -93,11 +94,18 @@ Augment_Card_Value :: struct {
     augment: int,
 }
 
+// @Note: It would be nice to just have swift interrupt here
+// with a Gain_Coins action, but I'm not sure how to handle
+// two people interrupting a defeat at the same time 
+// (Imagine brogan shield overlaps with swift farm)
+Gain_Extra_Coins_On_Defeat :: struct {}
+
 Active_Effect_Outcome :: union {
     Disallow_Action,
     Target_Counts_As,
     Limit_Movement,
     Augment_Card_Value,
+    Gain_Extra_Coins_On_Defeat,
 }
 
 Active_Effect :: struct {
@@ -172,6 +180,7 @@ Action_Value_Label :: enum {
     Place_Target,
 
     Arien_Dueling_Partner,
+    Swift_Farm_Defeat_Count,
 }
 
 Chosen_Quantity :: struct {

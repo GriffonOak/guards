@@ -296,7 +296,7 @@ swift_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Mark for Death",  // @Unimplemented
+    Card_Data { name = "Mark for Death",
         color =         .Green,
         tier =          2,
         alternate =     true,
@@ -304,7 +304,56 @@ swift_cards := []Card_Data {
         primary =       .Skill,
         item =          .Initiative,
         text =          "Move an enemy minion in radius up\nto 3 spaces to a space in radius.\nNext turn: The first time an enemy minion\nin radius is defeated, gain 1 coin.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                tooltip = "Target an enemy minion in radius.",
+                variant = Choose_Target_Action {
+                    num_targets = 1,
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Contains_Any{MINION_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {
+                tooltip = "Move the minion up to 3 spaces to a space in radius.",
+                variant = Movement_Action {
+                    target = Previously_Chosen_Target{},
+                    max_distance = 3,
+                    destination_criteria = {
+                        conditions = {
+                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        },
+                    },
+                },
+            },
+            Action {
+                variant = Save_Variable_Action {
+                    variable = 0,
+                    label = .Swift_Farm_Defeat_Count,
+                    global = true,
+                },
+            },
+            Action {
+                tooltip = error_tooltip,
+                variant = Add_Active_Effect_Action {
+                    effect = Active_Effect {
+                        kind = .Swift_Farm,
+                        timing = Single_Turn(Sum{Card_Turn_Played{}, 1}),
+                        affected_targets = {
+                            Greater_Than{1, Labelled_Global_Variable{.Swift_Farm_Defeat_Count}},
+                            Target_Within_Distance{Card_Owner{}, {1, Card_Value{.Radius}}},
+                            Target_Contains_Any{MINION_FLAGS},
+                            Target_Is_Enemy_Of{Card_Owner{}},
+                        },
+                        outcomes = {
+                            Gain_Extra_Coins_On_Defeat{},
+                        },
+                    },
+                },
+            },
+        },
     },
     Card_Data { name = "Assault Jump",
         color =         .Blue,
@@ -517,7 +566,7 @@ swift_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Hunting Season",  // @Unimplemented
+    Card_Data { name = "Hunting Season",
         color =         .Green,
         tier =          3,
         alternate =     true,
@@ -525,7 +574,85 @@ swift_cards := []Card_Data {
         primary =       .Skill,
         item =          .Initiative,
         text =          "Move up to two enemy minions in radius,\nupto 3 spaces each, to a space in radius.\nNext turn: The first two times an enemy\nminion in radius is defeated, gain 1 coin.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {  // 0
+                tooltip = "Target up to two enemy minion in radius.",
+                optional = true,
+                skip_index = {index = 4},
+                variant = Choose_Target_Action {
+                    num_targets = 2,
+                    flags = {.Up_To},
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Contains_Any{MINION_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {  // 1
+                tooltip = "Move the minion up to 3 spaces to a space in radius.",
+                variant = Movement_Action {
+                    target = Previously_Chosen_Target{},
+                    max_distance = 3,
+                    destination_criteria = {
+                        conditions = {
+                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        },
+                    },
+                },
+            },
+            Action {  // 2
+                tooltip = "You may target another enemy minion in radius.",
+                optional = true,
+                skip_index = {index = 4},
+                variant = Choose_Target_Action {
+                    num_targets = 2,
+                    flags = {.Up_To, .Not_Previously_Targeted},
+                    conditions = {
+                        Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        Target_Contains_Any{MINION_FLAGS},
+                        Target_Is_Enemy_Unit{},
+                    },
+                },
+            },
+            Action {  // 3
+                tooltip = "Move the minion up to 3 spaces to a space in radius.",
+                variant = Movement_Action {
+                    target = Previously_Chosen_Target{},
+                    max_distance = 3,
+                    destination_criteria = {
+                        conditions = {
+                            Target_Within_Distance{Self{}, {1, Card_Value{.Radius}}},
+                        },
+                    },
+                },
+            },
+            Action {  // 4
+                variant = Save_Variable_Action {
+                    variable = 0,
+                    label = .Swift_Farm_Defeat_Count,
+                    global = true,
+                },
+            },
+            Action {  // 5
+                tooltip = error_tooltip,
+                variant = Add_Active_Effect_Action {
+                    effect = Active_Effect {
+                        kind = .Swift_Farm,
+                        timing = Single_Turn(Sum{Card_Turn_Played{}, 1}),
+                        affected_targets = {
+                            Greater_Than{2, Labelled_Global_Variable{.Swift_Farm_Defeat_Count}},
+                            Target_Within_Distance{Card_Owner{}, {1, Card_Value{.Radius}}},
+                            Target_Contains_Any{MINION_FLAGS},
+                            Target_Is_Enemy_Of{Card_Owner{}},
+                        },
+                        outcomes = {
+                            Gain_Extra_Coins_On_Defeat{},
+                        },
+                    },
+                },
+            },
+        },
     },
     Card_Data { name = "Drop Trooper",
         color =         .Blue,

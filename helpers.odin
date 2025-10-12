@@ -300,6 +300,13 @@ get_top_action_slice_of_type :: proc(gs: ^Game_State, $T: typeid) -> []Action_Va
     return gs.action_memory[start_index + 1 : end_index + 1]
 }
 
+get_top_global_variable_by_label :: proc(gs: ^Game_State, label: Action_Value_Label) -> ^Action_Value {
+    #reverse for &value in gs.global_memory {
+        if value.label == label do return &value
+    }
+    return nil
+}
+
 target_contains_any :: proc(gs: ^Game_State, target: Target, flags: Space_Flags) -> bool {
     space := gs.board[target.x][target.y]
     if flags & space.flags != {} do return true

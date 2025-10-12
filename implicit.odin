@@ -434,13 +434,9 @@ calculate_implicit_quantity :: proc(
         return space.owner
 
     case Labelled_Global_Variable:
-        #reverse for action_value in gs.global_memory {
-            if action_value.label == quantity.label {
-                return action_value.variant.(Saved_Integer).integer
-            }
-        }
-        log.assert(false, "Could not find global variable with label!", loc)
-        return
+        action_value := get_top_global_variable_by_label(gs, quantity.label)
+        log.assert(action_value != nil, "Could not find global variable with label!", loc)
+        return action_value.variant.(Saved_Integer).integer
 
     case Current_Turn:
         return gs.turn_counter
