@@ -55,6 +55,7 @@ Active_Effect_Kind :: enum {
     Tigerclaw_Blend_Into_Shadows,
 
     Brogan_Bulwark,
+    Brogan_Shield,
 }
 
 End_Of_Turn :: struct {
@@ -93,6 +94,9 @@ Augment_Card_Value :: struct {
     value_kind: Card_Value_Kind,
     augment: int,
 }
+Interrupt_On_Defeat :: struct {
+    interrupt_index: Action_Index,
+}
 
 // @Note: It would be nice to just have swift interrupt here
 // with a Gain_Coins action, but I'm not sure how to handle
@@ -106,6 +110,7 @@ Active_Effect_Outcome :: union {
     Limit_Movement,
     Augment_Card_Value,
     Gain_Extra_Coins_On_Defeat,
+    Interrupt_On_Defeat,
 }
 
 Active_Effect :: struct {
@@ -181,6 +186,7 @@ Action_Value_Label :: enum {
 
     Arien_Dueling_Partner,
     Swift_Farm_Defeat_Count,
+    Brogan_Prevent_Next_Minion_Removal,
 }
 
 Chosen_Quantity :: struct {

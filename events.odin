@@ -660,11 +660,36 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             removal_event.targets[0] = var.target
             removal_event.num_targets = 1
             removal_event.removing_player = var.defeating_player
-            broadcast_game_event(gs, removal_event)
+
+            interrupted: bool
+            check_for_interrupt: for _, effect in gs.ongoing_active_effects {
+                effect_calc_context := Calculation_Context{target = var.target, card_id = effect.parent_card_id}
+                if !effect_timing_valid(gs, effect.timing, effect_calc_context) do continue
+                for outcome in effect.outcomes {
+                    interrupt_defeat, ok := outcome.(Interrupt_On_Defeat)
+                    if !ok do continue
+                    if !calculate_implicit_condition(gs, And(effect.affected_targets), effect_calc_context) do continue
+                    interrupted = true
+                    jump_index := interrupt_defeat.interrupt_index
+                    if jump_index.card_id == {} do jump_index.card_id = effect.parent_card_id
+                    owner_id := effect.parent_card_id.owner_id
+                    become_interrupted(gs, owner_id, jump_index, removal_event, global_resolution = true)
+                    break check_for_interrupt
+                }
+            }
+            if !interrupted {
+                broadcast_game_event(gs, removal_event)
+            }
         }
 
     case Minion_Removal_Event:
-        for target_index in 0..<var.num_targets {
+        minions: for target_index in 0..<var.num_targets {
+            for var, index in gs.global_memory {
+                if var.label == .Brogan_Prevent_Next_Minion_Removal {
+                    unordered_remove(&gs.global_memory, index)
+                    continue minions
+                }
+            }
             target := var.targets[target_index]
             space := &gs.board[target.x][target.y]
             log.assert(space.flags & MINION_FLAGS != {}, "Tried to remove a minion from a space with no minions!")
@@ -702,8 +727,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                     Wave_Push_Interrupt{my_player.team},
                     Resolve_Current_Action_Event{},
                 )
+            } else {
+                append(&gs.event_queue, Resolve_Current_Action_Event{})
             }
-            append(&gs.event_queue, Resolve_Current_Action_Event{})
         }
 
 
@@ -1221,6 +1247,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             case Implicit_Quantity:
                 integer := calculate_implicit_quantity(gs, variable, calc_context)
                 add_action_value(gs, Saved_Integer{integer}, label = action_type.label, global = action_type.global)
+            case:
+                add_action_value(gs, nil, label = action_type.label, global = action_type.global)
             }
 
             append(&gs.event_queue, Resolve_Current_Action_Event{})

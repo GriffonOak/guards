@@ -138,13 +138,58 @@ brogan_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Shield",  // @Unimplemented.
+    Card_Data { name = "Shield",
         color =         .Green,
         tier =          1,
-        values =        #partial{.Initiative = 6, .Defense = 4, .Movement = 2},
+        values =        #partial{.Initiative = 6, .Defense = 4, .Movement = 2, .Radius = 1},
         primary =       .Skill,
         text =          "This round: When any friendly minion in radius\nis defeated you may discard a silver card.\nIf you do, the minion is not removed.\n(The enemy hero still gains the coins for defeating the minion.)",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {  // 0
+                tooltip = error_tooltip,
+                variant = Add_Active_Effect_Action {
+                    effect = Active_Effect {
+                        kind = .Brogan_Shield,
+                        timing = Round{},
+                        affected_targets = {
+                            Target_Within_Distance{Card_Owner{}, {1, Card_Value{.Radius}}},
+                            Target_Contains_Any{MINION_FLAGS},
+                            Not{Target_Is_Enemy_Of{Card_Owner{}}},
+                        },
+                        outcomes = {
+                            Interrupt_On_Defeat {
+                                Action_Index{index = 2},
+                            },
+                        },
+                    },
+                },
+            },
+            Action {  // 1
+                variant = Halt_Action{},
+            },
+            Action {  // 2
+                tooltip = "Minion about to be removed! You may discard a silver card.",
+                optional = true,
+                variant = Choose_Card_Action {
+                    criteria = {
+                        Card_Owner_Is{Self{}},
+                        Card_State_Is{.In_Hand},
+                        Card_Color_Is{.Silver},
+                    },
+                },
+            },
+            Action {  // 3
+                variant = Discard_Card_Action {
+                    card = Previous_Card_Choice{},
+                },
+            },
+            Action {  // 4
+                variant = Save_Variable_Action {
+                    label = .Brogan_Prevent_Next_Minion_Removal,
+                    global = true,
+                },
+            },
+        },
     },
     Card_Data { name = "Brutal Jab",
         color =         .Blue,
@@ -313,14 +358,59 @@ brogan_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Bolster",  // @Unimplemented
+    Card_Data { name = "Bolster",
         color =         .Green,
         tier =          2,
         values =        #partial{.Initiative = 5, .Defense = 5, .Movement = 2, .Radius = 2},
         primary =       .Skill,
         item =          .Attack,
         text =          "This round: When any friendly minion in radius\nis defeated you may discard a silver card.\nIf you do, the minion is not removed.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {  // 0
+                tooltip = error_tooltip,
+                variant = Add_Active_Effect_Action {
+                    effect = Active_Effect {
+                        kind = .Brogan_Shield,
+                        timing = Round{},
+                        affected_targets = {
+                            Target_Within_Distance{Card_Owner{}, {1, Card_Value{.Radius}}},
+                            Target_Contains_Any{MINION_FLAGS},
+                            Not{Target_Is_Enemy_Of{Card_Owner{}}},
+                        },
+                        outcomes = {
+                            Interrupt_On_Defeat {
+                                Action_Index{index = 2},
+                            },
+                        },
+                    },
+                },
+            },
+            Action {  // 1
+                variant = Halt_Action{},
+            },
+            Action {  // 2
+                tooltip = "Minion about to be removed! You may discard a silver card.",
+                optional = true,
+                variant = Choose_Card_Action {
+                    criteria = {
+                        Card_Owner_Is{Self{}},
+                        Card_State_Is{.In_Hand},
+                        Card_Color_Is{.Silver},
+                    },
+                },
+            },
+            Action {  // 3
+                variant = Discard_Card_Action {
+                    card = Previous_Card_Choice{},
+                },
+            },
+            Action {  // 4
+                variant = Save_Variable_Action {
+                    label = .Brogan_Prevent_Next_Minion_Removal,
+                    global = true,
+                },
+            },
+        },
     },
     Card_Data { name = "War Drummer",
         color =         .Green,
@@ -570,14 +660,62 @@ brogan_cards := []Card_Data {
             },
         },
     },
-    Card_Data { name = "Fortify",  // @Unimplemented
+    Card_Data { name = "Fortify",
         color =         .Green,
         tier =          3,
         values =        #partial{.Initiative = 5, .Defense = 5, .Movement = 2, .Radius = 2},
         primary =       .Skill,
         item =          .Attack,
         text =          "This round: when any friendly minion in radius\nis defeated you may discard a basic card.\nIf you do, the minion is not removed.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {  // 0
+                tooltip = error_tooltip,
+                variant = Add_Active_Effect_Action {
+                    effect = Active_Effect {
+                        kind = .Brogan_Shield,
+                        timing = Round{},
+                        affected_targets = {
+                            Target_Within_Distance{Card_Owner{}, {1, Card_Value{.Radius}}},
+                            Target_Contains_Any{MINION_FLAGS},
+                            Not{Target_Is_Enemy_Of{Card_Owner{}}},
+                        },
+                        outcomes = {
+                            Interrupt_On_Defeat {
+                                Action_Index{index = 2},
+                            },
+                        },
+                    },
+                },
+            },
+            Action {  // 1
+                variant = Halt_Action{},
+            },
+            Action {  // 2
+                tooltip = "Minion about to be removed! You may discard a basic card.",
+                optional = true,
+                variant = Choose_Card_Action {
+                    criteria = {
+                        Card_Owner_Is{Self{}},
+                        Card_State_Is{.In_Hand},
+                        Or {
+                            Card_Color_Is{.Gold},
+                            Card_Color_Is{.Silver},
+                        },
+                    },
+                },
+            },
+            Action {  // 3
+                variant = Discard_Card_Action {
+                    card = Previous_Card_Choice{},
+                },
+            },
+            Action {  // 4
+                variant = Save_Variable_Action {
+                    label = .Brogan_Prevent_Next_Minion_Removal,
+                    global = true,
+                },
+            },
+        },
     },
     Card_Data { name = "Master Skald",
         color =         .Green,
