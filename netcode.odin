@@ -63,7 +63,14 @@ send_network_packet_socket :: proc(socket: net.TCP_Socket, net_event: Network_Pa
     net_event := net_event
     to_send := mem.ptr_to_bytes(&net_event)
 
-    net.send_tcp(socket, to_send)
+    bytes_sent := 0
+    for bytes_sent < size_of(Network_Packet) {
+        new_bytes_sent, err := net.send_tcp(socket, to_send[bytes_sent:])
+        if err != .None {
+            log.errorf("Network send error: %v", err)
+        }
+        bytes_sent += new_bytes_sent
+    }
 }
 
 
@@ -193,19 +200,24 @@ _thread_host_wait_for_clients :: proc(gs: ^Game_State, sock: net.TCP_Socket) {
 }
 
 _thread_listen_socket :: proc(gs: ^Game_State, socket: net.TCP_Socket) {
-    buf: [20 * size_of(Network_Packet)]byte
+    buf: [1 * size_of(Network_Packet)]byte
+    bytes_read := 0
     for {  // Probably this should end at some point
-        bytes_read, err := net.recv_tcp(socket, buf[:])
+        new_bytes_read, err := net.recv_tcp(socket, buf[bytes_read:])
         if err != nil {
-            log.errorf("Network receive error!")
+            log.errorf("Network receive error: %v", err)
+            bytes_read = 0
+            continue
         }
+        bytes_read += new_bytes_read
         if bytes_read >= size_of(Network_Packet) {
-            packets := slice.reinterpret([]Network_Packet, buf[:bytes_read])
+            packets := slice.reinterpret([]Network_Packet, buf[:])
             sync.mutex_lock(&gs.net_queue_mutex)
             for packet in packets {
                 append(&gs.network_queue, packet)
             }
             sync.mutex_unlock(&gs.net_queue_mutex)
+            bytes_read = 0
         }
     }
 }
