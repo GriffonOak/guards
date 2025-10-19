@@ -155,6 +155,28 @@ load_image_from_memory :: proc(file_type: cstring, file_data: rawptr, data_size:
     }
 }
 
+load_image_from_texture :: proc(texture: Texture) -> Image {
+    when !ODIN_TEST {
+        return rl.LoadImageFromTexture(texture)
+    } else {
+        return {}
+    }
+}
+
+gen_image_colour :: proc(width, height: i32, colour: Colour) -> Image {
+    when !ODIN_TEST {
+        return rl.GenImageColor(width, height, colour)
+    } else {
+        return {}
+    }
+}
+
+image_alpha_mask :: proc(image: ^Image, alpha_mask: Image) {
+    when !ODIN_TEST {
+        rl.ImageAlphaMask(image, alpha_mask)
+    }
+}
+
 load_texture_from_image :: proc(image: Image) -> Texture {
     when !ODIN_TEST {
         return rl.LoadTextureFromImage(image)

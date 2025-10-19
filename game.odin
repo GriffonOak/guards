@@ -361,6 +361,54 @@ create_card_textures :: proc() {
     }
 }
 
+setup_icons :: proc() {
+    minion_images: [Space_Flag]Image
+
+    for file in emoji {
+        emoji_image := load_image_from_memory(".png", raw_data(file.data), i32(len(file.data)))
+        emoji_texture := load_texture_from_image(emoji_image)
+        switch file.name {
+        case "axe.png":                 hero_icons[.Brogan]             = emoji_texture
+        case "goblin.png":              hero_icons[.Dodger]             = emoji_texture
+        case "gun.png":                 hero_icons[.Swift]              = emoji_texture
+        case "military-medal.png":      hero_icons[.Sabina]             = emoji_texture
+        case "money-with-wings.png":    hero_icons[.Tigerclaw]          = emoji_texture
+        case "skull.png":               hero_icons[.Wasp]               = emoji_texture
+        case "snake.png":               hero_icons[.Xargatha]           = emoji_texture
+        case "water-wave.png":          hero_icons[.Arien]              = emoji_texture
+
+        case "bow-and-arrow.png":
+            minion_icons[.Ranged_Minion] = emoji_texture
+            minion_images[.Ranged_Minion] = emoji_image
+        case "dagger.png":
+            minion_icons[.Melee_Minion] = emoji_texture
+            minion_images[.Melee_Minion] = emoji_image
+        case "moai.png":
+            minion_icons[.Heavy_Minion] = emoji_texture
+            minion_images[.Heavy_Minion] = emoji_image
+        }
+    }
+
+    spawnpoint_flags := Space_Flags{.Heavy_Minion_Spawnpoint, .Melee_Minion_Spawnpoint, .Ranged_Minion_Spawnpoint}
+    for spawnpoint_type in spawnpoint_flags {
+        minion_type := spawnpoint_to_minion[spawnpoint_type]
+        minion_image := minion_images[minion_type]
+        spawnpoint_image := gen_image_colour(minion_image.width, minion_image.height, WHITE)
+
+        num_pixels := spawnpoint_image.width * spawnpoint_image.height
+
+        minion_image_data := cast([^]Colour) minion_image.data
+        spawnpoint_image_data := cast([^]Colour) spawnpoint_image.data
+
+        for i in 0..<num_pixels {
+            spawnpoint_image_data[i].a = minion_image_data[i].a
+        }
+
+        // image_alpha_mask(&spawnpoint_image, minion_image)
+        minion_icons[spawnpoint_type] = load_texture_from_image(spawnpoint_image)
+    }
+}
+
 setup_hero_cards :: proc(gs: ^Game_State) {
 
     // Do the heroes!

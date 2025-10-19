@@ -104,6 +104,11 @@ default_font: Font
 monospace_font: Font
 
 assets := #load_directory("assets")
+emoji := #load_directory("assets/emoji")
+
+hero_icons: [Hero_ID]Texture
+
+minion_icons: [Space_Flag]Texture
 
 spall_ctx: spall.Context
 @(thread_local) spall_buffer: spall.Buffer

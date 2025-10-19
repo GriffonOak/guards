@@ -509,7 +509,7 @@ make_arbitrary_targets :: proc (
             if !card_data_ok do continue
             #partial switch card_data.primary {
             case .Attack:
-                if target_contains_any(gs, target, {.Immune_Attacks}) {
+                if target_contains_any(gs, target, {.Immune_To_Attacks}) {
                     info.member = false
                 }
             }

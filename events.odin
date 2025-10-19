@@ -326,6 +326,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         setup_hero_cards(gs)
 
+        setup_icons()
+
         if gs.is_host {
             // tiebreaker: Team = .Red if rand.int31_max(2) == 0 else .Blue
             tiebreaker: Team = .Red

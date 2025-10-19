@@ -8,6 +8,8 @@ import "core:strings"
 import "core:log"
 
 _ :: fmt
+_ :: reflect
+_ :: strings
 
 
 Spawnpoint_Marker :: struct {
@@ -18,16 +20,17 @@ Spawnpoint_Marker :: struct {
 
 Space_Flag :: enum {
     Terrain,
+
     Melee_Minion_Spawnpoint,
     Ranged_Minion_Spawnpoint,
     Heavy_Minion_Spawnpoint,
     Hero_Spawnpoint,
 
-
     Hero,
     Melee_Minion,
     Ranged_Minion,
     Heavy_Minion,
+
     Token,
     Obstacle,
 
@@ -37,7 +40,7 @@ Space_Flag :: enum {
     Cannot_Place,
 
     Immune,
-    Immune_Attacks,
+    Immune_To_Attacks,
 }
 
 Region_ID :: enum {
@@ -181,14 +184,6 @@ region_colors := [Region_ID]Colour {
     .Blue_Beach = SAND_COLOR,
     .Blue_Throne = STONE_COLOR,
 }
-
-@rodata
-minion_initials := #partial [Space_Flag]cstring {
-    .Melee_Minion  = "M",
-    .Ranged_Minion = "R",
-    .Heavy_Minion  = "H",
-}
-
 
 
 get_symmetric_space :: proc(gs: ^Game_State, pos: Target) -> ^Space {
@@ -449,6 +444,22 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
 
     ENTITY_FONT_SIZE :: 0.8 * VERTICAL_SPACING
 
+    draw_icon_at_position :: proc(texture: Texture, position: Vec2, tint: Colour = WHITE) {
+        DEST_RECT_WIDTH :: VERTICAL_SPACING * 0.7
+        texture_rect := Rectangle {
+            0, 0, 
+            f32(texture.width), f32(texture.height),
+        }
+
+        dest_rect := Rectangle {
+            position.x - DEST_RECT_WIDTH / 2,
+            position.y - DEST_RECT_WIDTH / 2,
+            DEST_RECT_WIDTH, DEST_RECT_WIDTH,
+        }
+
+        draw_texture_pro(texture, texture_rect, dest_rect, {}, 0, tint)
+    }
+
     // Draw entities
     for arr in gs.board {
         for space in arr {
@@ -459,35 +470,30 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
                 if .Hero_Spawnpoint in space.flags {
                     draw_ring(space.position, VERTICAL_SPACING * 0.35, VERTICAL_SPACING * 0.26, 0, 360, 20, color)
                 } else {
-                    // spawnpoint_type := Space_Flag(log2(transmute(int) spawnpoint_flags))
                     spawnpoint_type := get_first_set_bit(spawnpoint_flags).?
-                    initial := minion_initials[spawnpoint_to_minion[spawnpoint_type]]
+                    // minion_type := spawnpoint_to_minion[spawnpoint_type]
+                    spawnpoint_texture := minion_icons[spawnpoint_type]
+                    // texture := minion_icons[minion_type]
 
-                    text_size := measure_text_ex(default_font, initial, ENTITY_FONT_SIZE, FONT_SPACING)
-                    draw_text_ex(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, ENTITY_FONT_SIZE, FONT_SPACING, color)
+                    draw_icon_at_position(spawnpoint_texture, space.position, color)
                 }
             }
 
-            minion_flags := space.flags & MINION_FLAGS 
-            if minion_flags != {} {
-                minion_type := get_first_set_bit(minion_flags).?
+            if space.flags & UNIT_FLAGS != {} {
+                texture: Texture
                 color = team_colors[space.unit_team]
-                initial := minion_initials[minion_type]
 
-                text_size := measure_text_ex(default_font, initial, ENTITY_FONT_SIZE, FONT_SPACING)
+                if .Hero in space.flags {
+                    hero_id := get_player_by_id(gs, space.owner).hero.id
+                    texture = hero_icons[hero_id]
+                } else {
+                    minion_flags := space.flags & MINION_FLAGS 
+                    minion_type := get_first_set_bit(minion_flags).?
+                    texture = minion_icons[minion_type]
+                }
+
                 draw_circle_v(space.position, VERTICAL_SPACING * 0.42, color)
-                draw_text_ex(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, ENTITY_FONT_SIZE, FONT_SPACING, BLACK)
-
-            }
-
-            if .Hero in space.flags {
-                color = team_colors[space.unit_team]
-                name, ok := reflect.enum_name_from_value(space.hero_id); log.assert(ok, "Invalid hero name?")
-                initial := strings.clone_to_cstring(name[:1])
-
-                text_size := measure_text_ex(default_font, initial, ENTITY_FONT_SIZE, FONT_SPACING)
-                draw_circle_v(space.position, VERTICAL_SPACING * 0.42, color)
-                draw_text_ex(default_font, initial, {space.position.x - text_size.x / 2, space.position.y - text_size.y / 2.2}, ENTITY_FONT_SIZE, FONT_SPACING, BLACK)
+                draw_icon_at_position(texture, space.position)
             }
         }
     }
@@ -506,8 +512,8 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
         draw_ring(wave_counter_position, 25, 30, 0, 360, 100, RAYWHITE)
     }
 
-    // Draw life counters 
     for team in Team {
+        // Draw life counters 
         for life_counter_index in 0..<6 {
             LIFE_COUNTER_RADIUS :: 23
             LIFE_COUNTER_PADDING :: 10
@@ -521,16 +527,15 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
             draw_ring(life_counter_position, LIFE_COUNTER_RADIUS - 5, LIFE_COUNTER_RADIUS, 0, 360, 100, team_colors[team])
         }
 
+        // Draw dead minions
         for minion_type, minion_index in gs.dead_minions[team] {
             color := team_colors[team]
-            initial := minion_initials[minion_type]
             target := dead_minion_target_indices[minion_index]
             if team == .Blue do target = {GRID_WIDTH-1, GRID_HEIGHT-1} - target
             position := gs.board[target.x][target.y].position
-            // position := Vec2 {VERTICAL_SPACING * 0.5, BOARD_TEXTURE_SIZE.y - VERTICAL_SPACING * 1.5 - f32(minion_index) * VERTICAL_SPACING}
-            text_size := measure_text_ex(default_font, initial, ENTITY_FONT_SIZE, FONT_SPACING)
+            texture := minion_icons[minion_type]
             draw_circle_v(position, VERTICAL_SPACING * 0.42, color)
-            draw_text_ex(default_font, initial, {position.x - text_size.x / 2, position.y - text_size.y / 2.2}, ENTITY_FONT_SIZE, FONT_SPACING, BLACK)
+            draw_icon_at_position(texture, position)
         }
     }
 

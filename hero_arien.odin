@@ -400,7 +400,7 @@ arien_cards := []Card_Data {
                             Target_Is{Card_Owner{}},
                         },
                         outcomes = {
-                            Target_Counts_As{{.Immune_Attacks}},
+                            Target_Counts_As{{.Immune_To_Attacks}},
                         },
                     },
                 },
@@ -691,7 +691,7 @@ arien_cards := []Card_Data {
                             Target_Is{Card_Owner{}},
                         },
                         outcomes = {
-                            Target_Counts_As{{.Immune_Attacks}},
+                            Target_Counts_As{{.Immune_To_Attacks}},
                         },
                     },
                 },
