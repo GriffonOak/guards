@@ -35,6 +35,14 @@ get_time :: proc() -> f64 {
     return time.duration_seconds(program_duration)
 }
 
+get_frame_time :: proc() -> f32 {
+    when !ODIN_TEST {
+        return rl.GetFrameTime()
+    } else {
+        return 0
+    }
+}
+
 draw_ring :: proc(centre: Vec2, inner_radius, outer_radius, start_angle, end_angle: f32, segments: i32, colour: Colour) {
     when !ODIN_TEST {
         rl.DrawRing(centre, inner_radius, outer_radius, start_angle, end_angle, segments, colour)
@@ -114,6 +122,12 @@ load_render_texture :: proc(width, height: i32) -> Render_Texture_2D {
 set_texture_filter :: proc(texture: Texture, filter: Texture_Filter) {
     when !ODIN_TEST {
         rl.SetTextureFilter(texture, filter)
+    }
+}
+
+draw_rectangle :: proc(pos_x, pos_y, width, height: i32, colour: Colour) {
+    when !ODIN_TEST {
+        rl.DrawRectangle(pos_x, pos_y, width, height, colour)
     }
 }
 
@@ -279,11 +293,27 @@ get_mouse_position :: proc() -> Vec2 {
     }
 }
 
+get_mouse_wheel_move_v :: proc() -> Vec2 {
+    when !ODIN_TEST {
+        return rl.GetMouseWheelMoveV()
+    } else {
+        return {}
+    }
+}
+
 get_key_pressed :: proc() -> Keyboard_Key {
     when !ODIN_TEST {
         return rl.GetKeyPressed()
     } else {
         return .KEY_NULL
+    }
+}
+
+get_char_pressed :: proc() -> rune {
+    when !ODIN_TEST {
+        return rl.GetCharPressed()
+    } else {
+        return 0
     }
 }
 
@@ -317,7 +347,23 @@ is_mouse_button_pressed :: proc(button: Mouse_Button) -> bool {
     } else {
         return false
     }
-} 
+}
+
+is_mouse_button_down :: proc(button: Mouse_Button) -> bool {
+    when !ODIN_TEST {
+        return rl.IsMouseButtonDown(button)
+    } else {
+        return false
+    }
+}
+
+is_mouse_button_up :: proc(button: Mouse_Button) -> bool {
+    when !ODIN_TEST {
+        return rl.IsMouseButtonUp(button)
+    } else {
+        return false
+    }
+}
 
 get_clipboard_text :: proc() -> cstring {
     when !ODIN_TEST {

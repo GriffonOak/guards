@@ -211,7 +211,8 @@ main :: proc() {
 
     // set_config_flags({.WINDOW_TOPMOST})
     set_trace_log_level(.NONE)
-    set_config_flags({.MSAA_4X_HINT})
+    set_config_flags({.MSAA_4X_HINT, .WINDOW_RESIZABLE})
+    clay_setup()
     init_window(i32(WIDTH / window_scale), i32(HEIGHT / window_scale), "guards")
     defer close_window()
 
@@ -219,8 +220,10 @@ main :: proc() {
         switch file.name {
         case "Inter-VariableFont.ttf":
             default_font = load_font_from_memory(".ttf", raw_data(file.data), i32(len(file.data)), 200, nil, 0)
+            game_fonts[.Inter] = default_font
         case "Inconsolata-Regular.ttf":
             monospace_font = load_font_from_memory(".ttf", raw_data(file.data), i32(len(file.data)), 200, nil, 0)
+            game_fonts[.Inconsolata] = monospace_font
         }
     }
 
@@ -234,8 +237,6 @@ main :: proc() {
     }
 
     setup_board(&gs)
-
-    add_pre_lobby_ui_elements(&gs)
 
     for !window_should_close() {
 
@@ -332,7 +333,7 @@ main :: proc() {
             clear(&gs.event_queue)
         }
         
-
+        clay_render_commands := clay_layout(&gs)
 
         begin_drawing()
 
@@ -342,7 +343,9 @@ main :: proc() {
 
         begin_texture_mode(window_texture)
 
-        clear_background(BLACK)
+        clay_render(&clay_render_commands)
+
+        // clear_background(BLACK)
 
         for domain in UI_Domain {
             for element in gs.ui_stack[domain] {
@@ -350,18 +353,17 @@ main :: proc() {
             }
         }
 
-        if gs.stage == .In_Lobby {
-            pos := Vec2{10, 10}
-            for player_id in 0..<len(gs.players) {
-                render_player_info_at_position(&gs, player_id, pos)
-                pos.y += 200
-            }
-        }
+        // if gs.stage == .In_Lobby {
+        //     pos := Vec2{10, 10}
+        //     for player_id in 0..<len(gs.players) {
+        //         render_player_info_at_position(&gs, player_id, pos)
+        //         pos.y += 200
+        //     }
+        // }
 
-        if gs.stage != .Pre_Lobby && gs.stage != .In_Lobby {
-            render_player_info(&gs)
-        }
-        render_tooltip(&gs)
+        // if gs.stage != .Pre_Lobby && gs.stage != .In_Lobby {
+        //     render_player_info(&gs)
+        // }
 
         #reverse for &toast, index in gs.toasts {
             if get_time() > toast.start_time + toast.duration {

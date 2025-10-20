@@ -1,10 +1,10 @@
 package guards
 
 import "core:fmt"
-import "core:math"
 import "core:strings"
 import sa "core:container/small_array"
-import ba "core:container/bit_array"
+
+_ :: strings
 
 UI_Domain :: enum {
     None,
@@ -39,7 +39,7 @@ UI_Text_Box_Element :: struct {
     field: sa.Small_Array(40, u8),
     cursor_index: int,
     last_click_time: f64,
-    default_string: cstring,
+    default_string: string,
 }
 
 UI_Variant :: union {
@@ -88,7 +88,7 @@ Formatted_String :: struct {
 }
 
 Tooltip :: union {
-    cstring,
+    string,
     Formatted_String,
 }
 
@@ -100,13 +100,11 @@ Toast :: struct {
 
 
 BUTTON_PADDING :: 10
-BUTTON_TEXT_PADDING :: 20
 TOOLTIP_FONT_SIZE :: 50
 
 TOAST_TEXT_PADDING :: 10
 TOAST_FONT_SIZE :: 40
 
-SELECTION_BUTTON_SIZE :: Vec2{400, 100}
 FIRST_SIDE_BUTTON_LOCATION :: Rectangle {
     BOARD_TEXTURE_SIZE.x + BUTTON_PADDING, 
     HEIGHT - BUTTON_PADDING - SELECTION_BUTTON_SIZE.y,
@@ -154,95 +152,10 @@ when !ODIN_TEST {
 }
 
 
-text_box_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, element: ^UI_Element) -> bool {
-    text_box_element := assert_variant(&element.variant, UI_Text_Box_Element)
-    font_size := element.bounding_rect.height - 2 * BUTTON_TEXT_PADDING
-    single_character_width := measure_text_ex(monospace_font, "_", font_size, 0).x
-
-    #partial switch var in input {
-    case Mouse_Pressed_Event:
-        index := int(math.round((var.pos.x - element.bounding_rect.x - BUTTON_TEXT_PADDING) / single_character_width))
-        index = clamp(index, 0, sa.len(text_box_element.field))
-        text_box_element.cursor_index = index
-        text_box_element.last_click_time = get_time()
-    case Key_Pressed_Event:
-        #partial switch var.key {
-        case (.ZERO)..=(.NINE), .PERIOD:
-            if sa.inject_at(&text_box_element.field, u8(var.key), text_box_element.cursor_index) {
-                text_box_element.cursor_index += 1
-            }
-        case .BACKSPACE:
-            if text_box_element.cursor_index <= 0 do break
-            sa.ordered_remove(&text_box_element.field, text_box_element.cursor_index - 1)
-            text_box_element.cursor_index -= 1
-        case .DELETE:
-            if text_box_element.cursor_index >= sa.len(text_box_element.field) do break
-            sa.ordered_remove(&text_box_element.field, text_box_element.cursor_index)
-        case .LEFT:
-            text_box_element.cursor_index -= 1
-            text_box_element.cursor_index = clamp(text_box_element.cursor_index, 0, sa.len(text_box_element.field))
-            text_box_element.last_click_time = get_time()
-        case .RIGHT:
-            text_box_element.cursor_index += 1
-            text_box_element.cursor_index = clamp(text_box_element.cursor_index, 0, sa.len(text_box_element.field))
-            text_box_element.last_click_time = get_time()
-        case .V:
-            if !ba.get(&ui_state.pressed_keys, uint(Keyboard_Key.LEFT_CONTROL)) && !ba.get(&ui_state.pressed_keys, uint(Keyboard_Key.RIGHT_CONTROL)) do break
-            clipboard := cast([^]u8) get_clipboard_text()
-            for i := 0 ; clipboard[i] != 0; i += 1 {
-                if !sa.inject_at(&text_box_element.field, clipboard[i], text_box_element.cursor_index) {
-                    break
-                }
-                text_box_element.cursor_index += 1
-            }
-        }
-    }
-        
-    return true
-}
-
-draw_text_box: UI_Render_Proc : proc(gs: ^Game_State, element: UI_Element) {
-
-    text_box_element := assert_variant_rdonly(element.variant, UI_Text_Box_Element)
-    draw_rectangle_lines_ex(element.bounding_rect, 4, WHITE)
-    font_size := element.bounding_rect.height - 2 * BUTTON_TEXT_PADDING
-    single_character_width := measure_text_ex(monospace_font, "_", font_size, 0).x
-    text_color := LIGHTGRAY
-    text := text_box_element.default_string
-
-    if .Active in element.flags || sa.len(text_box_element.field) > 0 {
-        text_color = WHITE
-        text = strings.clone_to_cstring(string(sa.slice(&text_box_element.field)), context.temp_allocator)
-    }
-
-    draw_text_ex(
-        monospace_font,
-        text,
-        {element.bounding_rect.x + BUTTON_TEXT_PADDING, element.bounding_rect.y + BUTTON_TEXT_PADDING}, 
-        font_size,
-        0,
-        text_color,
-    )
-
-    if .Active in element.flags {
-        CYCLE_TIME :: 1 // s
-        time := (get_time() - text_box_element.last_click_time) / CYCLE_TIME
-        time_remainder := (time - math.floor(time)) * CYCLE_TIME
-        if time_remainder < CYCLE_TIME / 2.0 {
-            cursor_x_position := element.bounding_rect.x + BUTTON_TEXT_PADDING + single_character_width * f32(text_box_element.cursor_index)
-            draw_line_ex(
-                {cursor_x_position, element.bounding_rect.y + BUTTON_TEXT_PADDING},
-                {cursor_x_position, element.bounding_rect.y + element.bounding_rect.height - BUTTON_TEXT_PADDING},
-                4, WHITE,
-            )
-        }
-    }
-}
-
-format_tooltip :: proc(gs: ^Game_State, tooltip: Tooltip) -> cstring {
+format_tooltip :: proc(gs: ^Game_State, tooltip: Tooltip) -> string {
     context.allocator = context.temp_allocator
     switch variant in tooltip {
-    case cstring: return variant
+    case string: return variant
     case Formatted_String:
         args: [dynamic]any  // spicy
         for arg in variant.arguments {
@@ -254,20 +167,20 @@ format_tooltip :: proc(gs: ^Game_State, tooltip: Tooltip) -> cstring {
             case any: append(&args, arg_variant)
             }
         }
-        return fmt.ctprintf(variant.format, ..args[:])
+        return fmt.tprintf(variant.format, ..args[:])
 
     }
-    return nil
+    return ""
 }
 
-render_tooltip :: proc(gs: ^Game_State) {
-    if gs.tooltip == nil do return
-    tooltip_text := format_tooltip(gs, gs.tooltip)
-    dimensions := measure_text_ex(default_font, tooltip_text, TOOLTIP_FONT_SIZE, FONT_SPACING)
-    top_width := WIDTH - BOARD_TEXTURE_SIZE.x
-    offset := BOARD_TEXTURE_SIZE.x + (top_width - dimensions.x) / 2
-    draw_text_ex(default_font, tooltip_text, {offset, 0}, TOOLTIP_FONT_SIZE, FONT_SPACING, WHITE)
-}
+// render_tooltip :: proc(gs: ^Game_State) {
+//     if gs.tooltip == nil do return
+//     tooltip_text := format_tooltip(gs, gs.tooltip)
+//     dimensions := measure_text_ex(default_font, tooltip_text, TOOLTIP_FONT_SIZE, FONT_SPACING)
+//     top_width := WIDTH - BOARD_TEXTURE_SIZE.x
+//     offset := BOARD_TEXTURE_SIZE.x + (top_width - dimensions.x) / 2
+//     draw_text_ex(default_font, tooltip_text, {offset, 0}, TOOLTIP_FONT_SIZE, FONT_SPACING, WHITE)
+// }
 
 
 add_generic_button :: proc(gs: ^Game_State, location: Rectangle, text: cstring, event: Event, global: bool = false) {

@@ -3,7 +3,6 @@ package guards
 // This is a good file. It knows exactly what it is trying to do and does it extremely well.
 
 import "core:reflect"
-import "core:strings"
 import sa "core:container/small_array"
 import "core:log"
 import "core:fmt"
@@ -270,8 +269,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         return
 
     case Join_Network_Game_Chosen_Event:
-        text_box := &gs.ui_stack[.Buttons][0].variant.(UI_Text_Box_Element)
-        ip := string(sa.slice(&text_box.field))
+        ip := string(sa.slice(&ip_text_box.field))
         switch error in join_game(gs, ip) {
         case Parse_Error: add_toast(gs, "Unable to parse IP address.", 2)
         case Dial_Error: add_toast(gs, "Could not connect to IP address.", 2)
@@ -288,24 +286,24 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
     case Enter_Lobby_Event:
         gs.stage = .In_Lobby
         clear(&gs.ui_stack[.Buttons])
-        button_loc := (Vec2{WIDTH, HEIGHT} - SELECTION_BUTTON_SIZE) / 2
-        if gs.is_host {
-            gs.tooltip = "Wait for players to join, then begin the game."
-            add_generic_button(gs, {button_loc.x, button_loc.y, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}, "Begin Game", Begin_Game_Event{}, global = true)
-        } else {
-            gs.tooltip = "Wait for the host to begin the game."
-        }
-        button_loc.y += BUTTON_PADDING + SELECTION_BUTTON_SIZE.y
-        add_generic_button(gs, {button_loc.x, button_loc.y, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}, "Switch Team", Change_Team_Event{gs.my_player_id}, global = true)
+        // button_loc := (Vec2{WIDTH, HEIGHT} - SELECTION_BUTTON_SIZE) / 2
+        // if gs.is_host {
+        //     gs.tooltip = "Wait for players to join, then begin the game."
+        //     add_generic_button(gs, {button_loc.x, button_loc.y, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}, "Begin Game", Begin_Game_Event{}, global = true)
+        // } else {
+        //     gs.tooltip = "Wait for the host to begin the game."
+        // }
+        // button_loc.y += BUTTON_PADDING + SELECTION_BUTTON_SIZE.y
+        // add_generic_button(gs, {button_loc.x, button_loc.y, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}, "Switch Team", Change_Team_Event{gs.my_player_id}, global = true)
 
-        button_loc = Vec2{WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, TOOLTIP_FONT_SIZE + BUTTON_PADDING}
-        for hero in Hero_ID {
-            log.infof("adding button")
-            hero_name, _ := reflect.enum_name_from_value(hero)
-            hero_name_cstring := strings.unsafe_string_to_cstring(hero_name)
-            add_generic_button(gs, {button_loc.x, button_loc.y, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}, hero_name_cstring, Change_Hero_Event{gs.my_player_id, hero}, global=true)
-            button_loc.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
-        }
+        // button_loc := Vec2{WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, TOOLTIP_FONT_SIZE + BUTTON_PADDING}
+        // for hero in Hero_ID {
+        //     log.infof("adding button")
+        //     hero_name, _ := reflect.enum_name_from_value(hero)
+        //     hero_name_cstring := strings.unsafe_string_to_cstring(hero_name)
+        //     add_generic_button(gs, {button_loc.x, button_loc.y, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}, hero_name_cstring, Change_Hero_Event{gs.my_player_id, hero}, global=true)
+        //     button_loc.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+        // }
 
     case Change_Team_Event:
         player := get_player_by_id(gs, var.player_id)

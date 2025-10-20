@@ -2,8 +2,7 @@ package guards
 
 // import "core:math"
 import ba "core:container/bit_array"
-// import "core:log"
-
+// import "core:fmt"
 
 
 Input_Event :: union {
@@ -60,7 +59,14 @@ Key_Pressed_Event :: struct {
 UI_State :: struct {
     mouse_pos: Vec2,
     mouse_state: bit_set[Mouse_Button],
-    pressed_keys: ba.Bit_Array,
+    pressed_this_frame: bit_set[Mouse_Button],
+    released_this_frame: bit_set[Mouse_Button],
+
+    keyboard_state: ba.Bit_Array,
+    keys_pressed_this_frame: ba.Bit_Array,
+    keys_released_this_frame: ba.Bit_Array,
+
+    char_pressed_this_frame: rune,
 }
 
 
@@ -74,20 +80,28 @@ check_for_input_events :: proc(q: ^[dynamic]Input_Event) {
     // x := p.x
     // y := p.y
 
+    ba.clear(&ui_state.keys_pressed_this_frame)
+    ba.clear(&ui_state.keys_released_this_frame)
     for key := get_key_pressed(); key != .KEY_NULL; key = get_key_pressed() {
-        ba.set(&ui_state.pressed_keys, cast(int) key)
+        key_int := int(key)
+        ba.set(&ui_state.keyboard_state, key_int)
+        ba.set(&ui_state.keys_pressed_this_frame, key_int)
         append(q, Key_Pressed_Event { key })
     }
 
-    iterator := ba.make_iterator(&ui_state.pressed_keys)
+    ui_state.char_pressed_this_frame = get_char_pressed()
+
+    iterator := ba.make_iterator(&ui_state.keyboard_state)
     key_idx, ok := ba.iterate_by_set(&iterator)
     for ; ok ; key_idx, ok = ba.iterate_by_set(&iterator) {
         key := cast(Keyboard_Key) key_idx
         if !is_key_down(key) {
-            ba.unset(&ui_state.pressed_keys, key_idx)
+            ba.unset(&ui_state.keyboard_state, key_idx)
+            ba.set(&ui_state.keys_released_this_frame, key_idx)
             // append(q, Key_Up_Event { key })
         } else if is_key_pressed_repeat(key) {
             append(q, Key_Pressed_Event { key })
+            ba.set(&ui_state.keys_pressed_this_frame, key_idx)
         }
     }
 
@@ -95,13 +109,20 @@ check_for_input_events :: proc(q: ^[dynamic]Input_Event) {
         if is_mouse_button_pressed(b) {
             append(q, Mouse_Pressed_Event { p, b })
         }
-        // if rl.IsMouseButtonDown(b) && b not_in ui_state.mouse_state {
-        //     ui_state.mouse_state += {b}
-        //     append(q, Mouse_Down_Event {p, b})
-        // } else if rl.IsMouseButtonUp(b) && b in ui_state.mouse_state {
-        //     ui_state.mouse_state -= {b}
-        //     append(q, Mouse_Up_Event {p, b})
-        // }
+        if is_mouse_button_down(b) && b not_in ui_state.mouse_state {
+            ui_state.mouse_state += {b}
+            ui_state.pressed_this_frame += {b}
+            // append(q, Mouse_Down_Event {p, b})
+        } else {
+            ui_state.pressed_this_frame -= {b}
+        } 
+        if is_mouse_button_up(b) && b in ui_state.mouse_state {
+            ui_state.mouse_state -= {b}
+            ui_state.released_this_frame += {b}
+            // append(q, Mouse_Up_Event {p, b})
+        } else {
+            ui_state.released_this_frame -= {b}
+        }
     }
     do_button_events(.LEFT, p, q)
     do_button_events(.RIGHT, p, q)

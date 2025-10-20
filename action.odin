@@ -244,11 +244,11 @@ Action_Index :: struct {
 
 
 
-player_movement_tooltip: cstring : "Choose a space to move to."
+player_movement_tooltip :: "Choose a space to move to."
 
-error_tooltip: cstring : "You should never see this. Tell Griffon if you do!"
+error_tooltip :: "You should never see this. Tell Griffon if you do!"
 
-first_choice_tooltip: cstring : "Choose an action to take with your played card."
+first_choice_tooltip :: "Choose an action to take with your played card."
 
 
 first_choice_action := []Action {

@@ -461,37 +461,3 @@ when !ODIN_TEST {
 }
 }
 
-
-add_pre_lobby_ui_elements :: proc (gs: ^Game_State) {
-    clear(&gs.ui_stack[.Buttons])
-
-    text_box_location := Rectangle {
-        WIDTH / 2 - SELECTION_BUTTON_SIZE.x,
-        (HEIGHT - BUTTON_PADDING) / 2 - 2 * SELECTION_BUTTON_SIZE.y,
-        SELECTION_BUTTON_SIZE.x * 2,
-        SELECTION_BUTTON_SIZE.y,
-    }
-
-    button_1_location := text_box_location
-    button_1_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
-
-
-    button_2_location := button_1_location
-    button_2_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
-
-    button_3_location := button_2_location
-    button_3_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
-
-    append(&gs.ui_stack[.Buttons], UI_Element {
-        text_box_location, UI_Text_Box_Element {
-            default_string = "Enter IP Address...",
-        },
-        text_box_input_proc,
-        draw_text_box,
-        {},
-    })
-
-    add_generic_button(gs, button_1_location, "Join Game", Join_Network_Game_Chosen_Event{})
-    // add_generic_button(gs, button_2_location, "Join Local Game", Join_Local_Game_Chosen_Event{})
-    add_generic_button(gs, button_3_location, "Host Game", Host_Game_Chosen_Event{})
-}

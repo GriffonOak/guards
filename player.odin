@@ -87,9 +87,6 @@ Player :: struct {
 }
 
 @(private="file")
-INFO_FONT_SIZE :: 40
-
-@(private="file")
 TEXT_PADDING :: 6
 
 
