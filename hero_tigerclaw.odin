@@ -488,6 +488,7 @@ tigerclaw_cards := []Card_Data {
             Action {  // 1
                 tooltip = "Target a unit adjacent to you.",
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
                         Target_Contains_Any{UNIT_FLAGS},
@@ -603,6 +604,7 @@ tigerclaw_cards := []Card_Data {
             Action {
                 tooltip = "Target an enemy hero adjacent to you.",
                 variant = Choose_Target_Action {
+                    num_targets = 1,
                     conditions = {
                         Target_Within_Distance{Self{}, {1, 1}},
                         Target_Contains_Any{{.Hero}},
