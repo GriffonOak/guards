@@ -83,17 +83,12 @@ dead_minion_target_indices := [5]Target {
     {2, 6},
 }
 
-VERTICAL_SPACING :: 67
-
-// sqrt 3
-HORIZONTAL_SPACING :: 1.732 * VERTICAL_SPACING * 0.5
-
 GRID_WIDTH  :: 21
 GRID_HEIGHT :: 20
 
-BOARD_TEXTURE_SIZE :: Vec2{1200, 1200}
+// BOARD_TEXTURE_SIZE :: Vec2{1200, 1200}
 // BOARD_TEXTURE_SIZE :: Vec2{1080, 1080}
-BOARD_POSITION_RECT :: Rectangle{0, 0, BOARD_TEXTURE_SIZE.x, BOARD_TEXTURE_SIZE.y}
+// BOARD_POSITION_RECT :: Rectangle{0, 0, BOARD_TEXTURE_SIZE.x, BOARD_TEXTURE_SIZE.y}
 
 WATER_COLOR  :: Colour{54, 186, 228, 255}
 CLIFF_COLOR  :: Colour{80, 76, 75, 255}
@@ -191,13 +186,16 @@ get_symmetric_space :: proc(gs: ^Game_State, pos: Target) -> ^Space {
     return &gs.board[sym_idx.x][sym_idx.y]
 }
 
-setup_space_positions :: proc(gs: ^Game_State) {
+setup_space_positions :: proc(gs: ^Game_State, bounding_rect: Rectangle) {
+    VERTICAL_SPACING := bounding_rect.height / 17.9
+    HORIZONTAL_SPACING := 1.732 * VERTICAL_SPACING * 0.5
+    offset := Vec2{bounding_rect.x, bounding_rect.y}
     for &x_arr, x_idx in gs.board {
         for &space, y_idx in x_arr {
-            x_value := BOARD_TEXTURE_SIZE.x / 2 + HORIZONTAL_SPACING * f32(x_idx - GRID_WIDTH / 2)
+            x_value := bounding_rect.width / 2 + HORIZONTAL_SPACING * f32(x_idx - GRID_WIDTH / 2)
             // I don't even really know how this works but it does 
-            y_value := BOARD_TEXTURE_SIZE.y / 2 - (0.5 * f32(x_idx + 1) + 0.25 - 0.25 * GRID_WIDTH + f32(y_idx) - 0.5 * GRID_HEIGHT) * VERTICAL_SPACING
-            space.position = {x_value, y_value}
+            y_value := bounding_rect.height / 2 - (0.5 * f32(x_idx + 1) + 0.25 - 0.25 * GRID_WIDTH + f32(y_idx) - 0.5 * GRID_HEIGHT) * VERTICAL_SPACING
+            space.position = offset + {x_value, y_value}
         }
     }
 }
@@ -243,8 +241,6 @@ setup_spawnpoints :: proc(gs: ^Game_State) {
 }
 
 setup_board :: proc(gs: ^Game_State) {
-    
-    setup_space_positions(gs)
 
     setup_terrain(gs)
 
@@ -269,34 +265,39 @@ board_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, elem
         append(&gs.event_queue, Space_Clicked_Event{board_element.hovered_space})
     case Mouse_Motion_Event:
         board_element.hovered_space = INVALID_TARGET
-        mouse_within_board := ui_state.mouse_pos - {element.bounding_rect.x, element.bounding_rect.y}
+        // mouse_within_board := ui_state.mouse_pos - {element.bounding_rect.x, element.bounding_rect.y}
 
-        mouse_within_board *= BOARD_TEXTURE_SIZE / {element.bounding_rect.width, element.bounding_rect.height}
+        // mouse_within_board *= BOARD_TEXTURE_SIZE / {element.bounding_rect.width, element.bounding_rect.height}
 
         closest_idx := INVALID_TARGET
-        closest_dist: f32 = 1e6
-        for arr, x in gs.board {
-            for space, y in arr {
-                diff := (mouse_within_board - space.position)
-                dist := diff.x * diff.x + diff.y * diff.y
-                if dist < closest_dist && dist < VERTICAL_SPACING * VERTICAL_SPACING * 0.5 {
-                    closest_idx = {u8(x), u8(y)}
-                    closest_dist = dist
-                }
-            }
-        }
+        // closest_dist: f32 = 1e6
+        // for arr, x in gs.board {
+        //     for space, y in arr {
+        //         // diff := (mouse_within_board - space.position)
+        //         // dist := diff.x * diff.x + diff.y * diff.y
+        //         // if dist < closest_dist && dist < VERTICAL_SPACING * VERTICAL_SPACING * 0.5 {
+        //         //     closest_idx = {u8(x), u8(y)}
+        //         //     closest_dist = dist
+        //         // }
+        //     }
+        // }
         if closest_idx != INVALID_TARGET  {
             board_element.hovered_space = closest_idx
-        } 
+        }
     }
 
     return true
 }
 
-render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
+render_board :: proc(gs: ^Game_State, bounding_rect: Rectangle, board_element: Board_Element) {
     context.allocator = context.temp_allocator
+    
+    offset := Vec2{bounding_rect.x, bounding_rect.y}
 
-    highlight_action_targets :: proc(gs: ^Game_State, action_index: Action_Index) {
+    VERTICAL_SPACING := bounding_rect.height / 17.9
+    // HORIZONTAL_SPACING := 1.732 * VERTICAL_SPACING * 0.5
+
+    highlight_action_targets :: proc(gs: ^Game_State, action_index: Action_Index, v_spacing: f32) {
 
         action := get_action_at_index(gs, action_index)
         if action == nil do return
@@ -309,14 +310,14 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
             for choice in variant.choices {
                 jump_index := choice.jump_index
                 if jump_index.card_id == {} do jump_index.card_id = action_index.card_id
-                highlight_action_targets(gs, jump_index)
+                highlight_action_targets(gs, jump_index, v_spacing)
             }
             return
 
         case Jump_Action:
             jump_index := calculate_implicit_action_index(gs, variant.jump_index, {card_id = action_index.card_id})
             if jump_index.card_id == {} do jump_index.card_id = action_index.card_id
-            highlight_action_targets(gs, jump_index)
+            highlight_action_targets(gs, jump_index, v_spacing)
 
         case Choose_Target_Action:
             frequency = 14
@@ -325,9 +326,9 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
                 target := action_value.variant.(Target)
                 space := gs.board[target.x][target.y]
                 selected_color := LIGHTGRAY
-                pulse := f32(math.sin(1.5 * time) * VERTICAL_SPACING * 0.03)
+                pulse := f32(math.sin(1.5 * time) * 0.03) * v_spacing
 
-                draw_ring(space.position, VERTICAL_SPACING * 0.4 + pulse, VERTICAL_SPACING * 0.5 + pulse, 0, 360, 20, selected_color)
+                draw_ring(space.position, v_spacing * 0.4 + pulse, v_spacing * 0.5 + pulse, 0, 360, 20, selected_color)
             }
         }
 
@@ -358,15 +359,12 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
             highlight_color := LIGHTGRAY
             color := color_lerp(base_color, highlight_color, color_blend)
             if info.invalid {
-                draw_circle_v(space.position, VERTICAL_SPACING * 0.08, color)
+                draw_circle_v(space.position, v_spacing * 0.08, color)
             } else {
-                draw_poly_lines_ex(space.position, 6, VERTICAL_SPACING / 2, 0, VERTICAL_SPACING * 0.08, color)
+                draw_poly_lines_ex(space.position, 6, v_spacing / 2, 0, v_spacing * 0.08, color)
             }
         }
     }
-
-    board_element := assert_variant_rdonly(element.variant, UI_Board_Element)
-    begin_texture_mode(board_element.texture)
 
     clear_background(WATER_COLOR)
 
@@ -397,7 +395,7 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
 
     // Draw hovered space
     space_pos: Vec2
-    if .Hovered not_in element.flags || board_element.hovered_space != INVALID_TARGET {
+    if board_element.hovered_space != INVALID_TARGET {
         space_pos = gs.board[board_element.hovered_space.x][board_element.hovered_space.y].position
         draw_poly_lines_ex(space_pos, 6, VERTICAL_SPACING * (1 / math.sqrt_f32(3) + 0.05), 0, VERTICAL_SPACING * 0.05, WHITE)
     }
@@ -410,7 +408,7 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
         if action == nil do break
         #partial  switch variant in action.variant {
         case Fast_Travel_Action:
-            if .Hovered not_in element.flags || board_element.hovered_space == INVALID_TARGET do break
+            if board_element.hovered_space == INVALID_TARGET do break
             if index_target_set(&action.targets, board_element.hovered_space).member {
                 player_loc := get_my_player(gs).hero.location
                 player_pos := gs.board[player_loc.x][player_loc.y].position
@@ -433,28 +431,26 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
                 if !ok do continue
                 next_index := event.jump_index
                 if next_index.card_id == {} do next_index.card_id = action_index.card_id
-                highlight_action_targets(gs, next_index)
+                highlight_action_targets(gs, next_index, VERTICAL_SPACING)
             }
         }
 
         if _, ok := action.variant.(Choice_Action); !ok && action != nil {
-            highlight_action_targets(gs, action_index)
+            highlight_action_targets(gs, action_index, VERTICAL_SPACING)
         }
     }
 
-    ENTITY_FONT_SIZE :: 0.8 * VERTICAL_SPACING
-
-    draw_icon_at_position :: proc(texture: Texture, position: Vec2, tint: Colour = WHITE) {
-        DEST_RECT_WIDTH :: VERTICAL_SPACING * 0.7
+    DEST_RECT_WIDTH := VERTICAL_SPACING * 0.7
+    draw_icon_at_position :: proc(texture: Texture, position: Vec2, width: f32, tint: Colour = WHITE) {
         texture_rect := Rectangle {
             0, 0, 
             f32(texture.width), f32(texture.height),
         }
 
         dest_rect := Rectangle {
-            position.x - DEST_RECT_WIDTH / 2,
-            position.y - DEST_RECT_WIDTH / 2,
-            DEST_RECT_WIDTH, DEST_RECT_WIDTH,
+            position.x - width / 2,
+            position.y - width / 2,
+            width, width,
         }
 
         draw_texture_pro(texture, texture_rect, dest_rect, {}, 0, tint)
@@ -475,7 +471,7 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
                     spawnpoint_texture := minion_icons[spawnpoint_type]
                     // texture := minion_icons[minion_type]
 
-                    draw_icon_at_position(spawnpoint_texture, space.position, color)
+                    draw_icon_at_position(spawnpoint_texture, space.position, DEST_RECT_WIDTH, color)
                 }
             }
 
@@ -493,12 +489,13 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
                 }
 
                 draw_circle_v(space.position, VERTICAL_SPACING * 0.42, color)
-                draw_icon_at_position(texture, space.position)
+                draw_icon_at_position(texture, space.position, DEST_RECT_WIDTH)
             }
         }
     }
 
     // Draw Tiebreaker Coin
+    // tiebreaker_pos := offset + {VERTICAL_SPACING, VERTICAL_SPACING}
     draw_circle_v({100, 100}, 75, team_colors[gs.tiebreaker_coin])
     draw_ring({100, 100}, 70, 75, 0, 360, 100, RAYWHITE)
 
@@ -508,18 +505,19 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
         angle += f32(wave_counter_index) * math.TAU / (3 * 4)
         wave_counter_position := Vec2{100, 100} + 140 * {math.cos_f32(angle), math.sin_f32(angle)}
         color := RAYWHITE if wave_counter_index < gs.wave_counters else GRAY
-        draw_circle_v(wave_counter_position, 25, color)
-        draw_ring(wave_counter_position, 25, 30, 0, 360, 100, RAYWHITE)
+        draw_circle_v(wave_counter_position, VERTICAL_SPACING * 0.4, color)
+        draw_ring(wave_counter_position, VERTICAL_SPACING * 0.4, VERTICAL_SPACING * 0.5, 0, 360, 100, RAYWHITE)
     }
 
     for team in Team {
         // Draw life counters 
         for life_counter_index in 0..<6 {
-            LIFE_COUNTER_RADIUS :: 23
-            LIFE_COUNTER_PADDING :: 10
-            life_counter_position := Vec2{0, BOARD_TEXTURE_SIZE.y} + {LIFE_COUNTER_RADIUS, -LIFE_COUNTER_RADIUS} + {LIFE_COUNTER_PADDING, -LIFE_COUNTER_PADDING}
+            LIFE_COUNTER_RADIUS := VERTICAL_SPACING / 3
+            LIFE_COUNTER_PADDING := VERTICAL_SPACING / 6.7
+            life_counter_position := Vec2{0, bounding_rect.height} + {LIFE_COUNTER_RADIUS, -LIFE_COUNTER_RADIUS} + {LIFE_COUNTER_PADDING, -LIFE_COUNTER_PADDING}
             life_counter_position.x += f32(life_counter_index) * (LIFE_COUNTER_RADIUS * 2 + LIFE_COUNTER_PADDING)
-            if team == .Blue do life_counter_position = BOARD_TEXTURE_SIZE - life_counter_position
+            if team == .Blue do life_counter_position = {bounding_rect.width, bounding_rect.height} - life_counter_position
+            life_counter_position += offset
             darker_team_color := team_colors[team] / 2
             darker_team_color.a = 255
             color := team_colors[team] if life_counter_index < gs.life_counters[team] else darker_team_color
@@ -535,7 +533,7 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
             position := gs.board[target.x][target.y].position
             texture := minion_icons[minion_type]
             draw_circle_v(position, VERTICAL_SPACING * 0.42, color)
-            draw_icon_at_position(texture, position)
+            draw_icon_at_position(texture, position, DEST_RECT_WIDTH)
         }
     }
 
@@ -555,9 +553,9 @@ render_board_to_texture :: proc(gs: ^Game_State, element: UI_Element) {
 
 draw_board: UI_Render_Proc : proc(_: ^Game_State, element: UI_Element) {
 
-    board_element := element.variant.(UI_Board_Element)
-when !ODIN_TEST {
-    draw_texture_pro(board_element.texture.texture, {0, 0, BOARD_TEXTURE_SIZE.x, -BOARD_TEXTURE_SIZE.y}, element.bounding_rect, {0, 0}, 0, WHITE)
-}
+//     board_element := element.variant.(UI_Board_Element)
+// when !ODIN_TEST {
+//     draw_texture_pro(board_element.texture.texture, {0, 0, BOARD_TEXTURE_SIZE.x, -BOARD_TEXTURE_SIZE.y}, element.bounding_rect, {0, 0}, 0, WHITE)
+// }
 
 }

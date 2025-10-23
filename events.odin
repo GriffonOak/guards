@@ -286,24 +286,11 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
     case Enter_Lobby_Event:
         gs.stage = .In_Lobby
         clear(&gs.ui_stack[.Buttons])
-        // button_loc := (Vec2{WIDTH, HEIGHT} - SELECTION_BUTTON_SIZE) / 2
-        // if gs.is_host {
-        //     gs.tooltip = "Wait for players to join, then begin the game."
-        //     add_generic_button(gs, {button_loc.x, button_loc.y, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}, "Begin Game", Begin_Game_Event{}, global = true)
-        // } else {
-        //     gs.tooltip = "Wait for the host to begin the game."
-        // }
-        // button_loc.y += BUTTON_PADDING + SELECTION_BUTTON_SIZE.y
-        // add_generic_button(gs, {button_loc.x, button_loc.y, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}, "Switch Team", Change_Team_Event{gs.my_player_id}, global = true)
-
-        // button_loc := Vec2{WIDTH - SELECTION_BUTTON_SIZE.x - BUTTON_PADDING, TOOLTIP_FONT_SIZE + BUTTON_PADDING}
-        // for hero in Hero_ID {
-        //     log.infof("adding button")
-        //     hero_name, _ := reflect.enum_name_from_value(hero)
-        //     hero_name_cstring := strings.unsafe_string_to_cstring(hero_name)
-        //     add_generic_button(gs, {button_loc.x, button_loc.y, SELECTION_BUTTON_SIZE.x, SELECTION_BUTTON_SIZE.y}, hero_name_cstring, Change_Hero_Event{gs.my_player_id, hero}, global=true)
-        //     button_loc.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
-        // }
+        if gs.is_host {
+            gs.tooltip = "Wait for players to join, then begin the game."
+        } else {
+            gs.tooltip = "Wait for the host to begin the game."
+        }
 
     case Change_Team_Event:
         player := get_player_by_id(gs, var.player_id)
@@ -315,6 +302,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         player.hero.id = var.hero_id
 
     case Begin_Game_Event:
+        gs.stage = .In_Game
         gs.current_battle_zone = .Centre
         gs.wave_counters = 5
         gs.life_counters[.Red] = 6
@@ -878,7 +866,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         for &player in gs.players {
             player.stage = .Selecting
         }
-        gs.stage = .Selection
         gs.confirmed_players = 0
         gs.tooltip = "Choose a card to play and then confirm it."
 
@@ -930,7 +917,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         retrieve_card(gs, card)
 
     case Begin_Resolution_Stage_Event: 
-        gs.stage = .Resolution
 
         // Unhide hidden cards
         for _, player_id in gs.players {
@@ -1455,7 +1441,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
 
     case Begin_Minion_Battle_Event:
-        gs.stage = .Minion_Battle
 
         if !gs.is_host do break
 

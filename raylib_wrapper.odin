@@ -43,6 +43,46 @@ get_frame_time :: proc() -> f32 {
     }
 }
 
+get_screen_width :: proc() -> i32 {
+    when !ODIN_TEST {
+        return rl.GetScreenWidth()
+    } else {
+        return 0
+    }
+}
+
+get_screen_height :: proc() -> i32 {
+    when !ODIN_TEST {
+        return rl.GetScreenHeight()
+    } else {
+        return 0
+    }
+}
+ 
+get_render_width :: proc() -> i32 {
+    when !ODIN_TEST {
+        return rl.GetRenderWidth()
+    } else {
+        return 0
+    }
+}
+
+get_render_height :: proc() -> i32 {
+    when !ODIN_TEST {
+        return rl.GetRenderHeight()
+    } else {
+        return 0
+    }
+}
+
+get_window_scale_dpi :: proc() -> Vec2 {
+    when !ODIN_TEST {
+        return rl.GetWindowScaleDPI()
+    } else {
+        return {}
+    }
+}
+ 
 draw_ring :: proc(centre: Vec2, inner_radius, outer_radius, start_angle, end_angle: f32, segments: i32, colour: Colour) {
     when !ODIN_TEST {
         rl.DrawRing(centre, inner_radius, outer_radius, start_angle, end_angle, segments, colour)
@@ -70,6 +110,18 @@ begin_texture_mode :: proc(render_texture: Render_Texture_2D) {
 end_texture_mode :: proc() {
     when !ODIN_TEST {
         rl.EndTextureMode()
+    }
+}
+
+begin_scissor_mode :: proc(x, y, width, height: i32) {
+    when !ODIN_TEST {
+        rl.BeginScissorMode(x, y, width, height)
+    }
+}
+
+end_scissor_mode :: proc() {
+    when !ODIN_TEST {
+        rl.EndScissorMode()
     }
 }
 
@@ -232,14 +284,6 @@ set_window_size :: proc(width, height: i32) {
 toggle_borderless_windowed :: proc() {
     when !ODIN_TEST {
         rl.ToggleBorderlessWindowed()
-    }
-}
-
-get_render_width :: proc() -> i32 {
-    when !ODIN_TEST {
-        return rl.GetRenderWidth()
-    } else {
-        return 0
     }
 }
 

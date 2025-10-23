@@ -28,10 +28,11 @@ Team :: enum {
 Game_Stage :: enum {
     Pre_Lobby,
     In_Lobby,
-    Selection,
-    Resolution,
-    Minion_Battle,
-    Upgrades,
+    In_Game,
+    // Selection,
+    // Resolution,
+    // Minion_Battle,
+    // Upgrades,
 }
 
 Active_Effect_Kind :: enum {

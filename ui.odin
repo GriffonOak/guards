@@ -106,10 +106,10 @@ TOAST_TEXT_PADDING :: 10
 TOAST_FONT_SIZE :: 40
 
 FIRST_SIDE_BUTTON_LOCATION :: Rectangle {
-    BOARD_TEXTURE_SIZE.x + BUTTON_PADDING, 
-    HEIGHT - BUTTON_PADDING - SELECTION_BUTTON_SIZE.y,
-    SELECTION_BUTTON_SIZE.x,
-    SELECTION_BUTTON_SIZE.y,
+    // BOARD_TEXTURE_SIZE.x + BUTTON_PADDING, 
+    // STARTING_HEIGHT - BUTTON_PADDING - SELECTION_BUTTON_SIZE.y,
+    // SELECTION_BUTTON_SIZE.x,
+    // SELECTION_BUTTON_SIZE.y,
 }
 
 null_input_proc: UI_Input_Proc : proc(_: ^Game_State, _: Input_Event, _: ^UI_Element) -> bool { return false }
@@ -218,81 +218,81 @@ clear_side_buttons :: proc(gs: ^Game_State) {
 }
 
 add_game_ui_elements :: proc(gs: ^Game_State) {
-    clear(&gs.ui_stack[.Buttons])
-    gs.side_button_manager = Side_Button_Manager {
-        buttons = {},
-        first_button_index = 0,
-        button_location = FIRST_SIDE_BUTTON_LOCATION,
-    }
+    // clear(&gs.ui_stack[.Buttons])
+    // gs.side_button_manager = Side_Button_Manager {
+    //     buttons = {},
+    //     first_button_index = 0,
+    //     button_location = FIRST_SIDE_BUTTON_LOCATION,
+    // }
 
-    board_render_texture: Render_Texture_2D
-    when !ODIN_TEST {
-        board_render_texture = load_render_texture(i32(BOARD_TEXTURE_SIZE.x), i32(BOARD_TEXTURE_SIZE.y))
-    }
+    // board_render_texture: Render_Texture_2D
+    // when !ODIN_TEST {
+    //     board_render_texture = load_render_texture(i32(BOARD_TEXTURE_SIZE.x), i32(BOARD_TEXTURE_SIZE.y))
+    // }
 
-    append(&gs.ui_stack[.Board], UI_Element {
-        BOARD_POSITION_RECT,
-        UI_Board_Element{
-            texture = board_render_texture,
-        },
-        board_input_proc,
-        draw_board,
-        {},
-    })
+    // append(&gs.ui_stack[.Board], UI_Element {
+    //     BOARD_POSITION_RECT,
+    //     UI_Board_Element{
+    //         texture = board_render_texture,
+    //     },
+    //     board_input_proc,
+    //     draw_board,
+    //     {},
+    // })
 
-    for player_id in 0..<len(gs.players) {
-        player := get_player_by_id(gs, player_id)
+    // for player_id in 0..<len(gs.players) {
+    //     player := get_player_by_id(gs, player_id)
 
-        if player_id == gs.my_player_id {
-            for card in player.hero.cards {
-                append(&gs.ui_stack[.Cards], UI_Element{
-                    card_hand_position_rects[card.color],
-                    UI_Card_Element{card_id = card.id},
-                    card_input_proc,
-                    draw_card,
-                    {},
-                })
-            }
-        } else {
-            for card in player.hero.cards {
-                append(&gs.ui_stack[.Cards], UI_Element {
-                    {},
-                    UI_Card_Element{card_id = card.id},
-                    card_input_proc,
-                    draw_card,
-                    {},
-                })
-            }
-        }
-    }
+    //     if player_id == gs.my_player_id {
+    //         for card in player.hero.cards {
+    //             append(&gs.ui_stack[.Cards], UI_Element{
+    //                 card_hand_position_rects[card.color],
+    //                 UI_Card_Element{card_id = card.id},
+    //                 card_input_proc,
+    //                 draw_card,
+    //                 {},
+    //             })
+    //         }
+    //     } else {
+    //         for card in player.hero.cards {
+    //             append(&gs.ui_stack[.Cards], UI_Element {
+    //                 {},
+    //                 UI_Card_Element{card_id = card.id},
+    //                 card_input_proc,
+    //                 draw_card,
+    //                 {},
+    //             })
+    //         }
+    //     }
+    // }
 }
 
-increase_window_size :: proc() {
-    if window_size == .Small {
-        window_size = .Big
-        set_window_size(WIDTH, HEIGHT)
-        window_scale = 1
-    }
-}
+// increase_window_size :: proc() {
+//     if window_size == .Small {
+//         window_size = .Big
+//         set_window_size(WIDTH, HEIGHT)
+//         window_scale = 1
+//     }
+// }
 
-decrease_window_size :: proc() {
-    if window_size == .Big {
-        window_size = .Small
-        set_window_size(WIDTH / 2, HEIGHT / 2)
-        window_scale = 2
-    }
-}
+// decrease_window_size :: proc() {
+//     if window_size == .Big {
+//         window_size = .Small
+//         set_window_size(WIDTH / 2, HEIGHT / 2)
+//         window_scale = 2
+//     }
+// }
 
 toggle_fullscreen :: proc() {
     toggle_borderless_windowed()
-    if window_size != .Fullscreen {
-        window_size = .Fullscreen
-        window_scale = WIDTH / f32(get_render_width())
-    } else {
-        window_size = .Small
-        set_window_size(WIDTH / 2, HEIGHT / 2)
-        window_scale = 2
-    }
+    // if window_size != .Fullscreen {
+    //     window_size = .Fullscreen
+    //     window_scale = WIDTH / f32(get_render_width())
+    // } else {
+    //     window_size = .Small
+    //     set_window_size(WIDTH / 2, HEIGHT / 2)
+    //     window_scale = 2
+    // }
 }
 
 add_toast :: proc(gs: ^Game_State, text: string, duration: f64) {
@@ -318,7 +318,7 @@ draw_toast :: proc(toast: ^Toast) {
     text_size := measure_text_ex(default_font, text, TOAST_FONT_SIZE, 0)
     rect_size := text_size + 2 * TOAST_TEXT_PADDING
 
-    text_position := (Vec2{WIDTH, HEIGHT} - text_size) / 2
+    text_position := (Vec2{STARTING_WIDTH, STARTING_HEIGHT} - text_size) / 2
     text_position.y += 100 * f32(t)
     rect_position := text_position - TOAST_TEXT_PADDING
 

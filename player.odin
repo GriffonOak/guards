@@ -97,16 +97,16 @@ player_offset :: proc(gs: ^Game_State, player_id: Player_ID) -> int {
 }
 
 render_player_info :: proc(gs: ^Game_State) {
-    for _, player_id in gs.players {
-        pos := Vec2{0, BOARD_POSITION_RECT.height} + TEXT_PADDING
-        if player_id != gs.my_player_id {
-            player_offset := player_offset(gs, player_id)
-            x := BOARD_TEXTURE_SIZE.x + TEXT_PADDING + RESOLVED_CARD_WIDTH / 2
-            y := TOOLTIP_FONT_SIZE + f32(player_offset) * BOARD_HAND_SPACE
-            pos = {x, y}
-        }
-        render_player_info_at_position(gs, player_id, pos)
-    }
+    // for _, player_id in gs.players {
+    //     pos := Vec2{0, BOARD_POSITION_RECT.height} + TEXT_PADDING
+    //     if player_id != gs.my_player_id {
+    //         player_offset := player_offset(gs, player_id)
+    //         x := BOARD_TEXTURE_SIZE.x + TEXT_PADDING + RESOLVED_CARD_WIDTH / 2
+    //         y := TOOLTIP_FONT_SIZE + f32(player_offset) * BOARD_HAND_SPACE
+    //         pos = {x, y}
+    //     }
+    //     render_player_info_at_position(gs, player_id, pos)
+    // }
 }
 
 count_hero_items :: proc(gs: ^Game_State, hero: Hero, kind: Card_Value_Kind) -> (out: int) {

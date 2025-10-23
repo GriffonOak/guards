@@ -80,24 +80,14 @@ event_queue_index := 0
 
 log_directory_name :: "logs"
 
-Window_Size :: enum {
-    Small,
-    Big,
-    Fullscreen,
-}
-
 Vec2 :: [2]f32
 
 Void :: struct {}
 
-WIDTH :: 1280 * 2
-HEIGHT :: 720 * 2
+STARTING_WIDTH :: 1280
+STARTING_HEIGHT :: 720
 
 FONT_SPACING :: 0
-
-window_size: Window_Size = .Small
-
-window_scale: f32 = 1 if window_size == .Big else 2
 
 default_font: Font
 
@@ -207,13 +197,13 @@ main :: proc() {
         card_hand_position_rects[color] = {f32(index) * CARD_HAND_WIDTH, CARD_HAND_Y_POSITION, CARD_HAND_WIDTH, CARD_HAND_HEIGHT + 100}
     }
 
-    // window_scale: i32 = 2 if window_size == .Small else 1
-
     // set_config_flags({.WINDOW_TOPMOST})
     set_trace_log_level(.NONE)
-    set_config_flags({.MSAA_4X_HINT, .WINDOW_RESIZABLE})
+    set_config_flags({.MSAA_4X_HINT, .WINDOW_RESIZABLE, .BORDERLESS_WINDOWED_MODE})
     clay_setup()
-    init_window(i32(WIDTH / window_scale), i32(HEIGHT / window_scale), "guards")
+    init_window(i32(STARTING_WIDTH), i32(STARTING_HEIGHT), "guards")
+    
+    // fmt.println(get_window_scale_dpi())
     defer close_window()
 
     for file in assets {
@@ -227,8 +217,8 @@ main :: proc() {
         }
     }
 
-    window_texture := load_render_texture(i32(WIDTH), i32(HEIGHT))
-    set_texture_filter(window_texture.texture, .BILINEAR)
+    // window_texture := load_render_texture(i32(WIDTH), i32(HEIGHT))
+    // set_texture_filter(window_texture.texture, .BILINEAR)
 
     gs: Game_State = {
         confirmed_players = 0,
@@ -249,9 +239,7 @@ main :: proc() {
             #partial switch var in event {
             case Key_Pressed_Event:
                 #partial switch var.key {
-                case .EQUAL: increase_window_size()
-                case .MINUS: decrease_window_size()
-                case .F: toggle_fullscreen()
+                case .F11: toggle_fullscreen()
                 case .M: add_marker(&gs)
                 case: 
                     if active_element_index.domain != .None && active_element_index.index < len(gs.ui_stack[active_element_index.domain]) {
@@ -337,13 +325,14 @@ main :: proc() {
 
         begin_drawing()
 
-        if gs.stage != .Pre_Lobby && gs.stage != .In_Lobby {
-            render_board_to_texture(&gs, gs.ui_stack[.Board][0])
-        }
+        // if gs.stage != .Pre_Lobby && gs.stage != .In_Lobby {
+        //     render_board_to_texture(&gs, gs.ui_stack[.Board][0])
+        // }
 
-        begin_texture_mode(window_texture)
+        // begin_texture_mode(window_texture)
+        clear_background(BLACK)
 
-        clay_render(&clay_render_commands)
+        clay_render(&gs, &clay_render_commands)
 
         // clear_background(BLACK)
 
@@ -352,18 +341,6 @@ main :: proc() {
                 element.render(&gs, element)
             }
         }
-
-        // if gs.stage == .In_Lobby {
-        //     pos := Vec2{10, 10}
-        //     for player_id in 0..<len(gs.players) {
-        //         render_player_info_at_position(&gs, player_id, pos)
-        //         pos.y += 200
-        //     }
-        // }
-
-        // if gs.stage != .Pre_Lobby && gs.stage != .In_Lobby {
-        //     render_player_info(&gs)
-        // }
 
         #reverse for &toast, index in gs.toasts {
             if get_time() > toast.start_time + toast.duration {
@@ -375,14 +352,12 @@ main :: proc() {
 
         end_texture_mode()
 
-        clear_background(BLACK)
-
-        draw_texture_pro(
-            window_texture.texture,
-            {0, 0, WIDTH, -HEIGHT},
-            {0, 0, WIDTH / window_scale, HEIGHT / window_scale},
-            {0, 0}, 0, WHITE,
-        )
+        // draw_texture_pro(
+        //     window_texture.texture,
+        //     {0, 0, WIDTH, -HEIGHT},
+        //     {0, 0, WIDTH / window_scale, HEIGHT / window_scale},
+        //     {0, 0}, 0, WHITE,
+        // )
 
         end_drawing()
 

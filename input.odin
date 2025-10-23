@@ -67,6 +67,8 @@ UI_State :: struct {
     keys_released_this_frame: ba.Bit_Array,
 
     char_pressed_this_frame: rune,
+
+    dpi_scale: f32,
 }
 
 
@@ -76,7 +78,7 @@ ui_state: UI_State
 input_queue: [dynamic]Input_Event
 
 check_for_input_events :: proc(q: ^[dynamic]Input_Event) {
-    p := get_mouse_position() * window_scale
+    p := get_mouse_position()
     // x := p.x
     // y := p.y
 

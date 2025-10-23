@@ -20,6 +20,14 @@ Font_ID :: enum u16 {
     Inconsolata,
 }
 
+Board_Element :: struct {
+    hovered_space: Target,
+}
+
+Custom_UI_Element :: union {
+    Board_Element,
+}
+
 BUTTON_HEIGHT :: 100
 BUTTON_WIDTH  :: 400
 BUTTON_TEXT_PADDING :: 20
@@ -69,16 +77,41 @@ clay_measure_text :: proc "c" (
     return transmute(clay.Dimensions) measure_text_ex(font, text_cstring, text_font_size, text_spacing)
 }
 
+clay_button_logic :: proc(element_id: clay.ElementId) -> (result: bool) {
+    hot := hot_element_id == element_id
+    active := active_element_id == element_id
+
+    if active {
+        if .LEFT in ui_state.released_this_frame {
+            if hot {
+                result = true
+            }
+            active_element_id = {}
+        }
+    } else if hot {
+        if .LEFT in ui_state.pressed_this_frame {
+            active_element_id = element_id
+        }
+    }
+
+    if clay.PointerOver(element_id) {
+        if active_element_id == {} || active {
+            hot_element_id = element_id
+        }
+    } else if hot {
+        hot_element_id = {}
+    }
+    return result
+}
+
 clay_button :: proc(
     id_string: string,
     text: string,
     width: f32 = -1
-) -> bool {
+) -> (result: bool) {
     button_id := clay.ID(id_string)
     button_active := button_id == active_element_id
     button_hot := button_id == hot_element_id
-
-    result: bool
 
     if clay.UI(id = button_id)({
         layout = {
@@ -98,25 +131,8 @@ clay_button :: proc(
             width = button_hot ? clay.BorderOutside(8) : {},
         },
     }) {
-        if button_active {
-            if .LEFT in ui_state.released_this_frame {
-                if button_hot {
-                    result = true
-                }
-                active_element_id = {}
-            }
-        } else if button_hot {
-            if .LEFT in ui_state.pressed_this_frame {
-                active_element_id = button_id
-            }
-        }
-        if clay.Hovered() {
-            if active_element_id == {} || button_active {
-                hot_element_id = button_id
-            }
-        } else if button_hot {
-            hot_element_id = {}
-        }
+
+        result = clay_button_logic(button_id)
 
         clay.TextDynamic(text, clay.TextConfig({
             textColor = {0, 0, 0, 255},
@@ -294,13 +310,89 @@ clay_player_info :: proc(player: ^Player) {
             fontSize = INFO_FONT_SIZE,
             textColor = raylib_to_clay_color(team_colors[player.team]),
         }))
-
-        // draw_text_ex(default_font, hero_name, next_pos, INFO_FONT_SIZE, FONT_SPACING, team_colors[player.team])
-        // next_pos.y += INFO_FONT_SIZE + TEXT_PADDING
-
-        // level_string := fmt.ctprintf("Level %v", player.hero.level)
-        // draw_text_ex(default_font, level_string, next_pos, INFO_FONT_SIZE, FONT_SPACING, WHITE)
     }
+}
+
+clay_player_panel :: proc(player: ^Player) -> clay.ElementId {
+    player_panel_id := clay.ID("player_panel", u32(player.id))
+
+    if clay.UI(id = player_panel_id)({
+        layout = {
+            layoutDirection = .TopToBottom,
+            sizing = {
+                clay.SizingFit({}),
+                clay.SizingFit({}),
+            },
+        },
+    }) {
+        if clay.UI()({
+            layout = {
+                layoutDirection = .LeftToRight,
+                sizing = {
+                    clay.SizingGrow({}),
+                    clay.SizingFit({}),
+                },
+            },
+        }) {
+
+            if clay.UI()({
+                layout = {
+                    layoutDirection = .TopToBottom,
+                },
+            }) {
+                username := string(cstring(raw_data(player._username_buf[:])))
+                hero_name, _ := reflect.enum_name_from_value(player.hero.id)
+                hero_stats_string := fmt.tprintf("Level %v, %v coins", player.hero.level, player.hero.coins)
+
+                clay.TextDynamic(username, clay.TextConfig({
+                    fontId = u16(Font_ID.Inter),
+                    fontSize = INFO_FONT_SIZE,
+                    textColor = raylib_to_clay_color(team_colors[player.team]),
+                }))
+
+                clay.TextDynamic(hero_name, clay.TextConfig({
+                    fontId = u16(Font_ID.Inter),
+                    fontSize = INFO_FONT_SIZE,
+                    textColor = raylib_to_clay_color(team_colors[player.team]),
+                }))
+
+                clay.TextDynamic(hero_stats_string, clay.TextConfig({
+                    fontId = u16(Font_ID.Inter),
+                    fontSize = INFO_FONT_SIZE,
+                    textColor = raylib_to_clay_color(team_colors[player.team]),
+                }))
+            }
+
+
+        }
+
+        if clay.UI()({
+            layout = {
+                layoutDirection = .LeftToRight,
+                sizing = {
+                    clay.SizingFit({}),
+                    clay.SizingFit({}),
+                },
+                childGap = 4,
+            },
+        }) {
+            for _ in 0..<4 {
+                // resolved_card_string := fmt.tprintf("player_%v_resolved_card_%v", player.id, i)
+                if clay.UI()({
+                    layout = {
+                        layoutDirection = .LeftToRight,
+                        sizing = {
+                            clay.SizingFixed(RESOLVED_CARD_WIDTH),
+                            clay.SizingFixed(RESOLVED_CARD_HEIGHT),
+                        },
+                    },
+                    backgroundColor = {0, 0, 180, 255},
+                }) {}
+            }
+        }
+    }
+
+    return player_panel_id
 }
 
 clay_setup :: proc() {
@@ -308,14 +400,14 @@ clay_setup :: proc() {
 
     arena_memory, _ := make([^]byte, clay_min_memory_size)
     clay_arena := clay.CreateArenaWithCapacityAndMemory(uint(clay_min_memory_size), arena_memory)
-    clay.Initialize(clay_arena, {WIDTH, HEIGHT}, {})
+    clay.Initialize(clay_arena, {STARTING_WIDTH, STARTING_HEIGHT}, {})
 
     clay.SetMeasureTextFunction(clay_measure_text, nil)
 }
 
 clay_layout :: proc(gs: ^Game_State) -> Render_Command_Array {
 
-    clay.SetLayoutDimensions({WIDTH, HEIGHT})
+    clay.SetLayoutDimensions({f32(get_render_width()), f32(get_render_height())})
 
     mouse_position := ui_state.mouse_pos
     mouse_down := .LEFT in ui_state.mouse_state
@@ -332,7 +424,7 @@ clay_layout :: proc(gs: ^Game_State) -> Render_Command_Array {
             layoutDirection = .TopToBottom,
             childAlignment = {x = .Center},
             sizing = SIZING_GROW,
-            padding = {16, 16, 16, 16},
+            padding = clay.PaddingAll(8),
         },
         backgroundColor = {10, 30, 40, 255},
     }) {
@@ -346,8 +438,9 @@ clay_layout :: proc(gs: ^Game_State) -> Render_Command_Array {
         )
 
         #partial switch gs.stage {
-        case .Pre_Lobby: clay_pre_lobby_screen(gs)
-        case .In_Lobby:  clay_lobby_screen(gs)
+        case .Pre_Lobby:    clay_pre_lobby_screen(gs)
+        case .In_Lobby:     clay_lobby_screen(gs)
+        case .In_Game:      clay_game_screen(gs)
         }
     }
 
@@ -355,7 +448,7 @@ clay_layout :: proc(gs: ^Game_State) -> Render_Command_Array {
 
 }
 
-clay_render :: proc(commands: ^Render_Command_Array) {
+clay_render :: proc(gs: ^Game_State, commands: ^Render_Command_Array) {
     for command_index in 0..<commands.length {
         command := clay.RenderCommandArray_Get(commands, command_index)
         bounding_box := command.boundingBox
@@ -404,6 +497,17 @@ clay_render :: proc(commands: ^Render_Command_Array) {
             }
             if (config.cornerRadius.bottomRight > 0) {
                 draw_ring(Vec2 { (bounding_box.x + bounding_box.width - config.cornerRadius.bottomRight), (bounding_box.y + bounding_box.height - config.cornerRadius.bottomRight) }, (config.cornerRadius.bottomRight - f32(config.width.bottom)), config.cornerRadius.bottomRight, 0.1, 90, 10, clay_to_raylib_color(config.color))
+            }
+        case .Image:
+            texture := cast(^Texture) command.renderData.image.imageData
+            draw_texture_pro(texture^, {0, 0, f32(texture.width), -f32(texture.height)}, Rectangle(bounding_box), {}, 0, WHITE)
+        case .Custom:
+            custom_data := cast(^Custom_UI_Element) command.renderData.custom.customData
+            switch custom_variant in custom_data {
+            case Board_Element:
+                begin_scissor_mode(i32(bounding_box.x), i32(bounding_box.y), i32(bounding_box.width), i32(bounding_box.height))
+                render_board(gs, Rectangle(bounding_box), custom_variant)
+                end_scissor_mode()
             }
         }
     }
@@ -522,5 +626,258 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                 }
             }
         }
+    }
+}
+
+board_element := Custom_UI_Element(Board_Element{})
+
+clay_game_screen :: proc(gs: ^Game_State) {
+    game_screen_id := clay.ID("game_screen")
+    if clay.UI(id = game_screen_id)({
+        layout = {
+            layoutDirection = .LeftToRight,
+            sizing = SIZING_GROW,
+            childAlignment = {
+                x = .Center,
+                y = .Center,
+            },
+            childGap = RESOLVED_CARD_WIDTH / 2,
+        },
+    }) {
+        left_sidebar_id := clay.ID("left_sidebar")
+        if clay.UI(id = left_sidebar_id)({
+            layout = {
+                layoutDirection = .TopToBottom,
+                sizing = {
+                    width = clay.SizingFit({}),
+                    height = clay.SizingGrow({}),
+                },
+            },
+            // backgroundColor = raylib_to_clay_color(team_colors[.Red]),
+        }) {
+            for &player in gs.players {
+                if player.team == .Red {
+                    panel_id := clay_player_panel(&player)
+                    for card in player.hero.cards {
+                        if card.state == .Played {
+                            card_data, _ := get_card_data_by_id(gs, card.id)
+                            played_card_id := clay.ID("played_card", u32(player.id))
+                            played_card_hot := hot_element_id == played_card_id
+
+                            if clay.PointerOver(played_card_id) {
+                                if active_element_id == {} {
+                                    hot_element_id = played_card_id
+                                    played_card_hot = true
+                                }
+                            } else if played_card_hot {
+                                hot_element_id = {}
+                                played_card_hot = false
+                            }
+                            
+                            if clay.UI(id = played_card_id)({
+                                layout = {
+                                    sizing = {
+                                        clay.SizingFixed(played_card_hot ? CARD_TEXTURE_SIZE.x : RESOLVED_CARD_WIDTH),
+                                        clay.SizingFixed(played_card_hot ? CARD_TEXTURE_SIZE.y : RESOLVED_CARD_HEIGHT),
+                                    },
+                                },
+                                image = {
+                                    &card_data.texture,
+                                },
+                                // backgroundColor = raylib_to_clay_color(card_color_values[color]),
+                                floating = {
+                                    attachment = {
+                                        element = .LeftTop,
+                                        parent = .RightTop,
+                                    },
+                                    offset = {
+                                        8, 8,
+                                    },
+                                    attachTo = .ElementWithId,
+                                    parentId = panel_id.id,
+                                },
+                            }) {}
+                        }
+                    }
+                }
+            }
+        }
+
+        hand_panel_id := clay.ID("hand_panel")
+        board_id := clay.ID("board")
+        central_panel_id := clay.ID("central_panel")
+
+        hand_panel_box := clay.GetElementData(hand_panel_id).boundingBox
+        central_panel_height := clay.GetElementData(central_panel_id).boundingBox.height
+        max_central_panel_width := max(central_panel_height - hand_panel_box.height, hand_panel_box.width)
+
+        if clay.UI(id = central_panel_id)({
+            layout = {
+                layoutDirection = .TopToBottom,
+                sizing = {
+                    width = clay.SizingGrow({
+                        max = max_central_panel_width,
+                    }),
+                    height = clay.SizingGrow({}),
+                },
+                childAlignment = {
+                    x = .Center,
+                },
+                // padding = clay.PaddingAll(8),
+                childGap = 8,
+            },
+        }) {
+            
+            board_hot := board_id == hot_element_id
+            if clay.UI(id = board_id)({
+                layout = {
+                    sizing = SIZING_GROW,
+                },
+                aspectRatio = {1},
+                backgroundColor = raylib_to_clay_color(BLUE),
+                custom = {
+                    &board_element,
+                },
+            }) {
+                bounding_rect := Rectangle(clay.GetElementData(board_id).boundingBox)
+                setup_space_positions(gs, bounding_rect)
+    
+                prev_hovered_space := board_element.(Board_Element).hovered_space
+                defer {
+                    if board_element.(Board_Element).hovered_space != prev_hovered_space {
+                        append(&gs.event_queue, Space_Hovered_Event{board_element.(Board_Element).hovered_space})
+                    }
+                }
+    
+                addressable_board_element := &board_element.(Board_Element)
+                addressable_board_element.hovered_space = INVALID_TARGET
+                VERTICAL_SPACING := bounding_rect.height / 17.9
+    
+                if clay.Hovered() && active_element_id == {} {
+                    hot_element_id = board_id
+                    closest_idx := INVALID_TARGET
+                    closest_dist: f32 = 1e6
+                    for arr, x in gs.board {
+                        for space, y in arr {
+                            diff := (ui_state.mouse_pos - space.position)
+                            dist := diff.x * diff.x + diff.y * diff.y
+                            if dist < closest_dist && dist < VERTICAL_SPACING * VERTICAL_SPACING * 0.5 {
+                                closest_idx = {u8(x), u8(y)}
+                                closest_dist = dist
+                            }
+                        }
+                    }
+                    if closest_idx != INVALID_TARGET  {
+                        addressable_board_element.hovered_space = closest_idx
+                    }
+                } else if board_hot {
+                    hot_element_id = {}
+                }
+    
+                if board_hot && .LEFT in ui_state.pressed_this_frame {
+                    append(&gs.event_queue, Space_Clicked_Event{board_element.(Board_Element).hovered_space})
+                }
+            }
+
+            my_player := get_my_player(gs)
+            if clay.UI(id = hand_panel_id)({
+                layout = {
+                    sizing = {
+                        width = clay.SizingFit({}),
+                        height = clay.SizingFit({}),
+                    },
+                },
+            }) {
+                for &card, color in my_player.hero.cards {
+                    normal_card_sizing := clay.Sizing {
+                        clay.SizingFixed(2 * RESOLVED_CARD_WIDTH),
+                        clay.SizingFixed(2 * RESOLVED_CARD_HEIGHT),
+                    }
+                    if card.state == .In_Hand {
+                        hand_card_id := clay.ID("hand_card", u32(color))
+                        hand_card_active := active_element_id == hand_card_id
+                        hand_card_hot := hot_element_id == hand_card_id
+
+                        if hand_card_active {
+                            if .LEFT in ui_state.released_this_frame {
+                                if hand_card_hot {
+                                    for &other_card in my_player.hero.cards {
+                                        if other_card.state == .Played {
+                                            other_card.state = .In_Hand
+                                        }
+                                    }
+                                    card.state = .Played
+                                }
+                                active_element_id = {}
+                            }
+                        } else if hand_card_hot {
+                            if .LEFT in ui_state.pressed_this_frame {
+                                active_element_id = hand_card_id
+                            }
+                        }
+
+                        if clay.PointerOver(hand_card_id) {
+                            if active_element_id == {} || active_element_id == hand_card_id {
+                                hot_element_id = hand_card_id
+                                hand_card_hot = true
+                            }
+                        } else if hand_card_hot {
+                            hot_element_id = {}
+                            hand_card_hot = false
+                        }
+
+                        hot_card_sizing := clay.Sizing {
+                            clay.SizingFixed(CARD_TEXTURE_SIZE.x),
+                            clay.SizingFixed(2 * RESOLVED_CARD_HEIGHT),
+                        }
+
+                        card_data, _ := get_card_data_by_id(gs, card.id)
+                        if clay.UI(id = hand_card_id) ({
+                            layout = {
+                                sizing = hand_card_hot ? hot_card_sizing : normal_card_sizing,
+                            },
+                            image = {
+                                &card_data.texture,
+                            },
+                            // backgroundColor = raylib_to_clay_color(card_color_values[color]) * (hand_card_active ? {0.8, 0.8, 0.8, 1} : {1, 1, 1, 1}),
+                        }) {
+                            if hand_card_hot {
+                                if clay.UI(id = hand_card_id)({
+                                    layout = {
+                                        sizing = {
+                                            clay.SizingFixed(CARD_TEXTURE_SIZE.x),
+                                            clay.SizingFixed(CARD_TEXTURE_SIZE.y),
+                                        },
+                                    },
+                                    image = {
+                                        &card_data.texture,
+                                    },
+                                    // backgroundColor = raylib_to_clay_color(card_color_values[color]),
+                                    floating = {
+                                        attachment = {
+                                            element = .CenterBottom,
+                                            parent = .CenterBottom,
+                                        },
+                                        attachTo = .Parent,
+                                    },
+                                }) {}
+                            }
+                        } 
+                    }
+                }
+            }
+        }
+ 
+
+        right_sidebar_id := clay.ID("left_sidebar")
+        if clay.UI(id = right_sidebar_id)({
+            layout = {
+                sizing = {
+                    width = clay.SizingGrow({max = 400}),
+                    height = clay.SizingGrow({}),
+                },
+            },
+            backgroundColor = raylib_to_clay_color(team_colors[.Blue]),
+        }) {}
     }
 }
