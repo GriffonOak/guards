@@ -31,7 +31,7 @@ Hero_ID :: enum {
     Sabina,
 }
 
-number_names := [?]cstring {
+number_names := [?]string {
     "0", 
     "1",
     "2",

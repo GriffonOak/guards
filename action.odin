@@ -46,7 +46,7 @@ Choose_Target_Action :: struct {
 }
 
 Choice :: struct {
-    name: cstring,
+    name: string,
     valid: bool,
     jump_index: Action_Index,
 }
@@ -208,7 +208,7 @@ Action :: struct {
     // This has a nice knock-on effect as now optional actions with no given skip index
     // will halt if they are impossible.
     skip_index: Action_Index,
-    skip_name: cstring,
+    skip_name: string,
     variant: Action_Variant,
     
     targets: Target_Set,

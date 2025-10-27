@@ -424,10 +424,9 @@ render_board :: proc(gs: ^Game_State, bounding_rect: Rectangle, board_element: B
             }
         case Choice_Action:
             // See if any side buttons are hovered
-            for &ui_element in gs.side_button_manager.buttons {
-                button_element := assert_variant(&ui_element.variant, UI_Button_Element)
-                if .Hovered not_in ui_element.flags do continue
-                event, ok := button_element.event.(Choice_Taken_Event)
+            for button_data in gs.side_button_manager.button_data {
+                if button_data.id != hot_element_id do continue
+                event, ok := button_data.event.(Choice_Taken_Event)
                 if !ok do continue
                 next_index := event.jump_index
                 if next_index.card_id == {} do next_index.card_id = action_index.card_id

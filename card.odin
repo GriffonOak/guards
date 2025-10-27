@@ -425,121 +425,115 @@ get_ui_card_slice :: proc(gs: ^Game_State, player_id: Player_ID) -> []UI_Element
     return gs.ui_stack[.Cards][5 * player_id:][:5]
 }
 
-find_element_for_card :: proc(gs: ^Game_State, card_id: Card_ID) -> (^UI_Element, int) {
-    ui_slice := get_ui_card_slice(gs, card_id.owner_id)
+// find_element_for_card :: proc(gs: ^Game_State, card_id: Card_ID) -> (^UI_Element, int) {
+//     ui_slice := get_ui_card_slice(gs, card_id.owner_id)
 
-    for &element, index in ui_slice {
-        card_element := assert_variant(&element.variant, UI_Card_Element)
-        if card_element.card_id == card_id {
-            return &element, index
-        }
-    }
+//     for &element, index in ui_slice {
+//         card_element := assert_variant(&element.variant, UI_Card_Element)
+//         if card_element.card_id == card_id {
+//             return &element, index
+//         }
+//     }
 
-    return nil, -1
-}
+//     return nil, -1
+// }
 
-find_selected_card_element :: proc(gs: ^Game_State) -> (^UI_Element, bool) {
-    ui_slice := get_ui_card_slice(gs, gs.my_player_id)
-    for &element in ui_slice {
-        card_element := assert_variant(&element.variant, UI_Card_Element)
-        if card_element.selected {
-            return &element, true
-        }
-    }
-    return nil, false
-}
+// find_selected_card_element :: proc(gs: ^Game_State) -> (^UI_Element, bool) {
+//     ui_slice := get_ui_card_slice(gs, gs.my_player_id)
+//     for &element in ui_slice {
+//         card_element := assert_variant(&element.variant, UI_Card_Element)
+//         if card_element.selected {
+//             return &element, true
+//         }
+//     }
+//     return nil, false
+// }
 
-play_card :: proc(gs: ^Game_State, card: ^Card) {
+// play_card :: proc(gs: ^Game_State, card: ^Card) {
 
-    element, _ := find_element_for_card(gs, card^)
-    card_element := &element.variant.(UI_Card_Element)
-    card_element.selected = false
+//     element, _ := find_element_for_card(gs, card^)
+//     card_element := &element.variant.(UI_Card_Element)
+//     card_element.selected = false
 
-    if card.owner_id == gs.my_player_id {
-        element.bounding_rect = CARD_PLAYED_POSITION_RECT
-    } else {
-        card_element.hidden = true
+//     if card.owner_id == gs.my_player_id {
+//         element.bounding_rect = CARD_PLAYED_POSITION_RECT
+//     } else {
+//         card_element.hidden = true
 
-        element.bounding_rect = OTHER_PLAYER_PLAYED_CARD_POSITION_RECT
-        element.bounding_rect.y += f32(player_offset(gs, card.owner_id)) * BOARD_HAND_SPACE
-    }
+//         element.bounding_rect = OTHER_PLAYER_PLAYED_CARD_POSITION_RECT
+//         element.bounding_rect.y += f32(player_offset(gs, card.owner_id)) * BOARD_HAND_SPACE
+//     }
 
-    card.turn_played = gs.turn_counter
-    card.state = .Played
-}
+//     card.turn_played = gs.turn_counter
+//     card.state = .Played
+// }
 
 retrieve_card :: proc(gs: ^Game_State, card: ^Card) {
-
-    element, _ := find_element_for_card(gs, card^)
-    if card.owner_id == gs.my_player_id {
-        element.bounding_rect = card_hand_position_rects[card.color]
-    } else {
-        element.bounding_rect = {}
-    }
 
     card.state = .In_Hand
 }
 
 resolve_card :: proc(gs: ^Game_State, card: ^Card) {
 
-    element, _ := find_element_for_card(gs, card^)
-    card_centre_position, card_dimensions: Vec2
+    // element, _ := find_element_for_card(gs, card^)
+    // card_centre_position, card_dimensions: Vec2
     
-    if card.owner_id == gs.my_player_id {
-        card_centre_position = (
-            {FIRST_CARD_RESOLVED_POSITION_RECT.x, FIRST_CARD_RESOLVED_POSITION_RECT.y} +
-            {FIRST_CARD_RESOLVED_POSITION_RECT.width, FIRST_CARD_RESOLVED_POSITION_RECT.height} / 2
-        )
-        card_dimensions = {FIRST_CARD_RESOLVED_POSITION_RECT.width, FIRST_CARD_RESOLVED_POSITION_RECT.height}
-    } else {
-        card_centre_position = (
-            {OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.x, OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.y} +
-            {OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.width, OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.height} / 2
-        )
-        card_dimensions = {OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.width, OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.height}
-        card_centre_position.y += f32(player_offset(gs, card.owner_id)) * BOARD_HAND_SPACE
-    }
-    card_centre_position.x +=  f32(gs.turn_counter) * (RESOLVED_CARD_PADDING + FIRST_CARD_RESOLVED_POSITION_RECT.width)
+    // if card.owner_id == gs.my_player_id {
+    //     card_centre_position = (
+    //         {FIRST_CARD_RESOLVED_POSITION_RECT.x, FIRST_CARD_RESOLVED_POSITION_RECT.y} +
+    //         {FIRST_CARD_RESOLVED_POSITION_RECT.width, FIRST_CARD_RESOLVED_POSITION_RECT.height} / 2
+    //     )
+    //     card_dimensions = {FIRST_CARD_RESOLVED_POSITION_RECT.width, FIRST_CARD_RESOLVED_POSITION_RECT.height}
+    // } else {
+    //     card_centre_position = (
+    //         {OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.x, OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.y} +
+    //         {OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.width, OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.height} / 2
+    //     )
+    //     card_dimensions = {OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.width, OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.height}
+    //     card_centre_position.y += f32(player_offset(gs, card.owner_id)) * BOARD_HAND_SPACE
+    // }
+    // card_centre_position.x +=  f32(gs.turn_counter) * (RESOLVED_CARD_PADDING + FIRST_CARD_RESOLVED_POSITION_RECT.width)
 
-    for _, effect in gs.ongoing_active_effects {
-        if effect.parent_card_id == card.id {
-            card_dimensions.xy = card_dimensions.yx
-            break
-        }
-    }
-    card_position := card_centre_position - card_dimensions / 2
-    element.bounding_rect = {
-        card_position.x, card_position.y,
-        card_dimensions.x, card_dimensions.y,
-    }
+    // for _, effect in gs.ongoing_active_effects {
+    //     if effect.parent_card_id == card.id {
+    //         card_dimensions.xy = card_dimensions.yx
+    //         break
+    //     }
+    // }
+    // card_position := card_centre_position - card_dimensions / 2
+    // element.bounding_rect = {
+    //     card_position.x, card_position.y,
+    //     card_dimensions.x, card_dimensions.y,
+    // }
     
+    card.turn_played = gs.turn_counter
     card.state = .Resolved
 }
 
 discard_card :: proc(gs: ^Game_State, card: ^Card) {
-    element, index := find_element_for_card(gs, card^)
+    // element, index := find_element_for_card(gs, card^)
 
-    if card.owner_id == gs.my_player_id {
-        element.bounding_rect = FIRST_Discarded_CARD_POSITION_RECT
-    } else {
-        element.bounding_rect = OTHER_PLAYER_Discarded_CARD_POSITION_RECT
-        element.bounding_rect.y += f32(player_offset(gs, card.owner_id)) * BOARD_HAND_SPACE
-    }
+    // if card.owner_id == gs.my_player_id {
+    //     element.bounding_rect = FIRST_Discarded_CARD_POSITION_RECT
+    // } else {
+    //     element.bounding_rect = OTHER_PLAYER_Discarded_CARD_POSITION_RECT
+    //     element.bounding_rect.y += f32(player_offset(gs, card.owner_id)) * BOARD_HAND_SPACE
+    // }
 
-    player := get_player_by_id(gs, card.owner_id)
-    prev_discarded_cards := 0
+    // player := get_player_by_id(gs, card.owner_id)
+    // prev_discarded_cards := 0
 
-    for card in player.hero.cards {
-        if card.state == .Discarded do prev_discarded_cards += 1
-    }
+    // for card in player.hero.cards {
+    //     if card.state == .Discarded do prev_discarded_cards += 1
+    // }
     
-    offset := f32(prev_discarded_cards) * RESOLVED_CARD_PADDING
-    element.bounding_rect.x += offset
-    element.bounding_rect.y += offset
+    // offset := f32(prev_discarded_cards) * RESOLVED_CARD_PADDING
+    // element.bounding_rect.x += offset
+    // element.bounding_rect.y += offset
 
-    ui_card_slice := get_ui_card_slice(gs, card.owner_id)
+    // ui_card_slice := get_ui_card_slice(gs, card.owner_id)
 
-    ui_card_slice[prev_discarded_cards], ui_card_slice[index] = ui_card_slice[index], ui_card_slice[prev_discarded_cards]
+    // ui_card_slice[prev_discarded_cards], ui_card_slice[index] = ui_card_slice[index], ui_card_slice[prev_discarded_cards]
 
 
     // Need to set turn played here for duelist cards. Shouldn't matter otherwise.

@@ -403,23 +403,26 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
     case Card_Clicked_Event:
         card_id := var.card_id
         card, card_ok := get_card_by_id(gs, card_id)
+        my_player := get_my_player(gs)
 
-        #partial switch get_my_player(gs).stage {
+        #partial switch my_player.stage {
         case .Selecting:
             log.assert(card_ok, "Card element clicked with no card associated!")
             #partial switch card.state {
+
+            case .Played:
+                card.state = .In_Hand
+                clear_side_buttons(gs)
+
             case .In_Hand:
-                element, _ := find_element_for_card(gs, card_id)
-                log.assert(element != nil, "Could not find element for card!")
-                card_element := assert_variant(&element.variant, UI_Card_Element)
-
-                if selected_element, ok2 := find_selected_card_element(gs); ok2 {
-                    selected_card_element := &selected_element.variant.(UI_Card_Element)
-                    selected_card_element.selected = false
-                    clear_side_buttons(gs)
+                clear_side_buttons(gs)
+                for &other_card in my_player.hero.cards {
+                    if other_card.state == .Played {
+                        other_card.state = .In_Hand
+                    }
                 }
+                card.state = .Played
 
-                card_element.selected = true
                 add_side_button(gs, "Confirm card", Card_Confirmed_Event{gs.my_player_id, card_id}, global=true)
             }
 
@@ -427,30 +430,30 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             if !card_ok {  // Clicked on an upgrade option
 
                 // Find the predecessor card
-                hero := &get_my_player(gs).hero
-                hand_card := &hero.cards[card_id.color]
+                // hero := &get_my_player(gs).hero
+                // hand_card := &hero.cards[card_id.color]
                 
                 // Swap over the card ID of the card element for the hand card
-                ui_element, _  := find_element_for_card(gs, hand_card)
-                log.assert(ui_element != nil, "Could not find hand card when upgrading!")
-                hand_card_element := &ui_element.variant.(UI_Card_Element)
-                hand_card_element.card_id = card_id
+                // ui_element, _  := find_element_for_card(gs, hand_card)
+                // log.assert(ui_element != nil, "Could not find hand card when upgrading!")
+                // hand_card_element := &ui_element.variant.(UI_Card_Element)
+                // hand_card_element.card_id = card_id
 
-                // Swap over the card ID in hand
-                hand_card.id = card_id
+                // // Swap over the card ID in hand
+                // hand_card.id = card_id
                 
-                // Add the alternate card to the hero's items
-                hero.items[hero.item_count] = card_id
-                hero.items[hero.item_count].alternate = !card_id.alternate
-                hero.item_count += 1
+                // // Add the alternate card to the hero's items
+                // hero.items[hero.item_count] = card_id
+                // hero.items[hero.item_count].alternate = !card_id.alternate
+                // hero.item_count += 1
                 
-                // Pop two card elements and a potential cancel button
-                pop(&gs.ui_stack[.Cards])
-                pop(&gs.ui_stack[.Cards])
-                clear_side_buttons(gs)
+                // // Pop two card elements and a potential cancel button
+                // pop(&gs.ui_stack[.Cards])
+                // pop(&gs.ui_stack[.Cards])
+                // clear_side_buttons(gs)
 
-                // Complete the upgrade
-                append(&gs.event_queue, Begin_Next_Upgrade_Event{})
+                // // Complete the upgrade
+                // append(&gs.event_queue, Begin_Next_Upgrade_Event{})
             } else {
                 #partial switch card.state {
                 case .In_Hand:
@@ -461,7 +464,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                         if other_card.tier == 0 do continue
                         lowest_tier = min(lowest_tier, other_card.tier)
                     }
-                    if card.tier > lowest_tier || lowest_tier == 3 do break  // @cleanup This is not really correct, upgrade should not be possible if lowest tier is 3
+                    if card.tier > lowest_tier || lowest_tier == 3 do break
     
                     // I shouldn't really be checking this through the ui stack like this tbh
                     // But I don't have a better way of seeing if an upgrade is happening. // @Cleanup?
@@ -530,8 +533,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 append(&gs.event_queue, Begin_Next_Action_Event{})
 
             case Choose_Target_Action:
-                log.assert(len(gs.side_button_manager.buttons) > 0, "No side buttons!?")
-                top_button := gs.side_button_manager.buttons[len(gs.side_button_manager.buttons) - 1].variant.(UI_Button_Element)
+                num_side_buttons := len(gs.side_button_manager.button_data)
+                log.assert(num_side_buttons > 0, "No side buttons!?")
+                top_button := gs.side_button_manager.button_data[num_side_buttons - 1]
                 if _, ok := top_button.event.(Cancel_Event); ok {
                     pop_side_button(gs)
                 }
@@ -894,7 +898,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         if played_card_exists {
             card, ok := get_card_by_id(gs, card_id)
             log.assert(ok, "Invalid card ID in card confirmation event!")
-            play_card(gs, card)
+            card.state = .Played
         }
 
         if var.player_id == gs.my_player_id {
@@ -916,16 +920,16 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         log.assert(ok, "Retrieved card has invalid card ID!")
         retrieve_card(gs, card)
 
-    case Begin_Resolution_Stage_Event: 
+    case Begin_Resolution_Stage_Event:
 
         // Unhide hidden cards
-        for _, player_id in gs.players {
-            player_card, ok := find_played_card(gs, player_id)
-            if !ok do continue  // Player had no played card
-            element, _ := find_element_for_card(gs, player_card^)
-            card_element := &element.variant.(UI_Card_Element)
-            card_element.hidden = false
-        }
+        // for _, player_id in gs.players {
+        //     player_card, ok := find_played_card(gs, player_id)
+        //     if !ok do continue  // Player had no played card
+        //     element, _ := find_element_for_card(gs, player_card^)
+        //     card_element := &element.variant.(UI_Card_Element)
+        //     card_element.hidden = false
+        // }
 
         if gs.is_host {
             broadcast_game_event(gs, get_next_turn_event(gs))
@@ -937,7 +941,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             gs.tooltip = "Tied initiative: Choose which player on your team acts first."
             for tied_id, index in var.tied_player_ids {
                 if index == var.num_ties do break
-                add_side_button(gs, get_username(gs, tied_id), Begin_Player_Resolution_Event{tied_id}, global = true)
+                add_side_button(gs, string(get_username(gs, tied_id)), Begin_Player_Resolution_Event{tied_id}, global = true)
             }
         } else {
             gs.tooltip = "Waiting for the team captain to resolve tied initiative."
@@ -997,7 +1001,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         }
 
         if optional {
-            add_side_button(gs, "Skip" if action.skip_name == nil else action.skip_name, Resolve_Current_Action_Event{skip_index})
+            add_side_button(gs, "Skip" if action.skip_name == "" else action.skip_name, Resolve_Current_Action_Event{skip_index})
         }
 
         switch &action_type in action.variant {

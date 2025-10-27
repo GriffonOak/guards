@@ -3,6 +3,7 @@ package guards
 import "core:fmt"
 import "core:strings"
 import sa "core:container/small_array"
+import clay "clay-odin"
 
 _ :: strings
 
@@ -65,10 +66,17 @@ UI_Element :: struct {
     flags: bit_set[UI_Element_Flag],
 }
 
+Button_Data :: struct {
+    event: Event,
+    text: string,
+    global: bool,
+    id: clay.ElementId,
+}
+
 Side_Button_Manager :: struct {
-    buttons: []UI_Element,
-    first_button_index: int,
-    button_location: Rectangle,
+    button_data: [dynamic]Button_Data,
+    // first_button_index: int,
+    // button_location: Rectangle,
 }
 
 Conditional_String_Argument :: struct {
@@ -194,27 +202,22 @@ add_generic_button :: proc(gs: ^Game_State, location: Rectangle, text: cstring, 
     })
 }
 
-add_side_button :: proc(gs: ^Game_State, text: cstring, event: Event, global: bool = false) {
-    if len(gs.side_button_manager.buttons) == 0 {
-        gs.side_button_manager.first_button_index = len(gs.ui_stack[.Buttons])
-    }
+add_side_button :: proc(gs: ^Game_State, text: string, event: Event, global: bool = false) {
 
-    add_generic_button(gs, gs.side_button_manager.button_location, text, event, global)
-    gs.side_button_manager.buttons = gs.ui_stack[.Buttons][gs.side_button_manager.first_button_index:][:len(gs.side_button_manager.buttons) + 1]
-    gs.side_button_manager.button_location.y -= SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+    append(&gs.side_button_manager.button_data, Button_Data {
+        event = event,
+        text = text,
+        global = global,
+    })
 }
 
 pop_side_button :: proc(gs: ^Game_State) {
-    if len(gs.side_button_manager.buttons) == 0 do return
-    pop(&gs.ui_stack[.Buttons])
-    gs.side_button_manager.buttons = gs.ui_stack[.Buttons][gs.side_button_manager.first_button_index:][:len(gs.side_button_manager.buttons) - 1]
-    gs.side_button_manager.button_location.y += SELECTION_BUTTON_SIZE.y + BUTTON_PADDING
+    if len(gs.side_button_manager.button_data) == 0 do return
+    pop(&gs.side_button_manager.button_data)
 }
 
 clear_side_buttons :: proc(gs: ^Game_State) {
-    resize(&gs.ui_stack[.Buttons], len(gs.ui_stack[.Buttons]) - len(gs.side_button_manager.buttons))
-    gs.side_button_manager.buttons = {}
-    gs.side_button_manager.button_location = FIRST_SIDE_BUTTON_LOCATION
+    clear(&gs.side_button_manager.button_data)
 }
 
 add_game_ui_elements :: proc(gs: ^Game_State) {
