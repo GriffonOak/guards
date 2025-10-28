@@ -106,9 +106,13 @@ clay_button_logic :: proc(element_id: clay.ElementId) -> (result: bool) {
 
 clay_button :: proc(
     id_string: string,
-    text: string,
-    width: f32 = -1,
+    text: string = "",
+    image: ^Texture = nil,
+    sizing: Maybe(clay.Sizing) = nil,
+    padding: Maybe(clay.Padding) = nil,
     id_to_set: ^clay.ElementId = nil,
+    idle_background_color: clay.Color = {128, 128, 128, 255},
+    active_background_color: clay.Color = {100, 100, 100, 255},
 ) -> (result: bool) {
     button_id := clay.ID(id_string)
     if id_to_set != nil {
@@ -119,38 +123,56 @@ clay_button :: proc(
 
     if clay.UI(id = button_id)({
         layout = {
-            sizing = {
-                width = width == -1 ? clay.SizingFixed(BUTTON_WIDTH) : clay.SizingFixed(width),
+            sizing = sizing.? or_else {
+                width = clay.SizingFixed(BUTTON_WIDTH),
                 height = clay.SizingFit(),
             },
             childAlignment = {
                 x = .Center,
                 y = .Center,
             },
-            padding = clay.PaddingAll(BUTTON_TEXT_PADDING),
+            padding = padding.? or_else clay.PaddingAll(BUTTON_TEXT_PADDING),
         },
-        backgroundColor = button_active ? {100, 100, 100, 255} : {128, 128, 128, 255},
+        backgroundColor = button_active ? active_background_color : idle_background_color,
         border = {
             color = {255, 255, 255, 255},
             width = button_hot ? clay.BorderOutside(8) : {},
         },
+        
     }) {
 
         result = clay_button_logic(button_id)
 
-        clay.TextDynamic(text, clay.TextConfig({
-            textColor = {0, 0, 0, 255},
-            fontId = u16(Font_ID.Inter),
-            fontSize = u16(BUTTON_HEIGHT - 2 * BUTTON_TEXT_PADDING),
-        }))
+        if image != nil {
+            if clay.UI()({
+                layout = {
+                    sizing = SIZING_GROW,
+                },
+                image = {
+                    image,
+                },
+            }) {}
+        }
+
+        if text != "" {
+            clay.TextDynamic(text, clay.TextConfig({
+                textColor = {0, 0, 0, 255},
+                fontId = u16(Font_ID.Inter),
+                fontSize = u16(BUTTON_HEIGHT - 2 * BUTTON_TEXT_PADDING),
+            }))
+        }
     }
 
     return result
 }
 
+is_alt_key_down :: proc() -> bool {
+    return ba.get(&ui_state.keyboard_state, uint(Keyboard_Key.LEFT_ALT)) || ba.get(&ui_state.keyboard_state, uint(Keyboard_Key.RIGHT_ALT))
+}
+
 clay_card_element :: proc(
     gs: ^Game_State,
-    card: ^Card,
+    card: Card,
     sizing: clay.Sizing,
     preview_attach_points: clay.FloatingAttachPoints,
     floating: clay.FloatingElementConfig = {},
@@ -165,6 +187,7 @@ clay_card_element :: proc(
         if .LEFT in ui_state.released_this_frame {
             if card_hot {
                 append(&gs.event_queue, Card_Clicked_Event{card.id})
+                hot_element_id = {}
             }
             active_element_id = {}
         }
@@ -195,7 +218,7 @@ clay_card_element :: proc(
         floating = floating,
         // backgroundColor = raylib_to_clay_color(card_color_values[color]) * (hand_card_active ? {0.8, 0.8, 0.8, 1} : {1, 1, 1, 1}),
     }) {
-        if card_hot {
+        if card_hot && is_alt_key_down() {
             if clay.UI()({
                 layout = {
                     sizing = {
@@ -211,6 +234,22 @@ clay_card_element :: proc(
                     attachTo = .Parent,
                     pointerCaptureMode = .Passthrough,
                 },
+                // floating = {
+                //     attachment = {.CenterCenter, .CenterCenter},
+                //     attachTo = .Root,
+                //     pointerCaptureMode = .Passthrough,
+                // },
+            }) {}
+        }
+        if card_hot {
+            if clay.UI(id = card_clay_id) ({
+                layout = {
+                    sizing = sizing,
+                },
+                border = {
+                    color = {255, 255, 255, 255},
+                    width = clay.BorderAll(4),
+                }
             }) {}
         }
     } 
@@ -451,11 +490,11 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
             for i in 0..<4 {
                 // resolved_card_string := fmt.tprintf("player_%v_resolved_card_%v", player.id, i)
                 found := false
-                for &card in player.hero.cards {
+                for card in player.hero.cards {
                     if card.state == .Resolved && card.turn_played == i {
                         found = true
                         clay_card_element(
-                            gs, &card,
+                            gs, card,
                             sizing = {
                                 clay.SizingFixed(RESOLVED_CARD_WIDTH),
                                 clay.SizingFixed(RESOLVED_CARD_HEIGHT),
@@ -484,6 +523,124 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
     }
 
     return player_panel_id
+}
+
+clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
+    DECK_VIEWER_PADDING_GAP :: 8
+
+    preview_card_sizing := clay.Sizing {
+        clay.SizingFixed(RESOLVED_CARD_WIDTH * 1.5),
+        clay.SizingFixed(RESOLVED_CARD_HEIGHT * 1.5),
+    }
+
+    if clay.UI()({
+        layout = {
+            sizing = {
+                width = clay.SizingFit({min = 200}),
+                height = clay.SizingFit({min = 200}),
+            },
+            padding = clay.PaddingAll(2 * DECK_VIEWER_PADDING_GAP),
+            childGap = 2 * DECK_VIEWER_PADDING_GAP,
+            childAlignment = {
+                x = .Center,
+                y = .Center,
+            }
+        },
+        floating = {
+            attachTo = .Root,
+            attachment = {
+                element = .CenterCenter,
+                parent  = .CenterCenter,
+            },
+        },
+        backgroundColor = {0, 0, 0, 255},
+    }) {
+        if clay.UI()({
+            layout = {
+                layoutDirection = .TopToBottom,
+                sizing = {
+                    width = clay.SizingFit({}),
+                    height = clay.SizingFit({}),
+                },
+                childGap = 2 * DECK_VIEWER_PADDING_GAP,
+                childAlignment = {
+                    x = .Center,
+                    y = .Center,
+                }
+            }
+        }) {
+            gold_card := Card {
+                hero_id = hero_id,
+                color = .Gold,
+                state = .In_Deck,
+            }
+            clay_card_element(
+                gs, gold_card,
+                sizing = preview_card_sizing,
+                preview_attach_points = {.CenterCenter, .CenterCenter}
+            )
+            silver_card := Card {
+                hero_id = hero_id,
+                color = .Silver,
+                state = .In_Deck,
+            }
+            clay_card_element(
+                gs, silver_card,
+                sizing = preview_card_sizing,
+                preview_attach_points = {.CenterCenter, .CenterCenter}
+            )
+        }
+
+        colors := bit_set[Card_Color]{.Red, .Green, .Blue}
+        for color in colors {
+            if clay.UI()({
+                layout = {
+                    layoutDirection = .TopToBottom,
+                    sizing = {
+                        width = clay.SizingFit({}),
+                        height = clay.SizingFit({}),
+                    },
+                    childGap = DECK_VIEWER_PADDING_GAP,
+                    childAlignment = {
+                        x = .Center,
+                        y = .Center,
+                    }
+                }
+            }) {
+                for tier := 3; tier >= 1; tier -= 1 {
+                    if clay.UI()({
+                        layout = {
+                            sizing = {
+                                width = clay.SizingFit({}),
+                                height = clay.SizingFit({}),
+                            },
+                            childGap = DECK_VIEWER_PADDING_GAP,
+                            childAlignment = {
+                                x = .Center,
+                                y = .Center,
+                            }
+                        }
+                    }) {
+                        for alternate_index in 0..=(tier == 1 ? 0 : 1) {
+                            alternate := alternate_index == 1
+                            card := Card {
+                                hero_id = hero_id,
+                                color = color,
+                                tier = tier,
+                                alternate = alternate,
+                                state = .In_Deck,
+                            }
+                            clay_card_element(
+                                gs, card,
+                                sizing = preview_card_sizing,
+                                preview_attach_points = {.CenterCenter, .CenterCenter}
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 clay_setup :: proc() {
@@ -609,6 +766,8 @@ ip_text_box := UI_Text_Box_Element {
     default_string = "Enter IP Address...",
 }
 
+deck_viewer_active := false
+
 clay_pre_lobby_screen :: proc(gs: ^Game_State) {
     pre_lobby_id := clay.ID("pre_lobby_screen")
     if clay.UI(id = pre_lobby_id)({
@@ -624,7 +783,14 @@ clay_pre_lobby_screen :: proc(gs: ^Game_State) {
     }) {
         clay_text_box("ip_text_box", &ip_text_box)
 
-        if clay_button("join_game_button", "Join a game", width = 2 * BUTTON_WIDTH) {
+        if clay_button(
+            "join_game_button",
+            "Join a game",
+            sizing = clay.Sizing {
+                width = clay.SizingFixed(2 * BUTTON_WIDTH),
+                height = clay.SizingFit({}),
+            },
+        ) {
             append(&gs.event_queue, Join_Network_Game_Chosen_Event{})
         }
 
@@ -638,7 +804,14 @@ clay_pre_lobby_screen :: proc(gs: ^Game_State) {
             },
         }) {}
 
-        if clay_button("host_game_button", "Host a game", width = 2 * BUTTON_WIDTH) {
+        if clay_button(
+            "host_game_button",
+            "Host a game",
+            sizing = clay.Sizing {
+                width = clay.SizingFixed(2 * BUTTON_WIDTH),
+                height = clay.SizingFit({}),
+            },
+        ) {
             append(&gs.event_queue, Host_Game_Chosen_Event{})
         }
     }
@@ -747,34 +920,32 @@ clay_game_screen :: proc(gs: ^Game_State) {
             // backgroundColor = raylib_to_clay_color(team_colors[.Red]),
         }) {
             for &player in gs.players {
-                if player.team == .Red {
-                    panel_id := clay_player_panel(gs, &player)
-                    for &card in player.hero.cards {
-                        if card.state == .Played {
-                            clay_card_element(
-                                gs, &card,
-                                sizing = clay.Sizing {
-                                    clay.SizingFixed(RESOLVED_CARD_WIDTH),
-                                    clay.SizingFixed(RESOLVED_CARD_HEIGHT),
-                                },
-                                preview_attach_points = {
-                                    element = .LeftTop,
-                                    parent = .LeftTop,
-                                },
-                                floating = {
-                                    attachment = {
-                                        element = .LeftCenter,
-                                        parent = .RightCenter,
-                                    },
-                                    offset = {
-                                        8, 8,
-                                    },
-                                    attachTo = .ElementWithId,
-                                    parentId = panel_id.id,
-                                },
-                            )
-                        }
-                    }
+                if player.team != .Red do continue
+                panel_id := clay_player_panel(gs, &player)
+                for card in player.hero.cards {
+                    if card.state != .Played do continue 
+                    clay_card_element(
+                        gs, card,
+                        sizing = clay.Sizing {
+                            clay.SizingFixed(RESOLVED_CARD_WIDTH),
+                            clay.SizingFixed(RESOLVED_CARD_HEIGHT),
+                        },
+                        preview_attach_points = {
+                            element = .LeftTop,
+                            parent = .LeftTop,
+                        },
+                        floating = {
+                            attachment = {
+                                element = .LeftCenter,
+                                parent = .RightCenter,
+                            },
+                            offset = {
+                                8, 8,
+                            },
+                            attachTo = .ElementWithId,
+                            parentId = panel_id.id,
+                        },
+                    )
                 }
             }
         }
@@ -783,9 +954,13 @@ clay_game_screen :: proc(gs: ^Game_State) {
         board_id := clay.ID("board")
         central_panel_id := clay.ID("central_panel")
 
-        hand_panel_box := clay.GetElementData(hand_panel_id).boundingBox
+        DECK_BUTTON_SIZE :: 100
+        HAND_PANEL_CHILD_GAP :: 8
+        // hand_panel_box := clay.GetElementData(hand_panel_id).boundingBox
+        hand_panel_min_width: f32 = DECK_BUTTON_SIZE + 5 * HAND_PANEL_CHILD_GAP + 5 * RESOLVED_CARD_WIDTH
+        // hand_panel_min_height := RESOLVED_CARD_HEIGHT
         central_panel_height := clay.GetElementData(central_panel_id).boundingBox.height
-        max_central_panel_width := max(central_panel_height - hand_panel_box.height, hand_panel_box.width)
+        max_central_panel_width := max(central_panel_height - RESOLVED_CARD_HEIGHT, hand_panel_min_width)
 
         if clay.UI(id = central_panel_id)({
             layout = {
@@ -858,25 +1033,64 @@ clay_game_screen :: proc(gs: ^Game_State) {
             if clay.UI(id = hand_panel_id)({
                 layout = {
                     sizing = {
-                        width = clay.SizingFit({}),
+                        width = clay.SizingGrow({max = max_central_panel_width}),
                         height = clay.SizingFit({}),
                     },
-                    childGap = 8,
+                    childGap = HAND_PANEL_CHILD_GAP,
                 },
+                backgroundColor = {50, 10, 20, 255}
             }) {
-                for &card in my_player.hero.cards {
-                    if card.state == .In_Hand {
-                        clay_card_element(
-                            gs, &card,
-                            sizing = clay.Sizing {
-                                clay.SizingFixed(2 * RESOLVED_CARD_WIDTH),
-                                clay.SizingFixed(2 * RESOLVED_CARD_HEIGHT),
-                            },
-                            preview_attach_points = {
-                                element = .CenterBottom,
-                                parent = .CenterBottom,
-                            },
-                        )
+                if clay_button(
+                    "deck_viewer",
+                    sizing = clay.Sizing {
+                        width = clay.SizingFixed(DECK_BUTTON_SIZE),
+                        height = clay.SizingFixed(DECK_BUTTON_SIZE),
+                    },
+                    image = &ui_icons[.File_Box],
+                    padding = clay.PaddingAll(10),
+                    idle_background_color = {255, 150, 200, 255},
+                    active_background_color = {205, 100, 150, 255},
+                ) {
+                    deck_viewer_active = !deck_viewer_active 
+                }
+
+                if deck_viewer_active {
+                    clay_deck_viewer(gs, get_my_player(gs).hero.id)
+                }
+                // if clay.UI() ({
+                //     layout = {
+                //         sizing = {
+                //             width = clay.SizingFixed(DECK_BUTTON_SIZE),
+                //             height = clay.SizingFixed(DECK_BUTTON_SIZE),
+                //         },
+                //     },
+                //     
+                // }) {}
+
+                if clay.UI() ({
+                    layout = {
+                        sizing = {
+                            width = clay.SizingGrow({}),
+                            height = clay.SizingFit({}),
+                        },
+                        childGap = HAND_PANEL_CHILD_GAP,
+                        childAlignment = {x = .Center},
+                    }
+                }){
+                    for card in my_player.hero.cards {
+                        if card.state == .In_Hand {
+                            clay_card_element(
+                                gs, card,
+                                sizing = clay.Sizing {
+                                    clay.SizingFixed(2 * RESOLVED_CARD_WIDTH),
+                                    clay.SizingFixed(2 * RESOLVED_CARD_HEIGHT),
+                                },
+                                preview_attach_points = {
+                                    element = .CenterBottom,
+                                    parent = .CenterBottom,
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -888,15 +1102,47 @@ clay_game_screen :: proc(gs: ^Game_State) {
             layout = {
                 layoutDirection = .TopToBottom,
                 sizing = {
-                    width = clay.SizingGrow({max = 400}),
+                    width = clay.SizingFit({}),
                     height = clay.SizingGrow({}),
                 },
             },
-            backgroundColor = raylib_to_clay_color(team_colors[.Blue]),
         }) {
+            for &player in gs.players {
+                if player.team != .Blue do continue
+                panel_id := clay_player_panel(gs, &player)
+                for card in player.hero.cards {
+                    if card.state != .Played do continue 
+                    clay_card_element(
+                        gs, card,
+                        sizing = clay.Sizing {
+                            clay.SizingFixed(RESOLVED_CARD_WIDTH),
+                            clay.SizingFixed(RESOLVED_CARD_HEIGHT),
+                        },
+                        preview_attach_points = {
+                            element = .RightTop,
+                            parent = .RightTop,
+                        },
+                        floating = {
+                            attachment = {
+                                element = .RightCenter,
+                                parent = .LeftCenter,
+                            },
+                            offset = {
+                                8, 8,
+                            },
+                            attachTo = .ElementWithId,
+                            parentId = panel_id.id,
+                        },
+                    )
+                }
+            }
             #reverse for &button_data in gs.side_button_manager.button_data {
                 if clay_button(button_data.text, button_data.text, id_to_set = &button_data.id) {
-                    append(&gs.event_queue, button_data.event)
+                    if button_data.global {
+                        broadcast_game_event(gs, button_data.event)
+                    } else {
+                        append(&gs.event_queue, button_data.event)
+                    }
                 }
             }
         }

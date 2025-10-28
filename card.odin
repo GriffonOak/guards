@@ -17,20 +17,19 @@ Card_Color :: enum {
 }
 
 Card_State :: enum {
+    In_Deck,
     In_Hand,
     Played,
     Resolved,
     Discarded,
 }
 
-// I philosophically dislike this enum
 Primary_Kind :: enum {
-    // None,
     Attack,
     Skill,
-    Defense_Skill,
-    Defense,
     Movement,
+    Defense,
+    Defense_Skill,
 }
 
 Card_Value_Kind :: enum {

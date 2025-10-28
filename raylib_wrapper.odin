@@ -243,6 +243,12 @@ image_alpha_mask :: proc(image: ^Image, alpha_mask: Image) {
     }
 }
 
+image_flip_vertical :: proc(image: ^Image) {
+    when !ODIN_TEST {
+        rl.ImageFlipVertical(image)
+    }
+}
+
 load_texture_from_image :: proc(image: Image) -> Texture {
     when !ODIN_TEST {
         return rl.LoadTextureFromImage(image)

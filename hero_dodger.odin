@@ -632,7 +632,7 @@ dodger_cards := []Card_Data {
         values =        #partial{.Initiative = 2, .Defense = 3, .Movement = 2, .Radius = 3},
         primary =       .Skill,
         item =          .Defense,
-        text =          "If there are 2 or more empty spawn points in\nradius in the battle zone, gain 2 coins. If you\nhave your Ultimate, gain an Attack item.\n(Use any spare card from the box with the corresponding icon.",
+        text =          "If there are 2 or more empty spawn points in\nradius in the battle zone, gain 2 coins. If you\nhave your Ultimate, gain an Attack item.\n(Use any spare card from the box with the corresponding icon.)",
         primary_effect = []Action {
             Action {
                 condition = Greater_Than {

@@ -24,10 +24,7 @@ _ :: time
 /* BEYOND 0.1
 
 --- ENGINE 
-    ^ "Intention" system for choose_target_action to allow different types of immunity (Sort of??)
     ^ "Hooks" system to allow other heroes to interrupt players performing actions (brogan, swift)
-
-    - Store dead minions & allow respawn actions
 
     v Refactor heroes "out of" players (allow for multiple heroes controlled by 1 player)
     v Ultimates
@@ -44,15 +41,15 @@ _ :: time
 
 
 --- UI / UX
+    ^^ Allow upgrading
+    ^^ Hide opponents' played cards before resolution is up
+
     ^ Highlight chooseable cards for defense, & upgrading
     
-    v map reposition (sam's ticket)
     v Highlight items when hovering over upgrade options
-    v Full deck viewer
     v basic animations?
     v more toast for more things
     v FPS stats tracker (kohl's ticket)
-
 
 --- MISC / IDEAS
 
@@ -95,6 +92,12 @@ monospace_font: Font
 
 assets := #load_directory("assets")
 emoji := #load_directory("assets/emoji")
+
+UI_Icon_Kind :: enum {
+    File_Box,
+}
+
+ui_icons: [UI_Icon_Kind]Texture
 
 hero_icons: [Hero_ID]Texture
 

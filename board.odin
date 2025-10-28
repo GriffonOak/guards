@@ -443,7 +443,7 @@ render_board :: proc(gs: ^Game_State, bounding_rect: Rectangle, board_element: B
     draw_icon_at_position :: proc(texture: Texture, position: Vec2, width: f32, tint: Colour = WHITE) {
         texture_rect := Rectangle {
             0, 0, 
-            f32(texture.width), f32(texture.height),
+            f32(texture.width), -f32(texture.height),
         }
 
         dest_rect := Rectangle {

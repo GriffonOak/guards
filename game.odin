@@ -367,16 +367,19 @@ setup_icons :: proc() {
 
     for file in emoji {
         emoji_image := load_image_from_memory(".png", raw_data(file.data), i32(len(file.data)))
+        image_flip_vertical(&emoji_image)
         emoji_texture := load_texture_from_image(emoji_image)
         switch file.name {
-        case "axe.png":                 hero_icons[.Brogan]             = emoji_texture
-        case "goblin.png":              hero_icons[.Dodger]             = emoji_texture
-        case "gun.png":                 hero_icons[.Swift]              = emoji_texture
-        case "military-medal.png":      hero_icons[.Sabina]             = emoji_texture
-        case "money-with-wings.png":    hero_icons[.Tigerclaw]          = emoji_texture
-        case "skull.png":               hero_icons[.Wasp]               = emoji_texture
-        case "snake.png":               hero_icons[.Xargatha]           = emoji_texture
-        case "water-wave.png":          hero_icons[.Arien]              = emoji_texture
+        case "axe.png":                 hero_icons[.Brogan]     = emoji_texture
+        case "goblin.png":              hero_icons[.Dodger]     = emoji_texture
+        case "gun.png":                 hero_icons[.Swift]      = emoji_texture
+        case "military-medal.png":      hero_icons[.Sabina]     = emoji_texture
+        case "money-with-wings.png":    hero_icons[.Tigerclaw]  = emoji_texture
+        case "skull.png":               hero_icons[.Wasp]       = emoji_texture
+        case "snake.png":               hero_icons[.Xargatha]   = emoji_texture
+        case "water-wave.png":          hero_icons[.Arien]      = emoji_texture
+
+        case "file-box.png":            ui_icons[.File_Box]     = emoji_texture
 
         case "bow-and-arrow.png":
             minion_icons[.Ranged_Minion] = emoji_texture
