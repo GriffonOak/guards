@@ -186,7 +186,7 @@ clay_card_element :: proc(
     if card_active {
         if .LEFT in ui_state.released_this_frame {
             if card_hot {
-                append(&gs.event_queue, Card_Clicked_Event{card.id})
+                append(&gs.event_queue, Card_Clicked_Event{card})
                 hot_element_id = {}
             }
             active_element_id = {}
@@ -207,6 +207,33 @@ clay_card_element :: proc(
         card_hot = false
     }
 
+    border := clay.BorderElementConfig {
+        width = clay.BorderAll(0)
+    }
+    if card_hot {
+        border = {
+            color = {255, 255, 255, 255},
+            width = clay.BorderAll(4),
+        }
+    } else {
+        should_highlight: bool
+        my_player := get_my_player(gs)
+        #partial switch my_player.stage {
+        case .Upgrading:
+            if card_is_valid_upgrade_option(gs, card) do should_highlight = true
+        }
+
+        if should_highlight {
+            time := get_time()
+            t := (f32(math.sin(4 * time)) + 1) / 2
+            highlight_color := lerp(clay.Color{255, 150, 200, 255}, clay.Color{200, 100, 150, 255}, t)
+            border = {
+                color = highlight_color,
+                width = clay.BorderAll(4)
+            }
+        }
+    }
+
     card_data, _ := get_card_data_by_id(gs, card.id)
     if clay.UI(id = card_clay_id) ({
         layout = {
@@ -216,6 +243,7 @@ clay_card_element :: proc(
             &card_data.texture,
         },
         floating = floating,
+        border = border,
         // backgroundColor = raylib_to_clay_color(card_color_values[color]) * (hand_card_active ? {0.8, 0.8, 0.8, 1} : {1, 1, 1, 1}),
     }) {
         if card_hot && is_alt_key_down() {
@@ -239,17 +267,6 @@ clay_card_element :: proc(
                 //     attachTo = .Root,
                 //     pointerCaptureMode = .Passthrough,
                 // },
-            }) {}
-        }
-        if card_hot {
-            if clay.UI(id = card_clay_id) ({
-                layout = {
-                    sizing = sizing,
-                },
-                border = {
-                    color = {255, 255, 255, 255},
-                    width = clay.BorderAll(4),
-                }
             }) {}
         }
     } 
@@ -502,7 +519,7 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
                             preview_attach_points = {
                                 element = .CenterTop,
                                 parent = .CenterTop,
-                            }
+                            },
                         )
                     }
                 }
@@ -544,7 +561,7 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
             childAlignment = {
                 x = .Center,
                 y = .Center,
-            }
+            },
         },
         floating = {
             attachTo = .Root,
@@ -566,8 +583,8 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
                 childAlignment = {
                     x = .Center,
                     y = .Center,
-                }
-            }
+                },
+            },
         }) {
             gold_card := Card {
                 hero_id = hero_id,
@@ -577,7 +594,7 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
             clay_card_element(
                 gs, gold_card,
                 sizing = preview_card_sizing,
-                preview_attach_points = {.CenterCenter, .CenterCenter}
+                preview_attach_points = {.CenterCenter, .CenterCenter},
             )
             silver_card := Card {
                 hero_id = hero_id,
@@ -587,7 +604,7 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
             clay_card_element(
                 gs, silver_card,
                 sizing = preview_card_sizing,
-                preview_attach_points = {.CenterCenter, .CenterCenter}
+                preview_attach_points = {.CenterCenter, .CenterCenter},
             )
         }
 
@@ -604,8 +621,8 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
                     childAlignment = {
                         x = .Center,
                         y = .Center,
-                    }
-                }
+                    },
+                },
             }) {
                 for tier := 3; tier >= 1; tier -= 1 {
                     if clay.UI()({
@@ -618,8 +635,8 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
                             childAlignment = {
                                 x = .Center,
                                 y = .Center,
-                            }
-                        }
+                            },
+                        },
                     }) {
                         for alternate_index in 0..=(tier == 1 ? 0 : 1) {
                             alternate := alternate_index == 1
@@ -633,7 +650,7 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
                             clay_card_element(
                                 gs, card,
                                 sizing = preview_card_sizing,
-                                preview_attach_points = {.CenterCenter, .CenterCenter}
+                                preview_attach_points = {.CenterCenter, .CenterCenter},
                             )
                         }
                     }
@@ -1038,7 +1055,7 @@ clay_game_screen :: proc(gs: ^Game_State) {
                     },
                     childGap = HAND_PANEL_CHILD_GAP,
                 },
-                backgroundColor = {50, 10, 20, 255}
+                backgroundColor = {50, 10, 20, 255},
             }) {
                 if clay_button(
                     "deck_viewer",
@@ -1075,7 +1092,7 @@ clay_game_screen :: proc(gs: ^Game_State) {
                         },
                         childGap = HAND_PANEL_CHILD_GAP,
                         childAlignment = {x = .Center},
-                    }
+                    },
                 }){
                     for card in my_player.hero.cards {
                         if card.state == .In_Hand {

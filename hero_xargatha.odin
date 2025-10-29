@@ -535,7 +535,7 @@ xargatha_cards := []Card_Data {
         values      = #partial{.Initiative = 8, .Attack = 3, .Defense = 4, .Movement = 4, .Range = 1},
         primary     = .Attack,
         reach_sign  = .Plus,
-        item        = .Defense,
+        item        = .Movement,
         text        = "Target a unit in range. +1 Range\nfor each enemy unit adjacent to you.\nMay repeat once on a different enemy\nhero.",
         primary_effect = []Action {
             Action {
@@ -743,7 +743,7 @@ xargatha_cards := []Card_Data {
         alternate   = true,
         values      = #partial{.Initiative = 10, .Defense = 6, .Movement = 3},
         primary     = .Skill,
-        item        = .Attack,
+        item        = .Range,
         text        = "If you are adjacent to an enemy unit,\nyou may retrieve a discarded card.",
         primary_effect = []Action {
             Action {

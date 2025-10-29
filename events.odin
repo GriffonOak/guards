@@ -37,7 +37,7 @@ Space_Clicked_Event :: struct {
 }
 
 Card_Clicked_Event :: struct {
-    card_id: Card_ID,
+    card: Card,
 }
 
 
@@ -169,7 +169,6 @@ Resolve_Blocked_Minions_Event :: struct {
 End_Wave_Push_Event :: struct{}
 
 Begin_Upgrading_Event :: struct {}
-Begin_Next_Upgrade_Event :: struct {}
 End_Upgrading_Event :: struct {
     player_id: Player_ID,
 }
@@ -253,7 +252,6 @@ Event :: union {
     End_Wave_Push_Event,
     
     Begin_Upgrading_Event,
-    Begin_Next_Upgrade_Event,
     End_Upgrading_Event,
 
     Game_Over_Event,
@@ -401,17 +399,15 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         }
 
     case Card_Clicked_Event:
-        card_id := var.card_id
-        card, card_ok := get_card_by_id(gs, card_id)
         my_player := get_my_player(gs)
 
         #partial switch my_player.stage {
         case .Selecting:
-            log.assert(card_ok, "Card element clicked with no card associated!")
-            #partial switch card.state {
+            #partial switch var.card.state {
 
             case .Played:
-                card.state = .In_Hand
+                player_card, _ := get_card_by_id(gs, var.card.id)
+                player_card.state = .In_Hand
                 clear_side_buttons(gs)
 
             case .In_Hand:
@@ -419,101 +415,115 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 for &other_card in my_player.hero.cards {
                     if other_card.state == .Played {
                         other_card.state = .In_Hand
+                    } else if other_card.id == var.card.id {
+                        other_card.state = .Played
                     }
                 }
-                card.state = .Played
-
-                add_side_button(gs, "Confirm card", Card_Confirmed_Event{gs.my_player_id, card_id}, global=true)
+                add_side_button(gs, "Confirm card", Card_Confirmed_Event{gs.my_player_id, var.card.id}, global=true)
             }
 
         case .Upgrading:
-            if !card_ok {  // Clicked on an upgrade option
 
-                // Find the predecessor card
-                // hero := &get_my_player(gs).hero
-                // hand_card := &hero.cards[card_id.color]
-                
-                // Swap over the card ID of the card element for the hand card
-                // ui_element, _  := find_element_for_card(gs, hand_card)
-                // log.assert(ui_element != nil, "Could not find hand card when upgrading!")
-                // hand_card_element := &ui_element.variant.(UI_Card_Element)
-                // hand_card_element.card_id = card_id
+            #partial switch var.card.state {
+            case .In_Deck:
+                if !card_is_valid_upgrade_option(gs, var.card) do break
+                my_player.hero.cards[var.card.color] = Card {
+                    id = var.card.id,
+                    state = .In_Hand,
+                }
 
-                // // Swap over the card ID in hand
-                // hand_card.id = card_id
-                
-                // // Add the alternate card to the hero's items
-                // hero.items[hero.item_count] = card_id
-                // hero.items[hero.item_count].alternate = !card_id.alternate
-                // hero.item_count += 1
-                
-                // // Pop two card elements and a potential cancel button
-                // pop(&gs.ui_stack[.Cards])
-                // pop(&gs.ui_stack[.Cards])
-                // clear_side_buttons(gs)
-
-                // // Complete the upgrade
-                // append(&gs.event_queue, Begin_Next_Upgrade_Event{})
-            } else {
-                #partial switch card.state {
-                case .In_Hand:
-                    if card.tier == 0 do break
-                    // Ensure clicked card is able to be upgraded
-                    lowest_tier: int = 1e6
-                    for other_card in get_my_player(gs).hero.cards {
-                        if other_card.tier == 0 do continue
-                        lowest_tier = min(lowest_tier, other_card.tier)
-                    }
-                    if card.tier > lowest_tier || lowest_tier == 3 do break
-    
-                    // I shouldn't really be checking this through the ui stack like this tbh
-                    // But I don't have a better way of seeing if an upgrade is happening. // @Cleanup?
-                    top_element := gs.ui_stack[.Cards][len(gs.ui_stack[.Cards]) - 1]
-                    card_element, ok2 := top_element.variant.(UI_Card_Element)
-                    if ok2 {
-                        if _, ok3 := get_card_by_id(gs, card_element.card_id); !ok3 do break
-                    }
-    
-                    // Display possible upgrades for clicked card
-                    card_element_width := (SELECTION_BUTTON_SIZE.x - BUTTON_PADDING) / 2
-                    card_element_height := card_element_width * 3.5 / 2.5
-    
-                    card_position_rect := Rectangle {
-                        FIRST_SIDE_BUTTON_LOCATION.x,
-                        FIRST_SIDE_BUTTON_LOCATION.y - BUTTON_PADDING - card_element_height,
-                        card_element_width,
-                        card_element_height,
-                    }
-    
-                    add_side_button(gs, "Cancel", Cancel_Event{})
-    
-                    upgrade_options, ok3 := find_upgrade_options(gs, card^)
-                    log.assertf(ok3, "Card has no upgrade options!!!")
-    
-                    // fmt.printf("%#v\n", upgrade_options)
-    
-                    for option_card in upgrade_options {
-                        option_id := option_card
-                        option_id.owner_id = gs.my_player_id
-                        append(&gs.ui_stack[.Cards], UI_Element {
-                            card_position_rect,
-                            UI_Card_Element{
-                                card_id = option_id,
-                            },
-                            card_input_proc,
-                            draw_card,
-                            {},
-                        }) 
-                        card_position_rect.x += BUTTON_PADDING + card_element_width
-                    }  
+                my_player.hero.remaining_upgrades -= 1
+                if my_player.hero.remaining_upgrades == 0 {
+                    broadcast_game_event(gs, End_Upgrading_Event{gs.my_player_id})
                 }
             }
+            // if !card_ok {  // Clicked on an upgrade option
+
+            //     // Find the predecessor card
+            //     // hero := &get_my_player(gs).hero
+            //     // hand_card := &hero.cards[card_id.color]
+                
+            //     // Swap over the card ID of the card element for the hand card
+            //     // ui_element, _  := find_element_for_card(gs, hand_card)
+            //     // log.assert(ui_element != nil, "Could not find hand card when upgrading!")
+            //     // hand_card_element := &ui_element.variant.(UI_Card_Element)
+            //     // hand_card_element.card_id = card_id
+
+            //     // // Swap over the card ID in hand
+            //     // hand_card.id = card_id
+                
+            //     // // Add the alternate card to the hero's items
+            //     // hero.items[hero.item_count] = card_id
+            //     // hero.items[hero.item_count].alternate = !card_id.alternate
+            //     // hero.item_count += 1
+                
+            //     // // Pop two card elements and a potential cancel button
+            //     // pop(&gs.ui_stack[.Cards])
+            //     // pop(&gs.ui_stack[.Cards])
+            //     // clear_side_buttons(gs)
+
+            //     // // Complete the upgrade
+            //     // append(&gs.event_queue, Begin_Next_Upgrade_Event{})
+            // } else {
+            //     #partial switch card.state {
+            //     case .In_Hand:
+            //         if card.tier == 0 do break
+            //         // Ensure clicked card is able to be upgraded
+            //         lowest_tier: int = 1e6
+            //         for other_card in get_my_player(gs).hero.cards {
+            //             if other_card.tier == 0 do continue
+            //             lowest_tier = min(lowest_tier, other_card.tier)
+            //         }
+            //         if card.tier > lowest_tier || lowest_tier == 3 do break
+    
+            //         // I shouldn't really be checking this through the ui stack like this tbh
+            //         // But I don't have a better way of seeing if an upgrade is happening. // @Cleanup?
+            //         top_element := gs.ui_stack[.Cards][len(gs.ui_stack[.Cards]) - 1]
+            //         card_element, ok2 := top_element.variant.(UI_Card_Element)
+            //         if ok2 {
+            //             if _, ok3 := get_card_by_id(gs, card_element.card_id); !ok3 do break
+            //         }
+    
+            //         // Display possible upgrades for clicked card
+            //         card_element_width := (SELECTION_BUTTON_SIZE.x - BUTTON_PADDING) / 2
+            //         card_element_height := card_element_width * 3.5 / 2.5
+    
+            //         card_position_rect := Rectangle {
+            //             FIRST_SIDE_BUTTON_LOCATION.x,
+            //             FIRST_SIDE_BUTTON_LOCATION.y - BUTTON_PADDING - card_element_height,
+            //             card_element_width,
+            //             card_element_height,
+            //         }
+    
+            //         add_side_button(gs, "Cancel", Cancel_Event{})
+    
+            //         upgrade_options, ok3 := find_upgrade_options(gs, card^)
+            //         log.assertf(ok3, "Card has no upgrade options!!!")
+    
+            //         // fmt.printf("%#v\n", upgrade_options)
+    
+            //         for option_card in upgrade_options {
+            //             option_id := option_card
+            //             option_id.owner_id = gs.my_player_id
+            //             append(&gs.ui_stack[.Cards], UI_Element {
+            //                 card_position_rect,
+            //                 UI_Card_Element{
+            //                     card_id = option_id,
+            //                 },
+            //                 card_input_proc,
+            //                 draw_card,
+            //                 {},
+            //             }) 
+            //             card_position_rect.x += BUTTON_PADDING + card_element_width
+            //         }
+            //     }
+            // }
         case .Resolving, .Interrupting:
             action := get_current_action(gs)
             #partial switch &variant in action.variant {
             case Choose_Card_Action:
-                if card_id in variant.card_targets {
-                    add_action_value(gs, card_id)
+                if var.card.id in variant.card_targets {
+                    add_action_value(gs, var.card.id)
                     append(&gs.event_queue, Resolve_Current_Action_Event{})
                     break
                 }
@@ -1552,29 +1562,39 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         my_player := get_my_player(gs)
         my_hero := &my_player.hero
+        previous_level := my_hero.level
 
-        if my_hero.coins < my_hero.level || my_hero.level == 8 {
-            // log.infof("Pity coin collected. Current coin count: %v", get_my_player(gs).hero.coins)
-            my_hero.coins += 1
-            broadcast_game_event(gs, End_Upgrading_Event{gs.my_player_id})
-        } else {
-            append(&gs.event_queue, Begin_Next_Upgrade_Event{})
-        }
-
-    case Begin_Next_Upgrade_Event:
-        my_player := get_my_player(gs)
-        my_hero := &my_player.hero
-
-        my_player.stage = .Upgrading
-        clear_side_buttons(gs)
-        gs.tooltip = "Choose a card to upgrade."
-        if my_hero.coins >= get_my_player(gs).hero.level && my_hero.level < 8 {
+        my_hero.remaining_upgrades = 0
+        for my_hero.level < 8 && my_hero.coins >= my_hero.level {
             my_hero.coins -= my_hero.level
             my_hero.level += 1
-            log.infof("Player levelled up! Current level: %v", get_my_player(gs).hero.level)
-        } else {
-            broadcast_game_event(gs, End_Upgrading_Event{gs.my_player_id})
+            if my_hero.level != 8 do my_hero.remaining_upgrades += 1  // Don't upgrade a card when ulting
         }
+
+        if previous_level == my_hero.level {
+            // Pity coin collected
+            my_hero.coins += 1
+            broadcast_game_event(gs, End_Upgrading_Event{gs.my_player_id})
+        } else if my_hero.remaining_upgrades > 0 {
+            my_player.stage = .Upgrading
+            gs.tooltip = "Open your deck and choose a card to upgrade."
+        }
+
+    // case Begin_Next_Upgrade_Event:
+    //     my_player := get_my_player(gs)
+    //     my_hero := &my_player.hero
+    //     if my_hero.remaining_upgrades == 0 do 
+
+    //     my_player.stage = .Upgrading
+    //     clear_side_buttons(gs)
+        
+    //     if my_hero.coins >= get_my_player(gs).hero.level && my_hero.level < 8 {
+    //         my_hero.coins -= my_hero.level
+    //         my_hero.level += 1
+    //         log.infof("Player levelled up! Current level: %v", get_my_player(gs).hero.level)
+    //     } else {
+    //         broadcast_game_event(gs, End_Upgrading_Event{gs.my_player_id})
+    //     }
 
     case End_Upgrading_Event:
 

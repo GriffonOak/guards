@@ -23,7 +23,9 @@ _ :: time
 
 /* BEYOND 0.1
 
---- ENGINE 
+--- ENGINE
+    ^^ Rewrite action value system (get rid of so many variant types, rely more on labels)
+
     ^ "Hooks" system to allow other heroes to interrupt players performing actions (brogan, swift)
 
     v Refactor heroes "out of" players (allow for multiple heroes controlled by 1 player)
@@ -34,6 +36,7 @@ _ :: time
 
 
 --- TESTING
+    ^^ Reimplement card clicked for tests
     ^ Add test for xarg retrieval
     ^ make a bunch of new tests
 

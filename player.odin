@@ -65,6 +65,7 @@ Hero :: struct {
     items: [10]Card_ID,  // lol
     item_count: int,
     markers: Marker_Set,
+    remaining_upgrades: int,
 
     current_action_index: Action_Index,
 }
