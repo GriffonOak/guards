@@ -36,7 +36,6 @@ _ :: time
 
 
 --- TESTING
-    ^^ Reimplement card clicked for tests
     ^ Add test for xarg retrieval
     ^ make a bunch of new tests
 

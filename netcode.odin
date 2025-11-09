@@ -60,16 +60,18 @@ broadcast_network_event :: proc(gs: ^Game_State, net_event: Network_Event) {
 
 
 send_network_packet_socket :: proc(socket: net.TCP_Socket, net_event: Network_Packet) {
-    net_event := net_event
-    to_send := mem.ptr_to_bytes(&net_event)
-
-    bytes_sent := 0
-    for bytes_sent < size_of(Network_Packet) {
-        new_bytes_sent, err := net.send_tcp(socket, to_send[bytes_sent:])
-        if err != .None {
-            log.errorf("Network send error: %v", err)
+    when !ODIN_TEST {
+        net_event := net_event
+        to_send := mem.ptr_to_bytes(&net_event)
+    
+        bytes_sent := 0
+        for bytes_sent < size_of(Network_Packet) {
+            new_bytes_sent, err := net.send_tcp(socket, to_send[bytes_sent:])
+            if err != .None {
+                log.errorf("Network send error: %v", err)
+            }
+            bytes_sent += new_bytes_sent
         }
-        bytes_sent += new_bytes_sent
     }
 }
 
