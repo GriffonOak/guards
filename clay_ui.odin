@@ -208,7 +208,7 @@ clay_card_element :: proc(
     }
 
     border := clay.BorderElementConfig {
-        width = clay.BorderAll(0)
+        width = clay.BorderAll(0),
     }
     if card_hot {
         border = {
@@ -229,7 +229,7 @@ clay_card_element :: proc(
             highlight_color := lerp(clay.Color{255, 150, 200, 255}, clay.Color{200, 100, 150, 255}, t)
             border = {
                 color = highlight_color,
-                width = clay.BorderAll(4)
+                width = clay.BorderAll(4),
             }
         }
     }

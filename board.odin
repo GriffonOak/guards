@@ -415,7 +415,7 @@ render_board :: proc(gs: ^Game_State, bounding_rect: Rectangle, board_element: B
                 draw_line_ex(space_pos, player_pos, 4, VIOLET)
             }
         case Movement_Action:
-            path := get_top_action_value_of_type(gs, Path)
+            path := get_top_action_value_of_type(gs, Path, index = action_index)
             if len(path.spaces) == 0 do break
             current_loc := path.spaces[0]
             for target in path.spaces[1:] {

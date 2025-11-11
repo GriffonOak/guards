@@ -115,7 +115,6 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
     switch &variant in action.variant {
     case Movement_Action:
 
-        // path, path_action_index, ok := try_get_top_action_value_of_type(gs, Path)
         path, _, ok := try_get_top_action_value_of_type(gs, Path, index = index)
         if !ok {
             // There was not a path in memory, or the path was from a different action than the one we are currently doing
@@ -147,7 +146,7 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         }
         if limited_max_dist[0].(int) != 999 do criteria.max_distance = limited_max_dist
 
-        action.targets = make_movement_targets(gs, criteria, calc_context)
+        action.targets = make_movement_targets(gs, criteria, path, calc_context)
         return count_members(&action.targets) > 0
 
     case Fast_Travel_Action:
@@ -255,12 +254,12 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
 make_movement_targets :: proc (
     gs: ^Game_State,
     criteria: Movement_Criteria,
+    path: ^Path,
     calc_context: Calculation_Context = {},
     precalc_destinations: Maybe(Target_Set) = nil,
 ) -> (visited_set: Target_Set) {
 
     BIG_NUMBER :: max(u8)
-    path := get_top_action_value_of_type(gs, Path)
     log.assert(len(path.spaces) > 0, "We can't calculate targets without this!!!!")
     origin := path.spaces[0]
     current_endpoint := path.spaces[len(path.spaces) - 1]
@@ -348,7 +347,7 @@ make_movement_targets :: proc (
                     }
                     defer resize(&path.spaces, prev_len)
 
-                    reachable_targets := make_movement_targets(gs, new_criteria, calc_context, valid_destinations)
+                    reachable_targets := make_movement_targets(gs, new_criteria, path, calc_context, valid_destinations)
                     target_can_reach: bool = false
                     valid_destinations_iter := make_target_set_iterator(&valid_destinations)
                     for _, target in target_set_iter_members(&valid_destinations_iter) {

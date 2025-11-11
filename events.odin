@@ -335,9 +335,10 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         case .Resolving, .Interrupting:
             action_index := get_my_player(gs).hero.current_action_index
             action := get_action_at_index(gs, action_index)
+            if action == nil do break
             #partial switch &action_variant in action.variant {
             case Movement_Action:
-                path := get_top_action_value_of_type(gs, Path)
+                path := get_top_action_value_of_type(gs, Path, index = action_index)
                 resize(&path.spaces, path.num_locked_spaces)
 
                 if var.space == INVALID_TARGET do break
@@ -358,7 +359,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             action_index := get_my_player(gs).hero.current_action_index
             action := get_action_at_index(gs, action_index)
 
-            if !action.targets[var.space.x][var.space.y].member do break
+            if action == nil || !action.targets[var.space.x][var.space.y].member do break
 
             #partial switch &action_variant in action.variant {
             case Fast_Travel_Action:
@@ -366,7 +367,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 append(&gs.event_queue, Resolve_Current_Action_Event{})
 
             case Movement_Action:
-                path := get_top_action_value_of_type(gs, Path)
+                path := get_top_action_value_of_type(gs, Path, index = action_index)
                 if len(path.spaces) == path.num_locked_spaces do break
                 path.num_locked_spaces = len(path.spaces)
                 append(&gs.event_queue, Begin_Next_Action_Event{})
@@ -537,7 +538,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             action := get_action_at_index(gs, action_index)
             #partial switch &action_variant in action.variant {
             case Movement_Action:
-                path := get_top_action_value_of_type(gs, Path)
+                path := get_top_action_value_of_type(gs, Path, index = action_index)
                 path.num_locked_spaces = 1
                 resize(&path.spaces, 1)
                 append(&gs.event_queue, Begin_Next_Action_Event{})
@@ -1018,7 +1019,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         case Movement_Action:
             add_side_button(gs, "Reset move", Cancel_Event{})
 
-            path := get_top_action_value_of_type(gs, Path)
+            path := get_top_action_value_of_type(gs, Path, index = action_index)
             top_space := path.spaces[len(path.spaces) - 1]
             target_valid := !action.targets[top_space.x][top_space.y].invalid
             if target_valid {
@@ -1293,7 +1294,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             result := get_top_action_value_of_type(gs, Target)
             broadcast_game_event(gs, Entity_Translocation_Event{get_my_player(gs).hero.location, result^})
         case Movement_Action:
-            path := get_top_action_value_of_type(gs, Path)
+            path := get_top_action_value_of_type(gs, Path, index = action_index)
             defer {
                 delete(path.spaces)
                 path.spaces = nil
