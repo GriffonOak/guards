@@ -21,7 +21,19 @@ _ :: time
 
 // Todo list
 
-/* BEYOND 0.1
+/*  FOR 0.6
+
+--- ENGINE
+
+--- UI / UX
+    ^^ Add discard pile UI
+    ^ Add UI Scaling option and confirm that it works on desktop
+
+*/
+
+/* GENERAL
+
+
 
 --- ENGINE
     ^^ Rewrite action value system (get rid of so many variant types, rely more on labels)
@@ -43,8 +55,6 @@ _ :: time
 
 
 --- UI / UX
-    ^^ Allow upgrading
-    ^^ Hide opponents' played cards before resolution is up
 
     ^ Highlight chooseable cards for defense, & upgrading
     
@@ -227,7 +237,7 @@ main :: proc() {
 
     gs: Game_State = {
         confirmed_players = 0,
-        stage = .Pre_Lobby,
+        screen = .Pre_Lobby,
         tooltip = "Choose to host a game or join a game.",
     }
 

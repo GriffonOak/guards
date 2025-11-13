@@ -207,12 +207,19 @@ clay_card_element :: proc(
         card_hot = false
     }
 
+    card_should_be_hidden := gs.stage == .Selection && card.owner_id != gs.my_player_id
+
     border := clay.BorderElementConfig {
         width = clay.BorderAll(0),
     }
     if card_hot {
         border = {
             color = {255, 255, 255, 255},
+            width = clay.BorderAll(4),
+        }
+    } else if card_should_be_hidden {
+        border = {
+            color = {100, 100, 100, 255},
             width = clay.BorderAll(4),
         }
     } else {
@@ -240,11 +247,11 @@ clay_card_element :: proc(
             sizing = sizing,
         },
         image = {
-            &card_data.texture,
+            nil if card_should_be_hidden else &card_data.texture,
         },
         floating = floating,
         border = border,
-        // backgroundColor = raylib_to_clay_color(card_color_values[color]) * (hand_card_active ? {0.8, 0.8, 0.8, 1} : {1, 1, 1, 1}),
+        backgroundColor = {255, 255, 255, 255},
     }) {
         if card_hot && is_alt_key_down() {
             if clay.UI()({
@@ -702,7 +709,7 @@ clay_layout :: proc(gs: ^Game_State) -> Render_Command_Array {
             }),
         )
 
-        #partial switch gs.stage {
+        #partial switch gs.screen {
         case .Pre_Lobby:    clay_pre_lobby_screen(gs)
         case .In_Lobby:     clay_lobby_screen(gs)
         case .In_Game:      clay_game_screen(gs)

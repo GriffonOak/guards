@@ -25,14 +25,17 @@ Team :: enum {
     Blue,
 }
 
-Game_Stage :: enum {
+Game_Screen :: enum {
     Pre_Lobby,
     In_Lobby,
     In_Game,
-    // Selection,
-    // Resolution,
-    // Minion_Battle,
-    // Upgrades,
+}
+
+Game_Stage :: enum {
+    Selection,
+    Resolution,
+    Minion_Battle,
+    Upgrades,
 }
 
 Active_Effect_Kind :: enum {
@@ -252,6 +255,7 @@ Game_State :: struct {
     wave_counters: int,
     tiebreaker_coin: Team,
     ongoing_active_effects: map[Active_Effect_Kind]Active_Effect,
+    screen: Game_Screen,
     stage: Game_Stage,
     current_battle_zone: Region_ID,
     interrupt_stack: [dynamic]Expanded_Interrupt,

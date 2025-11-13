@@ -282,7 +282,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         add_or_update_player(gs, var.player_base)
 
     case Enter_Lobby_Event:
-        gs.stage = .In_Lobby
+        gs.screen = .In_Lobby
         clear(&gs.ui_stack[.Buttons])
         if gs.is_host {
             gs.tooltip = "Wait for players to join, then begin the game."
@@ -295,12 +295,12 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         player.team = .Red if player.team == .Blue else .Blue
 
     case Change_Hero_Event:
-        log.assert(gs.stage == .In_Lobby, "Tried to change hero outside of lobby!")
+        log.assert(gs.screen == .In_Lobby, "Tried to change hero outside of lobby!")
         player := get_player_by_id(gs, var.player_id)
         player.hero.id = var.hero_id
 
     case Begin_Game_Event:
-        gs.stage = .In_Game
+        gs.screen = .In_Game
         gs.current_battle_zone = .Centre
         gs.wave_counters = 5
         gs.life_counters[.Red] = 6
@@ -878,6 +878,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         gs.tiebreaker_coin = var.tiebreaker
         
     case Begin_Card_Selection_Event:
+        gs.stage = .Selection
         for &player in gs.players {
             player.stage = .Selecting
         }
@@ -942,6 +943,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         //     card_element.hidden = false
         // }
 
+        gs.stage = .Resolution
         if gs.is_host {
             broadcast_game_event(gs, get_next_turn_event(gs))
         }
@@ -1457,6 +1459,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Begin_Minion_Battle_Event:
 
+        gs.stage = .Minion_Battle
+
         if !gs.is_host do break
 
         minion_difference := gs.minion_counts[.Red] - gs.minion_counts[.Blue]
@@ -1543,6 +1547,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         broadcast_game_event(gs, Resolve_Interrupt_Event{})
 
     case Begin_Upgrading_Event:
+        gs.stage = .Upgrades
         clear(&gs.ongoing_active_effects)
         clear(&gs.global_memory)
 

@@ -171,7 +171,7 @@ _thread_host_wait_for_clients :: proc(gs: ^Game_State, sock: net.TCP_Socket) {
             log.debug("Connected with client!", client_socket)
             add_socket_listener(gs, client_socket)
 
-            if gs.stage != .In_Lobby do return
+            if gs.screen != .In_Lobby do return
 
             // Right now we just completely decide the fate of the client but realistically they should get to decide their own team and stuff
             client_player := Player {
