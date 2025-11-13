@@ -219,6 +219,7 @@ main :: proc() {
     init_window(i32(STARTING_WIDTH), i32(STARTING_HEIGHT), "guards")
     
     // fmt.println(get_window_scale_dpi())
+    ui_scale = get_window_scale_dpi().x / (2.25 * 1.3)
     defer close_window()
 
     for file in assets {
@@ -256,6 +257,10 @@ main :: proc() {
                 #partial switch var.key {
                 case .F11: toggle_fullscreen()
                 case .M: add_marker(&gs)
+                case .EQUAL:
+                    ui_scale = clamp(ui_scale + 0.1, 0.1, 3)
+                case .MINUS:
+                    ui_scale = clamp(ui_scale - 0.1, 0.1, 3)
                 case: 
                     if active_element_index.domain != .None && active_element_index.index < len(gs.ui_stack[active_element_index.domain]) {
                         active_element := &gs.ui_stack[active_element_index.domain][active_element_index.index]
@@ -263,42 +268,42 @@ main :: proc() {
                     }
                 }
 
-            case Mouse_Motion_Event:
-                // First "de-hover" the previous hovered element
-                if hovered_element_index.domain != .None && hovered_element_index.index < len(gs.ui_stack[hovered_element_index.domain]) {
-                    hovered_element := &gs.ui_stack[hovered_element_index.domain][hovered_element_index.index]
-                    if board_element, ok := &hovered_element.variant.(UI_Board_Element); ok {
-                        board_element.hovered_space = INVALID_TARGET
-                    }
-                    hovered_element.flags -= {.Hovered}
-                }
-                hovered_element_index = {}
-                ui_search: for i := len(UI_Domain) - 1; i >= 0; i -= 1 {
-                    domain := UI_Domain(i)
-                    #reverse for &element, index in gs.ui_stack[domain] {
-                        when ODIN_TEST {
-                            continue
-                        } else {
-                            if !check_collision_point_rec(var.pos, element.bounding_rect) do continue
-                        }
-                        if element.consume_input(&gs, event, &element) {
-                            element.flags += {.Hovered}
-                            hovered_element_index = {domain, index}
-                            break ui_search
-                        }
-                    }
-                }
-            case Mouse_Pressed_Event:
-                if active_element_index.domain != .None && active_element_index.index < len(gs.ui_stack[active_element_index.domain]) {
-                    active_element := &gs.ui_stack[active_element_index.domain][active_element_index.index]
-                    active_element.flags -= {.Active}
-                }
-                active_element_index = hovered_element_index
-                if hovered_element_index != {} {
-                    active_element := &gs.ui_stack[active_element_index.domain][active_element_index.index]
-                    active_element.flags += {.Active}
-                    active_element.consume_input(&gs, event, active_element)
-                }
+            // case Mouse_Motion_Event:
+            //     // First "de-hover" the previous hovered element
+            //     if hovered_element_index.domain != .None && hovered_element_index.index < len(gs.ui_stack[hovered_element_index.domain]) {
+            //         hovered_element := &gs.ui_stack[hovered_element_index.domain][hovered_element_index.index]
+            //         if board_element, ok := &hovered_element.variant.(UI_Board_Element); ok {
+            //             board_element.hovered_space = INVALID_TARGET
+            //         }
+            //         hovered_element.flags -= {.Hovered}
+            //     }
+            //     hovered_element_index = {}
+            //     ui_search: for i := len(UI_Domain) - 1; i >= 0; i -= 1 {
+            //         domain := UI_Domain(i)
+            //         #reverse for &element, index in gs.ui_stack[domain] {
+            //             when ODIN_TEST {
+            //                 continue
+            //             } else {
+            //                 if !check_collision_point_rec(var.pos, element.bounding_rect) do continue
+            //             }
+            //             if element.consume_input(&gs, event, &element) {
+            //                 element.flags += {.Hovered}
+            //                 hovered_element_index = {domain, index}
+            //                 break ui_search
+            //             }
+            //         }
+            //     }
+            // case Mouse_Pressed_Event:
+            //     if active_element_index.domain != .None && active_element_index.index < len(gs.ui_stack[active_element_index.domain]) {
+            //         active_element := &gs.ui_stack[active_element_index.domain][active_element_index.index]
+            //         active_element.flags -= {.Active}
+            //     }
+            //     active_element_index = hovered_element_index
+            //     if hovered_element_index != {} {
+            //         active_element := &gs.ui_stack[active_element_index.domain][active_element_index.index]
+            //         active_element.flags += {.Active}
+            //         active_element.consume_input(&gs, event, active_element)
+            //     }
             }
         }
         clear(&input_queue)

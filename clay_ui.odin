@@ -50,6 +50,8 @@ game_fonts: [Font_ID]Font
 hot_element_id: clay.ElementId
 active_element_id: clay.ElementId
 
+ui_scale: f32 = 0.5
+
 clay_to_raylib_color :: proc(col: clay.Color) -> (out: Colour) {
     for val, idx in col do out[idx] = u8(val)
     return out
@@ -124,19 +126,19 @@ clay_button :: proc(
     if clay.UI(id = button_id)({
         layout = {
             sizing = sizing.? or_else {
-                width = clay.SizingFixed(BUTTON_WIDTH),
+                width = clay.SizingFixed(BUTTON_WIDTH * ui_scale),
                 height = clay.SizingFit(),
             },
             childAlignment = {
                 x = .Center,
                 y = .Center,
             },
-            padding = padding.? or_else clay.PaddingAll(BUTTON_TEXT_PADDING),
+            padding = padding.? or_else clay.PaddingAll(u16(BUTTON_TEXT_PADDING * ui_scale)),
         },
         backgroundColor = button_active ? active_background_color : idle_background_color,
         border = {
             color = {255, 255, 255, 255},
-            width = button_hot ? clay.BorderOutside(8) : {},
+            width = button_hot ? clay.BorderOutside(u16(8 * ui_scale)) : {},  // @Magic
         },
         
     }) {
@@ -158,7 +160,7 @@ clay_button :: proc(
             clay.TextDynamic(text, clay.TextConfig({
                 textColor = {0, 0, 0, 255},
                 fontId = u16(Font_ID.Inter),
-                fontSize = u16(BUTTON_HEIGHT - 2 * BUTTON_TEXT_PADDING),
+                fontSize = u16((BUTTON_HEIGHT - 2 * BUTTON_TEXT_PADDING) * ui_scale),
             }))
         }
     }
@@ -215,12 +217,12 @@ clay_card_element :: proc(
     if card_hot {
         border = {
             color = {255, 255, 255, 255},
-            width = clay.BorderAll(4),
+            width = clay.BorderAll(u16(4 * ui_scale)),  // @Magic
         }
     } else if card_should_be_hidden {
         border = {
             color = {100, 100, 100, 255},
-            width = clay.BorderAll(4),
+            width = clay.BorderAll(u16(4 * ui_scale)),  // @Magic
         }
     } else {
         should_highlight: bool
@@ -236,7 +238,7 @@ clay_card_element :: proc(
             highlight_color := lerp(clay.Color{255, 150, 200, 255}, clay.Color{200, 100, 150, 255}, t)
             border = {
                 color = highlight_color,
-                width = clay.BorderAll(4),
+                width = clay.BorderAll(u16(4 * ui_scale)),  // @Magic
             }
         }
     }
@@ -257,8 +259,8 @@ clay_card_element :: proc(
             if clay.UI()({
                 layout = {
                     sizing = {
-                        clay.SizingFixed(CARD_TEXTURE_SIZE.x),
-                        clay.SizingFixed(CARD_TEXTURE_SIZE.y),
+                        clay.SizingFixed(CARD_TEXTURE_SIZE.x * ui_scale),
+                        clay.SizingFixed(CARD_TEXTURE_SIZE.y * ui_scale),
                     },
                 },
                 image = {
@@ -269,11 +271,6 @@ clay_card_element :: proc(
                     attachTo = .Parent,
                     pointerCaptureMode = .Passthrough,
                 },
-                // floating = {
-                //     attachment = {.CenterCenter, .CenterCenter},
-                //     attachTo = .Root,
-                //     pointerCaptureMode = .Passthrough,
-                // },
             }) {}
         }
     } 
@@ -286,20 +283,20 @@ clay_text_box :: proc(id_string: string, text_box: ^UI_Text_Box_Element) {
     if clay.UI(id = text_box_id)({
         layout = {
             sizing = {
-                width = clay.SizingFixed(SELECTION_BUTTON_SIZE.x * 2),
+                width = clay.SizingFixed(SELECTION_BUTTON_SIZE.x * 2 * ui_scale),
                 height = clay.SizingFit(),
             },
-            padding = clay.PaddingAll(BUTTON_TEXT_PADDING),
+            padding = clay.PaddingAll(u16(BUTTON_TEXT_PADDING * ui_scale)),
         },
         backgroundColor = {0, 0, 0, 255},
         border = {
             color = {255, 255, 255, 255},
-            width = clay.BorderOutside(4),
+            width = clay.BorderOutside(u16(4 * ui_scale)),  // @Magic
         },
     }) {
         TEXT_BOX_FONT_SIZE :: BUTTON_HEIGHT - 2 * BUTTON_TEXT_PADDING
         bounding_box := clay.GetElementData(text_box_id).boundingBox
-        single_character_width := measure_text_ex(game_fonts[.Inconsolata], "_", TEXT_BOX_FONT_SIZE, 0).x
+        single_character_width := measure_text_ex(game_fonts[.Inconsolata], "_", TEXT_BOX_FONT_SIZE * ui_scale, 0).x
         mouse_pos := ui_state.mouse_pos
 
         // Mouse input
@@ -372,13 +369,13 @@ clay_text_box :: proc(id_string: string, text_box: ^UI_Text_Box_Element) {
             clay.TextDynamic(string(sa.slice(&text_box.field)), clay.TextConfig({
                 fontId = u16(Font_ID.Inconsolata),
                 textColor = { 255, 255, 255, 255 },
-                fontSize = u16(TEXT_BOX_FONT_SIZE),
+                fontSize = u16(TEXT_BOX_FONT_SIZE * ui_scale),
             }))
         } else {
             clay.TextDynamic(text_box.default_string, clay.TextConfig({
                 fontId = u16(Font_ID.Inconsolata),
                 textColor = { 200, 200, 200, 255 },
-                fontSize = u16(TEXT_BOX_FONT_SIZE),
+                fontSize = u16(TEXT_BOX_FONT_SIZE * ui_scale),
             }))
         }
 
@@ -387,7 +384,7 @@ clay_text_box :: proc(id_string: string, text_box: ^UI_Text_Box_Element) {
             layout = {
                 sizing = {
                     width = clay.SizingFixed(0),
-                    height = clay.SizingFixed(TEXT_BOX_FONT_SIZE),
+                    height = clay.SizingFixed(TEXT_BOX_FONT_SIZE * ui_scale),
                 },
             },
         }) {}
@@ -402,18 +399,18 @@ clay_text_box :: proc(id_string: string, text_box: ^UI_Text_Box_Element) {
                     layout = {
                         sizing = {
                             width = clay.SizingFixed(0),
-                            height = clay.SizingFixed(TEXT_BOX_FONT_SIZE),
+                            height = clay.SizingFixed(TEXT_BOX_FONT_SIZE * ui_scale),
                         },
                     },
                     border = {
                         {255, 255, 255, 255},
-                        clay.BorderOutside(2),
+                        clay.BorderOutside(max(1, u16(2 * ui_scale))),  // @Magic
                     },
                     floating = {
                         attachTo = .Parent,
                         offset = {
-                            BUTTON_TEXT_PADDING + f32(text_box.cursor_index) * single_character_width,
-                            BUTTON_TEXT_PADDING,
+                            (BUTTON_TEXT_PADDING + f32(text_box.cursor_index) * single_character_width) * ui_scale,
+                            BUTTON_TEXT_PADDING * ui_scale,
                         },
                     },
                     backgroundColor = {255, 0, 255, 255},
@@ -436,13 +433,13 @@ clay_player_info :: proc(player: ^Player) {
 
         clay.TextDynamic(username, clay.TextConfig({
             fontId = u16(Font_ID.Inter),
-            fontSize = INFO_FONT_SIZE,
+            fontSize = u16(INFO_FONT_SIZE * ui_scale),
             textColor = raylib_to_clay_color(team_colors[player.team]),
         }))
 
         clay.TextDynamic(hero_name, clay.TextConfig({
             fontId = u16(Font_ID.Inter),
-            fontSize = INFO_FONT_SIZE,
+            fontSize = u16(INFO_FONT_SIZE * ui_scale),
             textColor = raylib_to_clay_color(team_colors[player.team]),
         }))
     }
@@ -481,19 +478,19 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
 
                 clay.TextDynamic(username, clay.TextConfig({
                     fontId = u16(Font_ID.Inter),
-                    fontSize = INFO_FONT_SIZE,
+                    fontSize = u16(INFO_FONT_SIZE * ui_scale),
                     textColor = raylib_to_clay_color(team_colors[player.team]),
                 }))
 
                 clay.TextDynamic(hero_name, clay.TextConfig({
                     fontId = u16(Font_ID.Inter),
-                    fontSize = INFO_FONT_SIZE,
+                    fontSize = u16(INFO_FONT_SIZE * ui_scale),
                     textColor = raylib_to_clay_color(team_colors[player.team]),
                 }))
 
                 clay.TextDynamic(hero_stats_string, clay.TextConfig({
                     fontId = u16(Font_ID.Inter),
-                    fontSize = INFO_FONT_SIZE,
+                    fontSize = u16(INFO_FONT_SIZE * ui_scale),
                     textColor = raylib_to_clay_color(team_colors[player.team]),
                 }))
             }
@@ -508,7 +505,7 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
                     clay.SizingFit({}),
                     clay.SizingFit({}),
                 },
-                childGap = 4,
+                childGap = u16(4 * ui_scale), // @Magic
             },
         }) {
             for i in 0..<4 {
@@ -520,8 +517,8 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
                         clay_card_element(
                             gs, card,
                             sizing = {
-                                clay.SizingFixed(RESOLVED_CARD_WIDTH),
-                                clay.SizingFixed(RESOLVED_CARD_HEIGHT),
+                                clay.SizingFixed(RESOLVED_CARD_WIDTH * ui_scale),
+                                clay.SizingFixed(RESOLVED_CARD_HEIGHT * ui_scale),
                             },
                             preview_attach_points = {
                                 element = .CenterTop,
@@ -535,8 +532,8 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
                         layout = {
                             layoutDirection = .LeftToRight,
                             sizing = {
-                                clay.SizingFixed(RESOLVED_CARD_WIDTH),
-                                clay.SizingFixed(RESOLVED_CARD_HEIGHT),
+                                clay.SizingFixed(RESOLVED_CARD_WIDTH * ui_scale),
+                                clay.SizingFixed(RESOLVED_CARD_HEIGHT * ui_scale),
                             },
                         },
                         backgroundColor = {0, 0, 180, 255},
@@ -553,18 +550,18 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
     DECK_VIEWER_PADDING_GAP :: 8
 
     preview_card_sizing := clay.Sizing {
-        clay.SizingFixed(RESOLVED_CARD_WIDTH * 1.5),
-        clay.SizingFixed(RESOLVED_CARD_HEIGHT * 1.5),
+        clay.SizingFixed(RESOLVED_CARD_WIDTH * 1.5 * ui_scale),
+        clay.SizingFixed(RESOLVED_CARD_HEIGHT * 1.5 * ui_scale),
     }
 
     if clay.UI()({
         layout = {
             sizing = {
-                width = clay.SizingFit({min = 200}),
-                height = clay.SizingFit({min = 200}),
+                width = clay.SizingFit({min = 200 * ui_scale}),
+                height = clay.SizingFit({min = 200 * ui_scale}),
             },
-            padding = clay.PaddingAll(2 * DECK_VIEWER_PADDING_GAP),
-            childGap = 2 * DECK_VIEWER_PADDING_GAP,
+            padding = clay.PaddingAll(u16(2 * DECK_VIEWER_PADDING_GAP * ui_scale)),
+            childGap = u16(2 * DECK_VIEWER_PADDING_GAP * ui_scale),
             childAlignment = {
                 x = .Center,
                 y = .Center,
@@ -586,7 +583,7 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
                     width = clay.SizingFit({}),
                     height = clay.SizingFit({}),
                 },
-                childGap = 2 * DECK_VIEWER_PADDING_GAP,
+                childGap = u16(2 * DECK_VIEWER_PADDING_GAP * ui_scale),
                 childAlignment = {
                     x = .Center,
                     y = .Center,
@@ -624,7 +621,7 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
                         width = clay.SizingFit({}),
                         height = clay.SizingFit({}),
                     },
-                    childGap = DECK_VIEWER_PADDING_GAP,
+                    childGap = u16(DECK_VIEWER_PADDING_GAP * ui_scale),
                     childAlignment = {
                         x = .Center,
                         y = .Center,
@@ -638,7 +635,7 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
                                 width = clay.SizingFit({}),
                                 height = clay.SizingFit({}),
                             },
-                            childGap = DECK_VIEWER_PADDING_GAP,
+                            childGap = u16(DECK_VIEWER_PADDING_GAP * ui_scale),
                             childAlignment = {
                                 x = .Center,
                                 y = .Center,
@@ -696,7 +693,7 @@ clay_layout :: proc(gs: ^Game_State) -> Render_Command_Array {
             layoutDirection = .TopToBottom,
             childAlignment = {x = .Center},
             sizing = SIZING_GROW,
-            padding = clay.PaddingAll(8),
+            padding = clay.PaddingAll(u16(8 * ui_scale)),  // @Magic
         },
         backgroundColor = {10, 30, 40, 255},
     }) {
@@ -704,7 +701,7 @@ clay_layout :: proc(gs: ^Game_State) -> Render_Command_Array {
             tooltip_text,
             clay.TextConfig({
                 textColor = {255, 255, 255, 255},
-                fontSize = TOOLTIP_FONT_SIZE,
+                fontSize = u16(TOOLTIP_FONT_SIZE * ui_scale),
                 fontId = u16(Font_ID.Inter),
             }),
         )
@@ -802,7 +799,7 @@ clay_pre_lobby_screen :: proc(gs: ^Game_State) {
                 x = .Center,
                 y = .Center,
             },
-            childGap = 16,
+            childGap = u16(16 * ui_scale),  // @Magic
         },
     }) {
         clay_text_box("ip_text_box", &ip_text_box)
@@ -811,7 +808,7 @@ clay_pre_lobby_screen :: proc(gs: ^Game_State) {
             "join_game_button",
             "Join a game",
             sizing = clay.Sizing {
-                width = clay.SizingFixed(2 * BUTTON_WIDTH),
+                width = clay.SizingFixed(2 * BUTTON_WIDTH * ui_scale),
                 height = clay.SizingFit({}),
             },
         ) {
@@ -823,7 +820,7 @@ clay_pre_lobby_screen :: proc(gs: ^Game_State) {
             layout = {
                 sizing = {
                     // width = clay.SizingFixed(100),
-                    height = clay.SizingFixed(100),
+                    height = clay.SizingFixed(100 * ui_scale),  // @Magic
                 },
             },
         }) {}
@@ -832,7 +829,7 @@ clay_pre_lobby_screen :: proc(gs: ^Game_State) {
             "host_game_button",
             "Host a game",
             sizing = clay.Sizing {
-                width = clay.SizingFixed(2 * BUTTON_WIDTH),
+                width = clay.SizingFixed(2 * BUTTON_WIDTH * ui_scale),
                 height = clay.SizingFit({}),
             },
         ) {
@@ -847,7 +844,7 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
         layout = {
             layoutDirection = .LeftToRight,
             sizing = SIZING_GROW,
-            childGap = 16,
+            childGap = u16(16 * ui_scale),  // @Magic
         },
     }) {
         // Player_sidebar
@@ -879,7 +876,7 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                     x = .Center,
                     y = .Center,
                 },
-                childGap = 16,
+                childGap = u16(16 * ui_scale),  // @Magic
             },
         }) {
             if gs.is_host {
@@ -904,7 +901,7 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                     x = .Right,
                     y = .Center,
                 },
-                childGap = 16,
+                childGap = u16(16 * ui_scale),  // @Magic
             },
         }) {
             for hero in Hero_ID {
@@ -929,7 +926,7 @@ clay_game_screen :: proc(gs: ^Game_State) {
                 x = .Center,
                 y = .Center,
             },
-            childGap = RESOLVED_CARD_WIDTH / 2,
+            childGap = u16(RESOLVED_CARD_WIDTH * ui_scale / 2),
         },
     }) {
         left_sidebar_id := clay.ID("left_sidebar")
@@ -951,8 +948,8 @@ clay_game_screen :: proc(gs: ^Game_State) {
                     clay_card_element(
                         gs, card,
                         sizing = clay.Sizing {
-                            clay.SizingFixed(RESOLVED_CARD_WIDTH),
-                            clay.SizingFixed(RESOLVED_CARD_HEIGHT),
+                            clay.SizingFixed(RESOLVED_CARD_WIDTH * ui_scale),
+                            clay.SizingFixed(RESOLVED_CARD_HEIGHT * ui_scale),
                         },
                         preview_attach_points = {
                             element = .LeftTop,
@@ -964,7 +961,7 @@ clay_game_screen :: proc(gs: ^Game_State) {
                                 parent = .RightCenter,
                             },
                             offset = {
-                                8, 8,
+                                8 * ui_scale, 8 * ui_scale,
                             },
                             attachTo = .ElementWithId,
                             parentId = panel_id.id,
@@ -981,10 +978,10 @@ clay_game_screen :: proc(gs: ^Game_State) {
         DECK_BUTTON_SIZE :: 100
         HAND_PANEL_CHILD_GAP :: 8
         // hand_panel_box := clay.GetElementData(hand_panel_id).boundingBox
-        hand_panel_min_width: f32 = DECK_BUTTON_SIZE + 5 * HAND_PANEL_CHILD_GAP + 5 * RESOLVED_CARD_WIDTH
+        hand_panel_min_width: f32 = (DECK_BUTTON_SIZE + 5 * HAND_PANEL_CHILD_GAP + 5 * RESOLVED_CARD_WIDTH) * ui_scale
         // hand_panel_min_height := RESOLVED_CARD_HEIGHT
         central_panel_height := clay.GetElementData(central_panel_id).boundingBox.height
-        max_central_panel_width := max(central_panel_height - RESOLVED_CARD_HEIGHT, hand_panel_min_width)
+        max_central_panel_width := max(central_panel_height - RESOLVED_CARD_HEIGHT * ui_scale, hand_panel_min_width)
 
         if clay.UI(id = central_panel_id)({
             layout = {
@@ -998,7 +995,7 @@ clay_game_screen :: proc(gs: ^Game_State) {
                 childAlignment = {
                     x = .Center,
                 },
-                childGap = 8,
+                childGap = u16(8 * ui_scale),
             },
         }) {
             
@@ -1025,7 +1022,7 @@ clay_game_screen :: proc(gs: ^Game_State) {
     
                 addressable_board_element := &board_element.(Board_Element)
                 addressable_board_element.hovered_space = INVALID_TARGET
-                VERTICAL_SPACING := bounding_rect.height / 17.9
+                VERTICAL_SPACING := bounding_rect.height / 17.9  // @Magic
     
                 if clay.Hovered() && active_element_id == {} {
                     hot_element_id = board_id
@@ -1060,7 +1057,7 @@ clay_game_screen :: proc(gs: ^Game_State) {
                         width = clay.SizingGrow({max = max_central_panel_width}),
                         height = clay.SizingFit({}),
                     },
-                    childGap = HAND_PANEL_CHILD_GAP,
+                    childGap = u16(HAND_PANEL_CHILD_GAP * ui_scale),
                 },
                 backgroundColor = {50, 10, 20, 255},
             }) {
@@ -1071,7 +1068,7 @@ clay_game_screen :: proc(gs: ^Game_State) {
                         height = clay.SizingFixed(DECK_BUTTON_SIZE),
                     },
                     image = &ui_icons[.File_Box],
-                    padding = clay.PaddingAll(10),
+                    padding = clay.PaddingAll(u16(10 * ui_scale)),  // @Magic
                     idle_background_color = {255, 150, 200, 255},
                     active_background_color = {205, 100, 150, 255},
                 ) {
@@ -1097,7 +1094,7 @@ clay_game_screen :: proc(gs: ^Game_State) {
                             width = clay.SizingGrow({}),
                             height = clay.SizingFit({}),
                         },
-                        childGap = HAND_PANEL_CHILD_GAP,
+                        childGap = u16(HAND_PANEL_CHILD_GAP * ui_scale),
                         childAlignment = {x = .Center},
                     },
                 }){
@@ -1106,8 +1103,8 @@ clay_game_screen :: proc(gs: ^Game_State) {
                             clay_card_element(
                                 gs, card,
                                 sizing = clay.Sizing {
-                                    clay.SizingFixed(2 * RESOLVED_CARD_WIDTH),
-                                    clay.SizingFixed(2 * RESOLVED_CARD_HEIGHT),
+                                    clay.SizingFixed(2 * RESOLVED_CARD_WIDTH * ui_scale),
+                                    clay.SizingFixed(2 * RESOLVED_CARD_HEIGHT * ui_scale),
                                 },
                                 preview_attach_points = {
                                     element = .CenterBottom,
@@ -1139,8 +1136,8 @@ clay_game_screen :: proc(gs: ^Game_State) {
                     clay_card_element(
                         gs, card,
                         sizing = clay.Sizing {
-                            clay.SizingFixed(RESOLVED_CARD_WIDTH),
-                            clay.SizingFixed(RESOLVED_CARD_HEIGHT),
+                            clay.SizingFixed(RESOLVED_CARD_WIDTH * ui_scale),
+                            clay.SizingFixed(RESOLVED_CARD_HEIGHT * ui_scale),
                         },
                         preview_attach_points = {
                             element = .RightTop,
@@ -1152,7 +1149,7 @@ clay_game_screen :: proc(gs: ^Game_State) {
                                 parent = .LeftCenter,
                             },
                             offset = {
-                                8, 8,
+                                8 * ui_scale, 8 * ui_scale,
                             },
                             attachTo = .ElementWithId,
                             parentId = panel_id.id,
