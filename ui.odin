@@ -123,42 +123,6 @@ FIRST_SIDE_BUTTON_LOCATION :: Rectangle {
 null_input_proc: UI_Input_Proc : proc(_: ^Game_State, _: Input_Event, _: ^UI_Element) -> bool { return false }
 null_render_proc: UI_Render_Proc : proc(_: ^Game_State, _: UI_Element) {}
 
-button_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, element: ^UI_Element)-> bool {
-    button_element := assert_variant(&element.variant, UI_Button_Element)
-
-    #partial switch var in input {
-    case Mouse_Pressed_Event:
-        if button_element.global {
-            broadcast_game_event(gs, button_element.event)
-        } else {
-            append(&gs.event_queue, button_element.event)
-        }
-        return true
-    case Mouse_Motion_Event:
-        return true
-    }
-    return false
-}
-
-draw_button: UI_Render_Proc : proc(_: ^Game_State, element: UI_Element) {
-    button_element := assert_variant_rdonly(element.variant, UI_Button_Element)
-
-when !ODIN_TEST {
-    draw_rectangle_rec(element.bounding_rect, GRAY)
-    draw_text_ex(
-        default_font,
-        button_element.text,
-        {element.bounding_rect.x + BUTTON_TEXT_PADDING, element.bounding_rect.y + BUTTON_TEXT_PADDING}, 
-        element.bounding_rect.height - 2 * BUTTON_TEXT_PADDING,
-        FONT_SPACING,
-        BLACK,
-    )
-    if .Hovered in element.flags {
-        draw_rectangle_lines_ex(element.bounding_rect, BUTTON_TEXT_PADDING / 2, WHITE)
-    }
-}
-}
-
 
 format_tooltip :: proc(gs: ^Game_State, tooltip: Tooltip) -> string {
     context.allocator = context.temp_allocator
@@ -181,33 +145,13 @@ format_tooltip :: proc(gs: ^Game_State, tooltip: Tooltip) -> string {
     return ""
 }
 
-// render_tooltip :: proc(gs: ^Game_State) {
-//     if gs.tooltip == nil do return
-//     tooltip_text := format_tooltip(gs, gs.tooltip)
-//     dimensions := measure_text_ex(default_font, tooltip_text, TOOLTIP_FONT_SIZE, FONT_SPACING)
-//     top_width := WIDTH - BOARD_TEXTURE_SIZE.x
-//     offset := BOARD_TEXTURE_SIZE.x + (top_width - dimensions.x) / 2
-//     draw_text_ex(default_font, tooltip_text, {offset, 0}, TOOLTIP_FONT_SIZE, FONT_SPACING, WHITE)
-// }
-
-
-add_generic_button :: proc(gs: ^Game_State, location: Rectangle, text: cstring, event: Event, global: bool = false) {
-    append(&gs.ui_stack[.Buttons], UI_Element {
-        location, UI_Button_Element {
-            event, text, global,
-        },
-        button_input_proc,
-        draw_button,
-        {},
-    })
-}
-
 add_side_button :: proc(gs: ^Game_State, text: string, event: Event, global: bool = false) {
 
     append(&gs.side_button_manager.button_data, Button_Data {
         event = event,
         text = text,
         global = global,
+        id = clay.ID(text),
     })
 }
 
@@ -220,82 +164,8 @@ clear_side_buttons :: proc(gs: ^Game_State) {
     clear(&gs.side_button_manager.button_data)
 }
 
-add_game_ui_elements :: proc(gs: ^Game_State) {
-    // clear(&gs.ui_stack[.Buttons])
-    // gs.side_button_manager = Side_Button_Manager {
-    //     buttons = {},
-    //     first_button_index = 0,
-    //     button_location = FIRST_SIDE_BUTTON_LOCATION,
-    // }
-
-    // board_render_texture: Render_Texture_2D
-    // when !ODIN_TEST {
-    //     board_render_texture = load_render_texture(i32(BOARD_TEXTURE_SIZE.x), i32(BOARD_TEXTURE_SIZE.y))
-    // }
-
-    // append(&gs.ui_stack[.Board], UI_Element {
-    //     BOARD_POSITION_RECT,
-    //     UI_Board_Element{
-    //         texture = board_render_texture,
-    //     },
-    //     board_input_proc,
-    //     draw_board,
-    //     {},
-    // })
-
-    // for player_id in 0..<len(gs.players) {
-    //     player := get_player_by_id(gs, player_id)
-
-    //     if player_id == gs.my_player_id {
-    //         for card in player.hero.cards {
-    //             append(&gs.ui_stack[.Cards], UI_Element{
-    //                 card_hand_position_rects[card.color],
-    //                 UI_Card_Element{card_id = card.id},
-    //                 card_input_proc,
-    //                 draw_card,
-    //                 {},
-    //             })
-    //         }
-    //     } else {
-    //         for card in player.hero.cards {
-    //             append(&gs.ui_stack[.Cards], UI_Element {
-    //                 {},
-    //                 UI_Card_Element{card_id = card.id},
-    //                 card_input_proc,
-    //                 draw_card,
-    //                 {},
-    //             })
-    //         }
-    //     }
-    // }
-}
-
-// increase_window_size :: proc() {
-//     if window_size == .Small {
-//         window_size = .Big
-//         set_window_size(WIDTH, HEIGHT)
-//         window_scale = 1
-//     }
-// }
-
-// decrease_window_size :: proc() {
-//     if window_size == .Big {
-//         window_size = .Small
-//         set_window_size(WIDTH / 2, HEIGHT / 2)
-//         window_scale = 2
-//     }
-// }
-
 toggle_fullscreen :: proc() {
     toggle_borderless_windowed()
-    // if window_size != .Fullscreen {
-    //     window_size = .Fullscreen
-    //     window_scale = WIDTH / f32(get_render_width())
-    // } else {
-    //     window_size = .Small
-    //     set_window_size(WIDTH / 2, HEIGHT / 2)
-    //     window_scale = 2
-    // }
 }
 
 add_toast :: proc(gs: ^Game_State, text: string, duration: f64) {

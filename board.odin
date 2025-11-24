@@ -86,10 +86,6 @@ dead_minion_target_indices := [5]Target {
 GRID_WIDTH  :: 21
 GRID_HEIGHT :: 20
 
-// BOARD_TEXTURE_SIZE :: Vec2{1200, 1200}
-// BOARD_TEXTURE_SIZE :: Vec2{1080, 1080}
-// BOARD_POSITION_RECT :: Rectangle{0, 0, BOARD_TEXTURE_SIZE.x, BOARD_TEXTURE_SIZE.y}
-
 WATER_COLOR  :: Colour{54, 186, 228, 255}
 CLIFF_COLOR  :: Colour{80, 76, 75, 255}
 SAND_COLOR   :: Colour{219, 182, 127, 255}
@@ -247,46 +243,6 @@ setup_board :: proc(gs: ^Game_State) {
     setup_regions(gs)
 
     setup_spawnpoints(gs)
-}
-
-board_input_proc: UI_Input_Proc : proc(gs: ^Game_State, input: Input_Event, element: ^UI_Element) -> bool {
-
-    board_element := assert_variant(&element.variant, UI_Board_Element)
-    prev_hovered_space := board_element.hovered_space
-    defer {
-        if board_element.hovered_space != prev_hovered_space {
-            append(&gs.event_queue, Space_Hovered_Event{board_element.hovered_space})
-        }
-    }
-
-    #partial switch var in input {
-    case Mouse_Pressed_Event:
-        if .Hovered not_in element.flags || board_element.hovered_space == INVALID_TARGET do break
-        append(&gs.event_queue, Space_Clicked_Event{board_element.hovered_space})
-    case Mouse_Motion_Event:
-        board_element.hovered_space = INVALID_TARGET
-        // mouse_within_board := ui_state.mouse_pos - {element.bounding_rect.x, element.bounding_rect.y}
-
-        // mouse_within_board *= BOARD_TEXTURE_SIZE / {element.bounding_rect.width, element.bounding_rect.height}
-
-        closest_idx := INVALID_TARGET
-        // closest_dist: f32 = 1e6
-        // for arr, x in gs.board {
-        //     for space, y in arr {
-        //         // diff := (mouse_within_board - space.position)
-        //         // dist := diff.x * diff.x + diff.y * diff.y
-        //         // if dist < closest_dist && dist < VERTICAL_SPACING * VERTICAL_SPACING * 0.5 {
-        //         //     closest_idx = {u8(x), u8(y)}
-        //         //     closest_dist = dist
-        //         // }
-        //     }
-        // }
-        if closest_idx != INVALID_TARGET  {
-            board_element.hovered_space = closest_idx
-        }
-    }
-
-    return true
 }
 
 render_board :: proc(gs: ^Game_State, bounding_rect: Rectangle, board_element: Board_Element) {
@@ -461,7 +417,7 @@ render_board :: proc(gs: ^Game_State, bounding_rect: Rectangle, board_element: B
             color: Colour
             spawnpoint_flags := space.flags & SPAWNPOINT_FLAGS
             if spawnpoint_flags != {} {
-                color = team_colors[space.spawnpoint_team]
+                color = clay_to_raylib_color(team_light_colors[space.spawnpoint_team])
                 if .Hero_Spawnpoint in space.flags {
                     draw_ring(space.position, VERTICAL_SPACING * 0.35, VERTICAL_SPACING * 0.26, 0, 360, 20, color)
                 } else {
@@ -476,7 +432,7 @@ render_board :: proc(gs: ^Game_State, bounding_rect: Rectangle, board_element: B
 
             if space.flags & UNIT_FLAGS != {} {
                 texture: Texture
-                color = team_colors[space.unit_team]
+                color = clay_to_raylib_color(team_light_colors[space.unit_team])
 
                 if .Hero in space.flags {
                     hero_id := get_player_by_id(gs, space.owner).hero.id
@@ -495,7 +451,7 @@ render_board :: proc(gs: ^Game_State, bounding_rect: Rectangle, board_element: B
 
     // Draw Tiebreaker Coin
     // tiebreaker_pos := offset + {VERTICAL_SPACING, VERTICAL_SPACING}
-    draw_circle_v({100, 100}, 75, team_colors[gs.tiebreaker_coin])
+    draw_circle_v({100, 100}, 75, clay_to_raylib_color(team_light_colors[gs.tiebreaker_coin]))
     draw_ring({100, 100}, 70, 75, 0, 360, 100, RAYWHITE)
 
     // Draw wave counters
@@ -517,16 +473,14 @@ render_board :: proc(gs: ^Game_State, bounding_rect: Rectangle, board_element: B
             life_counter_position.x += f32(life_counter_index) * (LIFE_COUNTER_RADIUS * 2 + LIFE_COUNTER_PADDING)
             if team == .Blue do life_counter_position = {bounding_rect.width, bounding_rect.height} - life_counter_position
             life_counter_position += offset
-            darker_team_color := team_colors[team] / 2
-            darker_team_color.a = 255
-            color := team_colors[team] if life_counter_index < gs.life_counters[team] else darker_team_color
-            draw_circle_v(life_counter_position, LIFE_COUNTER_RADIUS, color)
-            draw_ring(life_counter_position, LIFE_COUNTER_RADIUS - 5, LIFE_COUNTER_RADIUS, 0, 360, 100, team_colors[team])
+            color := team_light_colors[team] if life_counter_index < gs.life_counters[team] else team_dark_colors[team]
+            draw_circle_v(life_counter_position, LIFE_COUNTER_RADIUS, clay_to_raylib_color(color))
+            draw_ring(life_counter_position, LIFE_COUNTER_RADIUS - 5, LIFE_COUNTER_RADIUS, 0, 360, 100, clay_to_raylib_color(team_light_colors[team]))
         }
 
         // Draw dead minions
         for minion_type, minion_index in gs.dead_minions[team] {
-            color := team_colors[team]
+            color := clay_to_raylib_color(team_light_colors[team])
             target := dead_minion_target_indices[minion_index]
             if team == .Blue do target = {GRID_WIDTH-1, GRID_HEIGHT-1} - target
             position := gs.board[target.x][target.y].position
@@ -548,13 +502,4 @@ render_board :: proc(gs: ^Game_State, bounding_rect: Rectangle, board_element: B
     }
 
     end_texture_mode()
-}
-
-draw_board: UI_Render_Proc : proc(_: ^Game_State, element: UI_Element) {
-
-//     board_element := element.variant.(UI_Board_Element)
-// when !ODIN_TEST {
-//     draw_texture_pro(board_element.texture.texture, {0, 0, BOARD_TEXTURE_SIZE.x, -BOARD_TEXTURE_SIZE.y}, element.bounding_rect, {0, 0}, 0, WHITE)
-// }
-
 }

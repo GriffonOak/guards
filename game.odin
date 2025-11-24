@@ -286,12 +286,6 @@ Game_State :: struct {
     blocked_spawns: [Team][dynamic]Target,
 }
 
-@rodata
-team_colors := [Team]Colour{
-    .Red  = {237, 92, 2, 255},
-    .Blue = {22, 147, 255, 255},
-}
-
 // Directed_Target :: [2]i8
 
 @rodata
@@ -373,6 +367,7 @@ setup_icons :: proc() {
         emoji_image := load_image_from_memory(".png", raw_data(file.data), i32(len(file.data)))
         image_flip_vertical(&emoji_image)
         emoji_texture := load_texture_from_image(emoji_image)
+        set_texture_filter(emoji_texture, .BILINEAR)
         switch file.name {
         case "axe.png":                 hero_icons[.Brogan]     = emoji_texture
         case "goblin.png":              hero_icons[.Dodger]     = emoji_texture
@@ -413,7 +408,24 @@ setup_icons :: proc() {
         }
 
         // image_alpha_mask(&spawnpoint_image, minion_image)
-        minion_icons[spawnpoint_type] = load_texture_from_image(spawnpoint_image)
+        spawnpoint_texture := load_texture_from_image(spawnpoint_image)
+        set_texture_filter(spawnpoint_texture, .BILINEAR)
+        minion_icons[spawnpoint_type] = spawnpoint_texture
+    }
+
+    for file in icons {
+        icon_image := load_image_from_memory(".png", raw_data(file.data), i32(len(file.data)))
+        image_flip_vertical(&icon_image)
+        icon_texture := load_texture_from_image(icon_image)
+        set_texture_filter(icon_texture, .BILINEAR)
+        switch file.name {
+        case "attack.png": card_icons[.Attack] = icon_texture
+        case "defense.png": card_icons[.Defense] = icon_texture
+        case "initiative.png": card_icons[.Initiative] = icon_texture
+        case "radius.png": card_icons[.Radius] = icon_texture
+        case "movement.png": card_icons[.Movement] = icon_texture
+        case "range.png": card_icons[.Range] = icon_texture
+        }
     }
 }
 

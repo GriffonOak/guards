@@ -5,7 +5,8 @@ import "core:net"
 import "core:reflect"
 import "core:log"
 
-
+_ :: fmt
+_ :: reflect
 
 Player_Stage :: enum {
     None,
@@ -97,19 +98,6 @@ player_offset :: proc(gs: ^Game_State, player_id: Player_ID) -> int {
     return player_id
 }
 
-render_player_info :: proc(gs: ^Game_State) {
-    // for _, player_id in gs.players {
-    //     pos := Vec2{0, BOARD_POSITION_RECT.height} + TEXT_PADDING
-    //     if player_id != gs.my_player_id {
-    //         player_offset := player_offset(gs, player_id)
-    //         x := BOARD_TEXTURE_SIZE.x + TEXT_PADDING + RESOLVED_CARD_WIDTH / 2
-    //         y := TOOLTIP_FONT_SIZE + f32(player_offset) * BOARD_HAND_SPACE
-    //         pos = {x, y}
-    //     }
-    //     render_player_info_at_position(gs, player_id, pos)
-    // }
-}
-
 count_hero_items :: proc(gs: ^Game_State, hero: Hero, kind: Card_Value_Kind) -> (out: int) {
     for item_index in 0..<hero.item_count {
         card_id := hero.items[item_index]
@@ -118,42 +106,6 @@ count_hero_items :: proc(gs: ^Game_State, hero: Hero, kind: Card_Value_Kind) -> 
         if card_data.item == kind do out += 1
     }
     return out
-}
-
-render_player_info_at_position :: proc(gs: ^Game_State, player_id: Player_ID, pos: Vec2) {
-    next_pos := pos
-    player := get_player_by_id(gs, player_id)
-    context.allocator = context.temp_allocator
-    name, _ := reflect.enum_name_from_value(player.hero.id)
-    hero_name := fmt.ctprintf("[%v%v] %v", get_username(gs, player_id), "!" if gs.team_captains[player.team] == player_id else "", name)
-    
-    draw_text_ex(default_font, hero_name, next_pos, INFO_FONT_SIZE, FONT_SPACING, team_colors[player.team])
-    next_pos.y += INFO_FONT_SIZE + TEXT_PADDING
-
-    level_string := fmt.ctprintf("Level %v", player.hero.level)
-    draw_text_ex(default_font, level_string, next_pos, INFO_FONT_SIZE, FONT_SPACING, WHITE)
-    next_pos.y += INFO_FONT_SIZE + TEXT_PADDING
-
-    coins_string := fmt.ctprintf("%v coin%v", player.hero.coins, "" if player.hero.coins == 1 else "s")
-    draw_text_ex(default_font, coins_string, next_pos, INFO_FONT_SIZE, FONT_SPACING, WHITE)
-
-
-    next_pos = pos
-    next_pos.x += 250 // @Magic
-
-    for kind, index in Card_Value_Kind {
-        initial := item_initials[kind]
-        item_string := fmt.ctprintf("+%v%v", count_hero_items(gs, player.hero, kind), initial)
-        draw_text_ex(default_font, item_string, next_pos, INFO_FONT_SIZE, FONT_SPACING, WHITE)
-        next_pos.y += INFO_FONT_SIZE + TEXT_PADDING
-
-        if index == 2 {
-            next_pos = pos
-            next_pos.x += 350
-        }
-    }
-
-    
 }
 
 add_or_update_player :: proc(gs: ^Game_State, player_base: Player_Base) {

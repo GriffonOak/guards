@@ -104,6 +104,7 @@ monospace_font: Font
 
 assets := #load_directory("assets")
 emoji := #load_directory("assets/emoji")
+icons := #load_directory("assets/icons")
 
 UI_Icon_Kind :: enum {
     File_Box,
@@ -114,6 +115,8 @@ ui_icons: [UI_Icon_Kind]Texture
 hero_icons: [Hero_ID]Texture
 
 minion_icons: [Space_Flag]Texture
+
+card_icons: [Card_Value_Kind]Texture
 
 spall_ctx: spall.Context
 @(thread_local) spall_buffer: spall.Buffer
@@ -205,12 +208,7 @@ main :: proc() {
     }
 
     active_element_index := UI_Index{}
-    hovered_element_index := UI_Index{}
-
-    for color, index in Card_Color {
-        // Add 100 to height here so the bounding rect goes offscreen
-        card_hand_position_rects[color] = {f32(index) * CARD_HAND_WIDTH, CARD_HAND_Y_POSITION, CARD_HAND_WIDTH, CARD_HAND_HEIGHT + 100}
-    }
+    // hovered_element_index := UI_Index{}
 
     // set_config_flags({.WINDOW_TOPMOST})
     set_trace_log_level(.NONE)

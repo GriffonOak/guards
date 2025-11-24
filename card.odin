@@ -2,8 +2,6 @@ package guards
 
 import "core:strings"
 import "core:fmt"
-import "core:math"
-import "core:log"
 import "core:reflect"
 
 
@@ -96,66 +94,13 @@ Card :: struct {
 
 CARD_TEXTURE_SIZE :: Vec2{500, 700}
 
-CARD_SCALING_FACTOR :: 1
-
-CARD_HOVER_POSITION_RECT :: Rectangle {
-    STARTING_WIDTH - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x,
-    STARTING_HEIGHT - CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y,
-    CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.x,
-    CARD_SCALING_FACTOR * CARD_TEXTURE_SIZE.y,
-}
-
-PLAYED_CARD_SIZE :: Vec2{150, 210}
-
-CARD_HAND_WIDTH :: 0 / 5
-CARD_HAND_HEIGHT :: 48 // CARD_HAND_WIDTH * 1.5
-CARD_HAND_Y_POSITION :: STARTING_HEIGHT - CARD_HAND_HEIGHT
-
-BOARD_HAND_SPACE :: 0 // CARD_HAND_Y_POSITION - BOARD_TEXTURE_SIZE.y
 RESOLVED_CARD_HEIGHT :: 150
 RESOLVED_CARD_WIDTH :: RESOLVED_CARD_HEIGHT / 1.5
-RESOLVED_CARD_PADDING :: (BOARD_HAND_SPACE - RESOLVED_CARD_HEIGHT) / 2
 
-OTHER_PLAYER_PLAYED_CARD_POSITION_RECT :: Rectangle {
-    // BOARD_TEXTURE_SIZE.x - RESOLVED_CARD_WIDTH / 2,
-    // TOOLTIP_FONT_SIZE + BOARD_HAND_SPACE * 0.1,
-    // RESOLVED_CARD_WIDTH,
-    // RESOLVED_CARD_HEIGHT,
-}
-// Copy and paste of above but with +constant on x
-OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT :: Rectangle {
-    // BOARD_TEXTURE_SIZE.x + RESOLVED_CARD_WIDTH / 2 + RESOLVED_CARD_PADDING + 450, // @Magic
-    // TOOLTIP_FONT_SIZE + BOARD_HAND_SPACE * 0.1,
-    // RESOLVED_CARD_WIDTH,
-    // RESOLVED_CARD_HEIGHT,
-}
+HAND_CARD_WIDTH :: 2 * RESOLVED_CARD_WIDTH
+HAND_CARD_HEIGHT :: 2 * RESOLVED_CARD_HEIGHT
 
-OTHER_PLAYER_Discarded_CARD_POSITION_RECT :: Rectangle {
-    OTHER_PLAYER_RESOLVED_CARD_POSITION_RECT.x + 4 * (RESOLVED_CARD_WIDTH + RESOLVED_CARD_PADDING),
-    TOOLTIP_FONT_SIZE + BOARD_HAND_SPACE * 0.1,
-    RESOLVED_CARD_WIDTH * 0.75,
-    RESOLVED_CARD_HEIGHT * 0.75,
-}  // Mouse contribution: h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h 
-
-
-FIRST_CARD_RESOLVED_POSITION_RECT :: Rectangle {
-    // RESOLVED_CARD_PADDING + 450,  // @Magic this comes from the amount of space we give items when rendering player info
-    // BOARD_POSITION_RECT.height + RESOLVED_CARD_PADDING,
-    // RESOLVED_CARD_WIDTH,
-    // RESOLVED_CARD_HEIGHT,
-}
-
-
-FIRST_Discarded_CARD_POSITION_RECT :: Rectangle {
-    // 4 * (RESOLVED_CARD_PADDING + RESOLVED_CARD_WIDTH) + FIRST_CARD_RESOLVED_POSITION_RECT.x,
-    // BOARD_POSITION_RECT.height + RESOLVED_CARD_PADDING,
-    // RESOLVED_CARD_WIDTH * 0.75,
-    // RESOLVED_CARD_HEIGHT * 0.75,
-}
-
-CARD_PLAYED_POSITION_RECT :: Rectangle{
-    // BOARD_POSITION_RECT.width - PLAYED_CARD_SIZE.x - RESOLVED_CARD_PADDING, BOARD_POSITION_RECT.height - PLAYED_CARD_SIZE.y / 4, PLAYED_CARD_SIZE.x, PLAYED_CARD_SIZE.y
-}
+// Mouse contribution: h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h h 
 
 
 @rodata
@@ -166,8 +111,6 @@ primary_initials := [Primary_Kind]string {
     .Defense_Skill = "DS",
     .Movement = "M",
 }
-
-card_hand_position_rects: [Card_Color]Rectangle
 
 @rodata
 card_color_values := [Card_Color]Colour {
@@ -303,68 +246,6 @@ create_texture_for_card :: proc(card: ^Card_Data) {
     set_texture_filter(card.texture, .BILINEAR)
 }
 
-draw_card: UI_Render_Proc: proc(gs: ^Game_State, element: UI_Element) {
-    if element.bounding_rect == {} do return
-when !ODIN_TEST {
-    card_element := assert_variant_rdonly(element.variant, UI_Card_Element)
-
-    card_data, ok := get_card_data_by_id(gs, card_element.card_id)
-
-    log.assert(ok, "Tried to draw card element with no assigned card!")
-
-    // amount_to_show := element.bounding_rect.height / element.bounding_rect.width * CARD_TEXTURE_SIZE.y
-    if card_element.hidden {
-        draw_rectangle_rec(element.bounding_rect, RAYWHITE)
-        draw_rectangle_lines_ex(element.bounding_rect, 4, LIGHTGRAY)
-    } else {
-        draw_rectangle_rec(element.bounding_rect, card_color_values[card_data.color])
-    
-        name_font_size := element.bounding_rect.width / 7
-        text_padding := element.bounding_rect.width / 80
-
-        name_size := measure_text_ex(default_font, card_data.name, name_font_size, FONT_SPACING)
-
-        remaining_width := element.bounding_rect.width - name_size.x
-        draw_text_ex(default_font, card_data.name, {element.bounding_rect.x + remaining_width / 2, element.bounding_rect.y + text_padding}, name_font_size, FONT_SPACING, BLACK)
-    }
-    // Looks a little bunk but I should revisit this
-    // draw_texture_pro(card_element.card_data.texture, {0, CARD_TEXTURE_SIZE.y - amount_to_show, CARD_TEXTURE_SIZE.x, -amount_to_show}, element.bounding_rect, {}, 0, WHITE)
-
-    action := get_current_action(gs)
-    if action != nil {
-        if choose_card, ok2 := action.variant.(Choose_Card_Action); ok2 {
-            available: bool 
-            for card_id in choose_card.card_targets {
-                if card_element.card_id == card_id {
-                    available = true
-                    break
-                }
-            }
-            if available {
-                // Copy n paste from board highlighting
-                frequency: f64 = 8
-                color_blend := (math.sin(frequency * get_time()) + 1) / 2
-                color_blend = color_blend * color_blend
-                base_color := DARKGRAY
-                highlight_color := LIGHTGRAY
-                // color: = color_lerp(BLUE, ORANGE, color_blend)
-                color := color_lerp(base_color, highlight_color, color_blend)
-                draw_rectangle_lines_ex(element.bounding_rect, 8, color)
-            }
-        }
-    }
-
-    if card_element.selected {
-        draw_rectangle_lines_ex(element.bounding_rect, 8, PURPLE)
-    }
-    if .Hovered in element.flags && !card_element.hidden {
-        draw_texture_pro(card_data.texture, {0, 0, CARD_TEXTURE_SIZE.x, -CARD_TEXTURE_SIZE.y}, CARD_HOVER_POSITION_RECT, {}, 0, WHITE)
-        draw_rectangle_lines_ex(element.bounding_rect, 4, WHITE)
-        // draw_rectangle_lines_ex(CARD_HOVER_POSITION_RECT, 2, RAYWHITE)
-    }
-}
-}
-
 get_card_by_id :: proc(gs: ^Game_State, card_id: Card_ID) -> (card: ^Card, ok: bool) {
     player := get_player_by_id(gs, card_id.owner_id)
     player_card := &player.hero.cards[card_id.color]
@@ -411,18 +292,15 @@ get_ui_card_slice :: proc(gs: ^Game_State, player_id: Player_ID) -> []UI_Element
 }
 
 retrieve_card :: proc(gs: ^Game_State, card: ^Card) {
-
     card.state = .In_Hand
 }
 
 resolve_card :: proc(gs: ^Game_State, card: ^Card) {
-    
     card.turn_played = gs.turn_counter
     card.state = .Resolved
 }
 
 discard_card :: proc(gs: ^Game_State, card: ^Card) {
-
     card.turn_played = gs.turn_counter
     card.state = .Discarded
 }
