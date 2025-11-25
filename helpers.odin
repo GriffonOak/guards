@@ -334,6 +334,7 @@ effect_timing_valid :: proc(gs: ^Game_State, timing: Effect_Timing, calc_context
 }
 
 card_is_valid_upgrade_option :: proc(gs: ^Game_State, card: Card) -> bool {
+    if card.owner_id != gs.my_player_id do return false
     if card.color == .Gold || card.color == .Silver || card.state != .In_Deck do return false
     lowest_tier: int = 1e6
     my_hero := get_my_player(gs).hero

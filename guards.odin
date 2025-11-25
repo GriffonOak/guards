@@ -24,21 +24,20 @@ _ :: time
 /*  FOR 0.6
 
 --- ENGINE
-
+    * Garrus
 --- UI / UX
-    ^^ Add discard pile UI
-    ^ Add UI Scaling option and confirm that it works on desktop
-
+    * Event log
+    * Better lobby screen
+    * Username input
 */
 
 /* GENERAL
 
-
-
 --- ENGINE
     ^^ Rewrite action value system (get rid of so many variant types, rely more on labels)
 
-    ^ "Hooks" system to allow other heroes to interrupt players performing actions (brogan, swift)
+    * refactor choose target action to just repeat its begin_next_action when cancelling, like movement action
+        * obviates the need for pop side button
 
     v Refactor heroes "out of" players (allow for multiple heroes controlled by 1 player)
     v Ultimates
@@ -56,7 +55,7 @@ _ :: time
 
 --- UI / UX
 
-    ^ Highlight chooseable cards for defense, & upgrading
+    ^ Highlight chooseable cards for defense
     
     v Highlight items when hovering over upgrade options
     v basic animations?
@@ -98,10 +97,6 @@ STARTING_HEIGHT :: 720
 
 FONT_SPACING :: 0
 
-default_font: Font
-
-monospace_font: Font
-
 assets := #load_directory("assets")
 emoji := #load_directory("assets/emoji")
 icons := #load_directory("assets/icons")
@@ -117,6 +112,8 @@ hero_icons: [Hero_ID]Texture
 minion_icons: [Space_Flag]Texture
 
 card_icons: [Card_Value_Kind]Texture
+item_icons: [Card_Value_Kind]Texture
+primary_icons: [Primary_Kind]Texture
 
 spall_ctx: spall.Context
 @(thread_local) spall_buffer: spall.Buffer
@@ -207,29 +204,31 @@ main :: proc() {
         fmt.println(len(event_log))
     }
 
-    active_element_index := UI_Index{}
-    // hovered_element_index := UI_Index{}
-
     // set_config_flags({.WINDOW_TOPMOST})
     set_trace_log_level(.NONE)
-    set_config_flags({.MSAA_4X_HINT, .WINDOW_RESIZABLE, .BORDERLESS_WINDOWED_MODE})
+    set_config_flags({.MSAA_4X_HINT, .WINDOW_RESIZABLE, .WINDOW_MAXIMIZED})
     clay_setup()
     init_window(i32(STARTING_WIDTH), i32(STARTING_HEIGHT), "guards")
     
     // fmt.println(get_window_scale_dpi())
-    ui_scale = get_window_scale_dpi().x / (2.25 * 1.3)
+    ui_scale = get_window_scale_dpi().x / (2.25)
     defer close_window()
 
     for file in assets {
         switch file.name {
-        case "Inter-VariableFont.ttf":
-            default_font = load_font_from_memory(".ttf", raw_data(file.data), i32(len(file.data)), 200, nil, 0)
-            game_fonts[.Inter] = default_font
+        case "Inter_28pt-Regular.ttf":
+            game_fonts[.Inter_Regular] = load_font_from_memory(".ttf", raw_data(file.data), i32(len(file.data)), 200, nil, 0)
+        case "Inter_28pt-Bold.ttf":
+            game_fonts[.Inter_Bold] = load_font_from_memory(".ttf", raw_data(file.data), i32(len(file.data)), 200, nil, 0)
+        case "Inter_28pt-SemiBold.ttf":
+            font := load_font_from_memory(".ttf", raw_data(file.data), i32(len(file.data)), 200, nil, 0)
+            game_fonts[.Inter_Semibold] = font
         case "Inconsolata-Regular.ttf":
-            monospace_font = load_font_from_memory(".ttf", raw_data(file.data), i32(len(file.data)), 200, nil, 0)
-            game_fonts[.Inconsolata] = monospace_font
+            font := load_font_from_memory(".ttf", raw_data(file.data), i32(len(file.data)), 200, nil, 0)
+            game_fonts[.Inconsolata] = font
         }
     }
+    setup_icons()
 
     // window_texture := load_render_texture(i32(WIDTH), i32(HEIGHT))
     // set_texture_filter(window_texture.texture, .BILINEAR)
@@ -260,48 +259,7 @@ main :: proc() {
                 case .MINUS:
                     ui_scale = clamp(ui_scale - 0.1, 0.1, 3)
                 case: 
-                    if active_element_index.domain != .None && active_element_index.index < len(gs.ui_stack[active_element_index.domain]) {
-                        active_element := &gs.ui_stack[active_element_index.domain][active_element_index.index]
-                        active_element.consume_input(&gs, event, active_element)
-                    }
                 }
-
-            // case Mouse_Motion_Event:
-            //     // First "de-hover" the previous hovered element
-            //     if hovered_element_index.domain != .None && hovered_element_index.index < len(gs.ui_stack[hovered_element_index.domain]) {
-            //         hovered_element := &gs.ui_stack[hovered_element_index.domain][hovered_element_index.index]
-            //         if board_element, ok := &hovered_element.variant.(UI_Board_Element); ok {
-            //             board_element.hovered_space = INVALID_TARGET
-            //         }
-            //         hovered_element.flags -= {.Hovered}
-            //     }
-            //     hovered_element_index = {}
-            //     ui_search: for i := len(UI_Domain) - 1; i >= 0; i -= 1 {
-            //         domain := UI_Domain(i)
-            //         #reverse for &element, index in gs.ui_stack[domain] {
-            //             when ODIN_TEST {
-            //                 continue
-            //             } else {
-            //                 if !check_collision_point_rec(var.pos, element.bounding_rect) do continue
-            //             }
-            //             if element.consume_input(&gs, event, &element) {
-            //                 element.flags += {.Hovered}
-            //                 hovered_element_index = {domain, index}
-            //                 break ui_search
-            //             }
-            //         }
-            //     }
-            // case Mouse_Pressed_Event:
-            //     if active_element_index.domain != .None && active_element_index.index < len(gs.ui_stack[active_element_index.domain]) {
-            //         active_element := &gs.ui_stack[active_element_index.domain][active_element_index.index]
-            //         active_element.flags -= {.Active}
-            //     }
-            //     active_element_index = hovered_element_index
-            //     if hovered_element_index != {} {
-            //         active_element := &gs.ui_stack[active_element_index.domain][active_element_index.index]
-            //         active_element.flags += {.Active}
-            //         active_element.consume_input(&gs, event, active_element)
-            //     }
             }
         }
         clear(&input_queue)

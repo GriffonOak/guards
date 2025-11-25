@@ -16,7 +16,9 @@ Render_Command_Array :: clay.ClayArray(clay.RenderCommand)
 
 
 Font_ID :: enum u16 {
-    Inter,
+    Inter_Regular,
+    Inter_Semibold,
+    Inter_Bold,
     Inconsolata,
 }
 
@@ -26,6 +28,13 @@ Board_Element :: struct {
 
 Custom_UI_Element :: union {
     Board_Element,
+}
+
+Palette_Font :: enum {
+    Default_Regular,
+    Default_Semibold,
+    Default_Bold,
+    Monospace,
 }
 
 Palette_Color :: enum {
@@ -43,8 +52,16 @@ Palette_Color :: enum {
     Gray,
     Dark_Gray,
 
+    Card_Gold,
+    Card_Silver,
+    Card_Red,
+    Card_Green,
+    Card_Blue,
+
     White,
     Black,
+
+    Undefined_Magenta,
 }
 
 @rodata
@@ -61,11 +78,27 @@ PALETTE := [Palette_Color]clay.Color {
     .Blue_Team_Dark = {7, 49, 85, 255},   // 1/3 of light
 
     .Light_Gray = {200, 200, 200, 255},
-    .Gray = {128, 128, 128, 255},
-    .Dark_Gray = {100, 100, 100, 255},
+    .Gray = {125, 125, 125, 255},
+    .Dark_Gray = {75, 75, 75, 255},
+
+    .Card_Gold = {255, 203, 0, 255},
+    .Card_Silver = {130, 130, 130, 255},
+    .Card_Red = {230, 41, 55, 255},
+    .Card_Green = {0, 158, 47, 255},
+    .Card_Blue = {0, 121, 241, 255},
 
     .White = {255, 255, 255, 255},
     .Black = {0, 0, 0, 255},
+
+    .Undefined_Magenta = {255, 0, 255, 255},
+}
+
+@rodata
+FONT_PALETTE := [Palette_Font]u16 {
+    .Default_Regular =  u16(Font_ID.Inter_Regular),
+    .Default_Semibold = u16(Font_ID.Inter_Semibold),
+    .Default_Bold =     u16(Font_ID.Inter_Bold),
+    .Monospace =        u16(Font_ID.Inconsolata),
 }
 
 team_light_colors := [Team]clay.Color {
@@ -81,6 +114,14 @@ team_mid_colors := [Team]clay.Color {
 team_dark_colors := [Team]clay.Color {
     .Red = PALETTE[.Red_Team_Dark],
     .Blue = PALETTE[.Blue_Team_Dark],
+}
+
+card_colors := [Card_Color]clay.Color {
+    .Gold = PALETTE[.Card_Gold],
+    .Silver = PALETTE[.Card_Silver],
+    .Red = PALETTE[.Card_Red],
+    .Green = PALETTE[.Card_Green],
+    .Blue = PALETTE[.Card_Blue],
 }
 
 BUTTON_HEIGHT :: 100
@@ -138,9 +179,9 @@ clay_measure_text :: proc "c" (
     return transmute(clay.Dimensions) measure_text_ex(font, text_cstring, text_font_size, text_spacing)
 }
 
-clay_button_logic :: proc(element_id: clay.ElementId) -> (result: bool) {
-    hot := hot_element_id == element_id
-    active := active_element_id == element_id
+clay_button_logic :: proc(element_id: clay.ElementId) -> (result, hot, active: bool) {
+    hot = hot_element_id == element_id
+    active = active_element_id == element_id
 
     if active {
         if .LEFT in ui_state.released_this_frame {
@@ -162,7 +203,7 @@ clay_button_logic :: proc(element_id: clay.ElementId) -> (result: bool) {
     } else if hot {
         hot_element_id = {}
     }
-    return result
+    return
 }
 
 clay_button :: proc(
@@ -175,8 +216,11 @@ clay_button :: proc(
     active_background_color: Maybe(clay.Color) = nil,
 ) -> (result: bool) {
 
-    button_active := button_id == active_element_id
-    button_hot := button_id == hot_element_id
+    // button_active := button_id == active_element_id
+    // button_hot := button_id == hot_element_id
+
+    button_hot, button_active: bool
+    result, button_hot, button_active = clay_button_logic(button_id)
 
     if clay.UI(id = button_id)({
         layout = {
@@ -198,8 +242,6 @@ clay_button :: proc(
         
     }) {
 
-        result = clay_button_logic(button_id)
-
         if image != nil {
             if clay.UI()({
                 layout = {
@@ -214,7 +256,7 @@ clay_button :: proc(
         if text != "" {
             clay.TextDynamic(text, clay.TextConfig({
                 textColor = PALETTE[.Black],
-                fontId = u16(Font_ID.Inter),
+                fontId = FONT_PALETTE[.Default_Regular],
                 fontSize = u16((BUTTON_HEIGHT - 2 * BUTTON_TEXT_PADDING) * ui_scale),
             }))
         }
@@ -236,35 +278,37 @@ clay_card_element :: proc(
 ) {
     card_id_string := fmt.tprintf("%v", card.id)
     card_clay_id := clay.ID(card_id_string, u32(card.state))
+    card_data, _ := get_card_data_by_id(gs, card.id)
 
-    card_active := active_element_id == card_clay_id
-    card_hot := hot_element_id == card_clay_id
+    card_should_be_hidden := gs.stage == .Selection && card.owner_id != gs.my_player_id && card.state == .Played
+    card_should_be_preview := card.hero_id != get_my_player(gs).hero.id && card.state == .In_Deck
 
-    if card_active {
+    texture := nil if card_should_be_hidden else (&card_data.preview_texture if card_should_be_preview else &card_data.texture)
+
+    if active_element_id == card_clay_id {
         if .LEFT in ui_state.released_this_frame {
-            if card_hot {
+            if hot_element_id == card_clay_id {
                 append(&gs.event_queue, Card_Clicked_Event{card})
                 hot_element_id = {}
             }
             active_element_id = {}
         }
-    } else if card_hot {
+    } else if hot_element_id == card_clay_id {
         if .LEFT in ui_state.pressed_this_frame {
             active_element_id = card_clay_id
         }
     }
 
     if clay.PointerOver(card_clay_id) {
-        if active_element_id == {} || active_element_id == card_clay_id {
+        if (active_element_id == {} || active_element_id == card_clay_id) && !card_should_be_hidden {
             hot_element_id = card_clay_id
-            card_hot = true
         }
-    } else if card_hot {
+    } else if hot_element_id == card_clay_id {
         hot_element_id = {}
-        card_hot = false
     }
 
-    card_should_be_hidden := gs.stage == .Selection && card.owner_id != gs.my_player_id && card.state == .Played
+    // card_active := active_element_id == card_clay_id
+    card_hot := hot_element_id == card_clay_id
 
     border := clay.BorderElementConfig {
         width = clay.BorderAll(0),
@@ -300,7 +344,6 @@ clay_card_element :: proc(
         }
     }
 
-    card_data, _ := get_card_data_by_id(gs, card.id)
     if clay.UI(id = card_clay_id) ({
         layout = {
             sizing = sizing,
@@ -310,7 +353,7 @@ clay_card_element :: proc(
             },
         },
         image = {
-            nil if card_should_be_hidden else &card_data.texture,
+            texture,
         },
         floating = floating,
         border = border,
@@ -338,7 +381,7 @@ clay_card_element :: proc(
                     },
                 },
                 image = {
-                    &card_data.texture,
+                    texture,
                 },
                 floating = {
                     attachment = preview_attach_points,
@@ -441,13 +484,13 @@ clay_text_box :: proc(id_string: string, text_box: ^UI_Text_Box_Element) {
 
         if text_box_active || sa.len(text_box.field) > 0 {
             clay.TextDynamic(string(sa.slice(&text_box.field)), clay.TextConfig({
-                fontId = u16(Font_ID.Inconsolata),
+                fontId = FONT_PALETTE[.Monospace],
                 textColor = PALETTE[.White],
                 fontSize = u16(TEXT_BOX_FONT_SIZE * ui_scale),
             }))
         } else {
             clay.TextDynamic(text_box.default_string, clay.TextConfig({
-                fontId = u16(Font_ID.Inconsolata),
+                fontId = FONT_PALETTE[.Monospace],
                 textColor = PALETTE[.Light_Gray],
                 fontSize = u16(TEXT_BOX_FONT_SIZE * ui_scale),
             }))
@@ -521,13 +564,13 @@ clay_player_info :: proc(player: ^Player) {
         hero_name, _ := reflect.enum_name_from_value(player.hero.id)
 
         clay.TextDynamic(username, clay.TextConfig({
-            fontId = u16(Font_ID.Inter),
+            fontId = FONT_PALETTE[.Default_Regular],
             fontSize = u16(INFO_FONT_SIZE * ui_scale),
             textColor = text_color,
         }))
 
         clay.TextDynamic(hero_name, clay.TextConfig({
-            fontId = u16(Font_ID.Inter),
+            fontId = FONT_PALETTE[.Default_Regular],
             fontSize = u16(INFO_FONT_SIZE * ui_scale),
             textColor = text_color,
         }))
@@ -600,13 +643,18 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
                     },
                 }) {
                     clay.Text("Deck", clay.TextConfig({
-                        fontId = u16(Font_ID.Inter),
+                        fontId = FONT_PALETTE[.Default_Regular],
                         fontSize = u16(0.7 * INFO_FONT_SIZE * ui_scale),
                         textColor = border_color,
                     }))
 
                     deck_button_id := clay.ID("deck_button", u32(player.id))
                     deck_button_data := clay.GetElementData(deck_button_id)
+
+                    current_deck_open := false
+                    if current_deck, ok := current_deck_viewer.?; ok && current_deck == player.hero.id {
+                        current_deck_open = true
+                    }
 
                     if clay_button(
                         deck_button_id,
@@ -616,26 +664,15 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
                             height = clay.SizingGrow(),
                         },
                         padding = clay.PaddingAll(u16(16 * ui_scale)), // @Magic
-                        idle_background_color = border_color,
-                    ) {}
-
-                    // if clay.UI(id = deck_button_id)({
-                    //     layout = {
-                    //         layoutDirection = .TopToBottom,
-                    //         sizing = 
-                            
-                    //     },
-                    //     // border = {
-                    //     //     width = clay.BorderOutside(u16(4 * ui_scale)),  // @Magic
-                    //     //     color = border_color,
-                    //     // },
-                        
-                    // }) {
-                    //     if clay.UI()({
-                    //         layout = {sizing = SIZING_GROW},
-                    //         image = {&hero_icons[player.hero.id]},
-                    //     }) {}
-                    // }
+                        idle_background_color = text_color if current_deck_open else border_color,
+                        active_background_color = background_color,
+                    ) {
+                        if current_deck_open {
+                            current_deck_viewer = nil
+                        } else {
+                            current_deck_viewer = player.hero.id
+                        }
+                    }
                 }
     
                 if clay.UI()({
@@ -648,21 +685,21 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
                     hero_stats_string := fmt.tprintf("L%v, %vC", player.hero.level, player.hero.coins)
     
                     clay.TextDynamic(username, clay.TextConfig({
-                        fontId = u16(Font_ID.Inter),
+                        fontId = FONT_PALETTE[.Default_Regular],
                         fontSize = u16(INFO_FONT_SIZE * ui_scale),
                         textColor = text_color,
                         wrapMode = .None,
                     }))
     
                     clay.TextDynamic(hero_name, clay.TextConfig({
-                        fontId = u16(Font_ID.Inter),
+                        fontId = FONT_PALETTE[.Default_Regular],
                         fontSize = u16(INFO_FONT_SIZE * ui_scale),
                         textColor = text_color,
                         wrapMode = .None,
                     }))
     
                     clay.TextDynamic(hero_stats_string, clay.TextConfig({
-                        fontId = u16(Font_ID.Inter),
+                        fontId = FONT_PALETTE[.Default_Regular],
                         fontSize = u16(INFO_FONT_SIZE * ui_scale),
                         textColor = text_color,
                         wrapMode = .None,
@@ -683,7 +720,7 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
                         },
                     }) {
                         clay.TextDynamic(text, clay.TextConfig({
-                            fontId = u16(Font_ID.Inconsolata),
+                            fontId = FONT_PALETTE[.Monospace],
                             fontSize = u16(INFO_FONT_SIZE * ui_scale),
                             textColor = text_color,
                             wrapMode = .None,
@@ -718,9 +755,9 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
                     defense_string := fmt.tprintf("+%v", item_values[.Defense])
                     initiative_string := fmt.tprintf("+%v", item_values[.Initiative])
 
-                    text_with_icon(attack_string, &card_icons[.Attack], text_color)
-                    text_with_icon(defense_string, &card_icons[.Defense], text_color)
-                    text_with_icon(initiative_string, &card_icons[.Initiative], text_color)
+                    text_with_icon(attack_string, &item_icons[.Attack], text_color)
+                    text_with_icon(defense_string, &item_icons[.Defense], text_color)
+                    text_with_icon(initiative_string, &item_icons[.Initiative], text_color)
                 }
 
                 if clay.UI()({
@@ -732,9 +769,9 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
                     movement_string := fmt.tprintf("+%v", item_values[.Movement])
                     radius_string := fmt.tprintf("+%v", item_values[.Radius])
 
-                    text_with_icon(range_string, &card_icons[.Range], text_color)
-                    text_with_icon(movement_string, &card_icons[.Movement], text_color)
-                    text_with_icon(radius_string, &card_icons[.Radius], text_color)
+                    text_with_icon(range_string, &item_icons[.Range], text_color)
+                    text_with_icon(movement_string, &item_icons[.Movement], text_color)
+                    text_with_icon(radius_string, &item_icons[.Radius], text_color)
                 }
             }
     
@@ -768,13 +805,13 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
                         },
                     }) {
                         clay.Text("Turn", clay.TextConfig({
-                            fontId = u16(Font_ID.Inter),
+                            fontId = FONT_PALETTE[.Default_Regular],
                             fontSize = u16(0.7 * INFO_FONT_SIZE * ui_scale),
                             textColor = border_color,
                         }))
 
                         clay.TextDynamic(fmt.tprintf("%v", i + 1), clay.TextConfig({
-                            fontId = u16(Font_ID.Inter),
+                            fontId = FONT_PALETTE[.Default_Regular],
                             fontSize = u16(2 * INFO_FONT_SIZE * ui_scale),
                             textColor = border_color,
                         }))
@@ -817,7 +854,7 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
             },
         }) {
             clay.Text("Discard", clay.TextConfig({
-                fontId = u16(Font_ID.Inter),
+                fontId = FONT_PALETTE[.Default_Regular],
                 fontSize = u16(0.7 * INFO_FONT_SIZE * ui_scale),
                 textColor = border_color,
             }))
@@ -880,7 +917,7 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
             },
         }) {
             clay.Text("Markers", clay.TextConfig({
-                fontId = u16(Font_ID.Inter),
+                fontId = FONT_PALETTE[.Default_Regular],
                 fontSize = u16(0.7 * INFO_FONT_SIZE * ui_scale),
                 textColor = border_color,
             }))
@@ -896,7 +933,7 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
             }
 
             clay.Text("Played", clay.TextConfig({
-                fontId = u16(Font_ID.Inter),
+                fontId = FONT_PALETTE[.Default_Regular],
                 fontSize = u16(0.7 * INFO_FONT_SIZE * ui_scale),
                 textColor = border_color,
             }))
@@ -946,25 +983,25 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
 }
 
 clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
-    DECK_VIEWER_PADDING_GAP :: 8
+    DECK_VIEWER_PADDING_GAP :: 16
 
     preview_card_sizing := clay.Sizing {
         clay.SizingFixed(RESOLVED_CARD_WIDTH * 1.5 * ui_scale),
         clay.SizingFixed(RESOLVED_CARD_HEIGHT * 1.5 * ui_scale),
     }
 
+    show_preview_cards := get_my_player(gs).hero.id != hero_id
+
+    background_color := PALETTE[.Background]
+    border_color := PALETTE[.Dark_Gray]
+    highlight_color := PALETTE[.Gray]
+
     if clay.UI()({
         layout = {
-            sizing = {
-                width = clay.SizingFit({min = 200 * ui_scale}),
-                height = clay.SizingFit({min = 200 * ui_scale}),
-            },
-            padding = clay.PaddingAll(u16(2 * DECK_VIEWER_PADDING_GAP * ui_scale)),
-            childGap = u16(2 * DECK_VIEWER_PADDING_GAP * ui_scale),
-            childAlignment = {
-                x = .Center,
-                y = .Center,
-            },
+            layoutDirection = .TopToBottom,
+            childGap = u16(DECK_VIEWER_PADDING_GAP * ui_scale),
+            childAlignment = {x = .Center},
+            padding = clay.PaddingAll(u16((4 + DECK_VIEWER_PADDING_GAP) * ui_scale)),
         },
         floating = {
             attachTo = .Root,
@@ -973,46 +1010,69 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
                 parent  = .CenterCenter,
             },
         },
-        backgroundColor = {0, 0, 0, 255},
+        backgroundColor = background_color,
+        border = {
+            color = border_color,
+            width = clay.BorderOutside(u16(4 * ui_scale)),  // @Magic
+        },
     }) {
+        close_deck_viewer_id := clay.ID("close_deck_viewer")
+
+        close_button_result, close_button_hot, close_button_active := clay_button_logic(close_deck_viewer_id)
+
+        if clay.UI(id = close_deck_viewer_id)({
+            layout = {
+                sizing = {
+                    clay.SizingFixed(40 * ui_scale),
+                    clay.SizingFixed(40 * ui_scale),
+                },
+                childAlignment = {
+                    x = .Center,
+                    y = .Center,
+                },
+            },
+            border = {
+                color = PALETTE[.White] if close_button_hot else border_color,
+                width = clay.BorderOutside(u16(4 * ui_scale)),  // @Magic
+            },
+            floating = {
+                attachTo = .Parent,
+                attachment = {
+                    element = .RightTop,
+                    parent = .RightTop,
+                },
+            },
+            backgroundColor = highlight_color if close_button_active else background_color,
+        }) {
+            clay.Text("X", clay.TextConfig({
+                fontSize = u16(30 * ui_scale), // @Magic
+                fontId = FONT_PALETTE[.Default_Regular],
+                textColor = border_color,
+            }))
+        }
+
+        if close_button_result {
+            current_deck_viewer = nil
+        }
+
+        hero_name, _ := reflect.enum_name_from_value(hero_id)
+        title := fmt.tprintf("%v's Deck%v", hero_name, " (Preview)" if show_preview_cards else "")
+        clay.TextDynamic(title, clay.TextConfig({
+            fontSize = u16(INFO_FONT_SIZE * ui_scale),
+            fontId = FONT_PALETTE[.Default_Regular],
+            textColor = border_color,
+        }))
+
         if clay.UI()({
             layout = {
-                layoutDirection = .TopToBottom,
-                sizing = {
-                    width = clay.SizingFit(),
-                    height = clay.SizingFit(),
-                },
-                childGap = u16(2 * DECK_VIEWER_PADDING_GAP * ui_scale),
+                layoutDirection = .LeftToRight,
+                childGap = u16(DECK_VIEWER_PADDING_GAP * ui_scale),  // @Magic
                 childAlignment = {
                     x = .Center,
                     y = .Center,
                 },
             },
         }) {
-            gold_card := Card {
-                hero_id = hero_id,
-                color = .Gold,
-                state = .In_Deck,
-            }
-            clay_card_element(
-                gs, gold_card,
-                sizing = preview_card_sizing,
-                preview_attach_points = {.CenterCenter, .CenterCenter},
-            )
-            silver_card := Card {
-                hero_id = hero_id,
-                color = .Silver,
-                state = .In_Deck,
-            }
-            clay_card_element(
-                gs, silver_card,
-                sizing = preview_card_sizing,
-                preview_attach_points = {.CenterCenter, .CenterCenter},
-            )
-        }
-
-        colors := bit_set[Card_Color]{.Red, .Green, .Blue}
-        for color in colors {
             if clay.UI()({
                 layout = {
                     layoutDirection = .TopToBottom,
@@ -1027,34 +1087,73 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
                     },
                 },
             }) {
-                for tier := 3; tier >= 1; tier -= 1 {
-                    if clay.UI()({
-                        layout = {
-                            sizing = {
-                                width = clay.SizingFit(),
-                                height = clay.SizingFit(),
-                            },
-                            childGap = u16(DECK_VIEWER_PADDING_GAP * ui_scale),
-                            childAlignment = {
-                                x = .Center,
-                                y = .Center,
-                            },
+                gold_card := Card {
+                    hero_id = hero_id,
+                    color = .Gold,
+                    state = .In_Deck,
+                }
+                clay_card_element(
+                    gs, gold_card,
+                    sizing = preview_card_sizing,
+                    preview_attach_points = {.CenterCenter, .CenterCenter},
+                )
+                silver_card := Card {
+                    hero_id = hero_id,
+                    color = .Silver,
+                    state = .In_Deck,
+                }
+                clay_card_element(
+                    gs, silver_card,
+                    sizing = preview_card_sizing,
+                    preview_attach_points = {.CenterCenter, .CenterCenter},
+                )
+            }
+
+            colors := bit_set[Card_Color]{.Red, .Green, .Blue}
+            for color in colors {
+                if clay.UI()({
+                    layout = {
+                        layoutDirection = .TopToBottom,
+                        sizing = {
+                            width = clay.SizingFit(),
+                            height = clay.SizingFit(),
                         },
-                    }) {
-                        for alternate_index in 0..=(tier == 1 ? 0 : 1) {
-                            alternate := alternate_index == 1
-                            card := Card {
-                                hero_id = hero_id,
-                                color = color,
-                                tier = tier,
-                                alternate = alternate,
-                                state = .In_Deck,
+                        childGap = u16(DECK_VIEWER_PADDING_GAP * ui_scale),
+                        childAlignment = {
+                            x = .Center,
+                            y = .Center,
+                        },
+                    },
+                }) {
+                    for tier := 3; tier >= 1; tier -= 1 {
+                        if clay.UI()({
+                            layout = {
+                                sizing = {
+                                    width = clay.SizingFit(),
+                                    height = clay.SizingFit(),
+                                },
+                                childGap = u16(DECK_VIEWER_PADDING_GAP * ui_scale),
+                                childAlignment = {
+                                    x = .Center,
+                                    y = .Center,
+                                },
+                            },
+                        }) {
+                            for alternate_index in 0..=(tier == 1 ? 0 : 1) {
+                                alternate := alternate_index == 1
+                                card := Card {
+                                    hero_id = hero_id,
+                                    color = color,
+                                    tier = tier,
+                                    alternate = alternate,
+                                    state = .In_Deck,
+                                }
+                                clay_card_element(
+                                    gs, card,
+                                    sizing = preview_card_sizing,
+                                    preview_attach_points = {.CenterCenter, .CenterCenter},
+                                )
                             }
-                            clay_card_element(
-                                gs, card,
-                                sizing = preview_card_sizing,
-                                preview_attach_points = {.CenterCenter, .CenterCenter},
-                            )
                         }
                     }
                 }
@@ -1063,17 +1162,24 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
     }
 }
 
+clay_main_context, clay_card_context: ^clay.Context
+
 clay_setup :: proc() {
     clay_min_memory_size := clay.MinMemorySize()
 
-    arena_memory, _ := make([^]byte, clay_min_memory_size)
-    clay_arena := clay.CreateArenaWithCapacityAndMemory(uint(clay_min_memory_size), arena_memory)
-    clay.Initialize(clay_arena, {STARTING_WIDTH, STARTING_HEIGHT}, {})
+    main_arena_memory, _ := make([^]byte, clay_min_memory_size)
+    card_arena_memory, _ := make([^]byte, clay_min_memory_size)
+    main_clay_arena := clay.CreateArenaWithCapacityAndMemory(uint(clay_min_memory_size), main_arena_memory)
+    card_clay_arena := clay.CreateArenaWithCapacityAndMemory(uint(clay_min_memory_size), card_arena_memory)
+    clay_main_context = clay.Initialize(main_clay_arena, {STARTING_WIDTH, STARTING_HEIGHT}, {})
+    clay_card_context = clay.Initialize(card_clay_arena, transmute(clay.Dimensions)(CARD_TEXTURE_SIZE), {})
 
     clay.SetMeasureTextFunction(clay_measure_text, nil)
 }
 
 clay_layout :: proc(gs: ^Game_State) -> Render_Command_Array {
+
+    clay.SetCurrentContext(clay_main_context)
 
     clay.SetLayoutDimensions({f32(get_render_width()), f32(get_render_height())})
 
@@ -1102,7 +1208,7 @@ clay_layout :: proc(gs: ^Game_State) -> Render_Command_Array {
             clay.TextConfig({
                 textColor = PALETTE[.White],
                 fontSize = u16(TOOLTIP_FONT_SIZE * ui_scale),
-                fontId = u16(Font_ID.Inter),
+                fontId = FONT_PALETTE[.Default_Regular],
             }),
         )
 
@@ -1123,10 +1229,17 @@ clay_render :: proc(gs: ^Game_State, commands: ^Render_Command_Array) {
         bounding_box := command.boundingBox
         #partial switch command.commandType {
         case .Rectangle:
-            draw_rectangle_rec(
-                Rectangle(bounding_box),
-                clay_to_raylib_color(command.renderData.rectangle.backgroundColor),
-            )
+            // draw_rectangle_rec(
+            //     Rectangle(bounding_box),
+            //     clay_to_raylib_color(command.renderData.rectangle.backgroundColor),
+            // )
+            config := command.renderData.rectangle
+            if config.cornerRadius.topLeft > 0 {
+                radius: f32 = (config.cornerRadius.topLeft * 2) / min(bounding_box.width, bounding_box.height)
+                draw_rectangle_rounded(Rectangle(bounding_box), radius, 8, clay_to_raylib_color(config.backgroundColor))  // @Magic num segments for rounded rect
+            } else {
+                draw_rectangle_rec(Rectangle(bounding_box), clay_to_raylib_color(config.backgroundColor))
+            }
         case .Text:
             text_data := command.renderData.text
             text_position := Vec2{bounding_box.x, bounding_box.y}
@@ -1187,7 +1300,7 @@ ip_text_box := UI_Text_Box_Element {
     default_string = "Enter IP Address...",
 }
 
-deck_viewer_active := false
+current_deck_viewer: Maybe(Hero_ID) = nil
 
 clay_pre_lobby_screen :: proc(gs: ^Game_State) {
     pre_lobby_id := clay.ID("pre_lobby_screen")
@@ -1494,7 +1607,7 @@ clay_game_screen :: proc(gs: ^Game_State) {
                 }) {
                     clay.Text("Hand", clay.TextConfig({
                         fontSize = u16(0.7 * INFO_FONT_SIZE * ui_scale),  // @Magic
-                        fontId = u16(Font_ID.Inter),
+                        fontId = FONT_PALETTE[.Default_Regular],
                         textColor = border_color,
                     }))
                 }
@@ -1578,8 +1691,8 @@ clay_game_screen :: proc(gs: ^Game_State) {
             }
         }
 
-        if deck_viewer_active {
-            clay_deck_viewer(gs, get_my_player(gs).hero.id)
+        if hero_id, ok := current_deck_viewer.?; ok {
+            clay_deck_viewer(gs, hero_id)
         }
     }
 }

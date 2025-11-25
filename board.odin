@@ -495,8 +495,8 @@ render_board :: proc(gs: ^Game_State, bounding_rect: Rectangle, board_element: B
             for y in 0..<GRID_HEIGHT {
                 space := gs.board[x][y]
                 coords := fmt.ctprintf("%d,%d", x, y)
-                bound := measure_text_ex(default_font, coords, 30, 0)
-                draw_text_ex(default_font, coords, space.position - bound / 2, 30, 0, BLACK)
+                // bound := measure_text_ex(default_font, coords, 30, 0)
+                // draw_text_ex(default_font, coords, space.position - bound / 2, 30, 0, BLACK)
             }
         }
     }

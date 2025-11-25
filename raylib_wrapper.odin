@@ -14,12 +14,14 @@ Texture_Filter :: rl.TextureFilter
 Font :: rl.Font
 Mouse_Button :: rl.MouseButton
 Keyboard_Key :: rl.KeyboardKey
+Blend_Mode :: rl.BlendMode
 
 MAGENTA :: rl.MAGENTA
 PURPLE :: rl.PURPLE
 LIGHTGRAY :: rl.LIGHTGRAY
 GRAY :: rl.GRAY
 DARKGRAY :: rl.DARKGRAY
+BLANK :: rl.BLANK
 WHITE :: rl.WHITE
 RAYWHITE :: rl.RAYWHITE
 BLACK :: rl.BLACK
@@ -122,6 +124,18 @@ begin_scissor_mode :: proc(x, y, width, height: i32) {
 end_scissor_mode :: proc() {
     when !ODIN_TEST {
         rl.EndScissorMode()
+    }
+}
+
+begin_blend_mode :: proc(mode: Blend_Mode) {
+    when !ODIN_TEST {
+        rl.BeginBlendMode(mode)
+    }
+}
+
+end_blend_mode :: proc() {
+    when !ODIN_TEST {
+        rl.EndBlendMode()
     }
 }
 

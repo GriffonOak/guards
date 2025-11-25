@@ -310,8 +310,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         setup_hero_cards(gs)
 
-        setup_icons()
-
         if gs.is_host {
             // tiebreaker: Team = .Red if rand.int31_max(2) == 0 else .Blue
             tiebreaker: Team = .Red
@@ -907,8 +905,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Begin_Next_Action_Event:
 
-        gs.action_count += 1
-
         action_index := get_my_player(gs).hero.current_action_index
         action := get_action_at_index(gs, action_index)
 
@@ -1236,7 +1232,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         
         gs.tooltip = nil
 
-        // Here would be where we need to handle minions outside the zone
+        gs.action_count += 1
 
         // Determine next action
         next_index := get_my_player(gs).hero.current_action_index

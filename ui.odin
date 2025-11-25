@@ -177,24 +177,24 @@ add_toast :: proc(gs: ^Game_State, text: string, duration: f64) {
 }
 
 draw_toast :: proc(toast: ^Toast) {
-    t := (get_time() - toast.start_time) / toast.duration
-    if t > 1 do return
-    text := cstring(raw_data(toast._text_buf[:]))
+    // t := (get_time() - toast.start_time) / toast.duration
+    // if t > 1 do return
+    // // text := cstring(raw_data(toast._text_buf[:]))
 
-    alpha := u8((1 - t) * 255)
+    // alpha := u8((1 - t) * 255)
 
-    background_color := WHITE
-    background_color.a = alpha
-    text_color := BLACK
-    text_color.a = alpha
+    // background_color := WHITE
+    // background_color.a = alpha
+    // text_color := BLACK
+    // text_color.a = alpha
 
-    text_size := measure_text_ex(default_font, text, TOAST_FONT_SIZE, 0)
-    rect_size := text_size + 2 * TOAST_TEXT_PADDING
+    // // text_size := measure_text_ex(default_font, text, TOAST_FONT_SIZE, 0)
+    // // rect_size := text_size + 2 * TOAST_TEXT_PADDING
 
-    text_position := (Vec2{STARTING_WIDTH, STARTING_HEIGHT} - text_size) / 2
-    text_position.y += 100 * f32(t)
-    rect_position := text_position - TOAST_TEXT_PADDING
+    // text_position := (Vec2{STARTING_WIDTH, STARTING_HEIGHT} - text_size) / 2
+    // text_position.y += 100 * f32(t)
+    // rect_position := text_position - TOAST_TEXT_PADDING
 
-    draw_rectangle_v(rect_position, rect_size, background_color)
-    draw_text_ex(default_font, text, text_position, TOAST_FONT_SIZE, 0, text_color)
+    // draw_rectangle_v(rect_position, rect_size, background_color)
+    // draw_text_ex(default_font, text, text_position, TOAST_FONT_SIZE, 0, text_color)
 }

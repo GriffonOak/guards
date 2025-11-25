@@ -355,7 +355,8 @@ spawn_heroes_at_start :: proc(gs: ^Game_State) {
 create_card_textures :: proc() {
     for &hero_deck in hero_cards {
         for &card in hero_deck {
-            create_texture_for_card(&card)
+            create_texture_for_card(&card, preview = false)
+            create_texture_for_card(&card, preview = true)
         }
     }
 }
@@ -419,12 +420,25 @@ setup_icons :: proc() {
         icon_texture := load_texture_from_image(icon_image)
         set_texture_filter(icon_texture, .BILINEAR)
         switch file.name {
-        case "attack.png": card_icons[.Attack] = icon_texture
-        case "defense.png": card_icons[.Defense] = icon_texture
+        case "attack.png":
+            card_icons[.Attack] = icon_texture
+            primary_icons[.Attack] = icon_texture
+        case "defense.png":
+            card_icons[.Defense] = icon_texture
+            primary_icons[.Defense] = icon_texture
         case "initiative.png": card_icons[.Initiative] = icon_texture
         case "radius.png": card_icons[.Radius] = icon_texture
-        case "movement.png": card_icons[.Movement] = icon_texture
+        case "movement.png":
+            card_icons[.Movement] = icon_texture
+            primary_icons[.Movement] = icon_texture
         case "range.png": card_icons[.Range] = icon_texture
+        case "skill.png": primary_icons[.Skill] = icon_texture
+        case "item_attack.png": item_icons[.Attack] = icon_texture
+        case "item_defense.png": item_icons[.Defense] = icon_texture
+        case "item_initiative.png": item_icons[.Initiative] = icon_texture
+        case "item_range.png": item_icons[.Range] = icon_texture
+        case "item_movement.png": item_icons[.Movement] = icon_texture
+        case "item_radius.png": item_icons[.Radius] = icon_texture
         }
     }
 }
@@ -462,7 +476,9 @@ setup_hero_cards :: proc(gs: ^Game_State) {
                 // fmt.println(card_filename)
                 for file in assets {
                     if file.name == card_filename {
-                        card.background_image = load_texture_from_image(load_image_from_memory(".png", raw_data(file.data), i32(len(file.data))))
+                        image := load_image_from_memory(".png", raw_data(file.data), i32(len(file.data)))
+                        image_flip_vertical(&image)
+                        card.background_image = load_texture_from_image(image)
                         // fmt.printfln("Loaded swift card! %v", card_filename)
                     }
                 }

@@ -230,7 +230,7 @@ sabina_cards := []Card_Data {
         values          = #partial{.Initiative = 9, .Defense = 6, .Attack = 3, .Movement = 4, .Range = 2},
         primary         = .Attack,
         item            = .Defense,
-        text            = "Target a unit in range. After the attack:\nIf the target was adjacent to you, remove\nup to one enemy minion adjacent to you.\n(You gain no coins for removing a minion, only for defeating.)",
+        text            = "Target a unit in range. After the attack:\nIf the target was adjacent to you, remove\nup to one enemy minion adjacent to you.",
         primary_effect  = []Action {
             Action {
                 tooltip = "Target a unit in range.",

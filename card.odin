@@ -1,8 +1,11 @@
 package guards
 
-import "core:strings"
+// import "core:strings"
 import "core:fmt"
-import "core:reflect"
+// import "core:reflect"
+import "core:math"
+
+import clay "clay-odin"
 
 
 
@@ -39,17 +42,6 @@ Card_Value_Kind :: enum {
     Radius,
 }
 
-item_initials: [Card_Value_Kind]cstring = {
-    .Attack = "A",
-    .Defense = "D",
-    .Initiative = "I",
-    .Range = "Rn",
-    .Movement = "M",
-    .Radius = "Rd",
-}
-
-PLUS_SIGN: cstring : "+"
-
 Sign :: enum {
     None,
     Plus,
@@ -71,7 +63,7 @@ _NULL_CARD_ID :: Card_ID {}
 Card_Data :: struct {
     using id: Card_ID,
 
-    name: cstring,
+    name: string,
     values: [Card_Value_Kind]int,
     primary: Primary_Kind,
     primary_sign: Sign,
@@ -82,6 +74,7 @@ Card_Data :: struct {
     // !!This cannot be sent over the network !!!!
     primary_effect: []Action,
     texture: Texture,
+    preview_texture: Texture,
     background_image: Texture,
 }
 
@@ -104,146 +97,506 @@ HAND_CARD_HEIGHT :: 2 * RESOLVED_CARD_HEIGHT
 
 
 @rodata
-primary_initials := [Primary_Kind]string {
-    .Attack = "A",
-    .Skill = "S",
-    .Defense = "D",
-    .Defense_Skill = "DS",
-    .Movement = "M",
+primary_to_value := [Primary_Kind]Card_Value_Kind {
+    .Attack = .Attack,
+    .Skill = .Attack, // Presumably the attack value will be 0 for skills
+    .Movement = .Movement,
+    .Defense = .Defense,
+    .Defense_Skill = .Defense,
 }
 
 @rodata
-card_color_values := [Card_Color]Colour {
-    .Gold   = GOLD,
-    .Silver = GRAY,
-    .Red    = RED,
-    .Green  = LIME,
-    .Blue   = BLUE,
+primary_to_name := [Primary_Kind]string {
+    .Attack = "Attack",
+    .Skill = "Skill",
+    .Movement = "Movement",
+    .Defense = "Defense",
+    .Defense_Skill = "Defense/Skill",
 }
 
-create_texture_for_card :: proc(card: ^Card_Data) {
+temp_card_texture: Render_Texture_2D
+
+shitty_outlined_text :: proc(text: string, config: clay.TextElementConfig, border_thickness: f32, border_color: clay.Color) {
+
+    border_config := config
+    border_config.textColor = border_color
+
+    NUM_STEPS :: 16
+    for i in 0..<NUM_STEPS {
+        angle := f32(i) * math.TAU / NUM_STEPS
+
+        offset := border_thickness * Vec2{math.cos(angle), math.sin(angle)}
+        
+        if clay.UI()({
+            floating = {
+                attachTo = .Parent,
+                attachment = {.CenterCenter, .CenterCenter},
+                offset = offset,
+            },
+        }) {
+            clay.TextDynamic(fmt.tprintf(text), clay.TextConfig(border_config))
+        }
+    }
+
+    if clay.UI()({
+        floating = {attachTo = .Parent, attachment = {.CenterCenter, .CenterCenter}},
+    }) {
+        clay.TextDynamic(text, clay.TextConfig(config))
+    }
+}
+
+create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
     if card.tier > 3 do return
 
     context.allocator = context.temp_allocator
 
-    render_texture := load_render_texture(i32(CARD_TEXTURE_SIZE.x), i32(CARD_TEXTURE_SIZE.y))
+    if temp_card_texture == {} do temp_card_texture = load_render_texture(i32(CARD_TEXTURE_SIZE.x), i32(CARD_TEXTURE_SIZE.y))
 
-    TEXT_PADDING :: 6
-    COLORED_BAND_WIDTH :: 60
-    TITLE_FONT_SIZE :: COLORED_BAND_WIDTH - 2 * TEXT_PADDING
-    TEXT_FONT_SIZE :: 28
+    COLORED_BAND_WIDTH :: 80
 
-    begin_texture_mode(render_texture)
+    TEXT_FONT_SIZE :: 24
 
-    if card.background_image != {} {
-        draw_texture_pro(card.background_image, {0, 0, 500, 700}, {0, 0, 500, 700}, {}, 0, WHITE)
-    } else {
-        color := DARKBLUE / 2
-        color.a = 255
-        clear_background(color)
+    clay.SetCurrentContext(clay_main_context)
+
+    clay.SetLayoutDimensions(transmute(clay.Dimensions) CARD_TEXTURE_SIZE)
+
+    clay.BeginLayout()
+
+    if clay.UI()({
+        layout = {
+            layoutDirection = .TopToBottom,
+            sizing = SIZING_GROW,
+        },
+        image = {
+            &card.background_image if card.background_image != {} else nil,
+        },
+        backgroundColor = PALETTE[.Black] if card.background_image == {} else {},
+    }) {
+
+        // Top Bar
+
+        TOP_BAR_WIDTH: f32 = COLORED_BAND_WIDTH * 0.6
+        if clay.UI()({
+            layout = {
+                sizing = {
+                    width = clay.SizingGrow(),
+                    height = clay.SizingFixed(TOP_BAR_WIDTH),
+                },
+            },
+            backgroundColor = PALETTE[.Dark_Gray],
+        }) {}
+
+        OUTSIDE_PADDING :: COLORED_BAND_WIDTH * 0.25
+        // Sidebar
+        if clay.UI()({
+            layout = {
+                layoutDirection = .TopToBottom,
+                sizing = {
+                    width = clay.SizingFixed(COLORED_BAND_WIDTH),
+                    height = clay.SizingFixed(CARD_TEXTURE_SIZE.y / 2),
+                },
+                childAlignment = {
+                    x = .Center,
+                },
+                padding = clay.PaddingAll(COLORED_BAND_WIDTH * 0.05),
+                childGap = COLORED_BAND_WIDTH * 0.1,
+            },
+            floating = {
+                attachTo = .Parent,
+                attachment = {
+                    element = .LeftTop,
+                    parent = .LeftTop,
+                },
+                offset = {OUTSIDE_PADDING, 0},
+            },
+            backgroundColor = card_colors[card.color],
+        }) {
+            BORDER_THICKNESS :: 4
+            // Spacer
+            if clay.UI() ({
+                layout = {
+                    sizing = {
+                        width = clay.SizingGrow(),
+                        height = clay.SizingFixed(TOP_BAR_WIDTH),
+                    },
+                },
+            }) {
+                // Title
+                if clay.UI()({
+                    layout = {
+                        sizing = {
+                            width = clay.SizingFixed(CARD_TEXTURE_SIZE.x * 0.75),
+                            height = clay.SizingFixed(TOP_BAR_WIDTH),
+                        },
+                        childAlignment = {
+                            x = .Center,
+                            y = .Center,
+                        },
+                    },
+                    floating = {
+                        attachTo = .Parent,
+                        attachment = {
+                            element = .LeftCenter,
+                            parent = .RightBottom,
+                        },
+                    },
+                    cornerRadius = clay.CornerRadiusAll(TOP_BAR_WIDTH * 0.5),
+                    backgroundColor = PALETTE[.Light_Gray],
+                }) {
+
+                    if clay.UI()({
+                        layout = {
+                            sizing = SIZING_GROW,
+                        },
+                    }) {}
+
+                    clay.TextDynamic(card.name, clay.TextConfig({
+                        fontSize = u16(TOP_BAR_WIDTH * 0.7),
+                        fontId = FONT_PALETTE[.Default_Bold],
+                        textColor = PALETTE[.Black],
+                        wrapMode = .None,
+                    }))
+
+                    if clay.UI()({
+                        layout = {
+                            sizing = SIZING_GROW,
+                        },
+                    }) {}
+
+                    if clay.UI()({
+                        layout = {
+                            sizing = {
+                                width = clay.SizingFixed(TOP_BAR_WIDTH),
+                                height = clay.SizingFixed(TOP_BAR_WIDTH),
+                            },
+                            childAlignment = {
+                                x = .Center,
+                                y = .Center,
+                            },
+                        },
+                        cornerRadius = clay.CornerRadiusAll(TOP_BAR_WIDTH * 0.5),
+                        backgroundColor = PALETTE[.Gray]
+                    }) {
+                        tier_text := [?]string{"", "I", "II", "III", "IV"}
+                        clay.TextDynamic(tier_text[card.tier], clay.TextConfig({
+                            fontId = FONT_PALETTE[.Default_Bold],
+                            fontSize = u16(TOP_BAR_WIDTH * 0.8),
+                            textColor = PALETTE[.White],
+                        }))
+                    }
+                }
+
+                // Initiative
+                if clay.UI()({
+                    layout = {
+                        sizing = {
+                            width = clay.SizingFixed(COLORED_BAND_WIDTH * 1.3),
+                            height = clay.SizingFixed(COLORED_BAND_WIDTH * 1.3),
+                        },
+                        childAlignment = {
+                            x = .Center,
+                            y = .Center,
+                        }
+                    },
+                    floating = {
+                        attachTo = .Parent,
+                        attachment = {
+                            element = .CenterCenter,
+                            parent = .CenterBottom,
+                        },
+                    },
+                    image = {
+                        &card_icons[.Initiative],
+                    },
+                }) && !preview {
+
+                    shitty_outlined_text(fmt.tprintf("%v", card.values[.Initiative]), clay.TextElementConfig{
+                        fontId = FONT_PALETTE[.Default_Bold],
+                        fontSize = COLORED_BAND_WIDTH * 1.3,
+                        textColor = PALETTE[.White],
+                    }, BORDER_THICKNESS, PALETTE[.Black])
+                }
+            }
+
+            if clay.UI()({
+                layout = {
+                    sizing = {
+                        width = clay.SizingGrow(),
+                        height = clay.SizingGrow(),
+                    },
+                },
+            }) {}
+
+            for value, value_kind in card.values {
+                if (
+                    value == 0 ||
+                    value_kind == primary_to_value[card.primary] ||
+                    value_kind == .Initiative ||
+                    value_kind == .Range ||
+                    value_kind == .Radius
+                ) { continue }
+
+                if clay.UI()({
+                    layout = {
+                        sizing = {
+                            width = clay.SizingFixed(COLORED_BAND_WIDTH * 0.9),
+                            height = clay.SizingFixed(COLORED_BAND_WIDTH * 0.9),
+                        },
+                    },
+                    image = {
+                        &card_icons[value_kind]
+                    },
+                }) && !preview {
+                    shitty_outlined_text(fmt.tprintf("%v", value), clay.TextElementConfig{
+                        fontId = FONT_PALETTE[.Default_Bold],
+                        fontSize = COLORED_BAND_WIDTH * 0.9,
+                        textColor = PALETTE[.White],
+                    }, BORDER_THICKNESS, PALETTE[.Black])
+                }
+
+            }
+        }
+
+        // Spacer 
+        if clay.UI()({
+            layout = {
+                sizing = SIZING_GROW
+            },
+        }) {}
+
+        // Bottom Bar
+        item_showing := false
+        if card.tier > 1 && card.color != .Silver && card.color != .Gold {
+            item_showing = true
+        }
+        if clay.UI()({
+            layout = {
+                sizing = {
+                    width = clay.SizingGrow(),
+                    height = clay.SizingFixed(2 * TOP_BAR_WIDTH),
+                },
+                childAlignment = {
+                    x = .Center,
+                    y = .Bottom,
+                },
+                padding = clay.PaddingAll(8),
+            },
+            backgroundColor = PALETTE[.Dark_Gray],
+        }) {
+            if item_showing {
+                if clay.UI()({
+                    layout = {
+                        sizing = {
+                            width = clay.SizingFixed(1.2 * TOP_BAR_WIDTH),
+                            height = clay.SizingFixed(1.2 * TOP_BAR_WIDTH),
+                        },
+                    },
+                    aspectRatio = {1},
+                    image = {
+                        nil if preview else &item_icons[card.item]
+                    },
+                }) {}
+            }  
+        }
+
+        // Text Box
+        TEXT_BOX_WIDTH :: CARD_TEXTURE_SIZE.x - 2 * OUTSIDE_PADDING
+        text_box_id := clay.ID("text_box")
+        if clay.UI(id = text_box_id)({
+            layout = {
+                sizing = {
+                    width = clay.SizingFixed(TEXT_BOX_WIDTH),
+                    height = clay.SizingFit({min = 2 * TOP_BAR_WIDTH}),
+                },
+                padding = clay.PaddingAll(OUTSIDE_PADDING),
+                childAlignment = {
+                    x = .Center,
+                    y = .Center,
+                }
+            },
+            floating = {
+                attachTo = .Parent,
+                attachment = {.CenterBottom, .CenterBottom},
+                offset = {0, -OUTSIDE_PADDING - (1.2 * TOP_BAR_WIDTH if item_showing else 0)},
+            },
+            border = {
+                width = clay.BorderOutside(4),
+                color = PALETTE[.Gray],
+            },
+            backgroundColor = PALETTE[.Light_Gray],
+            cornerRadius = clay.CornerRadiusAll(0.5 * TOP_BAR_WIDTH)
+        }) {
+            clay.TextDynamic(card.text, clay.TextConfig({
+                fontSize = TEXT_FONT_SIZE,
+                fontId = FONT_PALETTE[.Default_Regular],
+                textColor = PALETTE[.Black],
+                wrapMode = .Newlines,
+            }))
+
+            // Descriptor
+            if clay.UI()({
+                layout = {
+                    sizing = {
+                        width = clay.SizingFixed(0.6 * TEXT_BOX_WIDTH),
+                        height = clay.SizingFixed(40),
+                    },
+                    childAlignment = {
+                        x = .Center,
+                        y = .Center,
+                    }
+                },
+                floating = {
+                    attachTo = .ElementWithId,
+                    attachment = {.CenterBottom, .CenterTop},
+                    parentId = text_box_id.id,
+                    offset = {0, 4},
+                },
+                border = {
+                    width = clay.BorderOutside(4),
+                    color = PALETTE[.Gray],
+                },
+                // cornerRadius = clay.CornerRadiusAll(25),
+                backgroundColor = card_colors[card.color],
+            }) {
+                descriptor_text := fmt.tprintf(
+                    "%v%v%v",
+                    "Basic " if card.color == .Silver || card.color == .Gold else "",
+                    primary_to_name[card.primary],
+                    " - Ranged" if card.values[.Range] > 0 else "",
+                )
+                shitty_outlined_text(descriptor_text, clay.TextElementConfig{
+                    fontSize = 30,
+                    fontId = FONT_PALETTE[.Default_Bold],
+                    textColor = PALETTE[.White],
+                }, 2, PALETTE[.Black])
+            }
+
+            // Primary Icon
+            ICON_SIZE :: 0.2 * TEXT_BOX_WIDTH
+            primary_icon: if clay.UI()({
+                layout = {
+                    sizing = {
+                        width = clay.SizingFixed(ICON_SIZE),
+                        height = clay.SizingFixed(ICON_SIZE),
+                    },
+                },
+                image = {
+                    &primary_icons[card.primary],
+                },
+                floating = {
+                    attachTo = .Parent,
+                    attachment = {
+                        element = .LeftBottom,
+                        parent = .LeftTop,
+                    },
+                    offset = {
+                        0,
+                        0.05 * TEXT_BOX_WIDTH,
+                    }
+                },
+            }) && !preview {
+                primary_value := card.values[primary_to_value[card.primary]]
+                if primary_value == 0 do break primary_icon
+                text := fmt.tprintf("%v%v", primary_value, "+" if card.primary_sign == .Plus else "")
+                shitty_outlined_text(text, clay.TextElementConfig{
+                    fontSize = u16(ICON_SIZE),
+                    fontId = FONT_PALETTE[.Default_Bold],
+                    textColor = PALETTE[.White],
+                }, 4, PALETTE[.Black])
+            }
+
+            // Reach Icon
+            card_reach, is_radius := (card.values[.Radius] if card.values[.Radius] > 0 else card.values[.Range]), card.values[.Radius] > 0
+            if card_reach > 0 {
+                if clay.UI()({
+                    layout = {
+                        sizing = {
+                            width = clay.SizingFixed(ICON_SIZE),
+                            height = clay.SizingFixed(ICON_SIZE),
+                        },
+                    },
+                    image = {
+                        &card_icons[.Radius] if is_radius else &card_icons[.Range],
+                    },
+                    floating = {
+                        attachTo = .Parent,
+                        attachment = {
+                            element = .RightBottom,
+                            parent = .RightTop,
+                        },
+                        offset = {
+                            0,
+                            0.05 * TEXT_BOX_WIDTH,
+                        }
+                    },
+                }) && !preview {
+                    text := fmt.tprintf("%v%v", card_reach, "+" if card.reach_sign == .Plus else "")
+                    shitty_outlined_text(text, clay.TextElementConfig{
+                        fontSize = u16(ICON_SIZE),
+                        fontId = FONT_PALETTE[.Default_Bold],
+                        textColor = PALETTE[.White],
+                    }, 4, PALETTE[.Black])
+                }
+            }
+
+        }
+
+        // Unimplemented warning
+        if len(card.primary_effect) == 0 {
+            if clay.UI()({
+                floating = {
+                    attachTo = .Parent,
+                    attachment = {
+                        .CenterCenter,
+                        .CenterCenter,
+                    },
+                },
+            }) {
+                clay.Text("NO IMPLEMENTADO", clay.TextConfig({
+                    fontId = FONT_PALETTE[.Default_Semibold],
+                    fontSize = 40,
+                    textColor = PALETTE[.Card_Red],
+                }))
+            }
+        }
     }
-    
-    // Secondaries ribbon & initiative
-    draw_rectangle_rec({0, 0, COLORED_BAND_WIDTH, CARD_TEXTURE_SIZE.y / 2}, card_color_values[card.color])
 
-    draw_text_ex(default_font, fmt.ctprintf("I%d", card.values[.Initiative]), {TEXT_PADDING, TEXT_PADDING}, TITLE_FONT_SIZE, FONT_SPACING, BLACK)
-    secondaries_index := 1
-    primary_to_value := [Primary_Kind]Card_Value_Kind {
-        .Attack = .Attack,
-        .Skill = .Attack, // Presumably the attack value will be 0 for skills
-        .Movement = .Movement,
-        .Defense = .Defense,
-        .Defense_Skill = .Defense,
-    }
-
-    for value, value_kind in card.values {
-        if (
-            value == 0 ||
-            value_kind == primary_to_value[card.primary] ||
-            value_kind == .Initiative ||
-            value_kind == .Range ||
-            value_kind == .Radius
-        ) { continue }
-        value_name, _ := reflect.enum_name_from_value(value_kind)
-        draw_text_ex(default_font, fmt.ctprintf("%s%d", value_name[:1], value), {TEXT_PADDING, TEXT_PADDING + f32(secondaries_index) * TITLE_FONT_SIZE}, TITLE_FONT_SIZE, FONT_SPACING, BLACK)
-        secondaries_index += 1
-    }
-    
-
-    // Name
-    name_length_px := measure_text_ex(default_font, card.name, TITLE_FONT_SIZE, FONT_SPACING).x
-    name_offset := (CARD_TEXTURE_SIZE.x + COLORED_BAND_WIDTH - name_length_px) / 2
-    name_rect := Rectangle{name_offset - 2 * TEXT_PADDING, 2 * TEXT_PADDING, name_length_px + 4 * TEXT_PADDING, COLORED_BAND_WIDTH + 2 * TEXT_PADDING}
-    draw_rectangle_rounded(name_rect, 0.5, 20, WHITE)
-    draw_rectangle_rounded_lines_ex(name_rect, 0.5, 20, TEXT_PADDING, BLACK)
-    draw_text_ex(default_font, card.name, {name_rect.x, name_rect.y} + 2 * TEXT_PADDING, TITLE_FONT_SIZE, FONT_SPACING, BLACK)
+    render_commands := clay.EndLayout()
 
 
-    // Tier
-    tier_ball_loc := Vec2{CARD_TEXTURE_SIZE.x - COLORED_BAND_WIDTH / 2, COLORED_BAND_WIDTH / 2}
-    draw_circle_v(tier_ball_loc, COLORED_BAND_WIDTH / 2, DARKGRAY)
-    TIER_FONT_SIZE :: TITLE_FONT_SIZE * 0.8
-    if card.tier > 0 {
-        tier_strings := []cstring{"I", "II", "III"}
-        tier_string := tier_strings[card.tier - 1]
 
-        tier_dimensions := measure_text_ex(default_font, tier_string, TIER_FONT_SIZE, FONT_SPACING)
-        tier_text_location := tier_ball_loc - tier_dimensions / 2
-        draw_text_ex(default_font, tier_string, tier_text_location, TIER_FONT_SIZE, FONT_SPACING, WHITE)
-    }
+    begin_texture_mode(temp_card_texture)
 
-    // Prep for bottom of card
-    y_offset := CARD_TEXTURE_SIZE.y
-    if card.tier > 1 {
-        y_offset -= COLORED_BAND_WIDTH
-    }
-
-    text_cstring := strings.clone_to_cstring(card.text)
-    text_dimensions := measure_text_ex(default_font, text_cstring, TEXT_FONT_SIZE, FONT_SPACING)
-
-    // Primary & its value & sign
-    primary_value := card.values[primary_to_value[card.primary]]
-    primary_value_string := fmt.ctprintf("%d", primary_value) if primary_value > 0 else ""
-    if card.primary == .Defense && len(card.primary_effect) > 0 {
-        defense_action := card.primary_effect[0].variant.(Defend_Action)
-        if defense_action.block_condition != nil do primary_value_string = "!"
-    }
-    primary_value_loc := Vec2{TEXT_PADDING, y_offset - text_dimensions.y - TITLE_FONT_SIZE}
-    draw_rectangle_v({0, primary_value_loc.y - TEXT_PADDING}, CARD_TEXTURE_SIZE, WHITE)
-    draw_line_ex({0, primary_value_loc.y - TEXT_PADDING}, {CARD_TEXTURE_SIZE.x, primary_value_loc.y - TEXT_PADDING}, TEXT_PADDING, BLACK)
-    draw_text_ex(default_font, fmt.ctprintf("%s%s%s", primary_initials[card.primary], primary_value_string, PLUS_SIGN if card.primary_sign == .Plus else ""), primary_value_loc, TITLE_FONT_SIZE, FONT_SPACING, BLACK)
-
-    // Reach & sign
-    card_reach, is_radius := (card.values[.Radius] if card.values[.Radius] > 0 else card.values[.Range]), card.values[.Radius] > 0
-    if card_reach > 0 {
-        reach_string := fmt.ctprintf("%s%d%s", "Rd" if is_radius else "Rn", card_reach, PLUS_SIGN if card.reach_sign == .Plus else "")
-        reach_dimensions := measure_text_ex(default_font, reach_string, TITLE_FONT_SIZE, FONT_SPACING).x
-        draw_text_ex(default_font, reach_string, {CARD_TEXTURE_SIZE.x - reach_dimensions - TEXT_PADDING, primary_value_loc.y}, TITLE_FONT_SIZE, FONT_SPACING, BLACK)
-    }
-
-    // Body text
-    draw_text_ex(default_font, text_cstring, {TEXT_PADDING, y_offset - text_dimensions.y - TEXT_PADDING}, TEXT_FONT_SIZE, FONT_SPACING, BLACK)
-
-    // Item
-    if card.tier > 1 {
-        draw_rectangle_rec({0, y_offset, CARD_TEXTURE_SIZE.x, COLORED_BAND_WIDTH}, DARKGRAY)
-        item_initial := item_initials[card.item]
-        item_text_dimensions := measure_text_ex(default_font, item_initial, TITLE_FONT_SIZE, FONT_SPACING)
-        draw_text_ex(default_font, item_initial, {0, y_offset} + ({CARD_TEXTURE_SIZE.x, COLORED_BAND_WIDTH} - item_text_dimensions) / 2, TITLE_FONT_SIZE, FONT_SPACING, WHITE)
-    }
-
-    // Unimplemented warning
-    if len(card.primary_effect) == 0 {
-        unimplemented_text: cstring = "NO IMPLEMENTADO"
-        unimplemented_dimensions := measure_text_ex(default_font, unimplemented_text, TITLE_FONT_SIZE, FONT_SPACING)
-        draw_text_ex(default_font, unimplemented_text, (CARD_TEXTURE_SIZE - unimplemented_dimensions) / 2, TITLE_FONT_SIZE, FONT_SPACING, RED)
-    }
+    clay_render(nil, &render_commands)
     
     end_texture_mode()
 
-    card.texture = render_texture.texture
 
-    set_texture_filter(card.texture, .BILINEAR)
+
+    render_texture := load_render_texture(i32(CARD_TEXTURE_SIZE.x), i32(CARD_TEXTURE_SIZE.y))
+
+    begin_texture_mode(render_texture)
+
+    clear_background(BLANK)
+
+    draw_rectangle_rounded({0, 0, CARD_TEXTURE_SIZE.x, CARD_TEXTURE_SIZE.y}, 0.1, 8, WHITE)
+
+    begin_blend_mode(.MULTIPLIED)
+
+    draw_texture_pro(temp_card_texture.texture, {0, 0, CARD_TEXTURE_SIZE.x, -CARD_TEXTURE_SIZE.y}, {0, 0, CARD_TEXTURE_SIZE.x, CARD_TEXTURE_SIZE.y}, {}, 0, WHITE)
+
+    end_blend_mode()
+
+    end_texture_mode()
+
+    set_texture_filter(render_texture.texture, .BILINEAR)
+
+    if preview {
+        card.preview_texture = render_texture.texture
+    } else {
+        card.texture = render_texture.texture
+    }
+
 }
 
 get_card_by_id :: proc(gs: ^Game_State, card_id: Card_ID) -> (card: ^Card, ok: bool) {

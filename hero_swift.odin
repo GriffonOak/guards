@@ -9,7 +9,7 @@ swift_cards := []Card_Data {
         color =         .Gold,
         values =        #partial{.Initiative = 6, .Defense = 1, .Movement = 1},
         primary =       .Skill,
-        text =          "Choose one -\n* Perform the primary action of your rightmost resolved card.\n*Defeat a minion adjacent to you.",
+        text =          "Choose one -\n* Perform the primary action of your\nrightmost resolved card.\n*Defeat a minion adjacent to you.",
         primary_effect = []Action {
             Action {  // 0
                 tooltip = "Choose one.",
