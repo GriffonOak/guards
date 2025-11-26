@@ -8,6 +8,7 @@ import "core:sync"
 import "core:strings"
 import "core:reflect"
 import "core:fmt"
+import sa "core:container/small_array"
 
 _ :: rand
 
@@ -118,8 +119,9 @@ Active_Effect_Outcome :: union {
 }
 
 Active_Effect :: struct {
-    using id: Active_Effect_ID,
+    kind: Active_Effect_Kind,
 
+    generating_cards: sa.Small_Array(4, Card_ID),
     timing: Effect_Timing,
     affected_targets: []Implicit_Condition,
     outcomes: []Active_Effect_Outcome,

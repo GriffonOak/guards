@@ -563,14 +563,16 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
         // Swift farm
         for _, effect in gs.ongoing_active_effects {
-            effect_calc_context := Calculation_Context{target = var.target, card_id = effect.parent_card_id}
+            effect_card_id := sa.get(effect.generating_cards, 0)
+            effect_calc_context := Calculation_Context{target = var.target, card_id = effect_card_id}
             if !effect_timing_valid(gs, effect.timing, effect_calc_context) do continue
             for outcome in effect.outcomes {
                 if _, ok := outcome.(Gain_Extra_Coins_On_Defeat); !ok do continue
                 if !calculate_implicit_condition(gs, And(effect.affected_targets), effect_calc_context) do continue
                 swift_coin_count := &get_top_global_variable_by_label(gs, .Swift_Farm_Defeat_Count).variant.(Saved_Integer)
                 swift_coin_count.integer += 1
-                owner := get_player_by_id(gs, effect.parent_card_id.owner_id)
+
+                owner := get_player_by_id(gs, effect_card_id.owner_id)
                 owner.hero.coins += 1
             }
         }
@@ -583,7 +585,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
             interrupted: bool
             check_for_interrupt: for _, effect in gs.ongoing_active_effects {
-                effect_calc_context := Calculation_Context{target = var.target, card_id = effect.parent_card_id}
+                effect_card_id := sa.get(effect.generating_cards, 0)
+                effect_calc_context := Calculation_Context{target = var.target, card_id = effect_card_id}
                 if !effect_timing_valid(gs, effect.timing, effect_calc_context) do continue
                 for outcome in effect.outcomes {
                     interrupt_defeat, ok := outcome.(Interrupt_On_Defeat)
@@ -591,8 +594,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                     if !calculate_implicit_condition(gs, And(effect.affected_targets), effect_calc_context) do continue
                     interrupted = true
                     jump_index := interrupt_defeat.interrupt_index
-                    if jump_index.card_id == {} do jump_index.card_id = effect.parent_card_id
-                    owner_id := effect.parent_card_id.owner_id
+                    if jump_index.card_id == {} do jump_index.card_id = effect_card_id
+                    owner_id := effect_card_id.owner_id
                     become_interrupted(gs, owner_id, jump_index, removal_event, global_resolution = true)
                     break check_for_interrupt
                 }
@@ -690,7 +693,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             } else { 
                 defeated.stage = .Resolved
             }
-            resolve_card(gs, defeated_card)
+            change_card_state(gs, defeated_card, .Resolved)
         }        
 
         gs.board[defeated_hero.location.x][defeated_hero.location.y].flags -= {.Hero}
@@ -720,16 +723,30 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         gs.board[var.location.x][var.location.y].owner = var.respawner
 
     case Add_Active_Effect_Event:
-
         action := get_action_at_index(gs, var.from_action_index)
         active_effect_action := action.variant.(Add_Active_Effect_Action)
         effect := active_effect_action.effect
-        effect.parent_card_id = var.from_action_index.card_id
+
+        if _, ok := gs.ongoing_active_effects[effect.kind]; !ok {
+            gs.ongoing_active_effects[effect.kind] = effect
+        }
+
+        stored_effect := &gs.ongoing_active_effects[effect.kind]
+        sa.append(&stored_effect.generating_cards, var.from_action_index.card_id)
+
+        // @Cleanup: really this should be the *played* card, not the card that actually holds the effect, but that doesn't matter until neb ig
+        card, ok := get_card_by_id(gs, var.from_action_index.card_id)
+        log.assert(ok, "Could not find card generating active effect!")
+        card.active = effect.kind
 
         log.infof("Adding active effect: %v", effect.kind)
-        gs.ongoing_active_effects[effect.kind] = effect
 
     case Remove_Active_Effect_Event:
+        effect := &gs.ongoing_active_effects[var.effect_kind]
+        for card_id in sa.slice(&effect.generating_cards) {
+            card, _ := get_card_by_id(gs, card_id)
+            card.active = .None
+        }
         delete_key(&gs.ongoing_active_effects, var.effect_kind)
 
     case Quantity_Chosen_Event:
@@ -842,12 +859,12 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
     case Card_Discarded_Event:
         card, ok := get_card_by_id(gs, var.card_id)
         log.assert(ok, "Discarded card has invalid card ID!")
-        discard_card(gs, card)
+        change_card_state(gs, card, .Discarded)
 
     case Card_Retrieved_Event:
         card, ok := get_card_by_id(gs, var.card_id)
         log.assert(ok, "Retrieved card has invalid card ID!")
-        retrieve_card(gs, card)
+        change_card_state(gs, card, .In_Hand)
 
     case Begin_Resolution_Stage_Event:
 
@@ -1261,7 +1278,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         card, ok := find_played_card(gs, var.player_id)
         
         log.assert(ok, "No played card to resolve!")
-        resolve_card(gs, card)
+        change_card_state(gs, card, .Resolved)
         if var.player_id == gs.my_player_id {
             gs.tooltip = "Waiting for other players to finish resolution."
         }
@@ -1327,10 +1344,11 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             case End_Of_Turn:
                 broadcast_game_event(gs, Remove_Active_Effect_Event{effect_kind})
                 action_index := timing.extra_action_index
-                action_index.card_id = effect.parent_card_id  // Very important do to this otherwise we get lost
+                card_id := sa.get(effect.generating_cards, 0)
+                action_index.card_id = card_id  // Very important do to this otherwise we get lost
                 become_interrupted (
                     gs,
-                    effect.parent_card_id.owner_id,
+                    card_id.owner_id,
                     action_index,
                     End_Of_Turn_Event{},
                 )
@@ -1342,7 +1360,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         for effect_kind, effect in gs.ongoing_active_effects {
             #partial switch timing in effect.timing {
             case Single_Turn:
-                if calculate_implicit_quantity(gs, timing, calc_context = {card_id = effect.parent_card_id}) != gs.turn_counter {
+                card_id := sa.get(effect.generating_cards, 0)
+                if calculate_implicit_quantity(gs, timing, calc_context = {card_id = card_id}) != gs.turn_counter {
                     broadcast_game_event(gs, Remove_Active_Effect_Event{effect_kind})
                 }
             }
@@ -1358,10 +1377,10 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 case End_Of_Round:
                     broadcast_game_event(gs, Remove_Active_Effect_Event{effect_kind})
                     action_index := timing.extra_action_index
-                    action_index.card_id = effect.parent_card_id  // Very important do to this otherwise we get lost
+                    action_index.card_id = sa.get(effect.generating_cards, 0) // Very important do to this otherwise we get lost
                     become_interrupted (
                         gs,
-                        effect.parent_card_id.owner_id,
+                        action_index.card_id.owner_id,
                         action_index,
                         End_Of_Turn_Event{},
                     )
@@ -1463,6 +1482,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Begin_Upgrading_Event:
         gs.stage = .Upgrades
+
         clear(&gs.ongoing_active_effects)
         clear(&gs.global_memory)
 

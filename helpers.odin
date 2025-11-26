@@ -4,6 +4,7 @@ import "base:intrinsics"
 // import "core:fmt"
 
 import "core:log"
+import sa "core:container/small_array"
 
 
 
@@ -36,19 +37,10 @@ find_played_card :: proc(gs: ^Game_State, player_id: Player_ID = -1, loc := #cal
     return nil, false
 }
 
-retrieve_my_cards :: proc(gs: ^Game_State) {
-
-    player := get_my_player(gs)
-
-    for &card in player.hero.cards {
-        retrieve_card(gs, &card)
-    }
-}
-
 retrieve_all_cards :: proc(gs: ^Game_State) {
     for &player in gs.players {
         for &card in player.hero.cards {
-            retrieve_card(gs, &card)
+            change_card_state(gs, &card, .In_Hand)
         }
     }
 }
@@ -311,7 +303,8 @@ target_contains_any :: proc(gs: ^Game_State, target: Target, flags: Space_Flags)
     space := gs.board[target.x][target.y]
     if flags & space.flags != {} do return true
     for _, effect in gs.ongoing_active_effects {
-        effect_calc_context := Calculation_Context{target = target, card_id = effect.parent_card_id}
+        effect_card_id := sa.get(effect.generating_cards, 0)
+        effect_calc_context := Calculation_Context{target = target, card_id = effect_card_id}
         if !effect_timing_valid(gs, effect.timing, effect_calc_context) do continue
         for outcome in effect.outcomes {
             counts_as, ok := outcome.(Target_Counts_As)

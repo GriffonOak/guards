@@ -113,13 +113,6 @@ TOOLTIP_FONT_SIZE :: 50
 TOAST_TEXT_PADDING :: 10
 TOAST_FONT_SIZE :: 40
 
-FIRST_SIDE_BUTTON_LOCATION :: Rectangle {
-    // BOARD_TEXTURE_SIZE.x + BUTTON_PADDING, 
-    // STARTING_HEIGHT - BUTTON_PADDING - SELECTION_BUTTON_SIZE.y,
-    // SELECTION_BUTTON_SIZE.x,
-    // SELECTION_BUTTON_SIZE.y,
-}
-
 null_input_proc: UI_Input_Proc : proc(_: ^Game_State, _: Input_Event, _: ^UI_Element) -> bool { return false }
 null_render_proc: UI_Render_Proc : proc(_: ^Game_State, _: UI_Element) {}
 

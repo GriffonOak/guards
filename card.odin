@@ -4,6 +4,7 @@ package guards
 import "core:fmt"
 // import "core:reflect"
 import "core:math"
+import sa "core:container/small_array"
 
 import clay "clay-odin"
 
@@ -82,6 +83,7 @@ Card :: struct {
     using id: Card_ID,
     state: Card_State,
     turn_played: int,
+    active: Active_Effect_Kind,
 }
 
 
@@ -89,6 +91,8 @@ CARD_TEXTURE_SIZE :: Vec2{500, 700}
 
 RESOLVED_CARD_HEIGHT :: 150
 RESOLVED_CARD_WIDTH :: RESOLVED_CARD_HEIGHT / 1.5
+
+CARD_CORNER_RADIUS_PROPORTION :: 0.1
 
 HAND_CARD_WIDTH :: 2 * RESOLVED_CARD_WIDTH
 HAND_CARD_HEIGHT :: 2 * RESOLVED_CARD_HEIGHT
@@ -275,7 +279,7 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                             },
                         },
                         cornerRadius = clay.CornerRadiusAll(TOP_BAR_WIDTH * 0.5),
-                        backgroundColor = PALETTE[.Gray]
+                        backgroundColor = PALETTE[.Gray],
                     }) {
                         tier_text := [?]string{"", "I", "II", "III", "IV"}
                         clay.TextDynamic(tier_text[card.tier], clay.TextConfig({
@@ -296,7 +300,7 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                         childAlignment = {
                             x = .Center,
                             y = .Center,
-                        }
+                        },
                     },
                     floating = {
                         attachTo = .Parent,
@@ -344,7 +348,7 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                         },
                     },
                     image = {
-                        &card_icons[value_kind]
+                        &card_icons[value_kind],
                     },
                 }) && !preview {
                     shitty_outlined_text(fmt.tprintf("%v", value), clay.TextElementConfig{
@@ -360,7 +364,7 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
         // Spacer 
         if clay.UI()({
             layout = {
-                sizing = SIZING_GROW
+                sizing = SIZING_GROW,
             },
         }) {}
 
@@ -393,7 +397,7 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                     },
                     aspectRatio = {1},
                     image = {
-                        nil if preview else &item_icons[card.item]
+                        nil if preview else &item_icons[card.item],
                     },
                 }) {}
             }  
@@ -412,7 +416,7 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                 childAlignment = {
                     x = .Center,
                     y = .Center,
-                }
+                },
             },
             floating = {
                 attachTo = .Parent,
@@ -424,7 +428,7 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                 color = PALETTE[.Gray],
             },
             backgroundColor = PALETTE[.Light_Gray],
-            cornerRadius = clay.CornerRadiusAll(0.5 * TOP_BAR_WIDTH)
+            cornerRadius = clay.CornerRadiusAll(0.5 * TOP_BAR_WIDTH),
         }) {
             clay.TextDynamic(card.text, clay.TextConfig({
                 fontSize = TEXT_FONT_SIZE,
@@ -443,7 +447,7 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                     childAlignment = {
                         x = .Center,
                         y = .Center,
-                    }
+                    },
                 },
                 floating = {
                     attachTo = .ElementWithId,
@@ -492,7 +496,7 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                     offset = {
                         0,
                         0.05 * TEXT_BOX_WIDTH,
-                    }
+                    },
                 },
             }) && !preview {
                 primary_value := card.values[primary_to_value[card.primary]]
@@ -527,7 +531,7 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                         offset = {
                             0,
                             0.05 * TEXT_BOX_WIDTH,
-                        }
+                        },
                     },
                 }) && !preview {
                     text := fmt.tprintf("%v%v", card_reach, "+" if card.reach_sign == .Plus else "")
@@ -579,7 +583,7 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
 
     clear_background(BLANK)
 
-    draw_rectangle_rounded({0, 0, CARD_TEXTURE_SIZE.x, CARD_TEXTURE_SIZE.y}, 0.1, 8, WHITE)
+    draw_rectangle_rounded({0, 0, CARD_TEXTURE_SIZE.x, CARD_TEXTURE_SIZE.y}, CARD_CORNER_RADIUS_PROPORTION, 8, WHITE)
 
     begin_blend_mode(.MULTIPLIED)
 
@@ -644,16 +648,28 @@ get_ui_card_slice :: proc(gs: ^Game_State, player_id: Player_ID) -> []UI_Element
     return gs.ui_stack[.Cards][5 * player_id:][:5]
 }
 
-retrieve_card :: proc(gs: ^Game_State, card: ^Card) {
-    card.state = .In_Hand
+remove_effect_support :: proc(gs: ^Game_State, card: ^Card) {
+    if card.active == .None do return
+    effect := &gs.ongoing_active_effects[card.active]
+    #reverse for generating_card, index in sa.slice(&effect.generating_cards) {
+        if generating_card == card.id {
+            sa.unordered_remove(&effect.generating_cards, index)
+        }
+    }
+    card.active = .None
+    if sa.len(effect.generating_cards) == 0 {
+        append(&gs.event_queue, Remove_Active_Effect_Event{effect.kind})
+    }
 }
 
-resolve_card :: proc(gs: ^Game_State, card: ^Card) {
-    card.turn_played = gs.turn_counter
-    card.state = .Resolved
-}
-
-discard_card :: proc(gs: ^Game_State, card: ^Card) {
-    card.turn_played = gs.turn_counter
-    card.state = .Discarded
+change_card_state :: proc(gs: ^Game_State, card: ^Card, state: Card_State) {
+    if state == card.state do return
+    if card.state != .Played && state != .Resolved {
+        // Don't remove the active effect if we're simply resolving a played card. All other cases are fine though
+        remove_effect_support(gs, card)
+    }
+    card.state = state
+    if state == .Resolved || state == .Discarded {
+        card.turn_played = gs.turn_counter
+    }
 }

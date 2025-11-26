@@ -2,6 +2,7 @@ package guards
 
 import "core:log"
 import "core:reflect"
+import sa "core:container/small_array"
 
 // My_Player_ID :: struct {}
 
@@ -477,7 +478,8 @@ calculate_implicit_quantity :: proc(
         }
 
         for _, effect in gs.ongoing_active_effects {
-            effect_calc_context := Calculation_Context{target = hero.location, card_id = effect.parent_card_id}
+            effect_card_id := sa.get(effect.generating_cards, 0)
+            effect_calc_context := Calculation_Context{target = hero.location, card_id = effect_card_id}
             if !effect_timing_valid(gs, effect.timing, effect_calc_context) do continue
             for outcome in effect.outcomes {
                 augment_value, ok2 := outcome.(Augment_Card_Value)

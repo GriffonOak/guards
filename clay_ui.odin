@@ -127,7 +127,6 @@ card_colors := [Card_Color]clay.Color {
 BUTTON_HEIGHT :: 100
 BUTTON_WIDTH  :: 400
 BUTTON_TEXT_PADDING :: 20
-SELECTION_BUTTON_SIZE :: Vec2{400, 100}
 
 INFO_FONT_SIZE :: 40
 
@@ -143,6 +142,10 @@ SIZING_GROW :: clay.Sizing {
     clay.SizingAxis {
         type = .Grow,
     },
+}
+
+Clay_User_Data :: bit_field uintptr {
+    image_rotated: bool | 1,
 }
 
 game_fonts: [Font_ID]Font
@@ -213,6 +216,7 @@ clay_button :: proc(
     sizing: Maybe(clay.Sizing) = nil,
     padding: Maybe(clay.Padding) = nil,
     idle_background_color: Maybe(clay.Color) = nil,
+    corner_radius: Maybe(f32) = nil,
     active_background_color: Maybe(clay.Color) = nil,
 ) -> (result: bool) {
 
@@ -235,6 +239,7 @@ clay_button :: proc(
             padding = padding.? or_else clay.PaddingAll(u16(BUTTON_TEXT_PADDING * ui_scale)),
         },
         backgroundColor = button_active ? (active_background_color.? or_else PALETTE[.Dark_Gray]) : (idle_background_color.? or_else PALETTE[.Gray]),
+        cornerRadius = clay.CornerRadiusAll(corner_radius.? or_else 0.03 * BUTTON_WIDTH * ui_scale),
         border = {
             color = PALETTE[.White],
             width = button_hot ? clay.BorderOutside(u16(HOT_BUTTON_BORDER_WIDTH * ui_scale)) : {},
@@ -272,7 +277,7 @@ is_alt_key_down :: proc() -> bool {
 clay_card_element :: proc(
     gs: ^Game_State,
     card: Card,
-    sizing: clay.Sizing,
+    width: f32,
     preview_attach_points: clay.FloatingAttachPoints,
     floating: clay.FloatingElementConfig = {},
 ) {
@@ -282,6 +287,7 @@ clay_card_element :: proc(
 
     card_should_be_hidden := gs.stage == .Selection && card.owner_id != gs.my_player_id && card.state == .Played
     card_should_be_preview := card.hero_id != get_my_player(gs).hero.id && card.state == .In_Deck
+    card_should_be_rotated := card.active != .None
 
     texture := nil if card_should_be_hidden else (&card_data.preview_texture if card_should_be_preview else &card_data.texture)
 
@@ -344,63 +350,111 @@ clay_card_element :: proc(
         }
     }
 
-    if clay.UI(id = card_clay_id) ({
-        layout = {
-            sizing = sizing,
-            childAlignment = {
-                x = .Center,
-                y = .Center,
-            },
-        },
-        image = {
-            texture,
-        },
-        floating = floating,
-        border = border,
-        backgroundColor = PALETTE[.White],
-    }) {
-        if card_should_be_hidden {
-            icon := &hero_icons[get_player_by_id(gs, card.owner_id).hero.id]
-            if clay.UI()({
-                layout = {
-                    sizing = {
-                        width = clay.SizingPercent(0.5),
-                    },
+    if card_should_be_rotated {
+        if clay.UI()({
+            layout = {
+                sizing = {
+                    width = clay.SizingFixed(width),
+                    height = clay.SizingFixed(1.5 * width),
                 },
-                aspectRatio = {1},
-                image = {icon},
-            }) {}
-        }
-
-        if card_hot && is_alt_key_down() {
-            if clay.UI()({
+            },
+            floating = floating,
+        }) {
+            if clay.UI(id = card_clay_id) ({
                 layout = {
                     sizing = {
-                        clay.SizingFixed(CARD_TEXTURE_SIZE.x * ui_scale),
-                        clay.SizingFixed(CARD_TEXTURE_SIZE.y * ui_scale),
+                        width = clay.SizingFixed(1.5 * width),
+                        height = clay.SizingFixed(width),
+                    },
+                    childAlignment = {
+                        x = .Center,
+                        y = .Center,
                     },
                 },
                 image = {
                     texture,
                 },
                 floating = {
-                    attachment = preview_attach_points,
                     attachTo = .Parent,
-                    pointerCaptureMode = .Passthrough,
+                    attachment = {
+                        .CenterCenter,
+                        .CenterCenter,
+                    },
+                },
+                border = border,
+                userData = cast(rawptr) Clay_User_Data {
+                    image_rotated = true,
                 },
             }) {}
         }
-    } 
+    } else {
+        if clay.UI(id = card_clay_id) ({
+            layout = {
+                sizing = {
+                    width = clay.SizingFixed(width),
+                    height = clay.SizingFixed(1.5 * width),
+                },
+                childAlignment = {
+                    x = .Center,
+                    y = .Center,
+                },
+            },
+            image = {
+                texture,
+            },
+            floating = floating,
+            border = border,
+            backgroundColor = PALETTE[.White],
+        }) {
+            if card_should_be_hidden {
+                icon := &hero_icons[get_player_by_id(gs, card.owner_id).hero.id]
+                if clay.UI()({
+                    layout = {
+                        sizing = {
+                            width = clay.SizingPercent(0.5),
+                        },
+                    },
+                    aspectRatio = {1},
+                    image = {icon},
+                }) {}
+            }
+        } 
+    }
+
+    if card_hot && is_alt_key_down() {
+        if clay.UI()({
+            layout = {
+                sizing = {
+                    clay.SizingFixed(CARD_TEXTURE_SIZE.x * ui_scale),
+                    clay.SizingFixed(CARD_TEXTURE_SIZE.y * ui_scale),
+                },
+            },
+            image = {
+                texture,
+            },
+            floating = {
+                attachment = preview_attach_points,
+                attachTo = .ElementWithId,
+                pointerCaptureMode = .Passthrough,
+                parentId = card_clay_id.id,
+                zIndex = 200,
+            },
+        }) {}
+    }
 }
 
-clay_text_box :: proc(id_string: string, text_box: ^UI_Text_Box_Element) {
-    text_box_id := clay.ID(id_string)
+clay_text_box :: proc(
+    text_box_id: clay.ElementId,
+    text_box: ^UI_Text_Box_Element,
+    sizing: Maybe(clay.Sizing) = nil,
+    corner_radius: f32 = 0.03 * BUTTON_WIDTH,
+) {
     text_box_active := active_element_id == text_box_id
     text_box_hot := hot_element_id == text_box_id
     if clay.UI(id = text_box_id)({
         layout = {
-            sizing = {
-                width = clay.SizingFixed(SELECTION_BUTTON_SIZE.x * 2 * ui_scale),
+            sizing = sizing.? or_else {
+                width = clay.SizingFixed(BUTTON_WIDTH * ui_scale),
                 height = clay.SizingFit(),
             },
             padding = clay.PaddingAll(u16(BUTTON_TEXT_PADDING * ui_scale)),
@@ -410,6 +464,7 @@ clay_text_box :: proc(id_string: string, text_box: ^UI_Text_Box_Element) {
             color = PALETTE[.White],
             width = clay.BorderOutside(u16(4 * ui_scale)),  // @Magic
         },
+        cornerRadius = clay.CornerRadiusAll(corner_radius),
     }) {
         TEXT_BOX_FONT_SIZE :: BUTTON_HEIGHT - 2 * BUTTON_TEXT_PADDING
         bounding_box := clay.GetElementData(text_box_id).boundingBox
@@ -505,17 +560,17 @@ clay_text_box :: proc(id_string: string, text_box: ^UI_Text_Box_Element) {
                 },
             },
         }) {}
-        
+
         // Cursor
         if text_box_active {
             CYCLE_TIME :: 1 // s
             time := (get_time() - text_box.last_click_time) / CYCLE_TIME
             time_remainder := (time - math.floor(time)) * CYCLE_TIME
-            if time_remainder < CYCLE_TIME / 2.0 {
+            if time_remainder < CYCLE_TIME * 0.5 {
                 if clay.UI()({
                     layout = {
                         sizing = {
-                            width = clay.SizingFixed(0),
+                            width = clay.SizingFixed(4 * ui_scale),
                             height = clay.SizingFixed(TEXT_BOX_FONT_SIZE * ui_scale),
                         },
                     },
@@ -606,6 +661,7 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
             width = clay.BorderOutside(u16(4 * ui_scale)),
             color = border_color,
         },
+        cornerRadius = clay.CornerRadiusAll(0.5 * RESOLVED_CARD_WIDTH * CARD_CORNER_RADIUS_PROPORTION * ui_scale),
         backgroundColor = background_color,
     }) {
         if clay.UI()({
@@ -663,6 +719,7 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
                             width = clay.SizingFixed(deck_button_data.boundingBox.height),
                             height = clay.SizingGrow(),
                         },
+                        corner_radius = 0.5 * RESOLVED_CARD_WIDTH * CARD_CORNER_RADIUS_PROPORTION * ui_scale,
                         padding = clay.PaddingAll(u16(16 * ui_scale)), // @Magic
                         idle_background_color = text_color if current_deck_open else border_color,
                         active_background_color = background_color,
@@ -799,6 +856,7 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
                                 y = .Center,
                             },
                         },
+                        cornerRadius = clay.CornerRadiusAll(0.5 * RESOLVED_CARD_WIDTH * CARD_CORNER_RADIUS_PROPORTION * ui_scale),
                         border = {
                             width = clay.BorderOutside(u16(4 * ui_scale)),
                             color = border_color,
@@ -820,10 +878,7 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
                             if card.state != .Resolved || card.turn_played != i do continue
                             clay_card_element(
                                 gs, card,
-                                sizing = {
-                                    clay.SizingFixed(RESOLVED_CARD_WIDTH * ui_scale),
-                                    clay.SizingFixed(RESOLVED_CARD_HEIGHT * ui_scale),
-                                },
+                                width = RESOLVED_CARD_WIDTH * ui_scale,
                                 floating = {
                                     attachment = {
                                         element = .LeftTop,
@@ -871,6 +926,7 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
                     },
                     padding = clay.PaddingAll(u16(16 * ui_scale)),
                 },
+                cornerRadius = clay.CornerRadiusAll(0.5 * RESOLVED_CARD_WIDTH * CARD_CORNER_RADIUS_PROPORTION * ui_scale),
                 border = {
                     width = clay.BorderOutside(u16(4 * ui_scale)),
                     color = border_color,
@@ -881,10 +937,7 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
                     if card.state != .Discarded do continue 
                     clay_card_element(
                         gs, card,
-                        sizing = {
-                            clay.SizingFixed(RESOLVED_CARD_WIDTH * ui_scale),
-                            clay.SizingFixed(RESOLVED_CARD_HEIGHT * ui_scale),
-                        },
+                        width = RESOLVED_CARD_WIDTH * ui_scale,
                         floating = {
                             attachment = {
                                 element = .LeftTop,
@@ -950,6 +1003,7 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
                     },
                     padding = clay.PaddingAll(u16(16 * ui_scale)),
                 },
+                cornerRadius = clay.CornerRadiusAll(0.5 * RESOLVED_CARD_WIDTH * CARD_CORNER_RADIUS_PROPORTION * ui_scale),
                 border = {
                     width = clay.BorderOutside(u16(4 * ui_scale)),
                     color = border_color,
@@ -959,10 +1013,7 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
                     if card.state != .Played do continue
                     clay_card_element(
                         gs, card,
-                        sizing = {
-                            clay.SizingFixed(RESOLVED_CARD_WIDTH * ui_scale),
-                            clay.SizingFixed(RESOLVED_CARD_HEIGHT * ui_scale),
-                        },
+                        width = RESOLVED_CARD_WIDTH * ui_scale,
                         floating = {
                             attachment = {
                                 element = .LeftTop,
@@ -985,10 +1036,7 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
 clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
     DECK_VIEWER_PADDING_GAP :: 16
 
-    preview_card_sizing := clay.Sizing {
-        clay.SizingFixed(RESOLVED_CARD_WIDTH * 1.5 * ui_scale),
-        clay.SizingFixed(RESOLVED_CARD_HEIGHT * 1.5 * ui_scale),
-    }
+    preview_width := RESOLVED_CARD_WIDTH * 1.5 * ui_scale
 
     show_preview_cards := get_my_player(gs).hero.id != hero_id
 
@@ -1094,7 +1142,7 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
                 }
                 clay_card_element(
                     gs, gold_card,
-                    sizing = preview_card_sizing,
+                    width = preview_width,
                     preview_attach_points = {.CenterCenter, .CenterCenter},
                 )
                 silver_card := Card {
@@ -1104,7 +1152,7 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
                 }
                 clay_card_element(
                     gs, silver_card,
-                    sizing = preview_card_sizing,
+                    width = preview_width,
                     preview_attach_points = {.CenterCenter, .CenterCenter},
                 )
             }
@@ -1150,7 +1198,7 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
                                 }
                                 clay_card_element(
                                     gs, card,
-                                    sizing = preview_card_sizing,
+                                    width = preview_width,
                                     preview_attach_points = {.CenterCenter, .CenterCenter},
                                 )
                             }
@@ -1252,37 +1300,64 @@ clay_render :: proc(gs: ^Game_State, commands: ^Render_Command_Array) {
             draw_text_ex(font, text_cstring, text_position, text_font_size, text_spacing, text_color)
         case .Border:
             config := command.renderData.border
-            // Left border
-            if config.width.left > 0 {
-                draw_rectangle(i32(bounding_box.x), i32(bounding_box.y + config.cornerRadius.topLeft), i32(config.width.left), i32(bounding_box.height - config.cornerRadius.topLeft - config.cornerRadius.bottomLeft), clay_to_raylib_color(config.color))
+            if config.cornerRadius.topLeft > 0 {
+                rect := Rectangle(bounding_box)
+                border_width := f32(config.width.top)
+                rect.x += border_width
+                rect.y += border_width
+                rect.width -= 2 * border_width
+                rect.height -= 2 * border_width
+                // Weirdo formula. Phew!
+                radius: f32 = (config.cornerRadius.topLeft * 2 - 2 * border_width) / min(rect.width, rect.height)
+                draw_rectangle_rounded_lines_ex(rect, radius, 8, f32(config.width.top), clay_to_raylib_color(config.color))
+            } else {
+                draw_rectangle_lines_ex(Rectangle(bounding_box), f32(config.width.top), clay_to_raylib_color(config.color))
             }
-            // Right border
-            if (config.width.right > 0) {
-                draw_rectangle(i32(bounding_box.x + bounding_box.width - f32(config.width.right)), i32(bounding_box.y + config.cornerRadius.topRight), i32(config.width.right), i32(bounding_box.height - config.cornerRadius.topRight - config.cornerRadius.bottomRight), clay_to_raylib_color(config.color))
-            }
-            // Top border
-            if (config.width.top > 0) {
-                draw_rectangle(i32(bounding_box.x + config.cornerRadius.topLeft), i32(bounding_box.y), i32(bounding_box.width - config.cornerRadius.topLeft - config.cornerRadius.topRight), i32(config.width.top), clay_to_raylib_color(config.color))
-            }
-            // Bottom border
-            if (config.width.bottom > 0) {
-                draw_rectangle(i32(bounding_box.x + config.cornerRadius.bottomLeft), i32(bounding_box.y + bounding_box.height - f32(config.width.bottom)), i32(bounding_box.width - config.cornerRadius.bottomLeft - config.cornerRadius.bottomRight), i32(config.width.bottom), clay_to_raylib_color(config.color))
-            }
-            if (config.cornerRadius.topLeft > 0) {
-                draw_ring(Vec2{ bounding_box.x + config.cornerRadius.topLeft, bounding_box.y + config.cornerRadius.topLeft }, (config.cornerRadius.topLeft - f32(config.width.top)), config.cornerRadius.topLeft, 180, 270, 10, clay_to_raylib_color(config.color))
-            }
-            if (config.cornerRadius.topRight > 0) {
-                draw_ring(Vec2{ (bounding_box.x + bounding_box.width - config.cornerRadius.topRight), (bounding_box.y + config.cornerRadius.topRight) }, (config.cornerRadius.topRight - f32(config.width.top)), config.cornerRadius.topRight, 270, 360, 10, clay_to_raylib_color(config.color))
-            }
-            if (config.cornerRadius.bottomLeft > 0) {
-                draw_ring(Vec2{ (bounding_box.x + config.cornerRadius.bottomLeft), (bounding_box.y + bounding_box.height - config.cornerRadius.bottomLeft) }, (config.cornerRadius.bottomLeft - f32(config.width.bottom)), config.cornerRadius.bottomLeft, 90, 180, 10, clay_to_raylib_color(config.color))
-            }
-            if (config.cornerRadius.bottomRight > 0) {
-                draw_ring(Vec2 { (bounding_box.x + bounding_box.width - config.cornerRadius.bottomRight), (bounding_box.y + bounding_box.height - config.cornerRadius.bottomRight) }, (config.cornerRadius.bottomRight - f32(config.width.bottom)), config.cornerRadius.bottomRight, 0.1, 90, 10, clay_to_raylib_color(config.color))
-            }
+
+            // // Left border
+            // if config.width.left > 0 {
+            //     draw_rectangle(i32(bounding_box.x), i32(bounding_box.y + config.cornerRadius.topLeft), i32(config.width.left), i32(bounding_box.height - config.cornerRadius.topLeft - config.cornerRadius.bottomLeft), clay_to_raylib_color(config.color))
+            // }
+            // // Right border
+            // if (config.width.right > 0) {
+            //     draw_rectangle(i32(bounding_box.x + bounding_box.width - f32(config.width.right)), i32(bounding_box.y + config.cornerRadius.topRight), i32(config.width.right), i32(bounding_box.height - config.cornerRadius.topRight - config.cornerRadius.bottomRight), clay_to_raylib_color(config.color))
+            // }
+            // // Top border
+            // if (config.width.top > 0) {
+            //     draw_rectangle(i32(bounding_box.x + config.cornerRadius.topLeft), i32(bounding_box.y), i32(bounding_box.width - config.cornerRadius.topLeft - config.cornerRadius.topRight), i32(config.width.top), clay_to_raylib_color(config.color))
+            // }
+            // // Bottom border
+            // if (config.width.bottom > 0) {
+            //     draw_rectangle(i32(bounding_box.x + config.cornerRadius.bottomLeft), i32(bounding_box.y + bounding_box.height - f32(config.width.bottom)), i32(bounding_box.width - config.cornerRadius.bottomLeft - config.cornerRadius.bottomRight), i32(config.width.bottom), clay_to_raylib_color(config.color))
+            // }
+            // if (config.cornerRadius.topLeft > 0) {
+            //     draw_ring(Vec2{ bounding_box.x + config.cornerRadius.topLeft - 1, bounding_box.y + config.cornerRadius.topLeft }, (config.cornerRadius.topLeft - f32(config.width.top)), config.cornerRadius.topLeft, 180, 270, 10, clay_to_raylib_color(config.color))
+            // }
+            // if (config.cornerRadius.topRight > 0) {
+            //     draw_ring(Vec2{ (bounding_box.x + bounding_box.width - config.cornerRadius.topRight - 1), (bounding_box.y + config.cornerRadius.topRight) }, (config.cornerRadius.topRight - f32(config.width.top)), config.cornerRadius.topRight, 270, 360, 10, clay_to_raylib_color(config.color))
+            // }
+            // if (config.cornerRadius.bottomLeft > 0) {
+            //     draw_ring(Vec2{ (bounding_box.x + config.cornerRadius.bottomLeft - 1), (bounding_box.y + bounding_box.height - config.cornerRadius.bottomLeft) }, (config.cornerRadius.bottomLeft - f32(config.width.bottom)), config.cornerRadius.bottomLeft, 90, 180, 10, clay_to_raylib_color(config.color))
+            // }
+            // if (config.cornerRadius.bottomRight > 0) {
+            //     draw_ring(Vec2 { (bounding_box.x + bounding_box.width - config.cornerRadius.bottomRight - 1), (bounding_box.y + bounding_box.height - config.cornerRadius.bottomRight) }, (config.cornerRadius.bottomRight - f32(config.width.bottom)), config.cornerRadius.bottomRight, 0.1, 90, 10, clay_to_raylib_color(config.color))
+            // }
         case .Image:
             texture := cast(^Texture) command.renderData.image.imageData
-            draw_texture_pro(texture^, {0, 0, f32(texture.width), -f32(texture.height)}, Rectangle(bounding_box), {}, 0, WHITE)
+            user_data := cast(Clay_User_Data) command.userData
+            dest_rect := Rectangle(bounding_box)
+            origin := Vec2{}
+            rotate_angle: f32
+            if user_data.image_rotated {
+                origin = Vec2{dest_rect.height, dest_rect.width} / 2
+                rotate_angle = 90
+                dest_rect.x += origin.y
+                dest_rect.y += origin.x
+                dest_rect.width, dest_rect.height = dest_rect.height, dest_rect.width
+                // origin := Vec2{bounding_box.x, bounding_box.y} + Vec2{f32(texture.width), f32(texture.height)} / 2 if user_data.image_rotated else {}
+                // rotate_angle: f32 = 90 if user_data.image_rotated else 0
+            }
+            draw_texture_pro(texture^, {0, 0, f32(texture.width), -f32(texture.height)}, dest_rect, origin, rotate_angle, WHITE)
         case .Custom:
             custom_data := cast(^Custom_UI_Element) command.renderData.custom.customData
             switch custom_variant in custom_data {
@@ -1315,7 +1390,14 @@ clay_pre_lobby_screen :: proc(gs: ^Game_State) {
             childGap = u16(16 * ui_scale),  // @Magic
         },
     }) {
-        clay_text_box("ip_text_box", &ip_text_box)
+        clay_text_box(
+            clay.ID("ip_text_box"), 
+            &ip_text_box,
+            sizing = clay.Sizing {
+                width = clay.SizingFixed(2 * BUTTON_WIDTH * ui_scale),
+                height = clay.SizingFit(),
+            },
+        )
 
         if clay_button(
             clay.ID("join_game_button"),
@@ -1324,6 +1406,7 @@ clay_pre_lobby_screen :: proc(gs: ^Game_State) {
                 width = clay.SizingFixed(2 * BUTTON_WIDTH * ui_scale),
                 height = clay.SizingFit(),
             },
+            corner_radius = 0.03 * BUTTON_WIDTH * ui_scale,
         ) {
             append(&gs.event_queue, Join_Network_Game_Chosen_Event{})
         }
@@ -1345,6 +1428,7 @@ clay_pre_lobby_screen :: proc(gs: ^Game_State) {
                 width = clay.SizingFixed(2 * BUTTON_WIDTH * ui_scale),
                 height = clay.SizingFit(),
             },
+            corner_radius = 0.03 * BUTTON_WIDTH * ui_scale,
         ) {
             append(&gs.event_queue, Host_Game_Chosen_Event{})
         }
@@ -1589,20 +1673,15 @@ clay_game_screen :: proc(gs: ^Game_State) {
                     width = clay.BorderOutside(u16(4 * ui_scale)),  // @Magic
                     color = border_color,
                 },
+                cornerRadius = clay.CornerRadiusAll(0.5 * RESOLVED_CARD_WIDTH * CARD_CORNER_RADIUS_PROPORTION * ui_scale),
                 backgroundColor = background_color,
             }) {
                 if clay.UI()({
                     layout = {
-                        // layoutDirection = .TopToBottom,
                         sizing = {
                             width = clay.SizingFit(),
                             height = clay.SizingFit(),
                         },
-                        // padding = {
-                        //     left = u16(4 * ui_scale),
-                        //     right = u16(4 * ui_scale),
-                        // }
-                        // childGap = u16(HAND_PANEL_CHILD_GAP * ui_scale),
                     },
                 }) {
                     clay.Text("Hand", clay.TextConfig({
@@ -1622,15 +1701,12 @@ clay_game_screen :: proc(gs: ^Game_State) {
                         childGap = u16(HAND_PANEL_CHILD_GAP * ui_scale),
                         childAlignment = {x = .Center},
                     },
-                }){
+                }) {
                     for card in my_player.hero.cards {
                         if card.state != .In_Hand do continue
                         clay_card_element(
                             gs, card,
-                            sizing = clay.Sizing {
-                                clay.SizingFixed(HAND_CARD_WIDTH * ui_scale),
-                                clay.SizingFixed(HAND_CARD_HEIGHT * ui_scale),
-                            },
+                            width = HAND_CARD_WIDTH * ui_scale,
                             preview_attach_points = {
                                 element = .CenterBottom,
                                 parent = .CenterBottom,

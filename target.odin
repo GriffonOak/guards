@@ -2,7 +2,7 @@ package guards
 
 // import "core:fmt"
 import "core:log"
-
+import sa "core:container/small_array"
 
 
 Target :: [2]u8
@@ -98,7 +98,8 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
     if action.condition != nil && !calculate_implicit_condition(gs, action.condition, calc_context) do return false
 
     for _, effect in gs.ongoing_active_effects {
-        effect_calc_context := Calculation_Context{target = my_location, card_id = effect.parent_card_id, action_index = index}
+        effect_card_id := sa.get(effect.generating_cards, 0)
+        effect_calc_context := Calculation_Context{target = my_location, card_id = effect_card_id, action_index = index}
         if !effect_timing_valid(gs, effect.timing, effect_calc_context) do continue
         target_valid := calculate_implicit_condition(gs, And(effect.affected_targets), effect_calc_context)
         if !target_valid do continue
@@ -131,7 +132,8 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         limited_max_dist := Min{999, criteria.max_distance}
 
         for _, effect in gs.ongoing_active_effects {
-            effect_calc_context := Calculation_Context{target = origin, card_id = effect.parent_card_id, action_index = index}
+            effect_card_id := sa.get(effect.generating_cards, 0)
+            effect_calc_context := Calculation_Context{target = origin, card_id = effect_card_id, action_index = index}
             if !effect_timing_valid(gs, effect.timing, effect_calc_context) do continue
             target_valid := calculate_implicit_condition(gs, And(effect.affected_targets), effect_calc_context)
             if !target_valid do continue
