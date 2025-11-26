@@ -4,6 +4,7 @@ import "core:time"
 
 import "core:fmt"
 import "core:math"
+import "core:math/rand"
 import "core:strings"
 import "core:log"
 import "core:os"
@@ -240,6 +241,8 @@ main :: proc() {
     }
 
     setup_board(&gs)
+    random_tiebreaker := rand.int31_max(2)
+    append(&gs.event_queue, Update_Tiebreaker_Event{.Red if random_tiebreaker == 0 else .Blue})
 
     for !window_should_close() {
 

@@ -250,6 +250,10 @@ render_board :: proc(gs: ^Game_State, bounding_rect: Rectangle, board_element: B
     
     offset := Vec2{bounding_rect.x, bounding_rect.y}
 
+    begin_scissor_mode(i32(bounding_rect.x), i32(bounding_rect.y), i32(bounding_rect.width), i32(bounding_rect.height))
+
+    defer end_scissor_mode()
+
     VERTICAL_SPACING := bounding_rect.height / 17.9
     // HORIZONTAL_SPACING := 1.732 * VERTICAL_SPACING * 0.5
 
@@ -450,18 +454,26 @@ render_board :: proc(gs: ^Game_State, bounding_rect: Rectangle, board_element: B
     }
 
     // Draw Tiebreaker Coin
-    // tiebreaker_pos := offset + {VERTICAL_SPACING, VERTICAL_SPACING}
-    draw_circle_v({100, 100}, 75, clay_to_raylib_color(team_light_colors[gs.tiebreaker_coin]))
-    draw_ring({100, 100}, 70, 75, 0, 360, 100, RAYWHITE)
+    TIEBREAKER_COIN_RADIUS := 1.2 * VERTICAL_SPACING
+    TIEBREAKER_COIN_PADDING := 0.3 * VERTICAL_SPACING
+    TIEBREAKER_COIN_BORDER_THICKNESS := 0.15 * VERTICAL_SPACING
+
+    tiebreaker_coin_position := Vec2{bounding_rect.x, bounding_rect.y} + TIEBREAKER_COIN_RADIUS + TIEBREAKER_COIN_PADDING
+
+    draw_circle_v(tiebreaker_coin_position, TIEBREAKER_COIN_RADIUS, clay_to_raylib_color(team_light_colors[gs.tiebreaker_coin]))
+    draw_ring(tiebreaker_coin_position, TIEBREAKER_COIN_RADIUS - TIEBREAKER_COIN_BORDER_THICKNESS, TIEBREAKER_COIN_RADIUS, 0, 360, 100, clay_to_raylib_color(PALETTE[.White]))
 
     // Draw wave counters
+    WAVE_COUNTER_RADIUS := 0.4 * VERTICAL_SPACING
+    WAVE_COUNTER_BORDER_THICKNESS := 0.15 * VERTICAL_SPACING
+
     for wave_counter_index in 0..<5 {
         angle: f32 = math.TAU / 8 - math.TAU / 6  // @Magic
         angle += f32(wave_counter_index) * math.TAU / (3 * 4)
-        wave_counter_position := Vec2{100, 100} + 140 * {math.cos_f32(angle), math.sin_f32(angle)}
-        color := RAYWHITE if wave_counter_index < gs.wave_counters else GRAY
-        draw_circle_v(wave_counter_position, VERTICAL_SPACING * 0.4, color)
-        draw_ring(wave_counter_position, VERTICAL_SPACING * 0.4, VERTICAL_SPACING * 0.5, 0, 360, 100, RAYWHITE)
+        wave_counter_position := tiebreaker_coin_position + (TIEBREAKER_COIN_RADIUS + VERTICAL_SPACING) * Vec2{math.cos_f32(angle), math.sin_f32(angle)}
+        color := clay_to_raylib_color(PALETTE[.White]) if wave_counter_index < gs.wave_counters else clay_to_raylib_color(PALETTE[.Dark_Gray])
+        draw_circle_v(wave_counter_position, WAVE_COUNTER_RADIUS, color)
+        draw_ring(wave_counter_position, WAVE_COUNTER_RADIUS - WAVE_COUNTER_BORDER_THICKNESS, WAVE_COUNTER_RADIUS, 0, 360, 100, clay_to_raylib_color(PALETTE[.White]))
     }
 
     for team in Team {
@@ -500,6 +512,4 @@ render_board :: proc(gs: ^Game_State, bounding_rect: Rectangle, board_element: B
             }
         }
     }
-
-    end_texture_mode()
 }

@@ -382,6 +382,7 @@ clay_card_element :: proc(
                     },
                 },
                 border = border,
+                cornerRadius = clay.CornerRadiusAll(0.5 * width * CARD_CORNER_RADIUS_PROPORTION),
                 userData = cast(rawptr) Clay_User_Data {
                     image_rotated = true,
                 },
@@ -404,6 +405,7 @@ clay_card_element :: proc(
             },
             floating = floating,
             border = border,
+            cornerRadius = clay.CornerRadiusAll(0.5 * width * CARD_CORNER_RADIUS_PROPORTION),
             backgroundColor = PALETTE[.White],
         }) {
             if card_should_be_hidden {
@@ -1362,9 +1364,7 @@ clay_render :: proc(gs: ^Game_State, commands: ^Render_Command_Array) {
             custom_data := cast(^Custom_UI_Element) command.renderData.custom.customData
             switch custom_variant in custom_data {
             case Board_Element:
-                begin_scissor_mode(i32(bounding_box.x), i32(bounding_box.y), i32(bounding_box.width), i32(bounding_box.height))
                 render_board(gs, Rectangle(bounding_box), custom_variant)
-                end_scissor_mode()
             }
         }
     }
@@ -1732,7 +1732,7 @@ clay_game_screen :: proc(gs: ^Game_State) {
                         layout = {
                             layoutDirection = .TopToBottom,
                             sizing = {
-                                width = clay.SizingGrow(),
+                                width = clay.SizingFit(),
                                 height = clay.SizingGrow(),
                             },
                             childGap = u16(16 * ui_scale),  // @Magic

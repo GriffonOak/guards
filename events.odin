@@ -311,9 +311,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         setup_hero_cards(gs)
 
         if gs.is_host {
-            // tiebreaker: Team = .Red if rand.int31_max(2) == 0 else .Blue
-            tiebreaker: Team = .Red
-            broadcast_game_event(gs, Update_Tiebreaker_Event{tiebreaker})
+            // Previously set randomly at the beginning of the program in such a way that it generates an event
+            broadcast_game_event(gs, Update_Tiebreaker_Event{gs.tiebreaker_coin})
             spawn_minions(gs, gs.current_battle_zone)
         }
 
