@@ -28,7 +28,7 @@ _ :: time
     * Garrus
     * Bain
 --- UI / UX
-    * host controls (allow full deck viewing, begin game(lol))
+    * host controls (allow full deck viewing, begin game(lol), game length)
     * Event log
 
     * Username input
