@@ -103,6 +103,12 @@ draw_poly_lines_ex :: proc(centre: Vec2, sides: i32, radius, rotation, line_thic
     }
 }
 
+draw_spline_linear :: proc(points: [^]Vec2, point_count: i32, thick: f32, color: Colour) {
+    when !ODIN_TEST {
+        rl.DrawSplineLinear(points, point_count, thick, color)
+    }
+}
+
 begin_texture_mode :: proc(render_texture: Render_Texture_2D) {
     when !ODIN_TEST {
         rl.BeginTextureMode(render_texture)

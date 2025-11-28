@@ -26,9 +26,11 @@ _ :: time
 
 --- ENGINE
     * Garrus
+    * Bain
 --- UI / UX
+    * host controls (allow full deck viewing, begin game(lol))
     * Event log
-    * Better lobby screen
+
     * Username input
 */
 

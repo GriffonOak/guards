@@ -26,8 +26,22 @@ Board_Element :: struct {
     hovered_space: Target,
 }
 
+Arrow_Direction :: enum {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+Arrow_Indicator :: struct {
+    direction: Arrow_Direction,
+    line_thick: f32,
+    color: clay.Color,
+}
+
 Custom_UI_Element :: union {
     Board_Element,
+    Arrow_Indicator,
 }
 
 Palette_Font :: enum {
@@ -213,19 +227,32 @@ clay_button :: proc(
     button_id: clay.ElementId,
     text: string = "",
     image: ^Texture = nil,
+    disabled: bool = false,
+    arrow_direction: Maybe(Arrow_Direction) = nil,
     sizing: Maybe(clay.Sizing) = nil,
     padding: Maybe(clay.Padding) = nil,
+    floating: Maybe(clay.FloatingElementConfig) = nil,
     idle_background_color: Maybe(clay.Color) = nil,
-    corner_radius: Maybe(f32) = nil,
     active_background_color: Maybe(clay.Color) = nil,
+    idle_text_color: Maybe(clay.Color) = nil,
+    active_text_color: Maybe(clay.Color) = nil,
+    idle_border_color: Maybe(clay.Color) = nil,
+    corner_radius: Maybe(f32) = nil,
+    do_strike: bool = true,
+    border_width: Maybe(u16) = nil,
 ) -> (result: bool) {
 
     // button_active := button_id == active_element_id
     // button_hot := button_id == hot_element_id
 
     button_hot, button_active: bool
-    result, button_hot, button_active = clay_button_logic(button_id)
+    if !disabled {
+        result, button_hot, button_active = clay_button_logic(button_id)
+    }
 
+    // border_width := border_width.? or_else u16(HOT_BUTTON_BORDER_WIDTH * ui_scale)
+
+    background_color := button_active ? (active_background_color.? or_else PALETTE[.Dark_Gray]) : (idle_background_color.? or_else PALETTE[.Gray])
     if clay.UI(id = button_id)({
         layout = {
             sizing = sizing.? or_else {
@@ -238,19 +265,37 @@ clay_button :: proc(
             },
             padding = padding.? or_else clay.PaddingAll(u16(BUTTON_TEXT_PADDING * ui_scale)),
         },
-        backgroundColor = button_active ? (active_background_color.? or_else PALETTE[.Dark_Gray]) : (idle_background_color.? or_else PALETTE[.Gray]),
+        floating = floating.? or_else {},
+        backgroundColor = background_color,
         cornerRadius = clay.CornerRadiusAll(corner_radius.? or_else 0.03 * BUTTON_WIDTH * ui_scale),
         border = {
-            color = PALETTE[.White],
-            width = button_hot ? clay.BorderOutside(u16(HOT_BUTTON_BORDER_WIDTH * ui_scale)) : {},
+            color = PALETTE[.White] if button_hot else idle_border_color.? or_else background_color,
+            width = clay.BorderOutside(u16(HOT_BUTTON_BORDER_WIDTH * ui_scale)),
         },
-        
     }) {
-
-        if image != nil {
+        if direction, ok := arrow_direction.?; ok {
+            arrow := new(Custom_UI_Element, context.temp_allocator)
+            arrow^ = Arrow_Indicator {
+                direction = direction, line_thick = f32(border_width.? or_else u16(HOT_BUTTON_BORDER_WIDTH * ui_scale)),
+                color = idle_text_color.? or_else background_color if !button_active else PALETTE[.White],
+            }
             if clay.UI()({
                 layout = {
                     sizing = SIZING_GROW,
+                },
+                custom = {arrow}, 
+            }) {}
+        }
+
+        font_size := (BUTTON_HEIGHT - 2 * BUTTON_TEXT_PADDING) * ui_scale
+        if image != nil {
+            image_width := font_size * f32(image.width) / f32(image.height)
+            if clay.UI()({
+                layout = {
+                    sizing = {
+                        width = clay.SizingFixed(image_width),
+                        height = clay.SizingFixed(font_size),
+                    },
                 },
                 image = {
                     image,
@@ -259,11 +304,50 @@ clay_button :: proc(
         }
 
         if text != "" {
+            if image != nil {
+                if clay.UI()({
+                    layout = {sizing = {width = clay.SizingGrow()}},
+                }) {}
+            }
             clay.TextDynamic(text, clay.TextConfig({
-                textColor = PALETTE[.Black],
+                textColor = idle_text_color.? or_else PALETTE[.Black] if !button_active else active_text_color.? or_else PALETTE[.White],
                 fontId = FONT_PALETTE[.Default_Regular],
-                fontSize = u16((BUTTON_HEIGHT - 2 * BUTTON_TEXT_PADDING) * ui_scale),
+                fontSize = u16(font_size),
             }))
+            if image != nil {
+                if clay.UI()({
+                    layout = {sizing = {width = clay.SizingGrow()}},
+                }) {}
+            }
+        }
+
+
+        if disabled && do_strike {
+            // Strikethrough line
+            element := clay.GetElementData(button_id)
+            if clay.UI()({
+                layout = {
+                    sizing = {
+                        width = clay.SizingFixed(element.boundingBox.width - (2 * BUTTON_TEXT_PADDING - 4 * HOT_BUTTON_BORDER_WIDTH) * ui_scale),
+                        height = clay.SizingFixed(3 * HOT_BUTTON_BORDER_WIDTH * ui_scale),
+                    },
+                },
+                border = {
+                    width = clay.BorderOutside(u16(HOT_BUTTON_BORDER_WIDTH * ui_scale)),
+                    color = idle_background_color.? or_else PALETTE[.Gray],
+                },
+                backgroundColor = idle_text_color.? or_else PALETTE[.White],
+                floating = {
+                    attachTo = .Parent,
+                    offset = {0, 0.08 * font_size},  // Small offset here to move the line down so it goes through the centres of lowercase letters
+                    attachment = {
+                        element = .CenterCenter,
+                        parent = .CenterCenter,
+                    },
+                    clipTo = .AttachedParent,
+                },
+                cornerRadius = clay.CornerRadiusAll(1.5 * HOT_BUTTON_BORDER_WIDTH * ui_scale),
+            }) {}
         }
     }
 
@@ -593,44 +677,69 @@ clay_text_box :: proc(
     }
 }
 
+PLAYER_INFO_WIDTH :: 4 * RESOLVED_CARD_WIDTH  // @Magic, this is kind of arbitrary :P
+
 clay_player_info :: proc(player: ^Player) {
-    player_id_string := fmt.tprintf("player_%v", player.id)
-    player_info_id := clay.ID(player_id_string)
 
-    text_color := team_light_colors[player.team]
-    background_color := team_dark_colors[player.team]
-    border_color := team_light_colors[player.team]
+    text_color := team_dark_colors[player.team]
+    background_color := team_mid_colors[player.team]
+    // border_color := team_light_colors[player.team]
 
-    if clay.UI(id = player_info_id)({
+    if clay.UI()({
         layout = {
-            layoutDirection = .TopToBottom,
+            layoutDirection = .LeftToRight,
             sizing = {
-                width = clay.SizingFixed(4 * RESOLVED_CARD_WIDTH * ui_scale),
+                width = clay.SizingFixed(PLAYER_INFO_WIDTH * ui_scale),
                 height = clay.SizingFit(),
             },
-            // childGap = u16(16 * ui_scale), // @Magic
+            childGap = u16(16 * ui_scale), // @Magic
             padding = clay.PaddingAll(u16((16 + 4) * ui_scale)),  // @Magic
         },
-        border = {
-            width = clay.BorderOutside(u16(4 * ui_scale)),
-            color = border_color,
-        },
+        cornerRadius = clay.CornerRadiusAll(0.5 * RESOLVED_CARD_WIDTH * CARD_CORNER_RADIUS_PROPORTION * ui_scale),
+        // border = {
+        //     width = clay.BorderOutside(u16(4 * ui_scale)),
+        //     color = border_color,
+        // },
         backgroundColor = background_color,
     }) {
-        username := string(cstring(raw_data(player._username_buf[:])))
-        hero_name, _ := reflect.enum_name_from_value(player.hero.id)
 
-        clay.TextDynamic(username, clay.TextConfig({
-            fontId = FONT_PALETTE[.Default_Regular],
-            fontSize = u16(INFO_FONT_SIZE * ui_scale),
-            textColor = text_color,
-        }))
+        text_info_id := clay.ID("player_info_text", u32(player.id))
+        text_info_data := clay.GetElementData(text_info_id)
 
-        clay.TextDynamic(hero_name, clay.TextConfig({
-            fontId = FONT_PALETTE[.Default_Regular],
-            fontSize = u16(INFO_FONT_SIZE * ui_scale),
-            textColor = text_color,
-        }))
+        image := &hero_icons[player.hero.id]
+        aspectRatio := f32(image.width) / f32(image.height)
+        height := 2 * INFO_FONT_SIZE * ui_scale
+        if clay.UI() ({
+            layout = {
+                sizing = {
+                    width = clay.SizingFixed(aspectRatio * height),
+                    height = clay.SizingFixed(height),
+                },
+            },
+            image = {image},
+        }) {}
+
+        
+        if clay.UI(text_info_id) ({
+            layout = {
+                layoutDirection = .TopToBottom,
+            },
+        }) {
+            username := string(cstring(raw_data(player._username_buf[:])))
+            hero_name, _ := reflect.enum_name_from_value(player.hero.id)
+    
+            clay.TextDynamic(username, clay.TextConfig({
+                fontId = FONT_PALETTE[.Default_Regular],
+                fontSize = u16(INFO_FONT_SIZE * ui_scale),
+                textColor = text_color,
+            }))
+    
+            clay.TextDynamic(hero_name, clay.TextConfig({
+                fontId = FONT_PALETTE[.Default_Regular],
+                fontSize = u16(INFO_FONT_SIZE * ui_scale),
+                textColor = text_color,
+            }))
+        }
     }
 }
 
@@ -1269,7 +1378,9 @@ clay_layout :: proc(gs: ^Game_State) -> Render_Command_Array {
         }
     }
 
-    return clay.EndLayout()
+    command_array := clay.EndLayout()
+
+    return command_array
 
 }
 
@@ -1278,6 +1389,10 @@ clay_render :: proc(gs: ^Game_State, commands: ^Render_Command_Array) {
         command := clay.RenderCommandArray_Get(commands, command_index)
         bounding_box := command.boundingBox
         #partial switch command.commandType {
+        case .ScissorStart:
+            begin_scissor_mode(i32(bounding_box.x), i32(bounding_box.y), i32(bounding_box.width), i32(bounding_box.height))
+        case .ScissorEnd:
+            end_scissor_mode()
         case .Rectangle:
             // draw_rectangle_rec(
             //     Rectangle(bounding_box),
@@ -1365,6 +1480,48 @@ clay_render :: proc(gs: ^Game_State, commands: ^Render_Command_Array) {
             switch custom_variant in custom_data {
             case Board_Element:
                 render_board(gs, Rectangle(bounding_box), custom_variant)
+            case Arrow_Indicator:
+                line_thick := custom_variant.line_thick
+                color := clay_to_raylib_color(custom_variant.color)
+                origin := Vec2{bounding_box.x, bounding_box.y}
+                horizontal_offset := Vec2{bounding_box.width / 24, 0}
+                vertical_offset := Vec2{0, bounding_box.height / 24}
+                top := origin  + {bounding_box.width / 2, bounding_box.height / 3}
+                left := origin + {bounding_box.width / 3, bounding_box.height / 2}
+                right := origin + {bounding_box.width * 2 / 3, bounding_box.height / 2}
+                bottom := origin + {bounding_box.width / 2, bounding_box.height * 2 / 3}
+                points: [3]Vec2
+
+                switch custom_variant.direction {
+                case .Up:
+                    points = {
+                        left + vertical_offset,
+                        top + vertical_offset,
+                        right + vertical_offset,
+                    }
+                case .Down:
+                    points = {
+                        left - vertical_offset,
+                        bottom - vertical_offset,
+                        right - vertical_offset,
+                    }
+                case .Left:
+                    points = {
+                        top + horizontal_offset,
+                        left + horizontal_offset,
+                        bottom + horizontal_offset,
+                    }
+                case .Right:
+                    points = {
+                        top - horizontal_offset,
+                        right - horizontal_offset,
+                        bottom - horizontal_offset,
+                    }
+                }
+                draw_spline_linear(raw_data(points[:]), 3, line_thick, color)
+                draw_circle_v(points[0], line_thick / 2, color)
+                draw_circle_v(points[1], line_thick / 2, color)
+                draw_circle_v(points[2], line_thick / 2, color)
             }
         }
     }
@@ -1435,82 +1592,6 @@ clay_pre_lobby_screen :: proc(gs: ^Game_State) {
     }
 }
 
-clay_lobby_screen :: proc(gs: ^Game_State) {
-    lobby_id := clay.ID("lobby_screen")
-    if clay.UI(id = lobby_id)({
-        layout = {
-            layoutDirection = .LeftToRight,
-            sizing = SIZING_GROW,
-            childGap = u16(16 * ui_scale),  // @Magic
-        },
-    }) {
-        // Player_sidebar
-        player_sidebar_id := clay.ID("player_sidebar")
-        if clay.UI(id = player_sidebar_id)({
-            layout = {
-                layoutDirection = .TopToBottom,
-                sizing = {
-                    width = clay.SizingGrow(),
-                    height = clay.SizingGrow(),
-                },
-                childGap = u16(16 * ui_scale),
-            },
-        }) {
-            for &player in gs.players {
-                clay_player_info(&player)
-            }
-        }
-
-        // Central buttons
-        central_button_area_id := clay.ID("central_button_area")
-        if clay.UI(id = central_button_area_id)({
-            layout = {
-                layoutDirection = .TopToBottom,
-                sizing = {
-                    width = clay.SizingFit(),
-                    height = clay.SizingGrow(),
-                },
-                childAlignment = {
-                    x = .Center,
-                    y = .Center,
-                },
-                childGap = u16(16 * ui_scale),  // @Magic
-            },
-        }) {
-            if gs.is_host {
-                if clay_button(clay.ID("begin_game_button"), "Begin game") {
-                    broadcast_game_event(gs, Begin_Game_Event{})
-                }
-            }
-            if clay_button(clay.ID("change_team_button"), "Change team") {
-                broadcast_game_event(gs, Change_Team_Event{gs.my_player_id})
-            }
-        }
-
-        hero_sidebar_id := clay.ID("hero_sidebar")
-        if clay.UI(id = hero_sidebar_id)({
-            layout = {
-                layoutDirection = .TopToBottom,
-                sizing = {
-                    width = clay.SizingGrow(),
-                    height = clay.SizingGrow(),
-                },
-                childAlignment = {
-                    x = .Right,
-                    y = .Center,
-                },
-                childGap = u16(16 * ui_scale),  // @Magic
-            },
-        }) {
-            for hero in Hero_ID {
-                hero_name, _ := reflect.enum_name_from_value(hero)
-                if clay_button(clay.ID(hero_name), hero_name) {
-                    broadcast_game_event(gs, Change_Hero_Event{gs.my_player_id, hero})
-                }
-            }
-        }
-    }
-}
 
 board_element := Custom_UI_Element(Board_Element{})
 

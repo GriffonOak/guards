@@ -173,14 +173,28 @@ _thread_host_wait_for_clients :: proc(gs: ^Game_State, sock: net.TCP_Socket) {
 
             if gs.screen != .In_Lobby do return
 
+            team_counts: [Team]int
+            for player in gs.players {
+                team_counts[player.team] += 1
+            }
+            first_available_hero: Hero_ID
+            search_heroes: for hero in Hero_ID {
+                for player in gs.players {
+                    if player.hero.id == hero do continue search_heroes
+                }
+                first_available_hero = hero
+                break
+            }
+
+
             // Right now we just completely decide the fate of the client but realistically they should get to decide their own team and stuff
             client_player := Player {
                 id = len(gs.players),
                 stage = .Selecting,
                 hero = Hero {
-                    id = .Xargatha,
+                    id = first_available_hero,
                 },
-                team = .Blue,
+                team = .Red if team_counts[.Red] <= team_counts [.Blue] else .Blue,
                 socket = client_socket,
             }
             fmt.bprintf(client_player._username_buf[:], "P%v", client_player.id)
