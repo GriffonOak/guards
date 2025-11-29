@@ -253,56 +253,22 @@ clay_toggle :: proc(
         if result {
             variable^ = !variable^
         }
-        if clay.UI(id = toggle_id)({
-            layout = {
-                sizing = clay.Sizing{
-                    clay.SizingFixed(f32(3 * scaled_info_font_size / 2)),
-                    clay.SizingFixed(f32(scaled_info_font_size)),
-                },
-                padding = clay.PaddingAll(2 * scaled_border),
-                childAlignment = {
-                    x = .Left if !variable^ else .Right,
-                },
+
+        if clay_button(
+            toggle_id,
+            sizing = clay.Sizing {
+                clay.SizingFixed(f32(scaled_info_font_size)),
+                clay.SizingFixed(f32(scaled_info_font_size)),
             },
-            backgroundColor = PALETTE[.Dark_Gray],
-            cornerRadius = clay.CornerRadiusAll(f32(scaled_info_font_size / 2)),
-            border = {
-                width = clay.BorderAll(scaled_border),
-                color = PALETTE[.White] if hot else PALETTE[.Gray],
-            },
-        }) {
-            orb_width := scaled_info_font_size - 4 * scaled_border
-            if clay.UI()({
-                layout = {
-                    sizing = {
-                        clay.SizingFixed(f32(orb_width)),
-                        clay.SizingFixed(f32(orb_width)),
-                    },
-                },
-                backgroundColor = PALETTE[.Dark_Gray] if active else PALETTE[.Gray],
-                cornerRadius = clay.CornerRadiusAll(f32(orb_width / 2)),
-            }) {
-                custom_element := new(Custom_UI_Element, context.temp_allocator)
-                custom_element^ = Drawn_Icon {
-                    kind = .Checkmark if variable^ else .X,
-                    line_thick = f32(scaled_border),
-                    color = PALETTE[.Background] if !active else PALETTE[.White],
-                }
-                if clay.UI()({
-                    layout = {
-                        sizing = SIZING_GROW,
-                    },
-                    custom = {
-                        custom_element,
-                    },
-                }) {}
-            }
-        }
+            padding = clay.PaddingAll(0),
+            corner_radius = f32(scaled_info_font_size / 4),
+            icon = .X if variable^ else nil,
+        ) {}
         
         clay.TextDynamic(text, clay.TextConfig({
             fontId = FONT_PALETTE[.Default_Regular],
             fontSize = scaled_info_font_size,
-            textColor = PALETTE[.Gray],
+            textColor = PALETTE[.Light_Gray],
         }))
     }
 }
@@ -385,12 +351,12 @@ clay_button :: proc(
         }
 
         if image != nil {
-            image_width := f32(scaled_button_font_size) * f32(image.width) / f32(image.height)
+            aspectRatio := {f32(image.width) / f32(image.height)}
             if clay.UI()({
                 layout = {
                     sizing = {
-                        width = clay.SizingFixed(image_width),
-                        height = clay.SizingFixed(f32(scaled_button_font_size)),
+                        width = clay.SizingFit(),
+                        height = clay.SizingGrow(),
                     },
                 },
                 image = {
@@ -789,13 +755,9 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
                 height = clay.SizingFit(),
             },
             childGap = scaled_padding,
-            padding = clay.PaddingAll(scaled_border + scaled_padding),
+            padding = clay.PaddingAll(scaled_padding),
         },
-        border = {
-            width = clay.BorderOutside(scaled_border),
-            color = border_color,
-        },
-        cornerRadius = clay.CornerRadiusAll(f32(scaled_small_corner_radius)),
+        cornerRadius = clay.CornerRadiusAll(f32(scaled_large_corner_radius)),
         backgroundColor = background_color,
     }) {
         if clay.UI()({
@@ -1798,14 +1760,10 @@ clay_game_screen :: proc(gs: ^Game_State) {
                         width = clay.SizingFit(),
                         height = clay.SizingFit(),
                     },
-                    padding = clay.PaddingAll(scaled_border + scaled_padding),
+                    padding = clay.PaddingAll(scaled_padding),
                     childGap = scaled_padding,
                 },
-                border = {
-                    width = clay.BorderOutside(scaled_border),
-                    color = border_color,
-                },
-                cornerRadius = clay.CornerRadiusAll(f32(scaled_small_corner_radius)),
+                cornerRadius = clay.CornerRadiusAll(f32(scaled_large_corner_radius)),
                 backgroundColor = background_color,
             }) {
                 if clay.UI()({
