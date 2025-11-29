@@ -211,10 +211,11 @@ main :: proc() {
     set_trace_log_level(.NONE)
     set_config_flags({.MSAA_4X_HINT, .WINDOW_RESIZABLE, .WINDOW_MAXIMIZED})
     clay_setup()
-    init_window(i32(STARTING_WIDTH), i32(STARTING_HEIGHT), "guards")
+    init_window(i32(STARTING_WIDTH), i32(STARTING_HEIGHT), "Guards")
+    toggle_borderless_windowed()
     
     // fmt.println(get_window_scale_dpi())
-    ui_scale = get_window_scale_dpi().x / (2.25)
+    scaled_border = u16(4 * get_window_scale_dpi().x)
     defer close_window()
 
     for file in assets {
@@ -260,9 +261,9 @@ main :: proc() {
                 case .F11: toggle_fullscreen()
                 case .M: add_marker(&gs)
                 case .EQUAL:
-                    ui_scale = clamp(ui_scale + 0.1, 0.1, 3)
+                    scaled_border = clamp(scaled_border + 1, 1, 20)
                 case .MINUS:
-                    ui_scale = clamp(ui_scale - 0.1, 0.1, 3)
+                    scaled_border = clamp(scaled_border - 1, 1, 20)
                 case: 
                 }
             }

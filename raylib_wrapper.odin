@@ -313,6 +313,10 @@ toggle_borderless_windowed :: proc() {
     }
 }
 
+// maximize_window :: proc() {
+//     rl.MaximizeWindow()
+// }
+
 begin_drawing :: proc() {
     when !ODIN_TEST {
         rl.BeginDrawing()

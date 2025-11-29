@@ -6,9 +6,6 @@ import "core:reflect"
 
 hero_bar_scroll_offset: f32
 
-
-PLAYER_INFO_WIDTH :: 4 * RESOLVED_CARD_WIDTH  // @Magic, this is kind of arbitrary :P
-
 clay_player_info :: proc(player: ^Player) {
 
     text_color := team_mid_colors[player.team]
@@ -17,22 +14,16 @@ clay_player_info :: proc(player: ^Player) {
         layout = {
             layoutDirection = .LeftToRight,
             sizing = {
-                width = clay.SizingFixed(PLAYER_INFO_WIDTH * ui_scale),
+                width = clay.SizingFixed(f32(4 * scaled_resolved_card_size.x)),
                 height = clay.SizingFit(),
             },
-            childGap = u16(16 * ui_scale), // @Magic
-            // padding = clay.PaddingAll(u16((16 + 4) * ui_scale)),  // @Magic
+            childGap = scaled_padding,
         },
-        // border = {
-        //     width = clay.BorderOutside(u16(4 * ui_scale)),  // @Magic
-        //     color = border_color,
-        // },
-        // backgroundColor = background_color,
     }) {
 
         image := &hero_icons[player.hero.id]
         aspectRatio := f32(image.width) / f32(image.height)
-        height := 2 * INFO_FONT_SIZE * ui_scale
+        height := f32(2 * scaled_info_font_size)
         if clay.UI() ({
             layout = {
                 sizing = {
@@ -54,13 +45,13 @@ clay_player_info :: proc(player: ^Player) {
     
             clay.TextDynamic(hero_name, clay.TextConfig({
                 fontId = FONT_PALETTE[.Default_Semibold],
-                fontSize = u16(1.2 * INFO_FONT_SIZE * ui_scale),
+                fontSize = u16(1.2 * f32(scaled_info_font_size)),
                 textColor = text_color,
             }))
 
             clay.TextDynamic(username, clay.TextConfig({
                 fontId = FONT_PALETTE[.Default_Regular],
-                fontSize = u16(0.8 * INFO_FONT_SIZE * ui_scale),
+                fontSize = u16(0.8 * f32(scaled_info_font_size)),
                 textColor = text_color,
             }))
     
@@ -77,18 +68,12 @@ clay_lobby_player_sidebar :: proc(gs: ^Game_State, team: Team) {
                 height = clay.SizingGrow(),
             },
             childAlignment = {x = .Center},
-            childGap = u16(12 * ui_scale),  // @Magic
-            padding = clay.PaddingAll(u16(16 * ui_scale)),
+            childGap = 3 * scaled_border,
+            padding = clay.PaddingAll(scaled_padding),
         },
         backgroundColor = team_dark_colors[team],
-        // border = {
-        //     width = clay.BorderOutside(u16(4 * ui_scale)),
-        //     color = team_mid_colors[team],
-        // },
-        // cornerRadius = clay.CornerRadiusAll(0.5 * RESOLVED_CARD_WIDTH * CARD_CORNER_RADIUS_PROPORTION * ui_scale),  // @Magic
-        cornerRadius = clay.CornerRadiusAll(0.03 * BUTTON_WIDTH * ui_scale),  // @Magic
+        cornerRadius = clay.CornerRadiusAll(f32(scaled_large_corner_radius)),
     }) {
-        // if get_my_player(gs).team != .Red
 
         if clay.UI()({
             layout = {
@@ -98,8 +83,8 @@ clay_lobby_player_sidebar :: proc(gs: ^Game_State, team: Team) {
                     y = .Top,
                 },
                 padding = {
-                    left = u16(8 * ui_scale),
-                    right = u16(8 * ui_scale),
+                    left = 2 * scaled_border,
+                    right = 2 * scaled_border,
                 },
             },
         }) {
@@ -109,8 +94,8 @@ clay_lobby_player_sidebar :: proc(gs: ^Game_State, team: Team) {
                 return clay_button(
                     id,
                     sizing = clay.Sizing {
-                        clay.SizingFixed(1.4 * INFO_FONT_SIZE * ui_scale),
-                        clay.SizingFixed(1.4 * INFO_FONT_SIZE * ui_scale),
+                        clay.SizingFixed(f32(scaled_title_font_size)),
+                        clay.SizingFixed(f32(scaled_title_font_size)),
                     },
                     padding = clay.PaddingAll(0),
                     disabled = disabled,
@@ -118,12 +103,8 @@ clay_lobby_player_sidebar :: proc(gs: ^Game_State, team: Team) {
                     active_background_color = team_mid_colors[team],
                     idle_text_color = team_dark_colors[team],
                     icon = .Arrow_Right if team == .Blue else .Arrow_Left,
-                    corner_radius = 0.75 * INFO_FONT_SIZE * ui_scale,
-                    border_width = u16(DEFAULT_BORDER * ui_scale),
-                    // strikethrough = Strikethrough_Config {
-                    //     offset = false,
-                    //     proportion = 1.35,
-                    // }
+                    corner_radius = 0.5 * f32(scaled_title_font_size),
+                    border_width = scaled_border,
                 )
             }
 
@@ -137,7 +118,7 @@ clay_lobby_player_sidebar :: proc(gs: ^Game_State, team: Team) {
 
             clay.TextDynamic("Red Team" if team == .Red else "Blue Team", clay.TextConfig({
                 fontId = FONT_PALETTE[.Default_Semibold],
-                fontSize = u16(1.5 * INFO_FONT_SIZE * ui_scale),
+                fontSize = u16(scaled_title_font_size),
                 textColor = team_mid_colors[team],
             }))
 
@@ -152,12 +133,12 @@ clay_lobby_player_sidebar :: proc(gs: ^Game_State, team: Team) {
         if clay.UI()({
             layout = {
                 sizing = {
-                    width = clay.SizingFixed(PLAYER_INFO_WIDTH * ui_scale),
-                    height = clay.SizingFixed(4 * ui_scale),  // @Magic border
+                    width = clay.SizingFixed(f32(4 * scaled_resolved_card_size.x)),
+                    height = clay.SizingFixed(f32(scaled_border)),
                 },
             },
             backgroundColor = team_mid_colors[team],
-            cornerRadius = clay.CornerRadiusAll(2 * ui_scale),  // @Magic border / 2
+            cornerRadius = clay.CornerRadiusAll(0.5 * f32(scaled_border)),
         }) {}
 
         for &player in gs.players {
@@ -170,17 +151,18 @@ clay_lobby_player_sidebar :: proc(gs: ^Game_State, team: Team) {
         if clay.UI()({
             layout = {
                 sizing = {
-                    width = clay.SizingFixed(PLAYER_INFO_WIDTH * ui_scale),
-                    height = clay.SizingFixed(4 * ui_scale),  // @Magic border
+                    width = clay.SizingFixed(f32(4 * scaled_resolved_card_size.x)),
+                    height = clay.SizingFixed(f32(scaled_border)),
                 },
             },
             backgroundColor = team_mid_colors[team],
-            cornerRadius = clay.CornerRadiusAll(2 * ui_scale),  // @Magic border / 2
+            cornerRadius = clay.CornerRadiusAll(0.5 * f32(scaled_border)),
         }) {}
     }
 }
 
 clay_lobby_screen :: proc(gs: ^Game_State) {
+
     if clay.UI()({
         layout = {
             layoutDirection = .TopToBottom,
@@ -188,7 +170,7 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                 width = clay.SizingFit(),
                 height = clay.SizingGrow(),
             },
-            childGap = u16(16 * ui_scale),  // @Magic
+            childGap = scaled_padding,
             childAlignment = {x = .Center},
         },
     }) {
@@ -199,7 +181,7 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                     width = clay.SizingFit(),
                     height = clay.SizingGrow(),
                 },
-                childGap = u16(16 * ui_scale),  // @Magic
+                childGap = scaled_padding,
             },
         }) {
             // Player_sidebars
@@ -215,22 +197,22 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                     childAlignment = {
                         x = .Center,
                     },
-                    childGap = u16(12 * ui_scale),  // @Magic
-                    padding = clay.PaddingAll(u16(16 * ui_scale)),
+                    childGap = 3 * scaled_border,
+                    padding = clay.PaddingAll(scaled_padding),
                 },
-                cornerRadius = clay.CornerRadiusAll(0.03 * BUTTON_WIDTH * ui_scale),  // @Magic
+                cornerRadius = clay.CornerRadiusAll(f32(scaled_large_corner_radius)),
                 backgroundColor = PALETTE[.Dark_Gray],
             }) {
                 clay.Text("Heroes", clay.TextConfig({
                     fontId = FONT_PALETTE[.Default_Semibold],
-                    fontSize = u16(1.5 * INFO_FONT_SIZE * ui_scale),
+                    fontSize = scaled_title_font_size,
                     textColor = PALETTE[.Gray],
                 }))
 
                 if clay.UI()({
                     layout = {
                         layoutDirection = .TopToBottom,
-                        childGap = u16(4 * ui_scale),  //@Magic border
+                        childGap = scaled_border,
                         sizing = {
                             width = clay.SizingFit(),
                             height = clay.SizingGrow(),
@@ -242,11 +224,11 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                         layout = {
                             sizing = {
                                 width = clay.SizingGrow(),
-                                height = clay.SizingFixed(4 * ui_scale),  // @Magic border
+                                height = clay.SizingFixed(f32(scaled_border)),
                             },
                         },
                         backgroundColor = PALETTE[.Gray],
-                        cornerRadius = clay.CornerRadiusAll(2 * ui_scale),  // @Magic border / 2
+                        cornerRadius = clay.CornerRadiusAll(0.5 * f32(scaled_border)),
                     }) {}
                     
                     hero_scroll_id := clay.ID("hero_scroll_container")
@@ -261,14 +243,13 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                             childAlignment = {
                                 x = .Center,
                             },
-                            childGap = u16(16 * ui_scale),  // @Magic
-                            padding = clay.Padding{
-                                top = u16(8 * ui_scale),
-                                bottom = u16(8 * ui_scale),
-                                left = u16(4 * ui_scale),
-                                right = u16(4 * ui_scale),
+                            childGap = scaled_padding,
+                            padding = clay.Padding {
+                                top = scaled_border,
+                                bottom = scaled_border,
+                                left = scaled_border,
+                                right = scaled_border,
                             },
-                            // padding = clay.PaddingAll(u16(12 * ui_scale))
                         },
                         clip = {
                             vertical = true,
@@ -313,17 +294,12 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                         layout = {
                             sizing = {
                                 width = clay.SizingGrow(),
-                                height = clay.SizingFixed(4 * ui_scale),  // @Magic border
+                                height = clay.SizingFixed(f32(scaled_border)),
                             },
                         },
                         backgroundColor = PALETTE[.Gray],
-                        cornerRadius = clay.CornerRadiusAll(2 * ui_scale),  // @Magic border / 2
+                        cornerRadius = clay.CornerRadiusAll(0.5 * f32(scaled_border)),
                     }) {}
-
-
-
-                    SCROLL_INDICATOR_SIZE :: 2 * DEFAULT_PADDING
-                    // arrow_width := 0.3 * scroll_indicator_size
 
                     for i in 0..<2 {
                         arrow_id := clay.ID("up_arrow") if i == 0 else clay.ID("down_arrow")
@@ -334,8 +310,8 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                         if condition || arrow_id == active_element_id  {
                             clay_button(
                                 arrow_id, sizing = clay.Sizing {
-                                    width = clay.SizingFixed(SCROLL_INDICATOR_SIZE),
-                                    height = clay.SizingFixed(SCROLL_INDICATOR_SIZE),
+                                    width = clay.SizingFixed(f32(2 * scaled_padding)),
+                                    height = clay.SizingFixed(f32(2 * scaled_padding)),
                                 },
                                 floating = clay.FloatingElementConfig {
                                     attachTo = .ElementWithId,
@@ -351,10 +327,10 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                                 active_background_color = PALETTE[.Gray],
                                 idle_border_color = PALETTE[.Dark_Gray],
                                 idle_text_color = PALETTE[.Dark_Gray],
-                                corner_radius = SCROLL_INDICATOR_SIZE * 0.5,
+                                corner_radius = f32(scaled_padding),
                             )
                             if active_element_id == arrow_id {
-                                data.scrollPosition.y += (3 if i == 0 else -3) * ui_scale
+                                data.scrollPosition.y += 0.03 * f32(scaled_border) * (1 if i == 0 else -1)
                             }
                         }
                     }
@@ -371,20 +347,16 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                     width = clay.SizingGrow(),
                     height = clay.SizingFit(),
                 },
-                padding = clay.PaddingAll(u16((4 + 16) * ui_scale)),
-                childGap = u16(16 * ui_scale),
+                padding = clay.PaddingAll(scaled_padding),
+                childGap = scaled_padding,
             },
-            backgroundColor = PALETTE[.Background],
-            border = {
-                width = clay.BorderOutside(u16(4 * ui_scale)),
-                color = PALETTE[.Dark_Gray],
-            },
-            cornerRadius = clay.CornerRadiusAll(0.5 * RESOLVED_CARD_WIDTH * CARD_CORNER_RADIUS_PROPORTION * ui_scale),  // @Magic
+            backgroundColor = PALETTE[.Dark_Gray],
+            cornerRadius = clay.CornerRadiusAll(f32(scaled_large_corner_radius)),
         }) {
             clay.TextDynamic("Game Setup" if gs.is_host else "Game Setup (Host only)", clay.TextConfig({
                 fontId = FONT_PALETTE[.Default_Semibold],
-                fontSize = u16(INFO_FONT_SIZE * ui_scale),
-                textColor = PALETTE[.Dark_Gray],
+                fontSize = u16(scaled_info_font_size),
+                textColor = PALETTE[.Gray],
             }))
 
             if clay.UI()({
