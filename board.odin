@@ -471,7 +471,7 @@ render_board :: proc(gs: ^Game_State, bounding_rect: Rectangle, board_element: B
         angle: f32 = math.TAU / 8 - math.TAU / 6  // @Magic
         angle += f32(wave_counter_index) * math.TAU / (3 * 4)
         wave_counter_position := tiebreaker_coin_position + (TIEBREAKER_COIN_RADIUS + VERTICAL_SPACING) * Vec2{math.cos_f32(angle), math.sin_f32(angle)}
-        color := clay_to_raylib_color(PALETTE[.White]) if wave_counter_index < gs.wave_counters else clay_to_raylib_color(PALETTE[.Gray])
+        color := clay_to_raylib_color(PALETTE[.White]) if wave_counter_index < gs.wave_counters else clay_to_raylib_color(PALETTE[.Mid_Gray])
         draw_circle_v(wave_counter_position, WAVE_COUNTER_RADIUS, color)
         draw_ring(wave_counter_position, WAVE_COUNTER_RADIUS - WAVE_COUNTER_BORDER_THICKNESS, WAVE_COUNTER_RADIUS, 0, 360, 100, clay_to_raylib_color(PALETTE[.White]))
     }

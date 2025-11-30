@@ -17,20 +17,20 @@ Keyboard_Key :: rl.KeyboardKey
 Blend_Mode :: rl.BlendMode
 
 MAGENTA :: rl.MAGENTA
-PURPLE :: rl.PURPLE
+// PURPLE :: rl.PURPLE
 LIGHTGRAY :: rl.LIGHTGRAY
-GRAY :: rl.GRAY
+// GRAY :: rl.Gray
 DARKGRAY :: rl.DARKGRAY
 BLANK :: rl.BLANK
 WHITE :: rl.WHITE
-RAYWHITE :: rl.RAYWHITE
+// RAYWHITE :: rl.RAYWHITE
 BLACK :: rl.BLACK
 VIOLET :: rl.VIOLET
-GOLD :: rl.GOLD
-RED :: rl.RED
-LIME :: rl.LIME
+// GOLD :: rl.GOLD
+// RED :: rl.RED
+// LIME :: rl.LIME
 BLUE :: rl.BLUE
-DARKBLUE :: rl.DARKBLUE
+// DARKBLUE :: rl.DARKBLUE
 
 get_time :: proc() -> f64 {
     program_duration := time.since(start_time)

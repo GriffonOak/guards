@@ -357,14 +357,15 @@ spawn_heroes_at_start :: proc(gs: ^Game_State) {
     }
 }
 
-create_card_textures :: proc() {
-    for &hero_deck in hero_cards {
-        for &card in hero_deck {
-            create_texture_for_card(&card, preview = false)
-            create_texture_for_card(&card, preview = true)
-        }
-    }
-}
+// create_card_textures :: proc() {
+//     for &hero_deck, hero_id in hero_cards {
+
+//         for &card in hero_deck {
+//             create_texture_for_card(&card, preview = false)
+//             create_texture_for_card(&card, preview = true)
+//         }
+//     }
+// }
 
 setup_icons :: proc() {
     minion_images: [Space_Flag]Image
@@ -478,7 +479,7 @@ setup_hero_cards :: proc(gs: ^Game_State) {
                     enum_name,
                     "_alt" if card.alternate else "",
                 )
-                // fmt.println(card_filename)
+                fmt.println(card_filename)
                 for file in assets {
                     if file.name == card_filename {
                         image := load_image_from_memory(".png", raw_data(file.data), i32(len(file.data)))
@@ -495,10 +496,15 @@ setup_hero_cards :: proc(gs: ^Game_State) {
             player_card.hero_id = hero_id
             player_card.owner_id = player_id
         }
+
+        for &card in hero_cards[hero_id] {
+            create_texture_for_card(&card, preview = false)
+            create_texture_for_card(&card, preview = true)
+        }
     }
 
 when !ODIN_TEST {
-    create_card_textures()
+    // create_card_textures()
 }
 }
 

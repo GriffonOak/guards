@@ -6,9 +6,34 @@ import "core:reflect"
 
 hero_bar_scroll_offset: f32
 
-clay_player_info :: proc(player: ^Player) {
+clay_hero_title :: proc(player: ^Player) {
 
     text_color := team_mid_colors[player.team]
+
+    username := string(cstring(raw_data(player._username_buf[:])))
+    hero_name, _ := reflect.enum_name_from_value(player.hero.id)
+
+    if clay.UI()({
+        layout = {
+            layoutDirection = .TopToBottom,
+        },
+    }) {
+        clay.TextDynamic(hero_name, clay.TextConfig({
+            fontId = FONT_PALETTE[.Default_Semibold],
+            fontSize = scaled_info_font_size + 2 * scaled_border,
+            textColor = text_color,
+        }))
+    
+        clay.TextDynamic(username, clay.TextConfig({
+            fontId = FONT_PALETTE[.Default_Regular],
+            fontSize = scaled_info_font_size - 2 * scaled_border,
+            textColor = text_color,
+        }))
+    }
+
+}
+
+clay_player_info :: proc(player: ^Player) {
 
     if clay.UI()({
         layout = {
@@ -34,28 +59,7 @@ clay_player_info :: proc(player: ^Player) {
             image = {image},
         }) {}
 
-        
-        if clay.UI()({
-            layout = {
-                layoutDirection = .TopToBottom,
-            },
-        }) {
-            username := string(cstring(raw_data(player._username_buf[:])))
-            hero_name, _ := reflect.enum_name_from_value(player.hero.id)
-    
-            clay.TextDynamic(hero_name, clay.TextConfig({
-                fontId = FONT_PALETTE[.Default_Semibold],
-                fontSize = u16(1.2 * f32(scaled_info_font_size)),
-                textColor = text_color,
-            }))
-
-            clay.TextDynamic(username, clay.TextConfig({
-                fontId = FONT_PALETTE[.Default_Regular],
-                fontSize = u16(0.8 * f32(scaled_info_font_size)),
-                textColor = text_color,
-            }))
-    
-        }
+        clay_hero_title(player)
     }
 }
 
@@ -206,7 +210,7 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                 clay.Text("Heroes", clay.TextConfig({
                     fontId = FONT_PALETTE[.Default_Semibold],
                     fontSize = scaled_title_font_size,
-                    textColor = PALETTE[.Gray],
+                    textColor = PALETTE[.Mid_Gray],
                 }))
 
                 if clay.UI()({
@@ -227,7 +231,7 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                                 height = clay.SizingFixed(f32(scaled_border)),
                             },
                         },
-                        backgroundColor = PALETTE[.Gray],
+                        backgroundColor = PALETTE[.Mid_Gray],
                         cornerRadius = clay.CornerRadiusAll(0.5 * f32(scaled_border)),
                     }) {}
                     
@@ -258,7 +262,7 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                     }) {
                         scroll_offset := clay.GetScrollOffset().y
                         hero_bar_scroll_offset = scroll_offset
-                        
+
                         for hero in Hero_ID {
                             hero_name, _ := reflect.enum_name_from_value(hero)
                             disabled: bool
@@ -297,7 +301,7 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                                 height = clay.SizingFixed(f32(scaled_border)),
                             },
                         },
-                        backgroundColor = PALETTE[.Gray],
+                        backgroundColor = PALETTE[.Mid_Gray],
                         cornerRadius = clay.CornerRadiusAll(0.5 * f32(scaled_border)),
                     }) {}
 
@@ -307,7 +311,7 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                         if i != 0 {
                             condition = data.scrollContainerDimensions.height - hero_bar_scroll_offset < data.contentDimensions.height - 0.5
                         }
-                        if condition || arrow_id == active_element_id  {
+                        if condition || arrow_id.id == active_element_id.id  {
                             clay_button(
                                 arrow_id, sizing = clay.Sizing {
                                     width = clay.SizingFixed(f32(2 * scaled_padding)),
@@ -324,13 +328,14 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                                 padding = clay.PaddingAll(0),
                                 icon = .Arrow_Up if i == 0 else .Arrow_Down,
                                 idle_background_color = PALETTE[.Light_Gray],
-                                active_background_color = PALETTE[.Gray],
+                                active_background_color = PALETTE[.Mid_Gray],
                                 idle_border_color = PALETTE[.Dark_Gray],
                                 idle_text_color = PALETTE[.Dark_Gray],
                                 corner_radius = f32(scaled_padding),
                             )
                             if active_element_id == arrow_id {
-                                data.scrollPosition.y += 0.03 * f32(scaled_border) * (1 if i == 0 else -1)
+                                dpi_scroll_factor := get_window_scale_dpi().y * get_window_scale_dpi().y * get_window_scale_dpi().y
+                                data.scrollPosition.y += 0.03 * dpi_scroll_factor * f32(scaled_border) * (1 if i == 0 else -1)
                             }
                         }
                     }
@@ -356,7 +361,7 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
             clay.TextDynamic("Game Setup" if gs.is_host else "Game Setup (Host only)", clay.TextConfig({
                 fontId = FONT_PALETTE[.Default_Semibold],
                 fontSize = u16(scaled_info_font_size),
-                textColor = PALETTE[.Gray],
+                textColor = PALETTE[.Mid_Gray],
             }))
 
             if clay.UI()({

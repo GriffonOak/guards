@@ -30,7 +30,6 @@ _ :: time
 --- UI / UX
     * host controls (allow full deck viewing, begin game(lol), game length)
     * Event log
-
     * Username input
 */
 
@@ -208,14 +207,15 @@ main :: proc() {
     }
 
     // set_config_flags({.WINDOW_TOPMOST})
-    set_trace_log_level(.NONE)
+    // set_trace_log_level(.NONE)
     set_config_flags({.MSAA_4X_HINT, .WINDOW_RESIZABLE, .WINDOW_MAXIMIZED})
     clay_setup()
     init_window(i32(STARTING_WIDTH), i32(STARTING_HEIGHT), "Guards")
     toggle_borderless_windowed()
     
     // fmt.println(get_window_scale_dpi())
-    scaled_border = u16(4 * get_window_scale_dpi().x)
+    scaled_border = 4 * u16(get_window_scale_dpi().x)
+    fmt.println(scaled_border)
     defer close_window()
 
     for file in assets {
@@ -270,6 +270,8 @@ main :: proc() {
         }
         clear(&input_queue)
 
+        clay_layout(&gs)
+
         // when !REPLAY {
             process_network_packets(&gs)
         // }
@@ -307,41 +309,10 @@ main :: proc() {
 
         begin_drawing()
 
-        // if gs.stage != .Pre_Lobby && gs.stage != .In_Lobby {
-        //     render_board_to_texture(&gs, gs.ui_stack[.Board][0])
-        // }
-
-        // begin_texture_mode(window_texture)
-        clear_background(BLACK)
-
         clay_render(&gs, &clay_render_commands)
 
-        // clear_background(BLACK)
-
-        for domain in UI_Domain {
-            for element in gs.ui_stack[domain] {
-                element.render(&gs, element)
-            }
-        }
-
-        #reverse for &toast, index in gs.toasts {
-            if get_time() > toast.start_time + toast.duration {
-                ordered_remove(&gs.toasts, index)
-            } else {
-                draw_toast(&toast)
-            }
-        }
-
-        end_texture_mode()
-
-        // draw_texture_pro(
-        //     window_texture.texture,
-        //     {0, 0, WIDTH, -HEIGHT},
-        //     {0, 0, WIDTH / window_scale, HEIGHT / window_scale},
-        //     {0, 0}, 0, WHITE,
-        // )
-
         end_drawing()
+
 
         free_all(context.temp_allocator)
     }

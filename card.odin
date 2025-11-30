@@ -166,6 +166,14 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
 
     clay.BeginLayout()
 
+    default_background_color := PALETTE[.Black]
+    text_box_border_color := PALETTE[.Mid_Gray]
+    top_bottom_bar_color := PALETTE[.Dark_Gray]
+    text_box_background_color := PALETTE[.Light_Gray]
+
+    text_color := PALETTE[.Black]
+    light_text_color := PALETTE[.White]
+
     if clay.UI()({
         layout = {
             layoutDirection = .TopToBottom,
@@ -174,7 +182,7 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
         image = {
             &card.background_image if card.background_image != {} else nil,
         },
-        backgroundColor = PALETTE[.Black] if card.background_image == {} else {},
+        backgroundColor = default_background_color if card.background_image == {} else {},
     }) {
 
         // Top Bar
@@ -187,7 +195,7 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                     height = clay.SizingFixed(TOP_BAR_WIDTH),
                 },
             },
-            backgroundColor = PALETTE[.Dark_Gray],
+            backgroundColor = top_bottom_bar_color,
         }) {}
 
         OUTSIDE_PADDING :: COLORED_BAND_WIDTH * 0.25
@@ -245,7 +253,7 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                         },
                     },
                     cornerRadius = clay.CornerRadiusAll(TOP_BAR_WIDTH * 0.5),
-                    backgroundColor = PALETTE[.Light_Gray],
+                    backgroundColor = text_box_background_color,
                 }) {
 
                     if clay.UI()({
@@ -257,7 +265,7 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                     clay.TextDynamic(card.name, clay.TextConfig({
                         fontSize = u16(TOP_BAR_WIDTH * 0.7),
                         fontId = FONT_PALETTE[.Default_Bold],
-                        textColor = PALETTE[.Black],
+                        textColor = text_color,
                         wrapMode = .None,
                     }))
 
@@ -279,13 +287,13 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                             },
                         },
                         cornerRadius = clay.CornerRadiusAll(TOP_BAR_WIDTH * 0.5),
-                        backgroundColor = PALETTE[.Gray],
+                        backgroundColor = text_box_border_color,
                     }) {
                         tier_text := [?]string{"", "I", "II", "III", "IV"}
                         clay.TextDynamic(tier_text[card.tier], clay.TextConfig({
                             fontId = FONT_PALETTE[.Default_Bold],
                             fontSize = u16(TOP_BAR_WIDTH * 0.8),
-                            textColor = PALETTE[.White],
+                            textColor = light_text_color,
                         }))
                     }
                 }
@@ -317,8 +325,8 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                     shitty_outlined_text(fmt.tprintf("%v", card.values[.Initiative]), clay.TextElementConfig{
                         fontId = FONT_PALETTE[.Default_Bold],
                         fontSize = COLORED_BAND_WIDTH * 1.3,
-                        textColor = PALETTE[.White],
-                    }, BORDER_THICKNESS, PALETTE[.Black])
+                        textColor = light_text_color,
+                    }, BORDER_THICKNESS, text_color)
                 }
             }
 
@@ -354,8 +362,8 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                     shitty_outlined_text(fmt.tprintf("%v", value), clay.TextElementConfig{
                         fontId = FONT_PALETTE[.Default_Bold],
                         fontSize = COLORED_BAND_WIDTH * 0.9,
-                        textColor = PALETTE[.White],
-                    }, BORDER_THICKNESS, PALETTE[.Black])
+                        textColor = light_text_color,
+                    }, BORDER_THICKNESS, text_color)
                 }
 
             }
@@ -385,7 +393,7 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                 },
                 padding = clay.PaddingAll(8),
             },
-            backgroundColor = PALETTE[.Dark_Gray],
+            backgroundColor = top_bottom_bar_color,
         }) {
             if item_showing {
                 if clay.UI()({
@@ -425,15 +433,15 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
             },
             border = {
                 width = clay.BorderOutside(4),
-                color = PALETTE[.Gray],
+                color = text_box_border_color,
             },
-            backgroundColor = PALETTE[.Light_Gray],
+            backgroundColor = text_box_background_color,
             cornerRadius = clay.CornerRadiusAll(0.5 * TOP_BAR_WIDTH),
         }) {
             clay.TextDynamic(card.text, clay.TextConfig({
                 fontSize = TEXT_FONT_SIZE,
                 fontId = FONT_PALETTE[.Default_Regular],
-                textColor = PALETTE[.Black],
+                textColor = text_color,
                 wrapMode = .Newlines,
             }))
 
@@ -457,7 +465,7 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                 },
                 border = {
                     width = clay.BorderOutside(4),
-                    color = PALETTE[.Gray],
+                    color = text_box_border_color,
                 },
                 // cornerRadius = clay.CornerRadiusAll(25),
                 backgroundColor = card_colors[card.color],
@@ -471,8 +479,8 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                 shitty_outlined_text(descriptor_text, clay.TextElementConfig{
                     fontSize = 30,
                     fontId = FONT_PALETTE[.Default_Bold],
-                    textColor = PALETTE[.White],
-                }, 2, PALETTE[.Black])
+                    textColor = light_text_color,
+                }, 2, text_color)
             }
 
             // Primary Icon
@@ -505,8 +513,8 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                 shitty_outlined_text(text, clay.TextElementConfig{
                     fontSize = u16(ICON_SIZE),
                     fontId = FONT_PALETTE[.Default_Bold],
-                    textColor = PALETTE[.White],
-                }, 4, PALETTE[.Black])
+                    textColor = light_text_color,
+                }, 4, text_color)
             }
 
             // Reach Icon
@@ -538,8 +546,8 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                     shitty_outlined_text(text, clay.TextElementConfig{
                         fontSize = u16(ICON_SIZE),
                         fontId = FONT_PALETTE[.Default_Bold],
-                        textColor = PALETTE[.White],
-                    }, 4, PALETTE[.Black])
+                        textColor = light_text_color,
+                    }, 4, text_color)
                 }
             }
 
@@ -574,7 +582,6 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
     clay_render(nil, &render_commands)
     
     end_texture_mode()
-
 
 
     render_texture := load_render_texture(i32(CARD_TEXTURE_SIZE.x), i32(CARD_TEXTURE_SIZE.y))
