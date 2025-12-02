@@ -35,6 +35,8 @@ Drawn_Icon_Kind :: enum {
 
     Checkmark,
     X,
+
+    Dot,
 }
 
 Drawn_Icon :: struct {
@@ -79,7 +81,10 @@ Palette_Color :: enum {
     Card_Blue,
 
     Mid_Red,
+    Dark_Red,
 
+    Mid_Green,
+    Dark_Green,
 
     White,
     Black,
@@ -111,6 +116,10 @@ PALETTE := [Palette_Color]clay.Color {
     .Card_Blue = {0, 121, 241, 255},
 
     .Mid_Red = {165, 29, 41, 255},
+    .Dark_Red = {84, 15, 23, 255},
+
+    .Mid_Green = {0, 76, 20, 255},
+    .Dark_Green = {0, 48, 13, 255},
 
     .White = {255, 255, 255, 255},
     .Black = {0, 0, 0, 255},
@@ -247,7 +256,14 @@ clay_toggle :: proc(
     toggle_id: clay.ElementId,
     variable: ^bool,
     text: string,
-) {
+    disabled: bool = false,
+) -> bool {
+
+    result := false
+    if !disabled {
+        result, _, _ = clay_button_logic(toggle_id)
+    }
+
     if clay.UI()({
         layout = {
             layoutDirection = .LeftToRight,
@@ -258,27 +274,33 @@ clay_toggle :: proc(
         },
     }) {  // Pickle contribution: tgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggtrffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 
-        result := clay_button(
+        clay_button(
             toggle_id,
             sizing = clay.Sizing {
-                clay.SizingFixed(f32(scaled_info_font_size)),
-                clay.SizingFixed(f32(scaled_info_font_size)),
+                clay.SizingFixed(f32(scaled_info_font_size - 2 * scaled_border)),
+                clay.SizingFixed(f32(scaled_info_font_size - 2 * scaled_border)),
             },
             padding = clay.PaddingAll(0),
             corner_radius = f32(scaled_info_font_size / 4),
             icon = .X if variable^ else nil,
+            disabled = disabled,
+            // idle_border_color = PALETTE[.Light_Gray],
+            // idle_background_color = PALETTE[.Dark_Gray],
+            // active_background_color = PALETTE[.Dark_Gray],
         )
 
         if result {
             variable^ = !variable^
         }
-        
+
         clay.TextDynamic(text, clay.TextConfig({
             fontId = FONT_PALETTE[.Default_Regular],
             fontSize = scaled_info_font_size,
-            textColor = PALETTE[.Light_Gray],
+            textColor = PALETTE[.Mid_Gray] if !disabled else PALETTE[.Mid_Gray],
         }))
     }
+
+    return result
 }
 
 Strikethrough_Config :: struct {
@@ -401,7 +423,6 @@ clay_button :: proc(
             }
         }
 
-
         if strikethrough, ok := strikethrough.?; disabled && ok {
             // Strikethrough line
             if clay.UI()({
@@ -429,7 +450,6 @@ clay_button :: proc(
             }) {}
         }
     }
-
     return result
 }
 
@@ -449,7 +469,7 @@ clay_card_element :: proc(
     card_data, _ := get_card_data_by_id(gs, card.id)
 
     card_should_be_hidden := gs.stage == .Selection && card.owner_id != gs.my_player_id && card.state == .Played
-    card_should_be_preview := card.hero_id != get_my_player(gs).hero.id && card.state == .In_Deck
+    card_should_be_preview := !gs.enable_full_previews && card.hero_id != get_my_player(gs).hero.id && card.state == .In_Deck
     card_should_be_rotated := card.active != .None
 
     texture := nil if card_should_be_hidden else (&card_data.preview_texture if card_should_be_preview else &card_data.texture)
@@ -1107,13 +1127,13 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) -> clay.ElementId {
 clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
     preview_width := f32(scaled_resolved_card_size.x) * 3 / 2
 
-    show_preview_cards := get_my_player(gs).hero.id != hero_id
+    show_preview_cards := !gs.enable_full_previews && get_my_player(gs).hero.id != hero_id
 
-    background_color := PALETTE[.Background]
+    background_color := PALETTE[.Dark_Gray]
     text_color := PALETTE[.Mid_Gray]
     // highlight_color := PALETTE[.Light_Gray]
 
-    border_width: u16 = 0 // scaled_border
+    border_width: u16 = scaled_border
     if clay.UI()({
         layout = {
             layoutDirection = .TopToBottom,
@@ -1130,7 +1150,7 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
         },
         backgroundColor = background_color,
         border = {
-            color = PALETTE[.Dark_Gray],
+            color = PALETTE[.Mid_Gray],
             width = clay.BorderOutside(border_width),
         },
         cornerRadius = clay.CornerRadiusAll(f32(scaled_large_corner_radius)),
@@ -1460,6 +1480,9 @@ clay_render :: proc(gs: ^Game_State, commands: ^Render_Command_Array) {
                 origin := Vec2{bounding_box.x, bounding_box.y}
                 horizontal_offset := Vec2{bounding_box.width / 24, 0}
                 vertical_offset := Vec2{0, bounding_box.height / 24}
+
+                centre := origin + {bounding_box.width / 2, bounding_box.height / 2}
+
                 top := origin + {bounding_box.width / 2, bounding_box.height / 3}
                 left := origin + {bounding_box.width / 3, bounding_box.height / 2}
                 right := origin + {bounding_box.width * 2 / 3, bounding_box.height / 2}
@@ -1513,7 +1536,10 @@ clay_render :: proc(gs: ^Game_State, commands: ^Render_Command_Array) {
                     draw_basic_line({
                         top_right, bottom_left,
                     }, line_thick, color)
+                case .Dot:
+                    draw_circle_v(centre, line_thick * 1.5, color)
                 }
+
             }
         }
     }
@@ -1751,7 +1777,7 @@ clay_game_screen :: proc(gs: ^Game_State) {
                         layoutDirection = .LeftToRight,
                         sizing = {
                             width = clay.SizingFixed(f32(5 * scaled_hand_card_size.x + 4 * scaled_padding)),
-                            height = clay.SizingFit(),
+                            height = clay.SizingFixed(f32(scaled_hand_card_size.y)),
                         },
                         childGap = scaled_padding,
                         childAlignment = {x = .Center},

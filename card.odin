@@ -650,11 +650,6 @@ find_upgrade_options :: proc(gs: ^Game_State, card_id: Card_ID) -> (out: [2]Card
     return
 }
 
-get_ui_card_slice :: proc(gs: ^Game_State, player_id: Player_ID) -> []UI_Element {
-    if len(gs.ui_stack[.Cards]) < 5 * (player_id + 1) do return {}
-    return gs.ui_stack[.Cards][5 * player_id:][:5]
-}
-
 remove_effect_support :: proc(gs: ^Game_State, card: ^Card) {
     if card.active == .None do return
     effect := &gs.ongoing_active_effects[card.active]

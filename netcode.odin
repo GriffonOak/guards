@@ -208,6 +208,8 @@ _thread_host_wait_for_clients :: proc(gs: ^Game_State, sock: net.TCP_Socket) {
             }
 
             send_network_packet_socket(client_socket, {0, Set_Client_Player_ID{client_player.id}})
+            send_network_packet_socket(client_socket, {0, Event(Set_Previews_Enabled_Event{gs.enable_full_previews })})
+            send_network_packet_socket(client_socket, {0, Event(Set_Game_Length_Event{gs.game_length})})
 
         }
 	}

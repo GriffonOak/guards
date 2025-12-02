@@ -26,6 +26,15 @@ Change_Hero_Event :: struct {
 Change_Team_Event :: struct {
     player_id: Player_ID,
 }
+
+Set_Previews_Enabled_Event :: struct {
+    previews_enabled: bool,
+}
+
+Set_Game_Length_Event :: struct {
+    length: Game_Length,
+}
+
 Begin_Game_Event :: struct {}
 
 Space_Hovered_Event :: struct {
@@ -192,6 +201,8 @@ Event :: union {
     Enter_Lobby_Event,
     Change_Hero_Event,
     Change_Team_Event,
+    Set_Previews_Enabled_Event,
+    Set_Game_Length_Event,
     Begin_Game_Event,
     
     Space_Hovered_Event,
@@ -283,7 +294,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Enter_Lobby_Event:
         gs.screen = .In_Lobby
-        clear(&gs.ui_stack[.Buttons])
         if gs.is_host {
             gs.tooltip = "Wait for players to join, then begin the game."
         } else {
@@ -299,12 +309,22 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         player := get_player_by_id(gs, var.player_id)
         player.hero.id = var.hero_id
 
+    case Set_Previews_Enabled_Event:
+        gs.enable_full_previews = var.previews_enabled
+
+    case Set_Game_Length_Event:
+        gs.game_length = var.length
+
     case Begin_Game_Event:
         gs.screen = .In_Game
         gs.current_battle_zone = .Centre
-        gs.wave_counters = 5
-        gs.life_counters[.Red] = 6
-        gs.life_counters[.Blue] = 6
+    
+        gs.max_wave_counters = get_max_wave_counters(gs.game_length)
+        gs.max_life_counters = get_max_life_counters(gs, gs.game_length)
+
+        gs.wave_counters = gs.max_wave_counters
+        gs.life_counters[.Red] = gs.max_life_counters
+        gs.life_counters[.Blue] = gs.max_life_counters
 
         spawn_heroes_at_start(gs)
 
@@ -420,7 +440,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             }
 
         case .Upgrading:
-
             #partial switch var.card.state {
             case .In_Deck:
                 if !card_is_valid_upgrade_option(gs, var.card) do break
@@ -428,6 +447,11 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                     id = var.card.id,
                     state = .In_Hand,
                 }
+
+                alternate := var.card
+                alternate.alternate = !alternate.alternate
+                my_player.hero.items[my_player.hero.item_count] = alternate
+                my_player.hero.item_count += 1
 
                 my_player.hero.remaining_upgrades -= 1
                 if my_player.hero.remaining_upgrades == 0 {
@@ -475,8 +499,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             }
 
         case .Upgrading:
-            pop(&gs.ui_stack[.Cards])
-            pop(&gs.ui_stack[.Cards])
             clear_side_buttons(gs)
         }
 
@@ -1334,7 +1356,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case End_Of_Turn_Event:
         log.assert(gs.is_host, "Clients should not be resolving end of turn")
-
         
         // Start any extra actions from end of turn effects
         // @Todo in the future we need to care more about the order in which end of turn effects take place

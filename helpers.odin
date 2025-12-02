@@ -327,10 +327,10 @@ effect_timing_valid :: proc(gs: ^Game_State, timing: Effect_Timing, calc_context
 }
 
 card_is_valid_upgrade_option :: proc(gs: ^Game_State, card: Card) -> bool {
-    if card.owner_id != gs.my_player_id do return false
+    my_hero := get_my_player(gs).hero
+    if card.hero_id != my_hero.id do return false
     if card.color == .Gold || card.color == .Silver || card.state != .In_Deck do return false
     lowest_tier: int = 1e6
-    my_hero := get_my_player(gs).hero
     for other_card in my_hero.cards {
         if other_card.tier == 0 do continue
         lowest_tier = min(lowest_tier, other_card.tier)
@@ -338,4 +338,17 @@ card_is_valid_upgrade_option :: proc(gs: ^Game_State, card: Card) -> bool {
     if my_hero.cards[card.color].tier != lowest_tier do return false
     if lowest_tier == 3 || card.tier != lowest_tier + 1 do return false
     return true
+}
+
+get_max_wave_counters :: proc(length: Game_Length) -> int{
+    return 3 if length == .Quick else 5
+}
+
+get_max_life_counters :: proc(gs: ^Game_State, length: Game_Length) -> int {
+    num_players := len(gs.players)
+    if length == .Quick {
+        return 4 if num_players <= 4 else 5
+    } else {
+        return 6 if num_players <= 4 else 8
+    }
 }

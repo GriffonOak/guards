@@ -115,11 +115,6 @@ add_or_update_player :: proc(gs: ^Game_State, player_base: Player_Base) {
         resize(&gs.players, player_base.id + 1)
     }
     gs.players[player_base.id].base = player_base
-    slice := get_ui_card_slice(gs, player_base.id)
-    for &element in slice {
-        card_element := assert_variant(&element.variant, UI_Card_Element)
-        card_element.card_id = player_base.hero.cards[card_element.card_id.color]
-    }
 }
 
 get_username :: proc(gs: ^Game_State, player_id: Player_ID) -> cstring {

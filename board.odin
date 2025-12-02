@@ -467,8 +467,8 @@ render_board :: proc(gs: ^Game_State, bounding_rect: Rectangle, board_element: B
     WAVE_COUNTER_RADIUS := 0.4 * VERTICAL_SPACING
     WAVE_COUNTER_BORDER_THICKNESS := 0.15 * VERTICAL_SPACING
 
-    for wave_counter_index in 0..<5 {
-        angle: f32 = math.TAU / 8 - math.TAU / 6  // @Magic
+    for wave_counter_index in 0..<gs.max_wave_counters {
+        angle: f32 = math.TAU / 8 - math.TAU / 6 + (math.TAU / (3 * 4) if gs.game_length == .Quick else 0)// @Magic
         angle += f32(wave_counter_index) * math.TAU / (3 * 4)
         wave_counter_position := tiebreaker_coin_position + (TIEBREAKER_COIN_RADIUS + VERTICAL_SPACING) * Vec2{math.cos_f32(angle), math.sin_f32(angle)}
         color := clay_to_raylib_color(PALETTE[.White]) if wave_counter_index < gs.wave_counters else clay_to_raylib_color(PALETTE[.Mid_Gray])
@@ -478,7 +478,7 @@ render_board :: proc(gs: ^Game_State, bounding_rect: Rectangle, board_element: B
 
     for team in Team {
         // Draw life counters 
-        for life_counter_index in 0..<6 {
+        for life_counter_index in 0..<gs.max_life_counters {
             LIFE_COUNTER_RADIUS := VERTICAL_SPACING / 3
             LIFE_COUNTER_PADDING := VERTICAL_SPACING / 6.7
             life_counter_position := Vec2{0, bounding_rect.height} + {LIFE_COUNTER_RADIUS, -LIFE_COUNTER_RADIUS} + {LIFE_COUNTER_PADDING, -LIFE_COUNTER_PADDING}

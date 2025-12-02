@@ -241,6 +241,11 @@ Action_Value :: struct {
     variant: Action_Value_Variant,
 }
 
+Game_Length :: enum {
+    Long,
+    Quick,
+}
+
 
 Game_State :: struct {
     players: [dynamic]Player,  // @Note: Might be better to use sa or fixed array here so entries don't move around (problem for username strings)
@@ -255,6 +260,12 @@ Game_State :: struct {
     turn_counter: int,
 
     enable_full_previews: bool,
+
+    game_length: Game_Length,
+
+    max_wave_counters: int,
+    max_life_counters: int,
+
     wave_counters: int,
     life_counters: [Team]int,
 
@@ -273,7 +284,6 @@ Game_State :: struct {
     
     tooltip: Tooltip,
 
-    ui_stack: [UI_Domain][dynamic]UI_Element,
     toasts: [dynamic]Toast,
 
     side_button_manager: Side_Button_Manager,

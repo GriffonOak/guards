@@ -2,6 +2,7 @@ package guards
 
 import clay "clay-odin"
 import "core:reflect"
+import "core:fmt"
 
 
 hero_bar_scroll_offset: f32
@@ -115,7 +116,7 @@ clay_lobby_player_sidebar :: proc(gs: ^Game_State, team: Team) {
             my_team := get_my_player(gs).team
             if team == .Blue {
                 if change_button(button_id, team, my_team == team) {
-                    append(&gs.event_queue, Change_Team_Event{gs.my_player_id})
+                    broadcast_game_event(gs, Change_Team_Event{gs.my_player_id})
                 }
                 if clay.UI()({layout = {sizing = {width = clay.SizingGrow()}}}) {}
             }
@@ -129,7 +130,7 @@ clay_lobby_player_sidebar :: proc(gs: ^Game_State, team: Team) {
             if team == .Red {
                 if clay.UI()({layout = {sizing = {width = clay.SizingGrow()}}}) {}
                 if change_button(button_id, team, my_team == team) {
-                    append(&gs.event_queue, Change_Team_Event{gs.my_player_id})
+                    broadcast_game_event(gs, Change_Team_Event{gs.my_player_id})
                 }
             }
         }
@@ -347,56 +348,245 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
 
         if clay.UI()({  // Host controls
             layout = {
-                layoutDirection = .TopToBottom,
+                layoutDirection = .LeftToRight,
                 sizing = {
                     width = clay.SizingGrow(),
                     height = clay.SizingFit(),
                 },
                 padding = clay.PaddingAll(scaled_padding),
                 childGap = scaled_padding,
+                childAlignment = {
+                    y = .Bottom,
+                }
             },
             backgroundColor = PALETTE[.Dark_Gray],
             cornerRadius = clay.CornerRadiusAll(f32(scaled_large_corner_radius)),
         }) {
-            clay.TextDynamic("Game Setup" if gs.is_host else "Game Setup (Host only)", clay.TextConfig({
-                fontId = FONT_PALETTE[.Default_Semibold],
-                fontSize = u16(scaled_info_font_size),
-                textColor = PALETTE[.Mid_Gray],
-            }))
 
             if clay.UI()({
                 layout = {
-                    layoutDirection = .LeftToRight,
-                    sizing = SIZING_GROW,
+                    layoutDirection = .TopToBottom,
+                    childAlignment = {x = .Center},
                 },
             }) {
+
+                clay.Text("Game length", clay.TextConfig({
+                    fontId = FONT_PALETTE[.Default_Semibold],
+                    fontSize = scaled_tooltip_font_size,
+                    textColor = PALETTE[.Mid_Gray],
+                }))
+
                 if clay.UI()({
                     layout = {
-                        sizing = {
-                            width = clay.SizingFit(),
-                            height = clay.SizingGrow(),
-                        },
+                        childGap = scaled_border,
                     },
                 }) {
-                    clay_toggle(
-                        clay.ID("enable_preview_toggle"),
-                        &gs.enable_full_previews,
-                        "Enable full previews",
-                    )
+                    if clay.UI()({
+                        layout = {
+                            layoutDirection = .TopToBottom,
+                            padding = clay.PaddingAll(scaled_border),
+                            childGap = 2 * scaled_border,
+                        },
+                    }) {
+                        if clay.UI()({
+                            layout = {sizing = {height = clay.SizingFixed(f32(scaled_info_font_size - 2 * scaled_border))}},
+                        }) {}
+
+                        game_length_radio_string := "game_length_radio_button"
+                        if clay_button(clay.ID(game_length_radio_string, 0), 
+                            sizing = clay.Sizing {
+                                clay.SizingFixed(f32(scaled_info_font_size - 2 * scaled_border)),
+                                clay.SizingFixed(f32(scaled_info_font_size - 2 * scaled_border)),
+                            },
+                            icon = .Dot if gs.game_length == .Quick else nil,
+                            disabled = !gs.is_host,
+                        ) {
+                            broadcast_game_event(gs, Set_Game_Length_Event{.Quick})
+                        }
+
+                        if clay_button(clay.ID(game_length_radio_string, 1), 
+                            sizing = clay.Sizing {
+                                clay.SizingFixed(f32(scaled_info_font_size - 2 * scaled_border)),
+                                clay.SizingFixed(f32(scaled_info_font_size - 2 * scaled_border)),
+                            },
+                            icon = .Dot if gs.game_length == .Long else nil,
+                            disabled = !gs.is_host,
+                        ) {
+                            broadcast_game_event(gs, Set_Game_Length_Event{.Long})
+                        }
+                    }
+                            
+                    if clay.UI()({
+                        layout = {
+                            layoutDirection = .TopToBottom,
+                            childAlignment = {x = .Center, y = .Center},
+                        },
+                    }) {
+                        if clay.UI()({
+                            layout = {sizing = {height = clay.SizingFixed(f32(scaled_info_font_size))}},
+                        }) {}
+                        clay.Text("Quick", clay.TextConfig({
+                            fontId = FONT_PALETTE[.Default_Regular],
+                            fontSize = scaled_info_font_size,
+                            textColor = PALETTE[.Mid_Gray],
+                        }))
+                        clay.Text("Full", clay.TextConfig({
+                            fontId = FONT_PALETTE[.Default_Regular],
+                            fontSize = scaled_info_font_size,
+                            textColor = PALETTE[.Mid_Gray],
+                        }))
+                    }
+
+                    if clay.UI()({
+                        layout = {
+                            layoutDirection = .TopToBottom,
+                            childAlignment = {
+                                x = .Center,
+                            },
+                        },
+                    }) {
+                        clay.Text("Waves", clay.TextConfig({
+                            fontId = FONT_PALETTE[.Default_Regular],
+                            fontSize = scaled_info_font_size,
+                            textColor = PALETTE[.Mid_Gray],
+                        }))
+    
+                        clay.TextDynamic(fmt.tprintf("%v", get_max_wave_counters(.Quick)), clay.TextConfig({
+                            fontId = FONT_PALETTE[.Default_Regular],
+                            fontSize = scaled_info_font_size,
+                            textColor = PALETTE[.Mid_Gray],
+                        }))
+    
+                        clay.TextDynamic(fmt.tprintf("%v", get_max_wave_counters(.Long)), clay.TextConfig({
+                            fontId = FONT_PALETTE[.Default_Regular],
+                            fontSize = scaled_info_font_size,
+                            textColor = PALETTE[.Mid_Gray],
+                        }))
+                    }
+
+                    if clay.UI()({
+                        layout = {
+                            sizing = {width = clay.SizingFixed(f32(scaled_border))},
+                        },
+                    }) {}
+
+                    if clay.UI()({
+                        layout = {
+                            layoutDirection = .TopToBottom,
+                            childAlignment = {
+                                x = .Center,
+                            },
+                        },
+                    }) {
+                        clay.Text("Lives", clay.TextConfig({
+                            fontId = FONT_PALETTE[.Default_Regular],
+                            fontSize = scaled_info_font_size,
+                            textColor = PALETTE[.Mid_Gray],
+                        }))
+    
+                        clay.TextDynamic(fmt.tprintf("%v", get_max_life_counters(gs, .Quick)), clay.TextConfig({
+                            fontId = FONT_PALETTE[.Default_Regular],
+                            fontSize = scaled_info_font_size,
+                            textColor = PALETTE[.Mid_Gray],
+                        }))
+    
+                        clay.TextDynamic(fmt.tprintf("%v", get_max_life_counters(gs, .Long)), clay.TextConfig({
+                            fontId = FONT_PALETTE[.Default_Regular],
+                            fontSize = scaled_info_font_size,
+                            textColor = PALETTE[.Mid_Gray],
+                        }))
+                    }
+
+                    if clay.UI()({
+                        layout = {
+                            sizing = {width = clay.SizingFixed(f32(scaled_border))},
+                        },
+                    }) {}
+
+                    // if clay.UI()({
+                    //     layout = {
+                    //         layoutDirection = .TopToBottom,
+                    //         childAlignment = {
+                    //             x = .Center,
+                    //         },
+                    //     },
+                    // }) {
+                    //     clay.Text("Lives(5+)", clay.TextConfig({
+                    //         fontId = FONT_PALETTE[.Default_Regular],
+                    //         fontSize = scaled_info_font_size,
+                    //         textColor = PALETTE[.Mid_Gray],
+                    //     }))
+    
+                    //     clay.Text("5", clay.TextConfig({
+                    //         fontId = FONT_PALETTE[.Default_Regular],
+                    //         fontSize = scaled_info_font_size,
+                    //         textColor = PALETTE[.Mid_Gray],
+                    //     }))
+    
+                    //     clay.Text("8", clay.TextConfig({
+                    //         fontId = FONT_PALETTE[.Default_Regular],
+                    //         fontSize = scaled_info_font_size,
+                    //         textColor = PALETTE[.Mid_Gray],
+                    //     }))
+                    // }
                 }
+            }
 
-                if clay.UI()({
-                    layout = {
-                        sizing = SIZING_GROW,
+            if clay.UI()({
+                layout = {
+                    sizing = {
+                        width = clay.SizingFixed(f32(scaled_border)),
+                        height = clay.SizingGrow(),
                     },
-                }) {}
+                },
+                cornerRadius = clay.CornerRadiusAll(0.5 * f32(scaled_border)),
+                backgroundColor = PALETTE[.Mid_Gray],
+            }) {}
 
-                if clay_button(
-                    clay.ID("begin_game_button"), "Begin Game",
+            if clay.UI()({
+                layout = {
+                    sizing = {
+                        width = clay.SizingFit(),
+                        height = clay.SizingGrow(),
+                    },
+                    layoutDirection = .TopToBottom,
+                    childAlignment = {x = .Center},
+                },
+            }) {
+                clay.Text("Settings", clay.TextConfig({
+                    fontId = FONT_PALETTE[.Default_Semibold],
+                    fontSize = scaled_tooltip_font_size,
+                    textColor = PALETTE[.Mid_Gray],
+                }))
+
+                if clay_toggle(
+                    clay.ID("enable_preview_toggle"),
+                    &gs.enable_full_previews,
+                    "Enable full previews",
                     disabled = !gs.is_host,
                 ) {
-                    broadcast_game_event(gs, Begin_Game_Event{})
+                    broadcast_game_event(gs, Set_Previews_Enabled_Event{gs.enable_full_previews})
                 }
+            }
+
+            if clay.UI()({
+                layout = {
+                    sizing = SIZING_GROW,
+                },
+            }) {}
+
+            if clay_button(
+                clay.ID("begin_game_button"), "Begin Game",
+                disabled = !gs.is_host,
+                idle_background_color = PALETTE[.Card_Green],
+                active_background_color = PALETTE[.Mid_Green],
+                idle_text_color = PALETTE[.Dark_Green],
+                strikethrough = Strikethrough_Config {
+                    offset = true,
+                    proportion = 0.97,
+                },
+            ) {
+                broadcast_game_event(gs, Begin_Game_Event{})
             }
         }
     }
