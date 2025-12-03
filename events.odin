@@ -27,8 +27,8 @@ Change_Team_Event :: struct {
     player_id: Player_ID,
 }
 
-Set_Previews_Enabled_Event :: struct {
-    previews_enabled: bool,
+Set_Preview_Mode_Event :: struct {
+    preview_mode: Preview_Mode,
 }
 
 Set_Game_Length_Event :: struct {
@@ -201,7 +201,7 @@ Event :: union {
     Enter_Lobby_Event,
     Change_Hero_Event,
     Change_Team_Event,
-    Set_Previews_Enabled_Event,
+    Set_Preview_Mode_Event,
     Set_Game_Length_Event,
     Begin_Game_Event,
     
@@ -293,8 +293,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         add_or_update_player(gs, var.player_base)
 
     case Enter_Lobby_Event:
-        gs.screen = .In_Lobby
+        gs.screen = .Lobby
         if gs.is_host {
+            gs.game_length = .Long
             gs.tooltip = "Wait for players to join, then begin the game."
         } else {
             gs.tooltip = "Wait for the host to begin the game."
@@ -305,18 +306,18 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         player.team = .Red if player.team == .Blue else .Blue
 
     case Change_Hero_Event:
-        log.assert(gs.screen == .In_Lobby, "Tried to change hero outside of lobby!")
+        log.assert(gs.screen == .Lobby, "Tried to change hero outside of lobby!")
         player := get_player_by_id(gs, var.player_id)
         player.hero.id = var.hero_id
 
-    case Set_Previews_Enabled_Event:
-        gs.enable_full_previews = var.previews_enabled
+    case Set_Preview_Mode_Event:
+        gs.preview_mode = var.preview_mode
 
     case Set_Game_Length_Event:
         gs.game_length = var.length
 
     case Begin_Game_Event:
-        gs.screen = .In_Game
+        gs.screen = .Game
         gs.current_battle_zone = .Centre
     
         gs.max_wave_counters = get_max_wave_counters(gs.game_length)

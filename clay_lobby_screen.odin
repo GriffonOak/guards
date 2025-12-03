@@ -357,7 +357,7 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                 childGap = scaled_padding,
                 childAlignment = {
                     y = .Bottom,
-                }
+                },
             },
             backgroundColor = PALETTE[.Dark_Gray],
             cornerRadius = clay.CornerRadiusAll(f32(scaled_large_corner_radius)),
@@ -378,63 +378,23 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
 
                 if clay.UI()({
                     layout = {
-                        childGap = scaled_border,
+                        childGap = 2 * scaled_border,
+                        childAlignment = {
+                            y = .Bottom,
+                        },
                     },
                 }) {
-                    if clay.UI()({
-                        layout = {
-                            layoutDirection = .TopToBottom,
-                            padding = clay.PaddingAll(scaled_border),
-                            childGap = 2 * scaled_border,
-                        },
-                    }) {
-                        if clay.UI()({
-                            layout = {sizing = {height = clay.SizingFixed(f32(scaled_info_font_size - 2 * scaled_border))}},
-                        }) {}
 
-                        game_length_radio_string := "game_length_radio_button"
-                        if clay_button(clay.ID(game_length_radio_string, 0), 
-                            sizing = clay.Sizing {
-                                clay.SizingFixed(f32(scaled_info_font_size - 2 * scaled_border)),
-                                clay.SizingFixed(f32(scaled_info_font_size - 2 * scaled_border)),
-                            },
-                            icon = .Dot if gs.game_length == .Quick else nil,
-                            disabled = !gs.is_host,
-                        ) {
-                            broadcast_game_event(gs, Set_Game_Length_Event{.Quick})
-                        }
-
-                        if clay_button(clay.ID(game_length_radio_string, 1), 
-                            sizing = clay.Sizing {
-                                clay.SizingFixed(f32(scaled_info_font_size - 2 * scaled_border)),
-                                clay.SizingFixed(f32(scaled_info_font_size - 2 * scaled_border)),
-                            },
-                            icon = .Dot if gs.game_length == .Long else nil,
-                            disabled = !gs.is_host,
-                        ) {
-                            broadcast_game_event(gs, Set_Game_Length_Event{.Long})
-                        }
-                    }
-                            
-                    if clay.UI()({
-                        layout = {
-                            layoutDirection = .TopToBottom,
-                            childAlignment = {x = .Center, y = .Center},
+                    if result, updated := clay_radio_button(
+                        "game_length_radio",
+                        gs.game_length,
+                        [Game_Length]string {
+                            .Quick = "Quick",
+                            .Long = "Long",
                         },
-                    }) {
-                        if clay.UI()({
-                            layout = {sizing = {height = clay.SizingFixed(f32(scaled_info_font_size))}},
-                        }) {}
-                        clay.Text("Quick", clay.TextConfig({
-                            fontId = FONT_PALETTE[.Default_Regular],
-                            fontSize = scaled_info_font_size,
-                            textColor = PALETTE[.Mid_Gray],
-                        }))
-                        clay.Text("Full", clay.TextConfig({
-                            fontId = FONT_PALETTE[.Default_Regular],
-                            fontSize = scaled_info_font_size,
-                            textColor = PALETTE[.Mid_Gray],
-                        }))
+                        disabled = !gs.is_host,
+                    ); updated {
+                        broadcast_game_event(gs, Set_Game_Length_Event{result})
                     }
 
                     if clay.UI()({
@@ -502,33 +462,6 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                             sizing = {width = clay.SizingFixed(f32(scaled_border))},
                         },
                     }) {}
-
-                    // if clay.UI()({
-                    //     layout = {
-                    //         layoutDirection = .TopToBottom,
-                    //         childAlignment = {
-                    //             x = .Center,
-                    //         },
-                    //     },
-                    // }) {
-                    //     clay.Text("Lives(5+)", clay.TextConfig({
-                    //         fontId = FONT_PALETTE[.Default_Regular],
-                    //         fontSize = scaled_info_font_size,
-                    //         textColor = PALETTE[.Mid_Gray],
-                    //     }))
-    
-                    //     clay.Text("5", clay.TextConfig({
-                    //         fontId = FONT_PALETTE[.Default_Regular],
-                    //         fontSize = scaled_info_font_size,
-                    //         textColor = PALETTE[.Mid_Gray],
-                    //     }))
-    
-                    //     clay.Text("8", clay.TextConfig({
-                    //         fontId = FONT_PALETTE[.Default_Regular],
-                    //         fontSize = scaled_info_font_size,
-                    //         textColor = PALETTE[.Mid_Gray],
-                    //     }))
-                    // }
                 }
             }
 
@@ -550,22 +483,26 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                         height = clay.SizingGrow(),
                     },
                     layoutDirection = .TopToBottom,
-                    childAlignment = {x = .Center},
+                    // childAlignment = {x = .Center},
                 },
             }) {
-                clay.Text("Settings", clay.TextConfig({
+                clay.Text("Preview Mode", clay.TextConfig({
                     fontId = FONT_PALETTE[.Default_Semibold],
                     fontSize = scaled_tooltip_font_size,
                     textColor = PALETTE[.Mid_Gray],
                 }))
 
-                if clay_toggle(
-                    clay.ID("enable_preview_toggle"),
-                    &gs.enable_full_previews,
-                    "Enable full previews",
+                if result, updated := clay_radio_button(
+                    "deck_preview_radio",
+                    gs.preview_mode,
+                    [Preview_Mode]string {
+                        .Self_Only = "Self only",
+                        .Partial = "Partial",
+                        .Full = "Full",
+                    },
                     disabled = !gs.is_host,
-                ) {
-                    broadcast_game_event(gs, Set_Previews_Enabled_Event{gs.enable_full_previews})
+                ); updated {
+                    broadcast_game_event(gs, Set_Preview_Mode_Event{result})
                 }
             }
 

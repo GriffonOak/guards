@@ -27,9 +27,9 @@ Team :: enum {
 }
 
 Game_Screen :: enum {
-    Pre_Lobby,
-    In_Lobby,
-    In_Game,
+    Title,
+    Lobby,
+    Game,
 }
 
 Game_Stage :: enum {
@@ -242,8 +242,14 @@ Action_Value :: struct {
 }
 
 Game_Length :: enum {
-    Long,
     Quick,
+    Long,
+}
+
+Preview_Mode :: enum {
+    Self_Only,
+    Partial,
+    Full,
 }
 
 
@@ -259,7 +265,7 @@ Game_State :: struct {
     upgraded_players: int,
     turn_counter: int,
 
-    enable_full_previews: bool,
+    preview_mode: Preview_Mode,
 
     game_length: Game_Length,
 

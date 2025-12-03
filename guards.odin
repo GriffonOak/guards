@@ -239,7 +239,7 @@ main :: proc() {
 
     gs: Game_State = {
         confirmed_players = 0,
-        screen = .Pre_Lobby,
+        screen = .Title,
         tooltip = "Choose to host a game or join a game.",
     }
 

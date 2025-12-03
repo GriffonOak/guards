@@ -51,7 +51,7 @@ test_basic_setup :: proc(t: ^testing.T) {
 
     testing_process_events(&gs, events)
 
-    testing.expect(t, gs.screen == .In_Lobby)
+    testing.expect(t, gs.screen == .Lobby)
     testing.expect(t, len(gs.players) == 1)
 }
 
