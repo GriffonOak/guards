@@ -495,7 +495,7 @@ setup_hero_cards :: proc(gs: ^Game_State) {
                     enum_name,
                     "_alt" if card.alternate else "",
                 )
-                fmt.println(card_filename)
+                // fmt.println(card_filename)
                 for file in assets {
                     if file.name == card_filename {
                         image := load_image_from_memory(".png", raw_data(file.data), i32(len(file.data)))

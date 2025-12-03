@@ -207,14 +207,14 @@ main :: proc() {
     }
 
     // set_config_flags({.WINDOW_TOPMOST})
-    // set_trace_log_level(.NONE)
+    set_trace_log_level(.NONE)
     set_config_flags({.MSAA_4X_HINT, .WINDOW_RESIZABLE, .WINDOW_MAXIMIZED})
     clay_setup()
     init_window(i32(STARTING_WIDTH), i32(STARTING_HEIGHT), "Guards")
-    // toggle_borderless_windowed()
+    toggle_borderless_windowed()
     
     // fmt.println(get_window_scale_dpi())
-    scaled_border = 3 * u16(get_window_scale_dpi().x)
+    scaled_border = 3 * u16(get_window_scale_dpi().x) - 1
     fmt.println(scaled_border)
     defer close_window()
 
