@@ -221,7 +221,7 @@ clay_measure_text :: proc "c" (
     return transmute(clay.Dimensions) measure_text_ex(font, text_cstring, text_font_size, text_spacing)
 }
 
-clay_button_logic :: proc(element_id: clay.ElementId) -> (result, hot, active: bool) {
+clay_button_logic :: proc(element_id: clay.ElementId, associated_key: Keyboard_Key = .KEY_NULL) -> (result, hot, active: bool) {
     hot = hot_element_id.id == element_id.id
     active = active_element_id.id == element_id.id
 
@@ -232,12 +232,14 @@ clay_button_logic :: proc(element_id: clay.ElementId) -> (result, hot, active: b
             }
             active_element_id = {}
             active = false
+        } else if ba.get(&ui_state.keys_released_this_frame, uint(associated_key)) {
+            result = true
+            active_element_id = {}
+            active = false
         }
-    } else if hot {
-        if .LEFT in ui_state.pressed_this_frame {
-            active_element_id = element_id
-            active = true
-        }
+    } else if hot && .LEFT in ui_state.pressed_this_frame || ba.get(&ui_state.keys_pressed_this_frame, uint(associated_key)) {
+        active_element_id = element_id
+        active = true
     }
 
     if clay.PointerOver(element_id) {
@@ -368,12 +370,14 @@ clay_button :: proc(
     corner_radius: Maybe(f32) = nil,
     border_width: Maybe(u16) = nil,
     strikethrough: Maybe(Strikethrough_Config) = nil,
+    associated_key: Keyboard_Key = .KEY_NULL,
+    font_size: Maybe(u16) = nil,
 ) -> (result: bool) {
 
 
     button_hot, button_active: bool
     if !disabled {
-        result, button_hot, button_active = clay_button_logic(button_id)
+        result, button_hot, button_active = clay_button_logic(button_id, associated_key)
     }
 
     active_background_color := active_background_color.? or_else PALETTE[.Mid_Gray]
@@ -389,6 +393,8 @@ clay_button :: proc(
     text_color := active_background_color if disabled else active_text_color if button_active else idle_text_color
 
     padding := padding.? or_else clay.PaddingAll(scaled_border + scaled_padding)
+
+    font_size := font_size.? or_else scaled_button_font_size
 
     button_data := clay.GetElementData(button_id)
 
@@ -432,7 +438,7 @@ clay_button :: proc(
         if image != nil {
             height := button_data.boundingBox.height - f32(padding.top + padding.bottom)
             if text != "" {
-                height = f32(scaled_button_font_size)
+                height = f32(font_size)
             }
             aspect_ratio := f32(image.width) / f32(image.height)
             if clay.UI()({
@@ -457,7 +463,7 @@ clay_button :: proc(
             clay.TextDynamic(text, clay.TextConfig({
                 textColor = text_color,
                 fontId = FONT_PALETTE[.Default_Regular],
-                fontSize = u16(scaled_button_font_size),
+                fontSize = u16(font_size),
             }))
             if image != nil {
                 if clay.UI()({
@@ -509,7 +515,7 @@ clay_card_element :: proc(
 ) {
     card_id_string := fmt.tprintf("%v", card.id)
     card_clay_id := clay.ID(card_id_string, u32(card.state))
-    card_data, _ := get_card_data_by_id(gs, card.id)
+    card_data, _ := get_card_data_by_id(card.id)
 
     card_should_be_hidden := gs.stage == .Selection && card.owner_id != gs.my_player_id && card.state == .Played
     card_should_be_preview := gs.preview_mode == .Partial && card.hero_id != get_my_player(gs).hero.id && card.state == .In_Deck
@@ -652,31 +658,35 @@ clay_card_element :: proc(
     }
 }
 
+Rune_Set :: map[rune]struct{}
+
 clay_text_box :: proc(
     text_box_id: clay.ElementId,
     text_box: ^UI_Text_Box_Element,
+    allowed_characters: Rune_Set,
+    max_length: int,
     sizing: Maybe(clay.Sizing) = nil,
     corner_radius: Maybe(f32) = nil,
 ) {
+    single_character_width := measure_text_ex(game_fonts[Font_ID(FONT_PALETTE[.Monospace])], "_", f32(scaled_button_font_size), 0).x
     text_box_active := text_box_id.id == active_element_id.id
     text_box_hot := text_box_id.id == hot_element_id.id
     if clay.UI(id = text_box_id)({
         layout = {
             sizing = sizing.? or_else {
-                width = clay.SizingFixed(f32(scaled_button_width)),
+                width = clay.SizingFit(),
                 height = clay.SizingFit(),
             },
             padding = clay.PaddingAll(scaled_padding),
         },
         backgroundColor = PALETTE[.Black],
         border = {
-            color = PALETTE[.White],
+            color = PALETTE[.White] if text_box_hot else PALETTE[.Light_Gray],
             width = clay.BorderOutside(scaled_border),
         },
         cornerRadius = clay.CornerRadiusAll(corner_radius.? or_else f32(scaled_large_corner_radius)),
     }) {
         bounding_box := clay.GetElementData(text_box_id).boundingBox
-        single_character_width := measure_text_ex(game_fonts[.Inconsolata], "_", f32(scaled_button_font_size), 0).x
         mouse_pos := ui_state.mouse_pos
 
         // Mouse input
@@ -709,7 +719,8 @@ clay_text_box :: proc(
             iterator := ba.make_iterator(&ui_state.keys_pressed_this_frame)
             for key_idx in ba.iterate_by_set(&iterator) {
                 key := Keyboard_Key(key_idx)
-                #partial switch key {
+                ba.unset(&ui_state.keys_pressed_this_frame, key_idx)
+                check_key: #partial switch key {
                 case .BACKSPACE:
                     if text_box.cursor_index <= 0 do break
                     sa.ordered_remove(&text_box.field, text_box.cursor_index - 1)
@@ -727,47 +738,59 @@ clay_text_box :: proc(
                     text_box.last_click_time = get_time()
                 case .V:
                     if !ba.get(&ui_state.keyboard_state, uint(Keyboard_Key.LEFT_CONTROL)) && !ba.get(&ui_state.keyboard_state, uint(Keyboard_Key.RIGHT_CONTROL)) do break
-                    clipboard := cast([^]u8) get_clipboard_text()
+                    clipboard_text := get_clipboard_text()
+                    if len(clipboard_text) + sa.len(text_box.field) > max_length {
+                        break
+                    }
+                    clipboard := cast([^]u8) clipboard_text
+                    for i := 0; clipboard[i] != 0; i += 1 {
+                        char := clipboard[i]
+                        if rune(char) not_in allowed_characters {
+                            break check_key
+                        }
+                    }
                     for i := 0 ; clipboard[i] != 0; i += 1 {
                         if !sa.inject_at(&text_box.field, clipboard[i], text_box.cursor_index) {
                             break
                         }
                         text_box.cursor_index += 1
                     }
+                case:
+                    ba.set(&ui_state.keys_pressed_this_frame, key_idx)
                 }
             }
 
-            switch ui_state.char_pressed_this_frame {
-            case '0'..='9', '.':
-                if sa.inject_at(&text_box.field, u8(ui_state.char_pressed_this_frame), text_box.cursor_index) {
+            current_char := ui_state.char_pressed_this_frame
+            if sa.len(text_box.field) < max_length && current_char in allowed_characters {
+                ui_state.char_pressed_this_frame = 0
+                if sa.inject_at(&text_box.field, u8(current_char), text_box.cursor_index) {
                     text_box.cursor_index += 1
                 }
             }
         }
 
-        if text_box_active || sa.len(text_box.field) > 0 {
-            clay.TextDynamic(string(sa.slice(&text_box.field)), clay.TextConfig({
-                fontId = FONT_PALETTE[.Monospace],
-                textColor = PALETTE[.White],
-                fontSize = scaled_button_font_size,
-            }))
-        } else {
-            clay.TextDynamic(text_box.default_string, clay.TextConfig({
-                fontId = FONT_PALETTE[.Monospace],
-                textColor = PALETTE[.Light_Gray],
-                fontSize = scaled_button_font_size,
-            }))
-        }
-
-        // Prop to ensure box stays at correct height even with empty string
         if clay.UI()({
             layout = {
                 sizing = {
-                    width = clay.SizingFixed(0),
+                    width = clay.SizingFixed(f32(max_length) * single_character_width),
                     height = clay.SizingFixed(f32(scaled_button_font_size)),
                 },
             },
-        }) {}
+        }) {
+            if text_box_active || sa.len(text_box.field) > 0 {
+                clay.TextDynamic(string(sa.slice(&text_box.field)), clay.TextConfig({
+                    fontId = FONT_PALETTE[.Monospace],
+                    textColor = PALETTE[.White],
+                    fontSize = scaled_button_font_size,
+                }))
+            } else {
+                clay.TextDynamic(text_box.default_string, clay.TextConfig({
+                    fontId = FONT_PALETTE[.Monospace],
+                    textColor = PALETTE[.Mid_Gray],
+                    fontSize = scaled_button_font_size,
+                }))
+            }
+        }
 
         // Cursor
         if text_box_active {

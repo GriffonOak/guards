@@ -101,7 +101,7 @@ player_offset :: proc(gs: ^Game_State, player_id: Player_ID) -> int {
 count_hero_items :: proc(gs: ^Game_State, hero: Hero, kind: Card_Value_Kind) -> (out: int) {
     for item_index in 0..<hero.item_count {
         card_id := hero.items[item_index]
-        card_data, ok := get_card_data_by_id(gs, card_id)
+        card_data, ok := get_card_data_by_id(card_id)
         log.assert(ok, "Invalid item!")
         if card_data.item == kind do out += 1
     }

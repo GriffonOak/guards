@@ -501,7 +501,7 @@ make_arbitrary_targets :: proc (
     }
 
     if .Ignoring_Immunity not_in criteria.flags {
-        card_data, card_data_ok := get_card_data_by_id(gs, calc_context.card_id)
+        card_data, card_data_ok := get_card_data_by_id(calc_context.card_id)
         target_set_iter := make_target_set_iterator(&out)
         for info, target in target_set_iter_members(&target_set_iter) {
             if target_contains_any(gs, target, {.Immune}) {

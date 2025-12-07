@@ -123,14 +123,14 @@ Add_Global_Variable_Event :: struct {
     value: Action_Value,
 }
 
-Begin_Resolution_Stage_Event :: struct{}
+Begin_Resolution_Stage_Event :: struct {}
 
+Begin_Next_Resolution_Event :: struct {}
 Resolve_Same_Team_Tied_Event :: struct {
     team: Team,
     tied_player_ids: [5]Player_ID,
     num_ties: int,
 }
-
 Begin_Player_Resolution_Event :: struct {
     player_id: Player_ID,
 }
@@ -245,6 +245,7 @@ Event :: union {
     Card_Confirmed_Event,
 
     Begin_Resolution_Stage_Event,
+    Begin_Next_Resolution_Event,
     Resolve_Same_Team_Tied_Event,
     Begin_Player_Resolution_Event,
 
@@ -272,10 +273,9 @@ Event :: union {
 resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     log.infof("EVENT: %v", reflect.union_variant_typeid(event))
-    switch var in event {
 
+    event_switch: switch var in event {
     case Marker_Event:
-        return
 
     case Join_Network_Game_Chosen_Event:
         ip := string(sa.slice(&ip_text_box.field))
@@ -317,6 +317,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         gs.game_length = var.length
 
     case Begin_Game_Event:
+
+        add_transcript_entry(gs, Begin_Game_Entry{})
         gs.screen = .Game
         gs.current_battle_zone = .Centre
     
@@ -834,6 +836,11 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         gs.tiebreaker_coin = var.tiebreaker
         
     case Begin_Card_Selection_Event:
+        if gs.turn_counter == 0 {
+            add_transcript_entry(gs, Begin_Round_Entry{gs.round_counter})
+        }
+        add_transcript_entry(gs, Begin_Turn_Entry{gs.turn_counter})
+
         gs.stage = .Selection
         for &player in gs.players {
             player.stage = .Selecting
@@ -889,19 +896,68 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         change_card_state(gs, card, .In_Hand)
 
     case Begin_Resolution_Stage_Event:
-
-        // Unhide hidden cards
-        // for _, player_id in gs.players {
-        //     player_card, ok := find_played_card(gs, player_id)
-        //     if !ok do continue  // Player had no played card
-        //     element, _ := find_element_for_card(gs, player_card^)
-        //     card_element := &element.variant.(UI_Card_Element)
-        //     card_element.hidden = false
-        // }
-
         gs.stage = .Resolution
+
+        for player in gs.players {
+            card, ok := find_played_card(gs, player.id)
+            add_transcript_entry(gs, Card_Revealed_Entry{player.id, card.id if ok else nil})
+        }
+
+        append(&gs.event_queue, Begin_Next_Resolution_Event{})
+
+    case Begin_Next_Resolution_Event:
+
+        next_event: Event
+        tie: Resolve_Same_Team_Tied_Event
+
+        highest_initiative: int = -1e6
+        highest_player: Player
+
+        gs.initiative_tied = false
+
+        for player, player_id in gs.players {
+            player_card, ok := find_played_card(gs, player_id)
+            if !ok do continue
+
+            effective_initiative := calculate_implicit_quantity(gs, Card_Value{.Initiative}, {card_id = player_card.id})
+        
+            if effective_initiative > highest_initiative {
+                highest_initiative = effective_initiative
+                highest_player = player
+                tie = {}
+                gs.initiative_tied = false
+            } else if effective_initiative == highest_initiative {
+                if player.team != highest_player.team {
+                    gs.initiative_tied = true
+                    if player.team == gs.tiebreaker_coin {
+                        highest_initiative = effective_initiative
+                        highest_player = player
+                        tie = {}
+                    }
+                } else {
+                    if tie.num_ties == 0 {
+                        tie.team = player.team
+                        tie.tied_player_ids[0] = highest_player.id
+                        tie.tied_player_ids[1] = player_id
+                        tie.num_ties = 2
+                    } else {
+                        tie.tied_player_ids[tie.num_ties] = player_id
+                        tie.num_ties += 1
+                    }
+                }
+            }
+        }
+
+        if highest_initiative == -1e6  {
+            next_event = Resolutions_Completed_Event{}
+        } else if tie.num_ties > 0 {
+            next_event = tie
+        } else {
+            next_event = Begin_Player_Resolution_Event{highest_player.id}
+        }
+
         if gs.is_host {
-            broadcast_game_event(gs, get_next_turn_event(gs))
+            broadcast_game_event(gs, next_event)
         }
 
     case Resolve_Same_Team_Tied_Event:
@@ -1050,7 +1106,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         case Attack_Action:
             target := calculate_implicit_target(gs, action_type.target, calc_context)
             space := &gs.board[target.x][target.y]
-            card_data, ok := get_card_data_by_id(gs, action_index.card_id)
+            card_data, ok := get_card_data_by_id(action_index.card_id)
             log.assert(ok, "Could not get data for attacker's card!!")
             attack_strength := calculate_implicit_quantity(gs, action_type.strength, calc_context)
             log.infof("Attack strength: %v", attack_strength)
@@ -1309,7 +1365,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             if gs.initiative_tied {
                 broadcast_game_event(gs, Update_Tiebreaker_Event{get_enemy_team(gs.tiebreaker_coin)})
             }
-            gs.initiative_tied = false
 
             append(&gs.event_queue, Check_Minions_Outside_Zone_Event{})
         }
@@ -1346,17 +1401,15 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 Check_Minions_Outside_Zone_Event{},
             )
         } else {
-            broadcast_game_event(gs, get_next_turn_event(gs))
+            broadcast_game_event(gs, Begin_Next_Resolution_Event{})
         }
 
     case Resolutions_Completed_Event:
         gs.turn_counter += 1
-        if gs.is_host {
-            append(&gs.event_queue, End_Of_Turn_Event{})
-        }
+        append(&gs.event_queue, End_Of_Turn_Event{})
 
     case End_Of_Turn_Event:
-        log.assert(gs.is_host, "Clients should not be resolving end of turn")
+        if !gs.is_host do break
         
         // Start any extra actions from end of turn effects
         // @Todo in the future we need to care more about the order in which end of turn effects take place
@@ -1373,7 +1426,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                     action_index,
                     End_Of_Turn_Event{},
                 )
-                return
+                break event_switch
             }
         }
 
@@ -1410,7 +1463,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             }
             broadcast_game_event(gs, Begin_Minion_Battle_Event{})
         }
-
 
     case Begin_Minion_Battle_Event:
 
@@ -1570,6 +1622,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         if gs.upgraded_players == len(gs.players) {
             broadcast_game_event(gs, Update_Player_Data_Event{get_my_player(gs).base})
             gs.turn_counter = 0
+            gs.round_counter += 1
             gs.heroes_defeated_this_round = 0
             if gs.is_host {
                 broadcast_game_event(gs, Begin_Card_Selection_Event{})

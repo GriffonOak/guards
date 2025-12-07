@@ -45,6 +45,12 @@ get_frame_time :: proc() -> f32 {
     }
 }
 
+set_exit_key :: proc(key: Keyboard_Key) {
+    when !ODIN_TEST {
+        rl.SetExitKey(key)
+    }
+}
+
 get_screen_width :: proc() -> i32 {
     when !ODIN_TEST {
         return rl.GetScreenWidth()
@@ -313,9 +319,13 @@ toggle_borderless_windowed :: proc() {
     }
 }
 
-// maximize_window :: proc() {
-//     rl.MaximizeWindow()
-// }
+is_window_state :: proc(flags: Config_Flags) -> bool {
+    when !ODIN_TEST {
+        return rl.IsWindowState(flags)
+    } else {
+        return false
+    }
+}
 
 begin_drawing :: proc() {
     when !ODIN_TEST {

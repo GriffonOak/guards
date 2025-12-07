@@ -103,55 +103,6 @@ end_current_action_sequence :: proc(gs: ^Game_State) {
     }
 }
 
-get_next_turn_event :: proc(gs: ^Game_State) -> Event {
-    
-    highest_initiative: int = -1
-    highest_player: Player
-
-    gs.initiative_tied = false
-
-    tie: Resolve_Same_Team_Tied_Event
-
-    for player, player_id in gs.players {
-        player_card, ok := find_played_card(gs, player_id)
-        if !ok do continue
-
-        effective_initiative := calculate_implicit_quantity(gs, Card_Value{.Initiative}, {card_id = player_card.id})
-    
-        if effective_initiative > highest_initiative {
-            highest_initiative = effective_initiative
-            highest_player = player
-            tie = {}
-        } else if effective_initiative == highest_initiative {
-            if player.team != highest_player.team {
-                gs.initiative_tied = true
-                if player.team == gs.tiebreaker_coin {
-                    highest_initiative = effective_initiative
-                    highest_player = player  // @Note: need to consider ties between players on the same team
-                    tie = {}
-                }
-            } else {
-                if tie.num_ties == 0 {
-                    tie.team = player.team
-                    tie.tied_player_ids[0] = highest_player.id
-                    tie.tied_player_ids[1] = player_id
-                    tie.num_ties = 2
-                } else {
-                    tie.tied_player_ids[tie.num_ties] = player_id
-                    tie.num_ties += 1
-                }
-            }
-        }
-    }
-
-    if highest_initiative == -1  {
-        return Resolutions_Completed_Event{}
-    } else if tie.num_ties > 0 {
-        return tie
-    }
-    return Begin_Player_Resolution_Event{highest_player.id}
-}
-
 calculate_minion_modifiers :: proc(gs: ^Game_State) -> int {
     minion_modifiers := 0
     player := get_my_player(gs)

@@ -28,9 +28,9 @@ _ :: time
     * Garrus
     * Bain
 --- UI / UX
-    * host controls (allow full deck viewing, begin game(lol), game length)
     * Event log
     * Username input
+    * Display markers
 */
 
 /* GENERAL
@@ -206,15 +206,30 @@ main :: proc() {
         fmt.println(len(event_log))
     }
 
+    for char in '0'..='9' {
+        ip_allowed_characters[char] = {}
+        username_allowed_characters[char] = {}
+    }
+    for char in 'a'..='z' {
+        username_allowed_characters[char] = {}
+    }
+    for char in 'A'..='Z' {
+        username_allowed_characters[char] = {}
+    }
+    ip_allowed_characters['.'] = {}
+    username_allowed_characters['_'] = {}
+
     // set_config_flags({.WINDOW_TOPMOST})
     set_trace_log_level(.NONE)
     set_config_flags({.MSAA_4X_HINT, .WINDOW_RESIZABLE, .WINDOW_MAXIMIZED})
     clay_setup()
     init_window(i32(STARTING_WIDTH), i32(STARTING_HEIGHT), "Guards")
     toggle_borderless_windowed()
+    set_exit_key(.KEY_NULL)
+    // fmt.println()
     
     // fmt.println(get_window_scale_dpi())
-    scaled_border = 3 * u16(get_window_scale_dpi().x) - 1
+    scaled_border = u16(math.round(f32(get_render_width()) / 640))
     fmt.println(scaled_border)
     defer close_window()
 
@@ -240,7 +255,7 @@ main :: proc() {
     gs: Game_State = {
         confirmed_players = 0,
         screen = .Title,
-        tooltip = "Choose to host a game or join a game.",
+        tooltip = "Enter a username, then host or join a game.",
     }
 
     setup_board(&gs)
@@ -258,7 +273,18 @@ main :: proc() {
             #partial switch var in event {
             case Key_Pressed_Event:
                 #partial switch var.key {
-                case .F11: toggle_fullscreen()
+                case .F11:
+                    if is_window_state({.BORDERLESS_WINDOWED_MODE}) {
+                        new_width := get_render_width() / 2
+                        new_height := get_render_height() / 2
+                        toggle_borderless_windowed()
+                        set_window_size(new_width, new_height)
+                        scaled_border /= 2
+                        if scaled_border < 1 do scaled_border = 1
+                    } else {
+                        toggle_borderless_windowed()
+                        scaled_border *= 2
+                    }
                 case .M: add_marker(&gs)
                 case .EQUAL:
                     scaled_border = clamp(scaled_border + 1, 1, 20)

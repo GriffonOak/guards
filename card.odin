@@ -508,8 +508,9 @@ create_texture_for_card :: proc(card: ^Card_Data, preview: bool = false) {
                 },
             }) && !preview {
                 primary_value := card.values[primary_to_value[card.primary]]
-                if primary_value == 0 do break primary_icon
+                if primary_value == 0 && card.primary != .Defense do break primary_icon
                 text := fmt.tprintf("%v%v", primary_value, "+" if card.primary_sign == .Plus else "")
+                if primary_value == 0 && card.primary == .Defense do text = "!"
                 shitty_outlined_text(text, clay.TextElementConfig{
                     fontSize = u16(ICON_SIZE),
                     fontId = FONT_PALETTE[.Default_Bold],
@@ -617,7 +618,7 @@ get_card_by_id :: proc(gs: ^Game_State, card_id: Card_ID) -> (card: ^Card, ok: b
     return player_card, true
 }
 
-get_card_data_by_id :: proc(_gs: ^Game_State, card_id: Card_ID) -> (card: ^Card_Data, ok: bool) { // #optional_ok {
+get_card_data_by_id :: proc(card_id: Card_ID) -> (card: ^Card_Data, ok: bool) { // #optional_ok {
     if card_id == {} do return {}, false
 
     for &hero_card in hero_cards[card_id.hero_id] {

@@ -124,7 +124,7 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) {
 
                 item_values: [Card_Value_Kind]int
                 for card_id in player.hero.items[:player.hero.item_count] {
-                    card_data := get_card_data_by_id(gs, card_id) or_continue
+                    card_data := get_card_data_by_id(card_id) or_continue
                     item_values[card_data.item] += 1
                 }
 
@@ -433,6 +433,7 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
             idle_background_color = PALETTE[.Card_Red],
             active_background_color = PALETTE[.Mid_Red],
             icon = .X,
+            associated_key = .ESCAPE,
         ) {
             current_deck_viewer = nil
         }
@@ -542,6 +543,10 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
             }
         }
     }
+
+    // if ba.get(&ui_state.keys_released_this_frame, uint(Keyboard_Key.ESCAPE)) {
+    //     current_deck_viewer = nil
+    // }
 }
 
 clay_game_screen :: proc(gs: ^Game_State) {
@@ -672,20 +677,37 @@ clay_game_screen :: proc(gs: ^Game_State) {
 
             my_player := get_my_player(gs)
             background_color := team_dark_colors[my_player.team]
-            border_color := team_mid_colors[my_player.team]
 
-            // Left Button Panel
+            hand_panel_id := clay.ID("hand_panel")
+            hand_panel_data := clay.GetElementData(hand_panel_id)
 
+            // Left transcript panel
             if clay.UI()({
                 layout = {
+                    layoutDirection = .TopToBottom,
                     sizing = {
                         width = clay.SizingGrow(),
-                        height = clay.SizingGrow(),
+                        height = clay.SizingGrow({max = hand_panel_data.boundingBox.height}),
                     },
+                    padding = clay.PaddingAll(scaled_padding),
+                    childAlignment = {
+                        y = .Bottom,
+                    },
+                    childGap = 2 * scaled_border,
                 },
-            }) {}
-
-            if clay.UI()({
+                backgroundColor = PALETTE[.Dark_Gray],
+                cornerRadius = clay.CornerRadiusAll(f32(scaled_large_corner_radius)),
+                clip = {
+                    vertical = true,
+                    childOffset = clay.GetScrollOffset(),
+                }
+            }) {
+                for entry in gs.transcript {
+                    format_transcript_entry(gs, entry)
+                }
+            }
+    
+            if clay.UI(id = hand_panel_id)({
                 layout = {
                     layoutDirection = .LeftToRight,
                     sizing = {
@@ -698,21 +720,6 @@ clay_game_screen :: proc(gs: ^Game_State) {
                 cornerRadius = clay.CornerRadiusAll(f32(scaled_large_corner_radius)),
                 backgroundColor = background_color,
             }) {
-                if clay.UI()({
-                    layout = {
-                        sizing = {
-                            width = clay.SizingFit(),
-                            height = clay.SizingFit(),
-                        },
-                    },
-                }) {
-                    clay.Text("Hand", clay.TextConfig({
-                        fontSize = scaled_small_font_size,
-                        fontId = FONT_PALETTE[.Default_Regular],
-                        textColor = border_color,
-                    }))
-                }
-
                 if clay.UI() ({
                     layout = {
                         layoutDirection = .LeftToRight,
@@ -741,48 +748,39 @@ clay_game_screen :: proc(gs: ^Game_State) {
 
             if clay.UI()({
                 layout = {
-                    layoutDirection = .LeftToRight,
+                    layoutDirection = .TopToBottom,
                     sizing = {
-                        width = clay.SizingGrow(),
+                        width = clay.SizingFit(),
                         height = clay.SizingGrow(),
                     },
                     childGap = scaled_padding,
                 },
             }) {
-                for column_index := 0; column_index < len(gs.side_button_manager.button_data); column_index += 3 {
-                    if clay.UI()({
-                        layout = {
-                            layoutDirection = .TopToBottom,
-                            sizing = {
-                                width = clay.SizingFit(),
-                                height = clay.SizingGrow(),
+                button_sizing := clay.Sizing {
+                    width = clay.SizingFixed(1.5 * f32(scaled_hand_card_size.x)),
+                    height = clay.SizingGrow(),
+                }
+
+                for i in 0..<4 {
+                    if i >= len(gs.side_button_manager.button_data) {
+                        if clay.UI()({
+                            layout = {
+                                sizing = button_sizing,
                             },
-                            childGap = scaled_padding,
-                        },
-                    }) {
-                        for row_index := 0; row_index < 3; row_index += 1 {
-                            if row_index + column_index >= len(gs.side_button_manager.button_data) {
-                                if clay.UI()({
-                                    layout = {
-                                        sizing = SIZING_GROW,
-                                    },
-                                }) {}
-                                continue
-                            }
-                            button_data := &gs.side_button_manager.button_data[row_index + column_index]
-                            if clay_button(
-                                button_data.id, button_data.text,
-                                sizing = clay.Sizing{
-                                    width = clay.SizingFixed(f32(2 * scaled_hand_card_size.x)),
-                                    height = clay.SizingGrow(),
-                                },
-                            ) {
-                                if button_data.global {
-                                    broadcast_game_event(gs, button_data.event)
-                                } else {
-                                    append(&gs.event_queue, button_data.event)
-                                }
-                            }
+                        }) {}
+                        continue
+                    }
+                    button_data := &gs.side_button_manager.button_data[i]
+                    if clay_button(
+                        button_data.id, button_data.text,
+                        sizing = button_sizing,
+                        font_size = scaled_info_font_size,
+                        padding = clay.PaddingAll(scaled_padding),
+                    ) {
+                        if button_data.global {
+                            broadcast_game_event(gs, button_data.event)
+                        } else {
+                            append(&gs.event_queue, button_data.event)
                         }
                     }
                 }

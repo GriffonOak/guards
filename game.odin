@@ -259,10 +259,12 @@ Game_State :: struct {
     team_captains: [Team]Player_ID,
     minion_counts: [Team]int,
     dead_minions: [Team][dynamic]Space_Flag,
+    transcript: [dynamic]Transript_Entry,
     heroes_defeated_this_round: int,
     confirmed_players: int,
     // resolved_players: int,
     upgraded_players: int,
+    round_counter: int,
     turn_counter: int,
 
     preview_mode: Preview_Mode,

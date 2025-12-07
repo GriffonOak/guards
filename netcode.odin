@@ -6,7 +6,7 @@ import "core:fmt"
 import "core:log"
 import "core:slice"
 import "core:reflect"
-
+import sa "core:container/small_array"
 import "core:mem"
 import "core:net"
 import "core:thread"
@@ -152,7 +152,7 @@ when !ODIN_TEST {  // Apparently the address is in use during testing (?)
         },
         team = .Red,
     }
-    fmt.bprintf(me._username_buf[:], "P%v", 0)
+    fmt.bprint(me._username_buf[:], string(sa.slice(&username_text_box.field)))
 
     add_or_update_player(gs, me)
 
@@ -197,7 +197,7 @@ _thread_host_wait_for_clients :: proc(gs: ^Game_State, sock: net.TCP_Socket) {
                 team = .Red if team_counts[.Red] <= team_counts [.Blue] else .Blue,
                 socket = client_socket,
             }
-            fmt.bprintf(client_player._username_buf[:], "P%v", client_player.id)
+            // fmt.bprintf(client_player._username_buf[:], "P%v", client_player.id)
             append(&gs.players, client_player)
 
             broadcast_game_event(gs, Update_Player_Data_Event{client_player.base})
@@ -266,6 +266,9 @@ process_network_packets :: proc(gs: ^Game_State) {
             if !gs.is_host {
                 gs.my_player_id = event.player_id
             }
+            me := get_my_player(gs)
+            fmt.bprint(me._username_buf[:], string(sa.slice(&username_text_box.field)))
+            broadcast_game_event(gs, Update_Player_Data_Event{me.base})
             append(&gs.event_queue, Enter_Lobby_Event{})
 
         case Event:

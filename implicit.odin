@@ -463,7 +463,7 @@ calculate_implicit_quantity :: proc(
 
     case Card_Value:
         log.assert(calc_context.card_id != {}, "Invalid card ID when calculating value", loc)
-        card_data, ok := get_card_data_by_id(gs, calc_context.card_id)
+        card_data, ok := get_card_data_by_id(calc_context.card_id)
         log.assert(ok, "Invalid card ID when calculating value", loc)
         hero := get_player_by_id(gs, calc_context.card_id.owner_id).hero
         value := card_data.values[quantity.kind]
@@ -704,7 +704,7 @@ calculate_implicit_condition :: proc (
 
     case Card_Primary_Is:
         log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
-        card_data, ok := get_card_data_by_id(gs, calc_context.card_id)
+        card_data, ok := get_card_data_by_id(calc_context.card_id)
         log.assert(ok, "Could not find the card data when checking for its primary type!", loc)
         return card_data.primary == condition.kind
     
@@ -732,7 +732,7 @@ calculate_implicit_condition :: proc (
         _, attack_interrupt, ok := find_attack_interrupt(gs)
         log.assert(ok, "Trying to determine defense when there is no attack!", loc)
         
-        card_data, ok2 := get_card_data_by_id(gs, calc_context.card_id)
+        card_data, ok2 := get_card_data_by_id(calc_context.card_id)
         log.assert(ok2, "Could not get card data when defending!", loc)
 
         if (.Disallow_Primary_Defense in attack_interrupt.flags) &&
@@ -756,7 +756,7 @@ calculate_implicit_condition :: proc (
 
     case Action_Index_Card_Primary_Is:
         log.assert(calc_context.action_index != {}, "No action index!", loc)
-        card_data, ok := get_card_data_by_id(gs, calc_context.action_index.card_id)
+        card_data, ok := get_card_data_by_id(calc_context.action_index.card_id)
         log.assert(ok, "Could not get data for card in action index!!!", loc)
         return card_data.primary == condition.primary_kind
 
@@ -811,7 +811,7 @@ calculate_implicit_action_index :: proc(gs: ^Game_State, implicit_index: Implici
         return index
     case Card_Defense_Index:
         card_id := calculate_implicit_card_id(gs, index.implicit_card_id)
-        card_data, ok := get_card_data_by_id(gs, card_id)
+        card_data, ok := get_card_data_by_id(card_id)
         log.assert(ok, "Invalid card ID!!")
         #partial switch card_data.primary {
         case .Defense: 

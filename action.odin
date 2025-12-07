@@ -490,7 +490,7 @@ get_action_at_index :: proc(gs: ^Game_State, index: Action_Index, loc := #caller
 
     switch index.sequence {
     case .Primary:
-        card_data, ok := get_card_data_by_id(gs, index.card_id)
+        card_data, ok := get_card_data_by_id(index.card_id)
         if !ok do return nil
         action_sequence = card_data.primary_effect
     case .Halt:                 return nil
