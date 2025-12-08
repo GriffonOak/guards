@@ -18,6 +18,10 @@ Update_Player_Data_Event :: struct {
     player_base: Player_Base,
 }
 
+Set_Client_Player_ID_Event :: struct {
+    player_id: Player_ID,
+}
+
 Enter_Lobby_Event :: struct {}
 Change_Hero_Event :: struct {
     player_id: Player_ID,
@@ -197,6 +201,7 @@ Event :: union {
     Host_Game_Chosen_Event,
 
     Update_Player_Data_Event,
+    Set_Client_Player_ID_Event,
 
     Enter_Lobby_Event,
     Change_Hero_Event,
@@ -291,6 +296,16 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
     case Update_Player_Data_Event:
         add_or_update_player(gs, var.player_base)
+
+    case Set_Client_Player_ID_Event:
+        if !gs.is_host {
+            gs.my_player_id = var.player_id
+
+            me := get_my_player(gs)
+            fmt.bprint(me._username_buf[:], string(sa.slice(&username_text_box.field)))
+            broadcast_game_event(gs, Update_Player_Data_Event{me.base})
+            append(&gs.event_queue, Enter_Lobby_Event{})
+        }
 
     case Enter_Lobby_Event:
         gs.screen = .Lobby
@@ -1593,22 +1608,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             my_player.stage = .Upgrading
             gs.tooltip = "Open your deck and choose a card to upgrade."
         }
-
-    // case Begin_Next_Upgrade_Event:
-    //     my_player := get_my_player(gs)
-    //     my_hero := &my_player.hero
-    //     if my_hero.remaining_upgrades == 0 do 
-
-    //     my_player.stage = .Upgrading
-    //     clear_side_buttons(gs)
-        
-    //     if my_hero.coins >= get_my_player(gs).hero.level && my_hero.level < 8 {
-    //         my_hero.coins -= my_hero.level
-    //         my_hero.level += 1
-    //         log.infof("Player levelled up! Current level: %v", get_my_player(gs).hero.level)
-    //     } else {
-    //         broadcast_game_event(gs, End_Upgrading_Event{gs.my_player_id})
-    //     }
 
     case End_Upgrading_Event:
 

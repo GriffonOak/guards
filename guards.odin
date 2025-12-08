@@ -28,8 +28,6 @@ _ :: time
     * Garrus
     * Bain
 --- UI / UX
-    * Event log
-    * Username input
     * Display markers
 */
 

@@ -19,19 +19,9 @@ MY_ADDRESS :: LOOPBACK_ADDRESS // "25.2.114.107"
 
 GUARDS_PORT :: 8081
 
-
-Set_Client_Player_ID :: struct {
-    player_id: Player_ID,
-}
-
-Network_Event :: union {
-    Set_Client_Player_ID,
-    Event,
-}
-
 Network_Packet :: struct {
     sender: Player_ID,
-    event: Network_Event,
+    event: Event,
 }
 
 broadcast_game_event :: proc(gs: ^Game_State, event: Event) {
@@ -41,10 +31,10 @@ broadcast_game_event :: proc(gs: ^Game_State, event: Event) {
 
 }
 
-broadcast_network_event :: proc(gs: ^Game_State, net_event: Network_Event) {
+broadcast_network_event :: proc(gs: ^Game_State, event: Event) {
     packet := Network_Packet {
         gs.my_player_id,
-        net_event,
+        event,
     }
 
     if gs.is_host {
@@ -207,7 +197,7 @@ _thread_host_wait_for_clients :: proc(gs: ^Game_State, sock: net.TCP_Socket) {
                 send_network_packet_socket(client_socket, {0, Event(Update_Player_Data_Event{player.base})})
             }
 
-            send_network_packet_socket(client_socket, {0, Set_Client_Player_ID{client_player.id}})
+            send_network_packet_socket(client_socket, {0, Event(Set_Client_Player_ID_Event{client_player.id})})
             send_network_packet_socket(client_socket, {0, Event(Set_Preview_Mode_Event{gs.preview_mode})})
             send_network_packet_socket(client_socket, {0, Event(Set_Game_Length_Event{gs.game_length})})
 
@@ -250,9 +240,7 @@ process_network_packets :: proc(gs: ^Game_State) {
     defer sync.mutex_unlock(&gs.net_queue_mutex)
 
     for packet in gs.network_queue {
-        log.infof("NET: %v", reflect.union_variant_typeid(packet.event))
-
-        // broadcast packet to everyone
+        // host broadcasts packet to everyone
         if gs.is_host && packet.sender != 0 {
             for player, player_id in gs.players {
                 if player_id != 0 && player_id != packet.sender {
@@ -260,21 +248,8 @@ process_network_packets :: proc(gs: ^Game_State) {
                 }
             }
         }
-
-        switch event in packet.event {
-        case Set_Client_Player_ID:
-            if !gs.is_host {
-                gs.my_player_id = event.player_id
-            }
-            me := get_my_player(gs)
-            fmt.bprint(me._username_buf[:], string(sa.slice(&username_text_box.field)))
-            broadcast_game_event(gs, Update_Player_Data_Event{me.base})
-            append(&gs.event_queue, Enter_Lobby_Event{})
-
-        case Event:
-            log.infof("NET: %v", reflect.union_variant_typeid(event))
-            append(&gs.event_queue, event)
-        }
+        log.infof("NET: %v", reflect.union_variant_typeid(packet.event))
+        append(&gs.event_queue, packet.event)
     }
 
     clear(&gs.network_queue)

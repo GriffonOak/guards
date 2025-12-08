@@ -30,6 +30,49 @@ add_transcript_entry :: proc(gs: ^Game_State, entry: Transript_Entry) {
     append(&gs.transcript, entry)
 }
 
+
+clay_centred_text :: proc(
+    text: string,
+    config: ^clay.TextElementConfig,
+    do_lines: bool = false,
+) {
+    if clay.UI()({
+        layout = {
+            sizing = {
+                width = clay.SizingGrow(),
+                height = clay.SizingFit(),
+            },
+            layoutDirection = .LeftToRight,
+            childAlignment = {
+                y = .Center,
+            },
+            childGap = scaled_padding,
+        },
+    }) {
+        if clay.UI()({
+            layout = {
+                sizing = {
+                    width = clay.SizingGrow(),
+                    height = clay.SizingFixed(f32(scaled_border)),
+                },
+            },
+            cornerRadius = clay.CornerRadiusAll(0.5 * f32(scaled_border)),
+            backgroundColor = PALETTE[.Light_Gray] if do_lines else {},
+        }) {}
+        clay.TextDynamic(text, config)
+        if clay.UI()({
+            layout = {
+                sizing = {
+                    width = clay.SizingGrow(),
+                    height = clay.SizingFixed(f32(scaled_border)),
+                },
+            },
+            cornerRadius = clay.CornerRadiusAll(0.5 * f32(scaled_border)),
+            backgroundColor = PALETTE[.Light_Gray] if do_lines else {},
+        }) {}
+    }
+}
+
 format_transcript_entry :: proc(gs: ^Game_State, entry: Transript_Entry) {
     basic_text_config := clay.TextConfig({
         fontId = FONT_PALETTE[.Default_Regular],
@@ -39,45 +82,19 @@ format_transcript_entry :: proc(gs: ^Game_State, entry: Transript_Entry) {
 
     switch entry_variant in entry {
     case Begin_Game_Entry:
-        if clay.UI()({
-            layout = {
-                sizing = {
-                    width = clay.SizingGrow(),
-                    height = clay.SizingFit(),
-                },
-                layoutDirection = .LeftToRight,
-                childAlignment = {
-                    y = .Center,
-                },
-                childGap = scaled_padding,
-            },
-        }) {
-            if clay.UI()({
-                layout = {
-                    sizing = {
-                        width = clay.SizingGrow(),
-                        height = clay.SizingFixed(f32(scaled_border)),
-                    },
-                },
-                cornerRadius = clay.CornerRadiusAll(0.5 * f32(scaled_border)),
-                backgroundColor = PALETTE[.Light_Gray],
-            }) {}
-            clay.TextDynamic("The game begins!", basic_text_config)
-            if clay.UI()({
-                layout = {
-                    sizing = {
-                        width = clay.SizingGrow(),
-                        height = clay.SizingFixed(f32(scaled_border)),
-                    },
-                },
-                cornerRadius = clay.CornerRadiusAll(0.5 * f32(scaled_border)),
-                backgroundColor = PALETTE[.Light_Gray],
-            }) {}
-        }
+        clay_centred_text("The game begins!", clay.TextConfig({
+            fontId = FONT_PALETTE[.Default_Bold],
+            fontSize = scaled_info_font_size,
+            textColor = PALETTE[.Light_Gray],
+        }), do_lines = true)
     case Begin_Round_Entry:
-        clay.TextDynamic(fmt.tprintf("Start of Round %v", entry_variant.round + 1), basic_text_config)
+        clay_centred_text(fmt.tprintf("Start of Round %v", entry_variant.round + 1), clay.TextConfig({
+            fontSize = scaled_info_font_size,
+            fontId = FONT_PALETTE[.Default_Semibold],
+            textColor = PALETTE[.Light_Gray],
+        }))
     case Begin_Turn_Entry:
-        clay.TextDynamic(fmt.tprintf("Start of Turn %v", entry_variant.turn + 1), basic_text_config)
+        clay_centred_text(fmt.tprintf("Start of Turn %v", entry_variant.turn + 1), basic_text_config)
     case Card_Revealed_Entry:
         player := get_player_by_id(gs, entry_variant.player_id)
         hero_name, _ := reflect.enum_name_from_value(player.hero.id)

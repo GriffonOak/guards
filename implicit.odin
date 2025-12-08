@@ -121,8 +121,6 @@ Implicit_Quantity :: union {
     Distance_Between,
     Repeat_Count,
     Choices_Taken,
-
-    // Requires target in context
     Count_Hero_Coins,
 
     // Requires card in context
@@ -446,7 +444,6 @@ calculate_implicit_quantity :: proc(
         target := calculate_implicit_target(gs, quantity.target, calc_context, loc)
         space := gs.board[target.x][target.y]
         if .Hero not_in space.flags do return 0
-        // log.assert(.Hero in space.flags, "Tried to count hero coins in a space with no hero!")
         player := get_player_by_id(gs, space.owner)
         return player.hero.coins
 

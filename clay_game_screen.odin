@@ -96,6 +96,7 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) {
                         active_background_color = team_mid_colors[player.team],
                         idle_text_color = team_dark_colors[player.team],
                         disabled = gs.preview_mode == .Self_Only && player.id != gs.my_player_id,
+                        associated_key = .D if player.id == gs.my_player_id else .KEY_NULL,
                     ) {
                         if current_deck_open {
                             current_deck_viewer = nil
@@ -549,6 +550,10 @@ clay_deck_viewer :: proc(gs: ^Game_State, hero_id: Hero_ID) {
     // }
 }
 
+transcript_scroll_offset: f32
+transcript_previous_height: f32
+transcript_snapped_to_bottom: bool
+
 clay_game_screen :: proc(gs: ^Game_State) {
     game_screen_id := clay.ID("game_screen")
     if clay.UI(id = game_screen_id)({
@@ -567,7 +572,7 @@ clay_game_screen :: proc(gs: ^Game_State) {
                 layoutDirection = .LeftToRight,
                 sizing = {
                     width = clay.SizingGrow(),
-                    height = clay.SizingGrow(),
+                    height = clay.SizingFit(),
                 },
                 childGap = scaled_padding,
                 childAlignment = {
@@ -669,7 +674,8 @@ clay_game_screen :: proc(gs: ^Game_State) {
                     height = clay.SizingFit(),
                 },
                 childAlignment = {
-                    x = .Center,
+                    // x = .Center,
+                    y = .Top,
                 },
                 childGap = scaled_padding,
             },
@@ -693,17 +699,109 @@ clay_game_screen :: proc(gs: ^Game_State) {
                     childAlignment = {
                         y = .Bottom,
                     },
-                    childGap = 2 * scaled_border,
+                    childGap = scaled_border,
                 },
                 backgroundColor = PALETTE[.Dark_Gray],
                 cornerRadius = clay.CornerRadiusAll(f32(scaled_large_corner_radius)),
-                clip = {
-                    vertical = true,
-                    childOffset = clay.GetScrollOffset(),
-                }
             }) {
-                for entry in gs.transcript {
-                    format_transcript_entry(gs, entry)
+                top_divider_id := clay.ID("top_transcript_divider")
+                if clay.UI(id = top_divider_id)({
+                    layout = {
+                        sizing = {
+                            width = clay.SizingGrow(),
+                            height = clay.SizingFixed(f32(scaled_border)),
+                        },
+                    },
+                    backgroundColor = PALETTE[.Mid_Gray],
+                    cornerRadius = clay.CornerRadiusAll(0.5 * f32(scaled_border)),
+                }) {}
+
+                transcript_id := clay.ID("transcript_container")
+                data := clay.GetScrollContainerData(transcript_id)
+
+                if data.found {
+                    if transcript_snapped_to_bottom {
+                        if transcript_previous_height != data.contentDimensions.height && data.contentDimensions.height > data.scrollContainerDimensions.height {
+                            data.scrollPosition.y = data.scrollContainerDimensions.height - data.contentDimensions.height
+                        }
+                    }
+                    transcript_snapped_to_bottom = data.scrollContainerDimensions.height - data.scrollPosition.y >= data.contentDimensions.height - 0.5
+                    transcript_previous_height = data.contentDimensions.height
+                }
+
+                if clay.UI(id = transcript_id)({
+                    layout = {
+                        layoutDirection = .TopToBottom,
+                        sizing = {
+                            width = clay.SizingGrow(),
+                            height = clay.SizingGrow(),
+                        },
+                        childGap = 2 * scaled_border,
+                        childAlignment = {
+                            y = .Bottom,
+                        },
+                        padding = clay.Padding {
+                            top = scaled_border,
+                            bottom = scaled_border,
+                            left = scaled_border,
+                            right = scaled_border,
+                        },
+                    },                
+                    clip = {
+                        vertical = true,
+                        childOffset = {0, transcript_scroll_offset},
+                    },
+                }) {
+                    transcript_scroll_offset = clay.GetScrollOffset().y
+
+                    for entry in gs.transcript {
+                        format_transcript_entry(gs, entry)
+                    }
+                }
+
+                bottom_divider_id := clay.ID("bottom_transcript_divider")
+                if clay.UI(id = bottom_divider_id)({
+                    layout = {
+                        sizing = {
+                            width = clay.SizingGrow(),
+                            height = clay.SizingFixed(f32(scaled_border)),
+                        },
+                    },
+                    backgroundColor = PALETTE[.Mid_Gray],
+                    cornerRadius = clay.CornerRadiusAll(0.5 * f32(scaled_border)),
+                }) {}
+
+                for i in 0..<2 {
+                    arrow_id := clay.ID("transcript_up_arrow") if i == 0 else clay.ID("transcript_down_arrow")
+                    condition := transcript_scroll_offset < 0
+                    if i != 0 {
+                        condition = data.scrollContainerDimensions.height - transcript_scroll_offset < data.contentDimensions.height - 0.5
+                    }
+                    if condition || arrow_id.id == active_element_id.id  {
+                        clay_button(
+                            arrow_id, sizing = clay.Sizing {
+                                width = clay.SizingFixed(f32(2 * scaled_padding)),
+                                height = clay.SizingFixed(f32(2 * scaled_padding)),
+                            },
+                            floating = clay.FloatingElementConfig {
+                                attachTo = .ElementWithId,
+                                attachment = {
+                                    element = .CenterCenter,
+                                    parent = .CenterCenter,
+                                },
+                                parentId = top_divider_id.id if i == 0 else bottom_divider_id.id,
+                            },
+                            padding = clay.PaddingAll(0),
+                            icon = .Arrow_Up if i == 0 else .Arrow_Down,
+                            idle_background_color = PALETTE[.Light_Gray],
+                            idle_border_color = PALETTE[.Dark_Gray],
+                            corner_radius = f32(scaled_padding),
+                        )
+                        if active_element_id == arrow_id {
+                            dpi_scroll_factor := get_window_scale_dpi().y * get_window_scale_dpi().y * get_window_scale_dpi().y
+                            data.scrollPosition.y += 0.03 * dpi_scroll_factor * f32(scaled_border) * (1 if i == 0 else -1)
+                        }
+                    } 
                 }
             }
     

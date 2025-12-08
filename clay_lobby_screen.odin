@@ -261,8 +261,7 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                             childOffset = {0, hero_bar_scroll_offset},
                         },
                     }) {
-                        scroll_offset := clay.GetScrollOffset().y
-                        hero_bar_scroll_offset = scroll_offset
+                        hero_bar_scroll_offset := clay.GetScrollOffset().y
 
                         for hero in Hero_ID {
                             hero_name, _ := reflect.enum_name_from_value(hero)
@@ -307,7 +306,7 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                     }) {}
 
                     for i in 0..<2 {
-                        arrow_id := clay.ID("up_arrow") if i == 0 else clay.ID("down_arrow")
+                        arrow_id := clay.ID("hero_up_arrow") if i == 0 else clay.ID("hero_down_arrow")
                         condition := hero_bar_scroll_offset < 0
                         if i != 0 {
                             condition = data.scrollContainerDimensions.height - hero_bar_scroll_offset < data.contentDimensions.height - 0.5
@@ -328,10 +327,10 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                                 },
                                 padding = clay.PaddingAll(0),
                                 icon = .Arrow_Up if i == 0 else .Arrow_Down,
-                                idle_background_color = PALETTE[.Light_Gray],
-                                active_background_color = PALETTE[.Mid_Gray],
+                                // idle_background_color = PALETTE[.Light_Gray],
+                                // active_background_color = PALETTE[.Mid_Gray],
                                 idle_border_color = PALETTE[.Dark_Gray],
-                                idle_text_color = PALETTE[.Dark_Gray],
+                                // idle_text_color = PALETTE[.Dark_Gray],
                                 corner_radius = f32(scaled_padding),
                             )
                             if active_element_id == arrow_id {

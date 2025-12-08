@@ -755,6 +755,8 @@ clay_text_box :: proc(
                         }
                         text_box.cursor_index += 1
                     }
+                case .ENTER:
+                    active_element_id = {}
                 case:
                     ba.set(&ui_state.keys_pressed_this_frame, key_idx)
                 }
