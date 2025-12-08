@@ -25,6 +25,7 @@ sabina_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for the opponent to defend...",
                 variant = Attack_Action {
+                    target = Previously_Chosen_Target{},
                     strength = Card_Value{.Attack},
                 },
             },
@@ -92,6 +93,7 @@ sabina_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for the opponent to defend...",
                 variant = Attack_Action {
+                    target = Previously_Chosen_Target{},
                     strength = Sum {
                         Card_Value{.Attack},
                         Ternary {
@@ -206,6 +208,7 @@ sabina_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for the opponent to defend...",
                 variant = Attack_Action {
+                    target = Previously_Chosen_Target{},
                     strength = Sum {
                         Card_Value{.Attack},
                         Ternary {
@@ -251,6 +254,7 @@ sabina_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for the opponent to defend...",
                 variant = Attack_Action {
+                    target = Previously_Chosen_Target{},
                     strength = Card_Value{.Attack},
                 },
             },
@@ -450,6 +454,7 @@ sabina_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for the opponent to defend...",
                 variant = Attack_Action {
+                    target = Previously_Chosen_Target{},
                     strength = Sum {
                         Card_Value{.Attack},
                         Ternary {
@@ -495,6 +500,7 @@ sabina_cards := []Card_Data {
             Action {
                 tooltip = "Waiting for the opponent to defend...",
                 variant = Attack_Action {
+                    target = Previously_Chosen_Target{},
                     strength = Card_Value{.Attack},
                 },
             },

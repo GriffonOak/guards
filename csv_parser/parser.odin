@@ -6,7 +6,7 @@ import "core:fmt"
 import "core:strconv"
 
 
-hero_name :: "Sabina"
+hero_name :: "Garrus"
 
 NUM_Cards :: 17
 cards: [NUM_Cards]Card
@@ -32,7 +32,7 @@ Card :: struct {
 }
 
 main :: proc() {
-    input_filename := fmt.tprintf("input/Cards - %v.csv", hero_name)
+    input_filename := fmt.tprintf("csv_parser/input/Cards - %v.csv", hero_name)
     // fmt.println(input_filename)
     in_file, ok := os.read_entire_file(input_filename)
     assert(ok)
@@ -148,7 +148,7 @@ main :: proc() {
     out_string := strings.expand_tabs(strings.to_string(builder), 4)
 
 
-    outfile_name := fmt.tprintf("output/hero_%v.odin", strings.to_lower(hero_name))
+    outfile_name := fmt.tprintf("csv_parser/output/hero_%v.odin", strings.to_lower(hero_name))
     os.remove(outfile_name)
     outfile, err := os.open(outfile_name, os.O_WRONLY | os.O_CREATE)
     assert(err == nil)

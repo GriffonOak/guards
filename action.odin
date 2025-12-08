@@ -137,6 +137,7 @@ Push_Action :: struct {
     origin: Implicit_Target,
     targets: Implicit_Target_Slice,
     num_spaces: Implicit_Quantity,
+    ignoring_obstacles: bool,
 }
 
 Give_Marker_Action :: struct {

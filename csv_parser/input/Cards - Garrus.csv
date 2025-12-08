@@ -1,0 +1,24 @@
+No need to fill out the rest of,,Gold / Silver cards should be tier 0,,,,,,,,e.g. Range(3) or Radius(4),,,Replace line break with \n pls
+"xarg's cards, I already have them all",,,"The ""Alt path"" card, the one different from the starting card of the same color",,,,,,Leave blank if unsigned,,Leave blank if unsigned,,
+,,,,,,,,,,leave blank if n/a,,Blank if n/a,
+Name,Color,Tier,Alternate?,Initiative,Attack Value,Defense Value,Movement Value,Primary Kind,Primary Sign,Reach,Reach Sign,Item Kind,Text
+Angry Strike,GOLD,0,FALSE,11,4,3,1,ATTACK,PLUS,,,,Target a unit adjacent to you;\n+1 Attack for every card in your discard.
+Chilling Howl,SILVER,0,FALSE,13,,3,,SKILL,,Radius(3),,,"You may discard one of your resolved cards.\nThis round: Enemy heroes in radius\ncannot fast travel, or move more than\n2 spaces with a movement action."
+Trace,RED,1,FALSE,7,3,5,4,ATTACK,,,,,"Choose one -\n* Before the attack: if you have one or more\ncards in the discard, you may move 1 space.\nTarget a hero adjacent to you.\n* Target a unit adjacent to you."
+Hold Ground,GREEN,1,FALSE,5,,3,2,SKILL,,Radius(3),,,"If there are at least two enemy heroes in\nradius, you may retrieve a discarded card."
+Menace,BLUE,1,FALSE,9,,6,3,SKILL,,Range(2),,,Move an enemy unit in range 1 space\nto a space farther away from you.
+Chase,RED,2,FALSE,8,4,5,4,ATTACK,,,,DEFENSE,"Choose one -\n* Before the attack: if you have one or more\ncards in the discard, move up to 2 spaces.\nTarget a hero adjacent to you.\n* Target a unit adjacent to you."
+Blunt Force,RED,2,TRUE,8,7,7,4,ATTACK,,,,INITIATIVE,"Target a unit adjacent to you.\nAfter the attack: You may move 1 space to a space adjacent to an enemy hero; if you do,\npush that hero 3 spaces, ignoring obstacles"
+Make a Stand,GREEN,2,FALSE,4,,4,2,SKILL,,Radius(4),,INITIATIVE,"If there are at least two enemy heroes in\nradius, you may retrieve a discarded card."
+Light Pilum,GREEN,2,TRUE,4,,4,2,SKILL,,Range(2),,ATTACK,"An enemy hero in range discards a card,\nif able. You may move 1 space."
+Threaten,BLUE,2,FALSE,10,,6,3,SKILL,,Range(2),,DEFENSE,Move an enemy unit in range 1 space\nto a space farther away from you.\nMay repeat once.
+Form Up!,BLUE,2,TRUE,10,,6,3,SKILL,,Range(3),,ATTACK,Move a friendly unit in range 1 space\nto a space closer to you.\nMay repeat once.
+Hunt Down,RED,3,FALSE,8,4,6,4,ATTACK,,,,RANGE,"Choose one -\n* Before the attack: if you have one or more\ncards in the discard, move up to 3 spaces.\nTarget a hero adjacent to you.\n* Target a unit adjacent to you."
+Send Flying,RED,3,TRUE,8,7,8,4,ATTACK,,,,RADIUS,"Target a unit adjacent to you.\nAfter the attack: You may move up to 2 spaces to a space\nadjacent to an enemy hero; if you do, push\nthat hero 3 spaces, ignoring obstacles"
+Battle Ready,GREEN,3,FALSE,4,,4,2,SKILL,,Radius(4),,INITIATIVE,"If there are at least two enemy heroes\nin radius, you may retrieve up to\ntwo discarded cards."
+Heavy Pilum,GREEN,3,TRUE,4,,4,2,SKILL,,Range(2),,MOVEMENT,"An enemy hero in range discards a card,\nor is defeated. You may move up to 2 spaces."
+Terrify,BLUE,3,FALSE,10,,7,3,SKILL,,Range(2),,DEFENSE,Move an enemy unit in range 1 space\nto a space farther away from you.\nMay repeat up to two times.
+Testudo!,BLUE,3,TRUE,10,,7,3,SKILL,,Range(3),,ATTACK,Move a friendly unit in range 1 space\nto a space closer to you.\nMay repeat up to two times.
+,,,,,,,,,,,,,
+Ultimate:,"Each time after one of your resolved cards is discarded, you may perform its primary action.",,,,,,,,,,,,
+,"^ Just write it out above, I'll deal with it separately",,,,,,,,,,,,

@@ -30,6 +30,7 @@ Hero_ID :: enum {
     Wasp,
     Arien,
     Sabina,
+    Garrus,
 }
 
 number_names := [?]string {

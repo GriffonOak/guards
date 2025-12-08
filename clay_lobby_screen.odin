@@ -261,7 +261,7 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                             childOffset = {0, hero_bar_scroll_offset},
                         },
                     }) {
-                        hero_bar_scroll_offset := clay.GetScrollOffset().y
+                        hero_bar_scroll_offset = clay.GetScrollOffset().y
 
                         for hero in Hero_ID {
                             hero_name, _ := reflect.enum_name_from_value(hero)
@@ -282,7 +282,7 @@ clay_lobby_screen :: proc(gs: ^Game_State) {
                                 idle_background_color = nil,
                                 active_background_color = team_mid_colors[get_my_player(gs).team] if !disabled else team_mid_colors[occupying_team],
                                 idle_text_color = nil if !disabled else team_dark_colors[occupying_team],
-                                image = &hero_icons[hero],
+                                image = nil if hero_icons[hero] == {} else &hero_icons[hero],
                                 strikethrough = Strikethrough_Config {
                                     offset = true,
                                     proportion = 0.97,

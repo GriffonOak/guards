@@ -61,6 +61,8 @@ Active_Effect_Kind :: enum {
 
     Brogan_Bulwark,
     Brogan_Shield,
+
+    Garrus_Howl,
 }
 
 End_Of_Turn :: struct {
@@ -402,6 +404,7 @@ setup_icons :: proc() {
         case "skull.png":               hero_icons[.Wasp]       = emoji_texture
         case "snake.png":               hero_icons[.Xargatha]   = emoji_texture
         case "water-wave.png":          hero_icons[.Arien]      = emoji_texture
+        case "dog-face.png":            hero_icons[.Garrus]     = emoji_texture
 
         case "file-box.png":            ui_icons[.File_Box]     = emoji_texture
 
@@ -479,6 +482,7 @@ setup_hero_cards :: proc(gs: ^Game_State) {
         .Wasp       = wasp_cards,
         .Arien      = arien_cards,
         .Sabina     = sabina_cards,
+        .Garrus     = garrus_cards,
     }
 
     for player_id in 0..<len(gs.players) {
@@ -514,15 +518,12 @@ setup_hero_cards :: proc(gs: ^Game_State) {
             player_card.hero_id = hero_id
             player_card.owner_id = player_id
         }
-
-        for &card in hero_cards[hero_id] {
-            create_texture_for_card(&card, preview = false)
-            create_texture_for_card(&card, preview = true)
+        when !ODIN_TEST {
+            for &card in hero_cards[hero_id] {
+                create_texture_for_card(&card, preview = false)
+                create_texture_for_card(&card, preview = true)
+            }
         }
     }
-
-when !ODIN_TEST {
-    // create_card_textures()
-}
 }
 
