@@ -98,6 +98,7 @@ STARTING_HEIGHT :: 720
 FONT_SPACING :: 0
 
 assets := #load_directory("assets")
+card_backgrounds := #load_directory("assets/card_backgrounds")
 emoji := #load_directory("assets/emoji")
 icons := #load_directory("assets/icons")
 

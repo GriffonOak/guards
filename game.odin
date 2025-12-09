@@ -502,7 +502,7 @@ setup_hero_cards :: proc(gs: ^Game_State) {
                     "_alt" if card.alternate else "",
                 )
                 // fmt.println(card_filename)
-                for file in assets {
+                for file in card_backgrounds {
                     if file.name == card_filename {
                         image := load_image_from_memory(".png", raw_data(file.data), i32(len(file.data)))
                         image_flip_vertical(&image)
