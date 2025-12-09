@@ -25,7 +25,6 @@ _ :: time
 /*  FOR 0.6
 
 --- ENGINE
-    * Garrus
     * Bain
 --- UI / UX
     * Display markers
@@ -34,8 +33,6 @@ _ :: time
 /* GENERAL
 
 --- ENGINE
-    ^^ Rewrite action value system (get rid of so many variant types, rely more on labels)
-
     * refactor choose target action to just repeat its begin_next_action when cancelling, like movement action
         * obviates the need for pop side button
 

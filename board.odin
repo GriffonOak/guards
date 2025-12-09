@@ -281,7 +281,7 @@ render_board :: proc(gs: ^Game_State, bounding_rect: Rectangle, board_element: B
 
         case Choose_Target_Action:
             frequency = 14
-            target_slice := get_memory_slice_for_index(gs, action_index, gs.action_count)
+            target_slice := get_top_memory_slice(gs, Target, action_index, gs.action_count)
             for action_value in target_slice {
                 target := action_value.variant.(Target)
                 space := gs.board[target.x][target.y]

@@ -186,63 +186,6 @@ become_interrupted :: proc(
     broadcast_game_event(gs, Begin_Interrupt_Event{interrupt})
 }
 
-Action_Value_Label :: enum {
-    None,
-    Attack_Target,
-    Movement_Target,
-    Place_Target,
-
-    Arien_Dueling_Partner,
-    Swift_Farm_Defeat_Count,
-    Brogan_Prevent_Next_Minion_Removal,
-}
-
-Chosen_Quantity :: struct {
-    quantity: int,
-}
-
-Choice_Taken :: struct {
-    choice_index: int,
-}
-
-Repeat_Count :: struct {
-    count: int,
-}
-
-Saved_Boolean :: struct {
-    boolean: bool,
-}
-
-Saved_Integer :: struct {
-    integer: int,
-}
-
-Chosen_Minion_Type :: struct {
-    minion_type: Space_Flag,
-}
-
-
-// @Cleanup: seems to be some semantic overlap between this union and the labelling system.
-// Might be better to trim this union down and rely more on labelling.
-Action_Value_Variant :: union {
-    Target,
-    Path,
-    Card_ID,
-    Chosen_Quantity,
-    Repeat_Count,
-    Saved_Boolean,
-    Saved_Integer,
-    Choice_Taken,
-    Chosen_Minion_Type,
-}
-
-Action_Value :: struct {
-    action_index: Action_Index,
-    action_count: int,
-    label: Action_Value_Label,
-    variant: Action_Value_Variant,
-}
-
 Game_Length :: enum {
     Quick,
     Long,

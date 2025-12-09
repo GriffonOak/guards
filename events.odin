@@ -407,7 +407,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
 
             case Choose_Target_Action:
                 num_targets := calculate_implicit_quantity(gs, action_variant.num_targets, {card_id = action_index.card_id})
-                current_slice := get_memory_slice_for_index(gs, action_index, gs.action_count)
+                current_slice := get_top_memory_slice(gs, Target, action_index, gs.action_count)
                 if len(current_slice) < num_targets {
                     add_action_value(gs, var.space, label = action_variant.label)
                     action.targets[var.space.x][var.space.y].member = false
@@ -424,7 +424,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                     dead_minion_target := dead_minion_target_indices[index]
                     if my_team == .Blue do dead_minion_target = {GRID_WIDTH-1, GRID_HEIGHT-1} - dead_minion_target
                     if var.space == dead_minion_target {
-                        add_action_value(gs, Chosen_Minion_Type{minion_type})
+                        add_action_value(gs, minion_type, label = .Chosen_Minion_Type)
                         append(&gs.event_queue, Resolve_Current_Action_Event{})
                         break
                     }
@@ -508,7 +508,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 if _, ok := top_button.event.(Cancel_Event); ok {
                     pop_side_button(gs)
                 }
-                results := get_memory_slice_for_index(gs, action_index, gs.action_count)
+                results := get_top_memory_slice(gs, Target, action_index, gs.action_count)
                 for value in results {
                     target := value.variant.(Target)
                     action.targets[target.x][target.y].member = true
@@ -608,8 +608,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             for outcome in effect.outcomes {
                 if _, ok := outcome.(Gain_Extra_Coins_On_Defeat); !ok do continue
                 if !calculate_implicit_condition(gs, And(effect.affected_targets), effect_calc_context) do continue
-                swift_coin_count := &get_top_global_variable_by_label(gs, .Swift_Farm_Defeat_Count).variant.(Saved_Integer)
-                swift_coin_count.integer += 1
+                swift_coin_count := &get_top_global_variable_by_label(gs, .Swift_Farm_Defeat_Count).variant.(int)
+                swift_coin_count^ += 1
 
                 owner := get_player_by_id(gs, effect_card_id.owner_id)
                 owner.hero.coins += 1
@@ -792,14 +792,14 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         // action := get_current_action(gs)
         // choose_quantity_action := &action.variant.(Choose_Quantity_Action)
         // cqa.result = var.quantity
-        add_action_value(gs, Chosen_Quantity{var.quantity})
+        add_action_value(gs, var.quantity, label = .Chosen_Quantity)
         append(&gs.event_queue, Resolve_Current_Action_Event{})
 
     case Choice_Taken_Event:
         action_index := get_my_player(gs).hero.current_action_index
         action := get_action_at_index(gs, action_index)
         choice_action := action.variant.(Choice_Action)
-        if choice_action.cannot_repeat do add_action_value(gs, Choice_Taken{var.choice_index}, index = action_index)
+        if choice_action.cannot_repeat do add_action_value(gs, var.choice_index, label = .Choice_Taken, index = action_index)
         append(&gs.event_queue, Resolve_Current_Action_Event{var.jump_index})
 
     case Add_Global_Variable_Event:
@@ -1183,11 +1183,11 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             append(&gs.event_queue, Resolve_Current_Action_Event{jump_index})
 
         case Repeat_Action:
-            repeat_count, _, ok := try_get_top_action_value_of_type(gs, Repeat_Count)
+            repeat_count, _, ok := try_get_top_action_value_of_type(gs, int, label = .Repeat_Count)
             if !ok {
-                add_action_value(gs, Repeat_Count{1})
+                add_action_value(gs, 1, label = .Repeat_Count)
             } else {
-                repeat_count.count += 1
+                repeat_count^ += 1
             }
             jump_index := action_index
             jump_index.index = 0
@@ -1274,10 +1274,10 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             switch variable in action_type.variable {
             case Implicit_Condition:
                 boolean := calculate_implicit_condition(gs, variable, calc_context)
-                add_action_value(gs, Saved_Boolean{boolean}, label = action_type.label, global = action_type.global)
+                add_action_value(gs, boolean, label = action_type.label, global = action_type.global)
             case Implicit_Quantity:
                 integer := calculate_implicit_quantity(gs, variable, calc_context)
-                add_action_value(gs, Saved_Integer{integer}, label = action_type.label, global = action_type.global)
+                add_action_value(gs, integer, label = action_type.label, global = action_type.global)
             case:
                 add_action_value(gs, nil, label = action_type.label, global = action_type.global)
             }
@@ -1295,7 +1295,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 }
             }
             if !more_than_one_type {
-                add_action_value(gs, Chosen_Minion_Type{gs.dead_minions[my_team][0]})
+                add_action_value(gs, gs.dead_minions[my_team][0], label = .Chosen_Minion_Type)
                 append(&gs.event_queue, Resolve_Current_Action_Event{})
             }
 
@@ -1367,7 +1367,6 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
     case End_Resolution_Event:
         clear_side_buttons(gs)
         clear(&gs.action_memory)
-        gs.action_count = 0
 
         gs.players[var.player_id].stage = .Resolved
 

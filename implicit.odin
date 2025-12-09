@@ -101,6 +101,8 @@ Previous_Quantity_Choice :: struct {}
 
 Current_Turn :: struct {}
 
+Repeat_Count :: struct {}
+
 Implicit_Quantity :: union {
     int,
     Minion_Difference,
@@ -109,6 +111,7 @@ Implicit_Quantity :: union {
     My_Team_Total_Dead_Minions,
     My_Level,
     Player_ID_Of,
+    // _Labelled_Local_Variable,
     Labelled_Global_Variable,
     Sum,
     Product,
@@ -119,9 +122,9 @@ Implicit_Quantity :: union {
     Previous_Quantity_Choice,
     Current_Turn,
     Distance_Between,
-    Repeat_Count,
     Choices_Taken,
     Count_Hero_Coins,
+    Repeat_Count,
 
     // Requires card in context
     Card_Value,
@@ -342,7 +345,7 @@ calculate_implicit_space_flag :: proc(
         spawnpoint_type := get_first_set_bit(spawnpoint_flags).?
         return spawnpoint_to_minion[spawnpoint_type]
     case Previously_Chosen_Dead_Minion:
-        return get_top_action_value_of_type(gs, Chosen_Minion_Type).minion_type
+        return get_top_action_value_of_type(gs, Space_Flag, label = .Chosen_Minion_Type)^
     }
     return .Terrain  // (?)
 }
@@ -397,18 +400,18 @@ calculate_implicit_quantity :: proc(
         }
 
     case Previous_Quantity_Choice:
-        return get_top_action_value_of_type(gs, Chosen_Quantity).quantity
+        return get_top_action_value_of_type(gs, int, label = .Chosen_Quantity)^
 
     case Repeat_Count:
-        repeat_count, _, ok := try_get_top_action_value_of_type(gs, Repeat_Count)
+        repeat_count, _, ok := try_get_top_action_value_of_type(gs, int, label = .Repeat_Count)
         if !ok {
             return 0
         }
-        return repeat_count.count
+        return repeat_count^
 
     case Choices_Taken:
         for value in gs.action_memory {
-            if _, ok := value.variant.(Choice_Taken); ok {
+            if value.label == .Choice_Taken {
                 out += 1
             }
         }
@@ -435,7 +438,7 @@ calculate_implicit_quantity :: proc(
     case Labelled_Global_Variable:
         action_value := get_top_global_variable_by_label(gs, quantity.label)
         log.assert(action_value != nil, "Could not find global variable with label!", loc)
-        return action_value.variant.(Saved_Integer).integer
+        return action_value.variant.(int)
 
     case Current_Turn:
         return gs.turn_counter
@@ -562,15 +565,7 @@ calculate_implicit_target_slice :: proc(
         return out
 
     case Previous_Choices:
-        // index := get_my_player(gs).hero.current_action_index
-        // index.index -= 1
-        // for ; true; index.index -= 1 {
-        //     action := get_action_at_index(gs, index)
-        //     if variant, ok := action.variant.(Choose_Target_Action); ok {
-        //         return variant.result[:]
-        //     }
-        // }
-        action_values := get_top_action_slice_of_type(gs, Target)
+        action_values := get_top_memory_slice(gs, Target)
         out := make([]Target, len(action_values), context.temp_allocator)
         for value, index in action_values {
             out[index] = value.variant.(Target)
@@ -772,9 +767,9 @@ calculate_implicit_condition :: proc (
         return condition.flag in attack_interrupt.flags
 
     case Previously_Saved_Boolean:
-        saved_boolean, _, ok := try_get_top_action_value_of_type(gs, Saved_Boolean)
+        saved_boolean, _, ok := try_get_top_action_value_of_type(gs, bool)
         log.assert(ok, "Could not find saved boolean!")
-        return saved_boolean.boolean
+        return saved_boolean^
     }
     return false
 }

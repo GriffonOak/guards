@@ -168,10 +168,9 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         for &choice in variant.choices do choice.valid = true
         if variant.cannot_repeat {
             #reverse for value in gs.action_memory {
-                choice_taken, ok := value.variant.(Choice_Taken)
-                if !ok do continue
+                if value.label != .Choice_Taken do continue
                 if value.action_index != index do continue
-                variant.choices[choice_taken.choice_index].valid = false
+                variant.choices[value.variant.(int)].valid = false
             }
         }
         for &choice in &variant.choices {
@@ -195,9 +194,9 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
 
     case Repeat_Action:
         repeat_count: int
-        repeat_count_ptr, _, ok := try_get_top_action_value_of_type(gs, Repeat_Count)
+        repeat_count_ptr, _, ok := try_get_top_action_value_of_type(gs, int, label = .Repeat_Count)
         if !ok do repeat_count = 0
-        else do repeat_count = repeat_count_ptr.count
+        else do repeat_count = repeat_count_ptr^
         return repeat_count < variant.max_repeats
 
     case Gain_Coins_Action:

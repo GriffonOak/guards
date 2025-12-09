@@ -555,11 +555,9 @@ wasp_cards := []Card_Data {
             },
             Action {
                 variant = Save_Variable_Action {
-                    variable = Implicit_Condition(Greater_Than {  // @Note: It would be nice to have a better way of expressing this
-                        Count_Targets {
-                            Target_Is{Previously_Chosen_Target{}},
-                            Target_Contains_Any{{.Hero}},
-                        }, 0,
+                    variable = Implicit_Condition(Contains_Any {
+                        Previously_Chosen_Target{},
+                        {.Hero},
                     }),
                 },
             },
