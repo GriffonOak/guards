@@ -62,6 +62,11 @@ Force_Discard_Action :: struct {
     or_is_defeated: bool,
 }
 
+Force_Interrupt_Action :: struct {
+    target: Implicit_Target,
+    action_index: Implicit_Action_Index,
+}
+
 Choice_Action :: struct {
     choices: []Choice,
     cannot_repeat: bool,
@@ -133,6 +138,18 @@ Choose_Quantity_Action :: struct {
     bounds: []Implicit_Quantity,
 }
 
+Variable_Choice :: struct {
+    name: string,
+    variable: Action_Value_Variant,
+    valid: Implicit_Condition,
+}
+
+Choose_Variable_Action :: struct {
+    global: bool,
+    label: Action_Value_Label,
+    choices: []Variable_Choice,
+}
+
 Push_Action :: struct {
     origin: Implicit_Target,
     targets: Implicit_Target_Slice,
@@ -141,8 +158,8 @@ Push_Action :: struct {
 }
 
 Give_Marker_Action :: struct {
-    target: Implicit_Target,
-    marker: Marker,
+    target: Implicit_Quantity,  // Interpreted as a player ID
+    marker: Marker_Kind,
 }
 
 Swap_Action :: struct {
@@ -152,6 +169,7 @@ Swap_Action :: struct {
 Action_Variable :: union {
     Implicit_Condition,
     Implicit_Quantity,
+    Implicit_Card_ID,
 }
 
 Save_Variable_Action :: struct {
@@ -178,6 +196,7 @@ Action_Variant :: union {
     Halt_Action,
     Choose_Card_Action,
     Force_Discard_Action,
+    Force_Interrupt_Action,
     Retrieve_Card_Action,
     Discard_Card_Action,
     Jump_Action,
@@ -187,6 +206,7 @@ Action_Variant :: union {
     Gain_Coins_Action,
     Place_Action,
     Choose_Quantity_Action,
+    Choose_Variable_Action,
     Push_Action,
     Give_Marker_Action,
     Swap_Action,

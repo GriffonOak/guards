@@ -20,6 +20,8 @@ Action_Value_Label :: enum {
     Arien_Dueling_Partner,
     Swift_Farm_Defeat_Count,
     Brogan_Prevent_Next_Minion_Removal,
+    Bain_Color_Guess,
+    Bain_Color_Answer,
 }
 
 Action_Value_Variant :: union {

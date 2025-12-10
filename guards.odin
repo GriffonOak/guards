@@ -22,14 +22,6 @@ _ :: time
 
 // Todo list
 
-/*  FOR 0.6
-
---- ENGINE
-    * Bain
---- UI / UX
-    * Display markers
-*/
-
 /* GENERAL
 
 --- ENGINE
@@ -112,6 +104,7 @@ minion_icons: [Space_Flag]Texture
 card_icons: [Card_Value_Kind]Texture
 item_icons: [Card_Value_Kind]Texture
 primary_icons: [Primary_Kind]Texture
+marker_icons: [Marker_Kind]Texture
 
 spall_ctx: spall.Context
 @(thread_local) spall_buffer: spall.Buffer

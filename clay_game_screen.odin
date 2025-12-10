@@ -328,12 +328,25 @@ clay_player_panel :: proc(gs: ^Game_State, player: ^Player) {
             
             if clay.UI()({
                 layout = {
-                    sizing = {
-                        height = clay.SizingGrow(),
-                    },
+                    sizing = SIZING_GROW,
+                    childAlignment = {x = .Center},
                 },
             }) {
-                // @Todo: Draw markers here!
+                for marker in player.hero.markers {
+                    marker_id := clay.ID("marker", u32(marker))
+                    marker_data := clay.GetElementData(marker_id)
+                    if clay.UI(marker_id)({
+                        layout = {
+                            sizing = {
+                                width = clay.SizingFixed(marker_data.boundingBox.height),
+                                height = clay.SizingGrow(),
+                            },
+                        },
+                        image = {
+                            &marker_icons[marker],
+                        },
+                    }) {}
+                }
             }
 
             clay.Text("Played", clay.TextConfig({

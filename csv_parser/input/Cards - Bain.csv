@@ -1,0 +1,24 @@
+No need to fill out the rest of,,Gold / Silver cards should be tier 0,,,,,,,,e.g. Range(3) or Radius(4),,,Replace line break with \n pls
+"xarg's cards, I already have them all",,,"The ""Alt path"" card, the one different from the starting card of the same color",,,,,,Leave blank if unsigned,,Leave blank if unsigned,,
+,,,,,,,,,,leave blank if n/a,,Blank if n/a,
+Name,Color,Tier,Alternate?,Initiative,Attack Value,Defense Value,Movement Value,Primary Kind,Primary Sign,Reach,Reach Sign,Item Kind,Text
+Dead or Alive,GOLD,0,FALSE,11,4,2,1,ATTACK,,Radius(4),,,Target a unit adjacent to you.\nAfter the attack: You may give an enemy\nhero in radius the Bounty marker.\nA hero with the Bounty marker spends\n1 additional Life counter when defeated.
+Get over here!,SILVER,0,FALSE,13,,2,,SKILL,,Range(4),,,"Target a unit in range and in a\nstraight line, with no obstacles between you\nand the target. Move the target towards you\nin a straight line, until you are adjacent."
+Light Crossbow,RED,1,FALSE,8,5,5,4,ATTACK,,Range(2),,,"Target a unit in range and in a straight line,\nwith no units or terrain between you."
+Close Call,GREEN,1,FALSE,4,,,2,DEFENSE,,,,,"If a hero in play has a Bounty marker,\nblock the attack and that hero\ngives the marker to you."
+A Game of Chance,BLUE,1,FALSE,9,,4,3,SKILL,,Radius(2),,,"An enemy hero in radius with two or more\ncards in hand chooses one of those cards.\nGuess that card's color, then reveal it.\nIf you guessed correctly, discard that card;\notherwise you gain 1 coin."
+Heavy Crossbow,RED,2,FALSE,8,5,5,4,ATTACK,,Range(3),,DEFENSE,"Target a unit in range and in a straight line,\nwith no units or terrain between you."
+Hand Crossbow,RED,2,TRUE,8,4,6,4,ATTACK,,Range(3),,INITIATIVE,Choose one -\n* Target a hero in range with\na Bounty marker.\n* Target a unit adjacent to you.
+Narrow Escape,GREEN,2,FALSE,4,,,2,DEFENSE,,,,INITIATIVE,"If a hero in play has a Bounty marker,\nblock the attack and retrieve the marker."
+Vantage Point,GREEN,2,TRUE,4,,3,2,MOVEMENT,PLUS,,,ATTACK,"Ignore obstacles. If a hero in play has\na Bounty marker, +1 movement."
+Dead Man's Hand,BLUE,2,FALSE,10,,4,3,SKILL,,Radius(3),,DEFENSE,"An enemy hero in radius with two or more\ncards in hand chooses one of those cards.\nGuess that card's color, then reveal it.\nIf you guessed correctly, discard that card;\notherwise you gain 2 coins."
+Drinking Buddies,BLUE,2,TRUE,10,,4,3,SKILL,,Radius(3),,ATTACK,"You may have a hero in radius retrieve a\ndiscarded card. If they do, you may\nalso retrieve a discarded card."
+Arbalest,RED,3,FALSE,9,6,6,4,ATTACK,,Range(4),,DEFENSE,"Target a unit in range and in a straight line,\nwith no units or terrain between you."
+Hunter-Seeker,RED,3,TRUE,9,5,7,4,ATTACK,,Range(3),,MOVEMENT,"Choose one, or both, on different targets -\n* Target a hero in range with a Bounty\nmarker.\n* Target a unit adjacent to you."
+Perfect Getaway,GREEN,3,FALSE,3,,,2,DEFENSE,,,,INITIATIVE,"If a hero in play has a Bounty marker,\nblock the attack."
+High Ground,GREEN,3,TRUE,3,,4,2,MOVEMENT,PLUS,,,RADIUS,"Ignore obstacles. If a hero in play has\na Bounty marker, +2 movement."
+We're Not Done Yet!,BLUE,3,FALSE,10,,5,3,SKILL,,Radius(3),,RANGE,"An enemy hero in radius with two or more\ncards in hand chooses one of those cards.\nGuess that card's color, then reveal it.\nIf you guessed correctly, discard that card;\notherwise may repeat once or gain 2 coins."
+Another One!,BLUE,3,TRUE,10,,5,3,SKILL,,Radius(3),,ATTACK,"You may have a hero in radius retrieve a\ndiscarded card. If they do, you may\nalso retrieve a discarded card.\nEnd of turn: May repeat once."
+,,,,,,,,,,,,,
+Ultimate:,"After you give a hero the Bounty marker, that hero discards a card, if able.",,,,,,,,,,,,
+,"^ Just write it out above, I'll deal with it separately",,,,,,,,,,,,

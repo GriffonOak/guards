@@ -31,6 +31,7 @@ Hero_ID :: enum {
     Arien,
     Sabina,
     Garrus,
+    Bain,
 }
 
 number_names := [?]string {
@@ -49,12 +50,14 @@ number_names := [?]string {
 
 hero_cards: [Hero_ID][]Card_Data
 
-Marker :: enum {
+Marker_Kind :: enum {
     Tigerclaw_Weak_Poison,
     Tigerclaw_Strong_Poison,
+
+    Bain_Bounty,
 }
 
-Marker_Set :: bit_set[Marker]
+Marker_Set :: bit_set[Marker_Kind]
 
 Hero :: struct {
     id: Hero_ID,

@@ -183,7 +183,13 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         return out
 
     // @Note maybe respawn should check if we're dead
-    case Halt_Action, Attack_Action, Add_Active_Effect_Action, Minion_Defeat_Action, Minion_Removal_Action, Minion_Spawn_Action, Get_Defeated_Action, Respawn_Action, Force_Discard_Action:
+    case Halt_Action, Attack_Action, Add_Active_Effect_Action, Minion_Defeat_Action, Minion_Removal_Action, Minion_Spawn_Action, Get_Defeated_Action, Respawn_Action:
+        return true
+
+    case Force_Discard_Action:
+        return true
+
+    case Force_Interrupt_Action:
         return true
 
     case Jump_Action:
@@ -210,7 +216,7 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         return true
 
     case Defend_Action:
-        return true
+        return get_my_player(gs).stage == .Interrupting
 
     case Place_Action:
         return true
@@ -223,6 +229,14 @@ validate_action :: proc(gs: ^Game_State, index: Action_Index) -> bool {
         lower_bound := calculate_implicit_quantity(gs, variant.bounds[0], calc_context)
         upper_bound := calculate_implicit_quantity(gs, variant.bounds[1], calc_context)
         return upper_bound >= lower_bound
+
+    case Choose_Variable_Action:
+        for variable_choice in variant.choices {
+            if calculate_implicit_condition(gs, variable_choice.valid, calc_context) {
+                return true
+            }
+        }
+        return false
 
     case Push_Action:
         return true

@@ -22,7 +22,7 @@ swift_cards := []Card_Data {
             },
             Action {  // 1
                 variant = Jump_Action {
-                    jump_index = Other_Card_Primary{Rightmost_Resolved_Card{}},
+                    jump_index = Card_Primary{Rightmost_Resolved_Card{}, 0},
                 },
             },
             Action {  // 2

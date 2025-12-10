@@ -38,10 +38,16 @@ Previous_Card_Choice :: struct {}
 
 Rightmost_Resolved_Card :: struct {}
 
+Current_Card :: struct {}
+
 Implicit_Card_ID :: union {
     Card_ID,
     Previous_Card_Choice,
     Rightmost_Resolved_Card,
+    Labelled_Global_Variable,
+    
+    // Requires a card id in the calculation context
+    Current_Card,
 }
 
 
@@ -74,6 +80,10 @@ Player_ID_Of :: struct {
     target: Implicit_Target,
 }
 
+Labelled_Local_Variable :: struct {
+    label: Action_Value_Label,
+}
+
 Labelled_Global_Variable :: struct {
     label: Action_Value_Label,
 }
@@ -103,6 +113,10 @@ Current_Turn :: struct {}
 
 Repeat_Count :: struct {}
 
+Color_Of :: struct {
+    implicit_card_id: Implicit_Card_ID,
+}
+
 Implicit_Quantity :: union {
     int,
     Minion_Difference,
@@ -111,7 +125,7 @@ Implicit_Quantity :: union {
     My_Team_Total_Dead_Minions,
     My_Level,
     Player_ID_Of,
-    // _Labelled_Local_Variable,
+    Labelled_Local_Variable,
     Labelled_Global_Variable,
     Sum,
     Product,
@@ -125,6 +139,7 @@ Implicit_Quantity :: union {
     Choices_Taken,
     Count_Hero_Coins,
     Repeat_Count,
+    Color_Of,
 
     // Requires card in context
     Card_Value,
@@ -140,10 +155,6 @@ Previous_Target :: struct {}
 Self :: struct {}
 
 Previously_Chosen_Target :: struct {}
-
-Labelled_Local_Variable :: struct {
-    label: Action_Value_Label,
-}
 
 Attacker :: struct {}
 
@@ -199,6 +210,15 @@ Are_Enemies :: struct {
 
 Contains_Any :: struct { target: Implicit_Target, flags: Space_Flags }
 
+Marker_Deployed :: struct {
+    marker: Marker_Kind,
+}
+
+Has_Marker :: struct {
+    target: Implicit_Target,
+    marker: Marker_Kind,
+}
+
 Target_Within_Distance :: struct {
     origin: Implicit_Target,
     bounds: []Implicit_Quantity,
@@ -210,6 +230,11 @@ Target_In_Straight_Line_With :: struct {
 
 Target_Is :: struct {
     target: Implicit_Target,
+}
+
+Target_Nothing_Between :: struct {
+    origin: Implicit_Target,
+    flags: Space_Flags,
 }
 
 Target_Contains_Any :: struct { flags: Space_Flags }
@@ -280,6 +305,8 @@ Implicit_Condition :: union {
     Previously_Saved_Boolean,
     Are_Enemies,
     Contains_Any,
+    Marker_Deployed,
+    Has_Marker,
 
     // Requires target in calc_context
     Target_Within_Distance,
@@ -294,6 +321,7 @@ Implicit_Condition :: union {
     Target_Outside_Battle_Zone,
     Target_In_Straight_Line_With,
     Target_Is,
+    Target_Nothing_Between,
 
     // Requires card in calc context
     Card_State_Is,
@@ -320,14 +348,15 @@ Card_Defense_Index :: struct {
     implicit_card_id: Implicit_Card_ID,
 }
 
-Other_Card_Primary :: struct {
+Card_Primary :: struct {
     implicit_card_id: Implicit_Card_ID,
+    index: int,
 }
 
 Implicit_Action_Index :: union {
     Action_Index,
     Card_Defense_Index,
-    Other_Card_Primary,
+    Card_Primary,
 }
 
 calculate_implicit_space_flag :: proc(
@@ -434,6 +463,15 @@ calculate_implicit_quantity :: proc(
         target := calculate_implicit_target(gs, quantity.target, calc_context)
         space := gs.board[target.x][target.y]
         return space.owner
+
+    case Color_Of:
+        card := calculate_implicit_card_id(gs, quantity.implicit_card_id)
+        return int(card.color)
+
+    case Labelled_Local_Variable:
+        action_value := get_top_action_value_of_type(gs, int, label = quantity.label)
+        log.assert(action_value != nil, "Could not find variable with label!", loc)
+        return action_value^
 
     case Labelled_Global_Variable:
         action_value := get_top_global_variable_by_label(gs, quantity.label)
@@ -641,6 +679,19 @@ calculate_implicit_condition :: proc (
         target := calculate_implicit_target(gs, condition.target, calc_context)
         return target_contains_any(gs, target, condition.flags)
 
+    case Marker_Deployed:
+        for player in gs.players {
+            if condition.marker in player.hero.markers do return true
+        }
+        return false
+
+    case Has_Marker:
+        target := calculate_implicit_target(gs, condition.target, calc_context)
+        target_space := gs.board[target.x][target.y]
+        log.assert(.Hero in target_space.flags, "Trying to determine if a space without a hero has a marker!")
+        player := get_player_by_id(gs, target_space.owner)
+        return condition.marker in player.hero.markers
+
     case Target_Contains_Any:
         log.assert(space_ok, "Invalid target!")
         return target_contains_any(gs, calc_context.target, condition.flags)
@@ -693,6 +744,19 @@ calculate_implicit_condition :: proc (
         target := calculate_implicit_target(gs, condition.target, calc_context)
         return calc_context.target == target
 
+    case Target_Nothing_Between:
+        log.assert(space_ok, "Invalid target!")
+        origin := calculate_implicit_target(gs, condition.origin, calc_context)
+        if !calculate_implicit_condition(gs, Target_In_Straight_Line_With{origin}, calc_context) do return false
+        direction := get_norm_direction(origin, calc_context.target)
+        for next_space := origin + direction; next_space != calc_context.target; next_space += direction {
+            new_calc_context := calc_context
+            new_calc_context.target = next_space
+            if calculate_implicit_condition(gs, Target_Contains_Any{condition.flags}, new_calc_context) {
+                return false
+            }
+        }
+        return true
 
     case Card_Primary_Is:
         log.assert(calc_context.card_id != {}, "Invalid card ID for condition that requires it!", loc)
@@ -791,6 +855,12 @@ calculate_implicit_card_id :: proc(gs: ^Game_State, implicit_card_id: Implicit_C
             }
         }
         return out
+    case Current_Card:
+        return get_my_player(gs).hero.current_action_index.card_id
+    case Labelled_Global_Variable:
+        action_value := get_top_global_variable_by_label(gs, card_id.label)
+        log.assert(action_value != nil, "Could not find global variable with label!")
+        return action_value.variant.(Card_ID)
     }
     played_card, ok := find_played_card(gs)
     log.assert(ok, "Could not find played card when calculating an implicit card")
@@ -813,10 +883,10 @@ calculate_implicit_action_index :: proc(gs: ^Game_State, implicit_index: Implici
             return {}
         }
         return {.Basic_Defense, card_id, 3}  // @Magic: index of Defense_Action in basic_defense_action
-    case Other_Card_Primary:
+    case Card_Primary:
         other_card_id := calculate_implicit_card_id(gs, index.implicit_card_id)
         if other_card_id == {} do return {sequence = .Invalid}
-        return {sequence = .Primary, card_id = other_card_id, index = 0}
+        return {sequence = .Primary, card_id = other_card_id, index = index.index}   // index = index.index (?)
     }
     return {}
 }

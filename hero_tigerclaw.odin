@@ -403,7 +403,7 @@ tigerclaw_cards := []Card_Data {
             },
             Action {
                 variant = Give_Marker_Action {
-                    target = Previously_Chosen_Target{},
+                    target = Player_ID_Of{Previously_Chosen_Target{}},
                     marker = .Tigerclaw_Weak_Poison,
                 },
             },
@@ -665,7 +665,7 @@ tigerclaw_cards := []Card_Data {
             },
             Action {
                 variant = Give_Marker_Action {
-                    target = Previously_Chosen_Target{},
+                    target = Player_ID_Of{Previously_Chosen_Target{}},
                     marker = .Tigerclaw_Strong_Poison,
                 },
             },

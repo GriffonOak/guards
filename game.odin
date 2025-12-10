@@ -63,6 +63,8 @@ Active_Effect_Kind :: enum {
     Brogan_Shield,
 
     Garrus_Howl,
+
+    Bain_Another_One,
 }
 
 End_Of_Turn :: struct {
@@ -348,6 +350,7 @@ setup_icons :: proc() {
         case "snake.png":               hero_icons[.Xargatha]   = emoji_texture
         case "water-wave.png":          hero_icons[.Arien]      = emoji_texture
         case "dog-face.png":            hero_icons[.Garrus]     = emoji_texture
+        case "hook.png":                hero_icons[.Bain]       = emoji_texture
 
         case "file-box.png":            ui_icons[.File_Box]     = emoji_texture
 
@@ -361,6 +364,12 @@ setup_icons :: proc() {
             minion_icons[.Heavy_Minion] = emoji_texture
             minion_images[.Heavy_Minion] = emoji_image
         }
+    }
+
+    _hero_id: Hero_ID
+    // REMINDER TO SET THE ICON ABOVE !!! :D
+    switch _hero_id {
+    case .Xargatha, .Brogan, .Arien, .Dodger, .Swift, .Tigerclaw, .Sabina, .Garrus, .Wasp, .Bain:
     }
 
     spawnpoint_flags := Space_Flags{.Heavy_Minion_Spawnpoint, .Melee_Minion_Spawnpoint, .Ranged_Minion_Spawnpoint}
@@ -409,6 +418,11 @@ setup_icons :: proc() {
         case "item_range.png": item_icons[.Range] = icon_texture
         case "item_movement.png": item_icons[.Movement] = icon_texture
         case "item_radius.png": item_icons[.Radius] = icon_texture
+        case "marker_poison.png":
+            marker_icons[.Tigerclaw_Weak_Poison] = icon_texture
+            marker_icons[.Tigerclaw_Strong_Poison] = icon_texture
+        case "marker_bounty.png":
+            marker_icons[.Bain_Bounty] = icon_texture
         }
     }
 }
@@ -426,6 +440,7 @@ setup_hero_cards :: proc(gs: ^Game_State) {
         .Arien      = arien_cards,
         .Sabina     = sabina_cards,
         .Garrus     = garrus_cards,
+        .Bain       = bain_cards,
     }
 
     for player_id in 0..<len(gs.players) {

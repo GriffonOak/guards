@@ -68,7 +68,7 @@ Entity_Swap_Event :: struct {
 
 Give_Marker_Event :: struct {
     player_id: Player_ID,
-    marker: Marker,
+    marker: Marker_Kind,
 }
 
 Minion_Defeat_Event :: struct {
@@ -114,13 +114,18 @@ Card_Retrieved_Event :: struct {
     card_id: Card_ID,
 }
 
-Quantity_Chosen_Event :: struct {
-    quantity: int,
-}
+// Quantity_Chosen_Event :: struct {
+//     quantity: int,
+// }
 
 Choice_Taken_Event :: struct {
     choice_index: int,
     jump_index: Action_Index,
+}
+
+Add_Local_Variable_Event :: struct {
+    variable: Action_Value_Variant,
+    label: Action_Value_Label,
 }
 
 Add_Global_Variable_Event :: struct {
@@ -235,10 +240,11 @@ Event :: union {
     Add_Active_Effect_Event,
     Remove_Active_Effect_Event,
 
-    Quantity_Chosen_Event,
+    // Quantity_Chosen_Event,
 
     Choice_Taken_Event,
 
+    Add_Local_Variable_Event,
     Add_Global_Variable_Event,
 
     Begin_Interrupt_Event,
@@ -726,6 +732,7 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         defeater := get_player_by_id(gs, var.defeater)
         gs.heroes_defeated_this_round += 1
 
+        // Resolve any unresolved card
         if defeated_card, ok := find_played_card(gs, var.defeated); ok {
             if var.defeated == gs.my_player_id && len(gs.interrupt_stack) > 0 {
                 gs.interrupt_stack[0].previous_stage = .Resolved
@@ -733,7 +740,20 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 defeated.stage = .Resolved
             }
             change_card_state(gs, defeated_card, .Resolved)
-        }        
+        }
+
+        // Remove any active effects the hero had
+        for &card in defeated_hero.cards {
+            remove_effect_support(gs, &card)
+        }
+
+        // Apply the bounty marker penalty
+        if .Bain_Bounty in defeated_hero.markers {
+            gs.life_counters[defeated.team] -= 1
+        }
+
+        // Remove any markers the hero had
+        defeated_hero.markers = {}
 
         gs.board[defeated_hero.location.x][defeated_hero.location.y].flags -= {.Hero}
 
@@ -788,12 +808,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         }
         delete_key(&gs.ongoing_active_effects, var.effect_kind)
 
-    case Quantity_Chosen_Event:
-        // action := get_current_action(gs)
-        // choose_quantity_action := &action.variant.(Choose_Quantity_Action)
-        // cqa.result = var.quantity
-        add_action_value(gs, var.quantity, label = .Chosen_Quantity)
-        append(&gs.event_queue, Resolve_Current_Action_Event{})
+    // case Quantity_Chosen_Event:
+    //     add_action_value(gs, var.quantity, label = .Chosen_Quantity)
+    //     append(&gs.event_queue, Resolve_Current_Action_Event{})
 
     case Choice_Taken_Event:
         action_index := get_my_player(gs).hero.current_action_index
@@ -801,6 +818,10 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
         choice_action := action.variant.(Choice_Action)
         if choice_action.cannot_repeat do add_action_value(gs, var.choice_index, label = .Choice_Taken, index = action_index)
         append(&gs.event_queue, Resolve_Current_Action_Event{var.jump_index})
+
+    case Add_Local_Variable_Event:
+        add_action_value(gs, var.variable, label = var.label)
+        append(&gs.event_queue, Resolve_Current_Action_Event{})
 
     case Add_Global_Variable_Event:
         append(&gs.global_memory, var.value)
@@ -1086,11 +1107,17 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             lower_bound := calculate_implicit_quantity(gs, action_type.bounds[0], calc_context)
             upper_bound := calculate_implicit_quantity(gs, action_type.bounds[1], calc_context)
             if upper_bound == lower_bound {
-                append(&gs.event_queue, Quantity_Chosen_Event{lower_bound})
+                append(&gs.event_queue, Add_Local_Variable_Event{lower_bound, .Chosen_Quantity})
                 break
             }
             for quantity in lower_bound..=upper_bound {
-                add_side_button(gs, number_names[quantity], Quantity_Chosen_Event{quantity})
+                add_side_button(gs, number_names[quantity], Add_Local_Variable_Event{quantity, .Chosen_Quantity})
+            }
+
+        case Choose_Variable_Action:
+            for choice in action_type.choices {
+                if !calculate_implicit_condition(gs, choice.valid, calc_context) do continue
+                add_side_button(gs, choice.name, Add_Local_Variable_Event{choice.variable, action_type.label})
             }
 
         case Push_Action:
@@ -1155,7 +1182,20 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
                 Action_Index{sequence = .Discard_If_Able} if !action_type.or_is_defeated else Action_Index{sequence = .Discard_Or_Die},
                 Resolve_Current_Action_Event{},
             )
-        
+
+        case Force_Interrupt_Action:
+            target := calculate_implicit_target(gs, action_type.target, calc_context)
+            space := gs.board[target.x][target.y]
+            log.assert(.Hero in space.flags, "Forced a space without a hero to interrupt!")
+            interrupt_index := calculate_implicit_action_index(gs, action_type.action_index)
+            owner := space.owner
+            become_interrupted (
+                gs,
+                owner,
+                interrupt_index,
+                Resolve_Current_Action_Event{},
+            )
+
         case Add_Active_Effect_Action:
             broadcast_game_event(gs, Add_Active_Effect_Event{action_index})
             append(&gs.event_queue, Resolve_Current_Action_Event{})
@@ -1265,9 +1305,8 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
         case Give_Marker_Action:
-            target := calculate_implicit_target(gs, action_type.target, calc_context)
-            owner := gs.board[target.x][target.y].owner
-            broadcast_game_event(gs, Give_Marker_Event{owner, action_type.marker})
+            target := calculate_implicit_quantity(gs, action_type.target, calc_context)
+            broadcast_game_event(gs, Give_Marker_Event{Player_ID(target), action_type.marker})
             append(&gs.event_queue, Resolve_Current_Action_Event{})
 
         case Save_Variable_Action:
@@ -1278,6 +1317,9 @@ resolve_event :: proc(gs: ^Game_State, event: Event) {
             case Implicit_Quantity:
                 integer := calculate_implicit_quantity(gs, variable, calc_context)
                 add_action_value(gs, integer, label = action_type.label, global = action_type.global)
+            case Implicit_Card_ID:
+                card_id := calculate_implicit_card_id(gs, variable)
+                add_action_value(gs, card_id, label = action_type.label, global = action_type.global)
             case:
                 add_action_value(gs, nil, label = action_type.label, global = action_type.global)
             }

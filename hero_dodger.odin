@@ -491,11 +491,12 @@ dodger_cards := []Card_Data {
             Action {
                 tooltip = "Choose one:",
                 optional = Greater_Than{Choices_Taken{}, 0},
-                variant = Choice_Action{
+                variant = Choice_Action {
                     choices = {
                         {name = "Adjacent", jump_index = {index = 1}},
                         {name = "In range", jump_index = {index = 4}},
                     },
+                    cannot_repeat = true,
                 },
             },
             Action {  // 1
@@ -701,7 +702,29 @@ dodger_cards := []Card_Data {
         primary_sign =  .Plus,
         item =          .Initiative,
         text =          "+4 Defense if there are 2 or more empty\nspawn points in radius in the battle zone.",
-        primary_effect = []Action {},
+        primary_effect = []Action {
+            Action {
+                variant = Defend_Action {
+                    strength = Sum {
+                        Card_Value{.Defense},
+                        Minion_Modifiers{},
+                        Ternary {
+                            {4, 0},
+                            Greater_Than {
+                                Count_Targets {
+                                    Target_Within_Distance {
+                                        Self{}, {1, Card_Value{.Radius}},
+                                    },
+                                    Target_Empty{},
+                                    Target_Contains_Any{SPAWNPOINT_FLAGS},
+                                    Target_In_Battle_Zone{},
+                                }, 1,
+                            },
+                        },
+                    },
+                },
+            },
+        },
     },
     Card_Data { name = "Enfeeblement",
         color =         .Blue,
