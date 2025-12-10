@@ -1,4 +1,6 @@
-*.exe
+/*.exe
+build/*.exe
+csv_parser/*.exe
 *.pdb
 test/*
 .git/*
