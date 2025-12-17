@@ -24,7 +24,19 @@ _ :: time
 
 /* GENERAL
 
+PLAYTEST NOTES:
+    * Handle players disconnecting (lol)
+    * tooltip for controls
+    * better card highlighting
+    * opening the log file crashes the game?
+    * highlight player selections
+    * team captain defaults to most recent joiner of the team?
+    * transcripts for starts of players' turns
+    * transcripts for pity coins, upgrading
+
 --- ENGINE
+
+
     * refactor choose target action to just repeat its begin_next_action when cancelling, like movement action
         * obviates the need for pop side button
 
